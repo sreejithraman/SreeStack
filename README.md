@@ -20,9 +20,18 @@ SreeStack collects practical skills for implementation, review, verification, mu
 
 ## Install
 
-SreeStack follows the Agent Skills repository convention: authored skills live as complete directories under `skills/`. The root `caddie.json` composes those skills with selected skills from Caddie, Matt Pocock's skills repository, and Cursor's plugins repository. `caddie.lock` pins every Git source to an exact commit.
+Install one skill:
 
-Use Caddie to inspect and reconcile the manifest. User Skills are materialized as complete directories under `~/.agents/skills`; Claude compatibility is provided through individual links under `~/.claude/skills`.
+```bash
+cp -R skills/manual-verify ~/.agents/skills/manual-verify
+```
+
+Install the full collection:
+
+```bash
+mkdir -p ~/.agents/skills
+cp -R skills/* ~/.agents/skills/
+```
 
 Restart or refresh the agent host after installation if it caches skill discovery.
 
@@ -42,8 +51,6 @@ Host capabilities remain host-specific. In particular, GitHub workflows require 
 ```text
 SreeStack/
 ├── README.md
-├── caddie.json       # User Skills manifest
-├── caddie.lock       # exact Git source revisions
 └── skills/
     └── <skill-name>/
         ├── SKILL.md
