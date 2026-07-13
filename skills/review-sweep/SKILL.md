@@ -1,7 +1,5 @@
 ---
 name: review-sweep
-metadata:
-  owner: sree
 description: Review sweep. Use when review findings need verified triage, accepted-finding fixes, and parent-owned defers.
 ---
 

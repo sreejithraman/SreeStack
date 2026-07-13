@@ -1,7 +1,5 @@
 ---
 name: review-fix-loop
-metadata:
-  owner: sree
 description: Review/fix loop. Use when a diff needs local review, external review, accepted-finding fixes, and verification before handoff or PR readiness.
 disable-model-invocation: true
 ---

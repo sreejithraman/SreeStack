@@ -1,7 +1,5 @@
 ---
 name: github-review-sweep
-metadata:
-  owner: sree
 description: GitHub review sweep. Use when PR review comments need review-sweep fixes, replies, and thread resolution.
 argument-hint: "<PR number, branch, or review request>"
 ---

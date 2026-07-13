@@ -1,7 +1,5 @@
 ---
 name: launch-swarm
-metadata:
-  owner: sree
 description: Launch swarm. Use when a task should become a merge-ready PR through goal-swarm, local review, and GitHub sweep.
 argument-hint: "[ready|merge] <task, issue, branch, or PR>"
 ---

@@ -1,7 +1,5 @@
 ---
 name: manual-verify
-metadata:
-  owner: sree
 description: Manual verify. Use when changed behavior can be exercised through browser, CLI, API, file, or workflow.
 ---
 

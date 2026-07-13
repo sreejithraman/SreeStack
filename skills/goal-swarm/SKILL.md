@@ -1,7 +1,5 @@
 ---
 name: goal-swarm
-metadata:
-  owner: sree
 description: Goal swarm. Use when the user explicitly asks for parallel agents, subagents, or agent-owned goal shards.
 argument-hint: "<goal or task>"
 ---

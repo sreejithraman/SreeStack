@@ -1,14 +1,12 @@
 ---
 name: gemini-review
-metadata:
-  owner: sree
 description: Gemini review. Use when a diff needs external read-only review through local Antigravity CLI.
 ---
 
 Use the deterministic runner as the single review path; it owns prompt construction, safety checks, and Antigravity transport.
 
 ```bash
-~/.agents/skills/gemini-review/scripts/review-current.mjs
+/Users/sree/.agents/skills/gemini-review/scripts/review-current.mjs
 ```
 
 In Codex, invoke that executable path directly. Do not prepend `env`, assign
@@ -53,7 +51,7 @@ If approval is rejected:
 4. Give the user the direct-terminal command to run outside Codex from the repo root:
 
 ```bash
-~/.agents/skills/gemini-review/scripts/review-current.mjs
+/Users/sree/.agents/skills/gemini-review/scripts/review-current.mjs
 ```
 
 5. Ask the user to paste the output back into Codex for triage.

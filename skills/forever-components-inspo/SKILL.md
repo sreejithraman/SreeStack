@@ -1,7 +1,5 @@
 ---
 name: forever-components-inspo
-metadata:
-  owner: sree
 description: Forever Components manifest search for UI inspiration. Use when the user mentions Forever Components, the infinite canvas URL, or wants design/code inspiration from that site.
 ---
 
