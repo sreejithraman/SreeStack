@@ -8,6 +8,8 @@ SreeStack collects practical skills for implementation, review, verification, mu
 
 | Skill | Purpose |
 |---|---|
+| `toolcraft-brainstorming` | Define Toolcraft product behavior and app contracts before implementation. |
+| `toolcraft-browser` | Verify generated Toolcraft apps through their visible browser surface. |
 | `forever-components-inspo` | Search the Forever Components manifest for UI references. |
 | `gemini-review` | Send the current diff through a guarded, read-only Gemini review runner. |
 | `github-review-sweep` | Triage, fix, reply to, and resolve GitHub PR review feedback. |
@@ -17,6 +19,8 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `motion-websites` | Art-direct, motion-score, build, and verify expressive websites. |
 | `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
+| `toolcraft-systematic-debugging` | Diagnose Toolcraft controls, tests, builds, exports, and runtime failures. |
+| `toolcraft-writing-plans` | Plan Toolcraft app changes and their required verification. |
 
 ## Install
 
@@ -45,6 +49,8 @@ Some skills compose other skills in this collection:
 - `motion-websites` uses `manual-verify` and can hand site work to the host's Sites capability when available.
 
 Host capabilities remain host-specific. In particular, GitHub workflows require authenticated GitHub tooling, browser verification requires a supported browser-control surface, parallel work requires subagent support, and `gemini-review` requires Node.js plus the local `agy` CLI.
+
+The four Toolcraft workflow skills are adapted from `@pixel-point/toolcraft@0.0.12` and remain subject to Pixel Point's Toolcraft Designer License. Their names are prefixed to avoid overriding general-purpose skills. See `third-party/toolcraft-0.0.12/LICENSE.md`. Toolcraft's CLI and app runtime are not vendored here; run the published generator with `npx @pixel-point/toolcraft create` when creating an app.
 
 ## Repository layout
 
