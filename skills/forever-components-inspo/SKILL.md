@@ -1,6 +1,7 @@
 ---
 name: forever-components-inspo
 description: Forever Components manifest search for UI inspiration. Use when the user mentions Forever Components, the infinite canvas URL, or wants design/code inspiration from that site.
+disable-model-invocation: true
 ---
 
 # Forever Components Inspo

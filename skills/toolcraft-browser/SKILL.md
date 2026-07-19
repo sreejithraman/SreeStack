@@ -1,6 +1,7 @@
 ---
 name: toolcraft-browser
 description: Satisfies Toolcraft's required browser workflow for verifying generated apps after implementation.
+disable-model-invocation: true
 ---
 
 # Toolcraft Browser Verification

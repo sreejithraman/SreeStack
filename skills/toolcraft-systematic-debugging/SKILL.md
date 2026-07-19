@@ -1,6 +1,7 @@
 ---
 name: toolcraft-systematic-debugging
 description: Satisfies Toolcraft's required systematic-debugging workflow before fixing controls, tests, builds, exports, or runtime regressions.
+disable-model-invocation: true
 ---
 
 # Toolcraft Systematic Debugging

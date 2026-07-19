@@ -1,6 +1,7 @@
 ---
 name: toolcraft-brainstorming
 description: Satisfies Toolcraft's required brainstorming workflow before creating app features, changing behavior, or assembling app specs.
+disable-model-invocation: true
 ---
 
 # Toolcraft Brainstorming

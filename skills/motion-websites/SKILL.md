@@ -1,6 +1,7 @@
 ---
 name: motion-websites
 description: Motion-score and build expressive websites. Use when the user wants a motion-first website or wants an existing web experience given coordinated animation, scroll storytelling, interactive media, or spatial/3D polish.
+disable-model-invocation: true
 ---
 
 # Motion Websites

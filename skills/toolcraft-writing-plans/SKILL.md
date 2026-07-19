@@ -1,6 +1,7 @@
 ---
 name: toolcraft-writing-plans
 description: Satisfies Toolcraft's required writing-plans workflow before code changes once product behavior or the approved spec is clear.
+disable-model-invocation: true
 ---
 
 # Toolcraft Writing Plans
