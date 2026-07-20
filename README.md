@@ -17,6 +17,7 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `launch-swarm` | Carry work through implementation, review, publishing, and PR readiness. |
 | `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
 | `motion-websites` | Art-direct, motion-score, build, and verify expressive websites. |
+| `preview` | Create, verify, lease, and hand off the best available cross-project review surface. |
 | `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
 | `toolcraft-systematic-debugging` | Diagnose Toolcraft controls, tests, builds, exports, and runtime failures. |
@@ -47,6 +48,7 @@ Some skills compose other skills in this collection:
 - `review-fix-loop` uses `gemini-review`, `review-sweep`, and `manual-verify`.
 - `launch-swarm` uses `goal-swarm`, `review-fix-loop`, `github-review-sweep`, and `manual-verify`.
 - `motion-websites` uses `manual-verify` and can hand site work to the host's Sites capability when available.
+- `preview` bundles the Python 3.11 `previewctl` CLI. Local web previews use Tailscale Serve and macOS `launchd`; iOS previews require Xcode. Durable hosted previews compose separately installed provider deployment skills.
 
 Host capabilities remain host-specific. In particular, GitHub workflows require authenticated GitHub tooling, browser verification requires a supported browser-control surface, parallel work requires subagent support, and `gemini-review` requires Node.js plus the local `agy` CLI.
 
