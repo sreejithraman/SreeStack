@@ -1,0 +1,29 @@
+name: previewctl tests
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/previewctl-tests.yml"
+      - "skills/preview/**"
+      - "tests/previewctl/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/previewctl-tests.yml"
+      - "skills/preview/**"
+      - "tests/previewctl/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m unittest discover -s tests -v
+      - run: python -m json.tool skills/preview/references/manifest.schema.json >/dev/null
+      - run: python -m json.tool skills/preview/references/registry.schema.json >/dev/null
