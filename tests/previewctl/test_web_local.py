@@ -601,6 +601,7 @@ class WebLocalAdapterTests(unittest.TestCase):
         adapter = Adapter(
             runner=runner,
             http_probe=FakeProbe(),
+            filesystem=SimpleNamespace(exists=lambda path: True),
             tailscale_bin="/usr/local/bin/tailscale",
             uid=501,
         )
