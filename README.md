@@ -17,8 +17,8 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
 | `motion-websites` | Art-direct, motion-score, build, and verify expressive websites. |
 | `preview` | Create, verify, lease, and hand off the best available cross-project review surface. |
-| `push-and-watch` | Review, publish, watch, and fix one GitHub PR until ready or blocked. |
 | `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
+| `review-push-and-watch` | Review, publish, watch, and fix one GitHub PR until ready or blocked. |
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
 | `toolcraft-systematic-debugging` | Diagnose Toolcraft controls, tests, builds, exports, and runtime failures. |
 | `toolcraft-writing-plans` | Plan Toolcraft app changes and their required verification. |
@@ -45,8 +45,8 @@ Restart or refresh the agent host after installation if it caches skill discover
 Some skills compose other installed skills:
 
 - `review-fix-loop` uses `code-review`, `gemini-review`, `review-sweep`, and `manual-verify`.
-- `push-and-watch` uses `review-fix-loop` and `review-sweep`.
-- `launch-swarm` uses `goal-swarm` and `push-and-watch`.
+- `review-push-and-watch` uses `review-fix-loop` and `review-sweep`.
+- `launch-swarm` uses `goal-swarm` and `review-push-and-watch`.
 - `motion-websites` uses `manual-verify` and can hand site work to the host's Sites capability when available.
 - `preview` bundles the Python 3.11 `previewctl` CLI. Local web previews use Tailscale Serve and macOS `launchd`; iOS previews require Xcode. Durable hosted previews compose separately installed provider deployment skills.
 

@@ -1,11 +1,11 @@
 ---
-name: push-and-watch
-description: Push and watch. Use when one branch or GitHub PR should be locally reviewed, published, watched through review feedback and CI, and fixed until its current head is ready or blocked, or when another skill needs one PR handled.
+name: review-push-and-watch
+description: Review, push, and watch. Use when one branch or GitHub PR should be locally reviewed, published, watched through review feedback and CI, and fixed until its current head is ready or blocked, or when another skill needs one PR handled.
 ---
 
-# Push And Watch
+# Review, Push, And Watch
 
-Push and watch owns one head branch, its immediate base, and one GitHub PR. Stack-wide branch changes and merges stay with the caller.
+This skill owns one head branch, its immediate base, and one GitHub PR. Stack-wide branch changes and merges stay with the caller.
 
 ## Modes
 
