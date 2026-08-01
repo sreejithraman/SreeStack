@@ -1,6 +1,6 @@
 # Publish
 
-Use these rules for the commit, push, and PR update owned by `/push-and-watch`.
+Use these rules for the commit, push, and PR update owned by `/review-push-and-watch`.
 
 ## Scope
 

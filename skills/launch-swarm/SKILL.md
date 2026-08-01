@@ -1,6 +1,6 @@
 ---
 name: launch-swarm
-description: Launch swarm. Use when a task should be built and delivered as one merge-ready PR or an ordered PR stack through goal-swarm and push-and-watch, with optional merge after explicit authorization.
+description: Launch swarm. Use when a task should be built and delivered as one merge-ready PR or an ordered PR stack through goal-swarm and review-push-and-watch, with optional merge after explicit authorization.
 ---
 
 # Launch Swarm
@@ -38,19 +38,19 @@ Use this when the user wants the work carried through implementation, PR handlin
 
    Finish this step when every owned change belongs to exactly one delivery layer and every layer has one reviewable diff.
 
-4. Push And Watch
+4. Review, Push, And Watch
 
-   For each layer, pass `/push-and-watch` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether launch restacked its history. Use push-and-watch ready mode for both launch modes; merge remains launch work.
+   For each layer, pass `/review-push-and-watch` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether launch restacked its history. Use review-push-and-watch ready mode for both launch modes; merge remains launch work.
 
-   For one PR, run `/push-and-watch` once with that handoff.
+   For one PR, run `/review-push-and-watch` once with that handoff.
 
-   For a stack, run `/push-and-watch` from the base layer upward. When a lower layer changes, restack every affected descendant and rerun `/push-and-watch` for each invalidated layer as required by `references/stacked-prs.md`.
+   For a stack, run `/review-push-and-watch` from the base layer upward. When a lower layer changes, restack every affected descendant and rerun `/review-push-and-watch` for each invalidated layer as required by `references/stacked-prs.md`.
 
    Finish this step when every current PR head is stable or has an exact blocker.
 
 5. Verify Readiness
 
-   Confirm each `/push-and-watch` result against the current branch, base, PR URL, and head SHA. For a stack, also confirm the ordered base links and that no descendant remains invalidated.
+   Confirm each `/review-push-and-watch` result against the current branch, base, PR URL, and head SHA. For a stack, also confirm the ordered base links and that no descendant remains invalidated.
 
    Confirm local verification, manual verification, required PR checks, review state, parent-owned defers, and delivery-wide blockers. Finish this step only when the full delivery is ready or its blockers are complete.
 
@@ -69,6 +69,6 @@ End with:
 - each branch, immediate base, PR URL, and head SHA
 - swarm shards used, or why none
 - changed files or artifact summary
-- each push-and-watch result
+- each review-push-and-watch result
 - manual verification result
 - ready, merged, auto-merge enabled, or exact blocker

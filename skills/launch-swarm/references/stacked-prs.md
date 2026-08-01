@@ -29,18 +29,18 @@ Owned commits and files:
 Depends on:
 PR URL:
 Current head SHA:
-Push-and-watch state:
+Review-push-and-watch state:
 ```
 
 Finish planning when the order is acyclic, every change has one owner layer, every immediate base exists or has a creation step, and every diff states a reviewer-facing purpose.
 
 ## Create And Process
 
-Create local branches and commits from base to tip. Leave each push and PR creation to `/push-and-watch`, passing the exact head branch, immediate base, owned commits and files, existing PR if any, and push-and-watch ready mode.
+Create local branches and commits from base to tip. Leave each push and PR creation to `/review-push-and-watch`, passing the exact head branch, immediate base, owned commits and files, existing PR if any, and review-push-and-watch ready mode.
 
-Run `/push-and-watch` on the base layer first, using its immediate base as the review base. Continue upward only after the lower layer is stable or has a blocker that does not invalidate the higher diff.
+Run `/review-push-and-watch` on the base layer first, using its immediate base as the review base. Continue upward only after the lower layer is stable or has a blocker that does not invalidate the higher diff.
 
-Each layer has its own PR feedback and CI state. Higher-layer CI usually exercises the cumulative code through that layer. `/push-and-watch` owns the state of one layer; launch swarm owns the ordered set.
+Each layer has its own PR feedback and CI state. Higher-layer CI usually exercises the cumulative code through that layer. `/review-push-and-watch` owns the state of one layer; launch swarm owns the ordered set.
 
 ## Invalidation And Restacking
 
@@ -51,10 +51,10 @@ After a lower-layer push:
 1. Mark affected descendants stale.
 2. Rebase or rebuild each descendant onto its updated immediate base from low to high.
 3. Resolve conflicts without moving changes between layers unless the stack plan is also updated.
-4. Mark the handoff as a caller-owned restack so `/push-and-watch` can publish it with force-with-lease after local review.
-5. Run `/push-and-watch` again for every changed descendant.
+4. Mark the handoff as a caller-owned restack so `/review-push-and-watch` can publish it with force-with-lease after local review.
+5. Run `/review-push-and-watch` again for every changed descendant.
 
-The stack is current when every layer records its latest head, intended immediate base, current diff, and current push-and-watch result.
+The stack is current when every layer records its latest head, intended immediate base, current diff, and current review-push-and-watch result.
 
 ## CI Caveat
 
