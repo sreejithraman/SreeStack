@@ -1,6 +1,6 @@
 ---
 name: goal-swarm
-description: Goal swarm. Use when the user explicitly asks for parallel agents, subagents, or agent-owned goal shards.
+description: Goal swarm. Use when the user explicitly asks for parallel agents, subagents, or agent-owned goal shards, or when an active parent skill delegates independent shards.
 argument-hint: "<goal or task>"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "<goal or task>"
 
 A goal swarm turns explicit parallel-agent authorization into bounded shard work under one parent goal.
 
-Use this only when the user explicitly asks for parallel agents, subagents, a swarm, or agent-owned goal shards.
+A parent skill must define the parent goal and grant parallel-agent authority before it invokes this skill.
 
 ## Steps
 

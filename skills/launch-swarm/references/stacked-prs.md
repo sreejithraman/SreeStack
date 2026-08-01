@@ -4,7 +4,7 @@ Read this reference fully when launch delivery needs two or more dependent PRs.
 
 ## Terms And Invariants
 
-A **stack** is an ordered set of PR **layers** from base to tip. Each layer has one purpose, one head branch, one immediate base, one reviewable diff, and one PR.
+A **stack** is an ordered set of dependent PR **layers** from base to tip. Each layer has one purpose, one head branch, one immediate base, one reviewable diff, and one PR. Launch Swarm may own independent PRs or more than one stack; each stack remains one linear chain.
 
 The first layer targets the delivery base. Each later layer targets the branch immediately below it. Every owned change belongs to exactly one layer.
 
@@ -16,9 +16,11 @@ Use a stack when the change has a real dependency order and each layer can be re
 
 Each layer should be safe to merge before the layer above it. A layer that needs later code to build, test, or preserve behavior belongs with that later code unless a guarded intermediate state is intentional.
 
-## Plan
+## Plan Progressively
 
-Record each layer from base to tip:
+Make a layer concrete when current work has a reviewable boundary and a real dependency on the layer below it. Keep later work in the task or ticket graph until its boundary becomes clear.
+
+Record each current layer from base to tip:
 
 ```text
 Layer:
@@ -32,11 +34,11 @@ Current head SHA:
 Review-push-and-watch state:
 ```
 
-Finish planning when the order is acyclic, every change has one owner layer, every immediate base exists or has a creation step, and every diff states a reviewer-facing purpose.
+Finish current planning when the order is acyclic, every current change has one owner layer, every immediate base exists or has a creation step, and every current diff states a reviewer-facing purpose. Future layers need no branch, commit, or file plan.
 
 ## Create And Process
 
-Create local branches and commits from base to tip. Leave each push and PR creation to `/review-push-and-watch`, passing the exact head branch, immediate base, owned commits and files, existing PR if any, and review-push-and-watch ready mode.
+Create local branches and commits for current layers from base to tip. Leave each push and PR creation to `/review-push-and-watch`, passing the exact head branch, immediate base, owned commits and files, existing PR if any, and review-push-and-watch ready mode.
 
 Run `/review-push-and-watch` on the base layer first, using its immediate base as the review base. Continue upward only after the lower layer is stable or has a blocker that does not invalidate the higher diff.
 

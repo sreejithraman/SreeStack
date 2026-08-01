@@ -12,8 +12,8 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `toolcraft-browser` | Verify generated Toolcraft apps through their visible browser surface. |
 | `forever-components-inspo` | Search the Forever Components manifest for UI references. |
 | `gemini-review` | Send the current diff through a guarded, read-only Gemini review runner. |
-| `goal-swarm` | Split explicitly authorized work into bounded parallel-agent shards. |
-| `launch-swarm` | Build and deliver one merge-ready PR or an ordered PR stack. |
+| `goal-swarm` | Split user- or parent-authorized work into bounded parallel-agent shards. |
+| `launch-swarm` | Build a direct task or spec-rooted ticket set and deliver merge-ready PRs, stacked where needed. |
 | `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
 | `motion-websites` | Art-direct, motion-score, build, and verify expressive websites. |
 | `preview` | Create, verify, lease, and hand off the best available cross-project review surface. |
