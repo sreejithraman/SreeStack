@@ -22,6 +22,7 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
 | `toolcraft-systematic-debugging` | Diagnose Toolcraft controls, tests, builds, exports, and runtime failures. |
 | `toolcraft-writing-plans` | Plan Toolcraft app changes and their required verification. |
+| `writing-great-skills` | Guide predictable skill authoring, invocation, structure, and pruning. |
 
 ## Install
 
