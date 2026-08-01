@@ -1,67 +1,74 @@
 ---
 name: launch-swarm
-description: Launch swarm. Use when a task should become a merge-ready PR through goal-swarm, local review, and GitHub sweep.
-argument-hint: "[ready|merge] <task, issue, branch, or PR>"
+description: Launch swarm. Use when a task should be built and delivered as one merge-ready PR or an ordered PR stack through goal-swarm and push-and-watch, with optional merge after explicit authorization.
 ---
 
 # Launch Swarm
 
-Launch swarm turns a task into a merge-ready PR, and optionally merges it when explicitly authorized.
+Launch swarm turns a task into one merge-ready PR or an ordered PR stack, and optionally merges it when explicitly authorized.
 
-Use this when the user wants the work carried through implementation, review, publishing, GitHub sweep, and readiness or merge.
+Use this when the user wants the work carried through implementation, PR handling, readiness, and optional merge.
 
 ## Modes
 
-- **Ready mode**: default. Stop at a merge-ready PR.
+- **Ready mode**: default. Stop when the full one-PR or stacked-PR delivery is merge-ready.
 - **Merge mode**: only when the user explicitly asks to merge, land, or ship, or explicitly approves merge after the readiness report.
 
 ## Steps
 
 1. Preflight
 
-   Identify the repo, base branch, current branch, worktree state, task source, target PR if one exists, mode, constraints, and files or changes that must be preserved.
+   Identify the repo, target base, current branch, worktree state, task source, target PRs if any, mode, delivery shape, constraints, and changes that must be preserved.
+
+   When delivery needs two or more dependent PRs, read `references/stacked-prs.md` fully before creating the first branch or PR. Finish preflight when the task, mode, delivery shape, ownership, and target base are explicit.
 
 2. Build
 
-   Use `/goal-swarm` when the task benefits from explicit parallel shard work. For linear work, implement locally and state why local execution fits.
+   Invocation of launch swarm authorizes `/goal-swarm` when independent shards will shorten the build. For linear work, implement locally.
 
    Keep ownership clear and preserve unrelated user or agent changes.
 
-3. Local Review
+   Finish the build when the requested behavior exists, shard results have explicit dispositions, and the complete owned change is ready to shape into delivery.
 
-   Run `/review-fix-loop` on the resulting diff.
+3. Shape Delivery
 
-   Continue only when verification is green, failures are evidenced as unrelated, or remaining blockers are explicit.
+   For one PR, resolve its head branch and immediate base.
 
-4. Publish
+   For a stack, apply `references/stacked-prs.md` to define each layer's purpose, branch, immediate base, commit range, and dependency order. Agent shards do not define PR layers unless their code dependencies and review order also match.
 
-   Commit only owned changes, push the branch, and use the GitHub connector to create or update the PR. Mark it ready for review by default unless the user requested draft.
+   Finish this step when every owned change belongs to exactly one delivery layer and every layer has one reviewable diff.
 
-5. GitHub Sweep
+4. Push And Watch
 
-   Run `/github-review-sweep` on the PR. If fixes or required-check failures change the diff, rerun `/review-fix-loop`, publish the new commit, and repeat the sweep until stable or blocked.
+   For each layer, pass `/push-and-watch` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether launch restacked its history. Use push-and-watch ready mode for both launch modes; merge remains launch work.
 
-6. Verify Readiness
+   For one PR, run `/push-and-watch` once with that handoff.
 
-   Confirm local verification, manual verification, required PR checks, approvals, parent-owned defers, base branch, and head SHA.
+   For a stack, run `/push-and-watch` from the base layer upward. When a lower layer changes, restack every affected descendant and rerun `/push-and-watch` for each invalidated layer as required by `references/stacked-prs.md`.
 
-   Rerun `/manual-verify` only when the final PR diff lacks manual-verification evidence, the GitHub sweep changed an exercisable surface, or previous manual verification was blocked or stale.
+   Finish this step when every current PR head is stable or has an exact blocker.
 
-7. Ready Or Merge
+5. Verify Readiness
+
+   Confirm each `/push-and-watch` result against the current branch, base, PR URL, and head SHA. For a stack, also confirm the ordered base links and that no descendant remains invalidated.
+
+   Confirm local verification, manual verification, required PR checks, review state, parent-owned defers, and delivery-wide blockers. Finish this step only when the full delivery is ready or its blockers are complete.
+
+6. Ready Or Merge
 
    In ready mode, stop and report merge readiness or exact blockers.
 
-   In merge mode, merge only after explicit authorization is present and the head SHA being merged is confirmed.
+   In merge mode, read `references/merge.md` fully after readiness passes and before any merge.
 
 ## Report
 
 End with:
 
 - mode: ready or merge
-- branch, base branch, PR URL, and head SHA
+- delivery shape and target base
+- each branch, immediate base, PR URL, and head SHA
 - swarm shards used, or why none
 - changed files or artifact summary
-- review/fix loop result
-- GitHub sweep result
+- each push-and-watch result
 - manual verification result
 - ready, merged, auto-merge enabled, or exact blocker
