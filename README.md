@@ -12,12 +12,12 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `toolcraft-browser` | Verify generated Toolcraft apps through their visible browser surface. |
 | `forever-components-inspo` | Search the Forever Components manifest for UI references. |
 | `gemini-review` | Send the current diff through a guarded, read-only Gemini review runner. |
-| `github-review-sweep` | Triage, fix, reply to, and resolve GitHub PR review feedback. |
 | `goal-swarm` | Split explicitly authorized work into bounded parallel-agent shards. |
-| `launch-swarm` | Carry work through implementation, review, publishing, and PR readiness. |
+| `launch-swarm` | Build and deliver one merge-ready PR or an ordered PR stack. |
 | `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
 | `motion-websites` | Art-direct, motion-score, build, and verify expressive websites. |
 | `preview` | Create, verify, lease, and hand off the best available cross-project review surface. |
+| `push-and-watch` | Review, publish, watch, and fix one GitHub PR until ready or blocked. |
 | `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
 | `toolcraft-systematic-debugging` | Diagnose Toolcraft controls, tests, builds, exports, and runtime failures. |
@@ -42,11 +42,11 @@ Restart or refresh the agent host after installation if it caches skill discover
 
 ## Dependencies
 
-Some skills compose other skills in this collection:
+Some skills compose other installed skills:
 
-- `github-review-sweep` uses `review-sweep`.
-- `review-fix-loop` uses `gemini-review`, `review-sweep`, and `manual-verify`.
-- `launch-swarm` uses `goal-swarm`, `review-fix-loop`, `github-review-sweep`, and `manual-verify`.
+- `review-fix-loop` uses `code-review`, `gemini-review`, `review-sweep`, and `manual-verify`.
+- `push-and-watch` uses `review-fix-loop` and `review-sweep`.
+- `launch-swarm` uses `goal-swarm` and `push-and-watch`.
 - `motion-websites` uses `manual-verify` and can hand site work to the host's Sites capability when available.
 - `preview` bundles the Python 3.11 `previewctl` CLI. Local web previews use Tailscale Serve and macOS `launchd`; iOS previews require Xcode. Durable hosted previews compose separately installed provider deployment skills.
 

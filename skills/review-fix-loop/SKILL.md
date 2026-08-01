@@ -1,32 +1,35 @@
 ---
 name: review-fix-loop
-description: Review/fix loop. Use when a diff needs local review, external review, accepted-finding fixes, and verification before handoff or PR readiness.
-disable-model-invocation: true
+description: Review/fix loop. Use when a local diff needs repeated review, accepted-finding fixes, and verification before handoff or push, or when another skill needs a current local quality check.
 ---
 
 # Review Fix Loop
 
-Review fix loop runs review sources over the current diff, sweeps their findings through `/review-sweep`, verifies the result, and repeats until stable or blocked.
+Review fix loop runs review sources over one local diff, sweeps their findings through `/review-sweep`, verifies the result, and repeats until stable or blocked. It leaves commits, pushes, PR work, and merges to its caller.
 
 ## Steps
 
 1. Scope the loop.
 
-   Inspect git status, resolve the review base, identify the reviewed diff, intended behavior, affected modules, available spec or issue source, standards sources, and verification commands.
+   Inspect git status, resolve the supplied review base, and identify the reviewed diff, intended behavior, affected modules, available spec or issue source, standards sources, and verification commands.
+
+   Finish this step only when the supplied fixed point resolves and the complete diff scope is known.
 
 2. Run review sources.
 
-   Run `/thermo-nuclear-code-quality-review` for strict maintainability review.
+   Run a strict maintainability review against the Greenfield Standard below. When the user separately invokes `/thermo-nuclear-code-quality-review`, include its returned findings in this loop.
 
    Run `/code-review` when a fixed point is available, so Standards and Spec are reviewed as separate axes.
 
    Run `/gemini-review` when the external-review path is available: at least on the first pass, and again after material edits.
 
+   Finish this step only when every applicable review source has returned findings or an explicit blocker.
+
 3. Sweep findings.
 
    Combine review findings and run `/review-sweep`. Treat external reviews as advisory until verified against code and project context.
 
-   `/review-sweep` owns classification, accepted-finding fixes, and parent-owned defers.
+   `/review-sweep` owns classification, accepted-finding fixes, and parent-owned defers. Finish this step only when every finding has one disposition.
 
 4. Verify.
 
@@ -34,7 +37,7 @@ Review fix loop runs review sources over the current diff, sweeps their findings
 
    Run `/manual-verify` when the diff has a browser, user-facing, CLI, API, file, or workflow surface that can be exercised.
 
-   If verification fails because of loop changes, repair the regression and rerun verification.
+   If verification fails because of loop changes, repair the regression and rerun verification. Finish this step when every planned check passes or has an evidenced blocker unrelated to the diff.
 
 5. Repeat.
 
