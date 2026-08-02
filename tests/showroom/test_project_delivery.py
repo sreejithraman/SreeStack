@@ -328,6 +328,18 @@ class CliIntegrationTests(ProjectDeliveryCase):
         self.assertEqual("stopped", stopped["status"])
         self.assertEqual(["device:start", "device:verify"], (self.repo / "events.log").read_text().splitlines())
 
+    def test_blocked_start_exits_one_with_json_record(self) -> None:
+        self.fake.write_text(
+            self.fake.read_text().replace(
+                "'verification': {'status': 'pending' if pending else 'passed', 'detail': 'ok', 'checks': {'delivery': 'pending' if pending else 'passed'}},",
+                "'verification': {'status': 'blocked', 'detail': 'connect a device', 'checks': {'delivery': 'blocked'}},",
+            ),
+            encoding="utf-8",
+        )
+        result = self.run_cli("start", "deal", "device", "--json", ok=False)
+        self.assertEqual(1, result.returncode)
+        self.assertEqual("blocked", json.loads(result.stdout)["verification"]["status"])
+
     def test_device_verification_cannot_claim_a_provider(self) -> None:
         started = json.loads(self.run_cli("start", "deal", "device", "--json").stdout)
         self.fake.write_text(

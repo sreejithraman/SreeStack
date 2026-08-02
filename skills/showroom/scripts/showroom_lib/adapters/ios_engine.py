@@ -10,6 +10,7 @@ import time
 from typing import Any, Callable
 
 from .ios_discovery import IOSDiscoveryMixin
+from .ios_image import screenshots_show_app
 from .ios_simulators import IOSSimulatorLifecycleMixin
 from .ios_types import (
     BuildProduct,
@@ -61,6 +62,8 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
         token_factory: Callable[[], str] | None = None,
         recording_runner: RecordingRunner | None = None,
         sleeper: Callable[[float], None] | None = None,
+        monotonic: Callable[[], float] | None = None,
+        screenshot_assessor: Callable[[Path, Path, float], bool] | None = None,
     ) -> None:
         self._runner = runner or SubprocessRunner()
         self._ownership = ownership
@@ -69,6 +72,16 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
         self._token_factory = token_factory or (lambda: uuid4().hex[:12])
         self._recording_runner = recording_runner or SubprocessRecordingRunner()
         self._sleeper = sleeper or time.sleep
+        self._monotonic = monotonic or time.monotonic
+        self._screenshot_assessor = screenshot_assessor or (
+            lambda baseline, screenshot, deadline: screenshots_show_app(
+                self._runner,
+                baseline,
+                screenshot,
+                deadline=deadline,
+                monotonic=self._monotonic,
+            )
+        )
 
     def start(self, request: IOSShowroomRequest) -> IOSShowroomResult:
         container = self.discover_container(request)
@@ -243,6 +256,18 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
             cwd=request.worktree_root,
         )
         self._install_fixture(request, simulator)
+        self._runner.run(
+            [
+                "xcrun",
+                "simctl",
+                "terminate",
+                simulator.udid,
+                build.product.bundle_identifier,
+            ],
+            cwd=request.worktree_root,
+        )
+        baseline = build.result_bundle.parent / "pre-launch.png"
+        self._capture_screenshot(request, simulator, baseline)
         launch = self._checked(
             [
                 "xcrun",
@@ -258,9 +283,56 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
             cwd=request.worktree_root,
         )
         navigation = self._navigate(request, simulator)
-        self._sleeper(1.0)
-        evidence = self._capture_evidence(request, simulator, build)
+        screenshot = self._wait_for_app_screenshot(request, simulator, build, baseline)
+        evidence = self._capture_evidence(request, simulator, build, screenshot)
         return _RunPhase(tuple(evidence), self._parse_launch_pid(launch.stdout), navigation)
+
+    def _wait_for_app_screenshot(
+        self,
+        request: IOSShowroomRequest,
+        simulator: SimulatorOwnership,
+        build: "_BuildPhase",
+        baseline: Path,
+    ) -> Path:
+        screenshot = build.result_bundle.parent / "screenshot.png"
+        deadline = self._monotonic() + 10.0
+        for attempt in range(40):
+            remaining = deadline - self._monotonic()
+            if remaining <= 0:
+                break
+            self._capture_screenshot(
+                request,
+                simulator,
+                screenshot,
+                timeout_seconds=remaining,
+            )
+            if self._screenshot_assessor(baseline, screenshot, deadline):
+                return screenshot
+            if attempt < 39:
+                remaining = deadline - self._monotonic()
+                if remaining <= 0:
+                    break
+                self._sleeper(min(0.25, remaining))
+        raise IOSAdapterError(
+            "the launched app did not produce distinct, non-blank visual evidence "
+            "within 10 seconds"
+        )
+
+    def _capture_screenshot(
+        self,
+        request: IOSShowroomRequest,
+        simulator: SimulatorOwnership,
+        path: Path,
+        *,
+        timeout_seconds: float | None = None,
+    ) -> None:
+        self._checked(
+            ["xcrun", "simctl", "io", simulator.udid, "screenshot", str(path)],
+            cwd=request.worktree_root,
+            timeout_seconds=timeout_seconds,
+        )
+        if not self._filesystem.nonempty_file(path):
+            raise IOSAdapterError(f"screenshot was not created or is empty: {path}")
 
     def _install_fixture(
         self, request: IOSShowroomRequest, simulator: SimulatorOwnership
@@ -297,14 +369,8 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
         request: IOSShowroomRequest,
         simulator: SimulatorOwnership,
         build: "_BuildPhase",
+        screenshot: Path,
     ) -> list[str]:
-        screenshot = build.result_bundle.parent / "screenshot.png"
-        self._checked(
-            ["xcrun", "simctl", "io", simulator.udid, "screenshot", str(screenshot)],
-            cwd=request.worktree_root,
-        )
-        if not self._filesystem.nonempty_file(screenshot):
-            raise IOSAdapterError(f"screenshot was not created or is empty: {screenshot}")
         evidence = [str(build.result_bundle), str(screenshot)]
         if not request.configuration.recording:
             return evidence

@@ -184,7 +184,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         _emit(result, json_output)
         if args.command == "doctor" and not result["ok"]:
             return 1
-        if args.command == "verify" and result.get("verification", {}).get("status") in {"failed", "blocked"}:
+        unhealthy = isinstance(result, dict) and result.get("verification", {}).get(
+            "status"
+        ) in {"failed", "blocked"}
+        if args.command == "verify" and unhealthy:
+            return 1
+        if args.command == "start" and args.project and unhealthy:
             return 1
         if args.command == "cleanup" and result.get("errors"):
             return 1
