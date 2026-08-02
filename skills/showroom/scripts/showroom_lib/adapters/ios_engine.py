@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import time
 from typing import Any, Callable
 
 from .ios_discovery import IOSDiscoveryMixin
@@ -59,6 +60,7 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
         clock: Callable[[], datetime] | None = None,
         token_factory: Callable[[], str] | None = None,
         recording_runner: RecordingRunner | None = None,
+        sleeper: Callable[[float], None] | None = None,
     ) -> None:
         self._runner = runner or SubprocessRunner()
         self._ownership = ownership
@@ -66,6 +68,7 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._token_factory = token_factory or (lambda: uuid4().hex[:12])
         self._recording_runner = recording_runner or SubprocessRecordingRunner()
+        self._sleeper = sleeper or time.sleep
 
     def start(self, request: IOSShowroomRequest) -> IOSShowroomResult:
         container = self.discover_container(request)
@@ -255,6 +258,7 @@ class IOSSimulatorAdapter(IOSDiscoveryMixin, IOSSimulatorLifecycleMixin):
             cwd=request.worktree_root,
         )
         navigation = self._navigate(request, simulator)
+        self._sleeper(1.0)
         evidence = self._capture_evidence(request, simulator, build)
         return _RunPhase(tuple(evidence), self._parse_launch_pid(launch.stdout), navigation)
 

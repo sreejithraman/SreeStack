@@ -58,6 +58,7 @@ class FakeRunner:
         self.devices: dict[str, dict[str, object]] = {}
         self.clone_ids = iter((CLONE_ONE, CLONE_TWO))
         self.fail_build = fail_build
+        self.frame_ready = False
 
     def run(self, argv, *, cwd=None):
         command = tuple(str(item) for item in argv)
@@ -131,6 +132,8 @@ class FakeRunner:
         if command[0:3] == ("xcrun", "simctl", "launch"):
             return CommandResult(0, "example.Demo: 4321\n", "")
         if command[0:4] == ("xcrun", "simctl", "io", command[3]) and command[4] == "screenshot":
+            if not self.frame_ready:
+                raise AssertionError("screenshot captured before the first app frame")
             Path(command[-1]).write_bytes(b"png")
             return CommandResult(0)
         if command[0:3] == ("xcrun", "simctl", "shutdown"):
@@ -191,6 +194,7 @@ class IOSAdapterTests(unittest.TestCase):
         self.store = FakeOwnership()
         self.runner = FakeRunner()
         self.attempts = iter(("attempt-one", "attempt-two", "attempt-three"))
+        self.settle_calls = []
 
     def request(
         self, *, worktree=None, worktree_id="worktree-one", showroom_id="srm_ios_demo", **overrides
@@ -214,11 +218,18 @@ class IOSAdapterTests(unittest.TestCase):
         )
 
     def adapter(self, runner=None):
+        selected_runner = runner or self.runner
+
+        def settle(seconds):
+            self.settle_calls.append(seconds)
+            selected_runner.frame_ready = True
+
         return IOSSimulatorAdapter(
-            runner or self.runner,
+            selected_runner,
             self.store,
             clock=lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
             token_factory=lambda: next(self.attempts),
+            sleeper=settle,
         )
 
     def test_full_flow_uses_exact_argv_and_captures_evidence(self) -> None:
@@ -233,6 +244,7 @@ class IOSAdapterTests(unittest.TestCase):
         )
         self.assertEqual(result.verification_status, "passed")
         self.assertEqual(result.launch_pid, 4321)
+        self.assertEqual(self.settle_calls, [1.0])
         self.assertTrue(any(path.endswith("screenshot.png") for path in result.evidence_paths))
         self.assertIn(
             ("xcrun", "simctl", "openurl", CLONE_ONE, "demo://screen/42?token=secret"),
@@ -298,6 +310,7 @@ class IOSAdapterTests(unittest.TestCase):
             clock=lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
             token_factory=lambda: next(self.attempts),
             recording_runner=recorder,
+            sleeper=lambda _: setattr(self.runner, "frame_ready", True),
         )
         result = adapter.start(self.request(recording=True, recording_seconds=1.5))
         self.assertTrue(any(path.endswith("recording.mov") for path in result.evidence_paths))
