@@ -240,7 +240,7 @@ def validate_result(
     if not any(value is not None for value in normalized_location.values()):
         raise AdapterError("delivery result needs a location")
     expected_location = "device" if surface == "device" else "url"
-    if normalized_location[expected_location] is None:
+    if verification["status"] in {"passed", "pending"} and normalized_location[expected_location] is None:
         raise AdapterError(f"{surface} delivery result needs location {expected_location}")
     provider = document.get("provider")
     resource_id = document.get("provider_resource_id")

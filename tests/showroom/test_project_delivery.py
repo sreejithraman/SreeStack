@@ -263,6 +263,26 @@ class ProtocolTests(ProjectDeliveryCase):
                 showroom_dir=self.root / "state",
             )
 
+    def test_blocked_result_can_point_to_a_retry_command(self) -> None:
+        value = {
+            "protocol_version": 1,
+            "surface": "device",
+            "operation": "start",
+            "verification": {"status": "blocked", "detail": "connect a device", "checks": {}},
+            "location": {"command": ["node", "scripts/deliver.mjs", "device", "install"]},
+            "evidence_paths": [],
+            "log_paths": [],
+            "availability_limitations": [],
+        }
+        result = validate_result(
+            value,
+            surface="device",
+            operation="start",
+            worktree=self.repo,
+            showroom_dir=self.root / "state",
+        )
+        self.assertEqual("blocked", result["verification"]["status"])
+
     def test_delivery_cannot_reuse_a_stale_result_file(self) -> None:
         showroom_dir = self.root / "state"
         showroom_dir.mkdir()

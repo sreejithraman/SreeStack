@@ -57,7 +57,14 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "surface": { "const": "device" } } },
+      "if": {
+        "properties": {
+          "surface": { "const": "device" },
+          "verification": {
+            "properties": { "status": { "enum": ["passed", "pending"] } }
+          }
+        }
+      },
       "then": {
         "properties": {
           "location": {
@@ -68,7 +75,14 @@
       }
     },
     {
-      "if": { "properties": { "surface": { "const": "testflight" } } },
+      "if": {
+        "properties": {
+          "surface": { "const": "testflight" },
+          "verification": {
+            "properties": { "status": { "enum": ["passed", "pending"] } }
+          }
+        }
+      },
       "then": {
         "properties": {
           "location": {
