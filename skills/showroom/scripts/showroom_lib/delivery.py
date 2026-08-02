@@ -201,7 +201,11 @@ def validate_result(
         raise AdapterError("delivery result has invalid verification status or detail")
     checks = verification["checks"]
     if not isinstance(checks, dict) or not all(
-        isinstance(key, str) and key and value in STATUSES for key, value in checks.items()
+        isinstance(key, str)
+        and key
+        and isinstance(value, str)
+        and value in STATUSES
+        for key, value in checks.items()
     ):
         raise AdapterError("delivery result verification checks must map names to status values")
     location = _object(

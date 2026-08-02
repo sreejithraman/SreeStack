@@ -220,6 +220,24 @@ class ProtocolTests(ProjectDeliveryCase):
                 worktree=self.repo,
                 showroom_dir=self.root / "state",
             )
+        value = {
+            "protocol_version": 1,
+            "surface": "device",
+            "operation": "verify",
+            "verification": {"status": "passed", "detail": "bad", "checks": {"probe": []}},
+            "location": {"device": "iPhone"},
+            "evidence_paths": [],
+            "log_paths": [],
+            "availability_limitations": [],
+        }
+        with self.assertRaisesRegex(AdapterError, "checks must map"):
+            validate_result(
+                value,
+                surface="device",
+                operation="verify",
+                worktree=self.repo,
+                showroom_dir=self.root / "state",
+            )
 
     def test_result_requires_the_surface_location(self) -> None:
         value = {
