@@ -92,6 +92,12 @@ class FakeSecurity:
 
 class AppleProfileTests(unittest.TestCase):
     def setUp(self) -> None:
+        uname = patch(
+            "showroom_lib.apple.os.uname",
+            return_value=SimpleNamespace(sysname="Darwin"),
+        )
+        uname.start()
+        self.addCleanup(uname.stop)
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.state = Path(self.temporary.name) / "state"
@@ -105,24 +111,20 @@ class AppleProfileTests(unittest.TestCase):
 
     def setup(self) -> dict:
         passwords = iter(("session password", "session password"))
-        with patch(
-            "showroom_lib.apple.os.uname",
-            return_value=SimpleNamespace(sysname="Darwin"),
-        ):
-            return setup_profile(
-                self.state,
-                name="personal",
-                team_id="TEAM123456",
-                key_id="KEY123",
-                issuer_id="issuer-123",
-                api_key_path=self.api_key,
-                certificates=[self.certificate],
-                unlock_seconds=8 * 60 * 60,
-                make_default=True,
-                password_reader=lambda _: next(passwords),
-                runner=self.security,
-                secrets=self.security,
-            )
+        return setup_profile(
+            self.state,
+            name="personal",
+            team_id="TEAM123456",
+            key_id="KEY123",
+            issuer_id="issuer-123",
+            api_key_path=self.api_key,
+            certificates=[self.certificate],
+            unlock_seconds=8 * 60 * 60,
+            make_default=True,
+            password_reader=lambda _: next(passwords),
+            runner=self.security,
+            secrets=self.security,
+        )
 
     def test_setup_keeps_secrets_out_of_profile_store(self) -> None:
         result = self.setup()
