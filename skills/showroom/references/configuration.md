@@ -11,6 +11,6 @@ scheme = "Deal"
 delivery = ["node", "scripts/deal-delivery.mjs"]
 ```
 
-Each project accepts only `project`, `scheme`, and `delivery`. `project` must name an existing `.xcodeproj` inside the worktree. `delivery` must be an argv array. Keep signing data, accounts, device names and IDs, build numbers, keys, host names, and generated state out of this file.
+Each project accepts only `project`, `scheme`, and `delivery`. `project` must name an existing `.xcodeproj` inside the worktree. `delivery` must be an argv array with a checked-in command path inside the worktree. Keep signing data, accounts, device names and IDs, build numbers, keys, host names, and generated state out of this file.
 
 With this entry, `showroom start deal` starts the Simulator. `device` and `testflight` come from the delivery command description, not extra TOML tables.

@@ -54,6 +54,30 @@
     "log_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "availability_limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "surface": { "const": "device" } } },
+      "then": {
+        "properties": {
+          "location": {
+            "required": ["device"],
+            "properties": { "device": { "type": "string", "minLength": 1 } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "surface": { "const": "testflight" } } },
+      "then": {
+        "properties": {
+          "location": {
+            "required": ["url"],
+            "properties": { "url": { "type": "string", "minLength": 1 } }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "status": { "enum": ["pending", "passed", "failed", "blocked", "stale"] },
     "argv": {

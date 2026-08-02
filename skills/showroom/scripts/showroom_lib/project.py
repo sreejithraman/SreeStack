@@ -164,6 +164,37 @@ def _inside(root: Path, value: Path) -> bool:
     return True
 
 
+def _delivery_command(root: Path, value: Any, project_name: str) -> tuple[str, ...]:
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(argument, str) and argument for argument in value)
+    ):
+        raise ConfigurationError(
+            f".showroom.toml project {project_name!r} delivery must be a nonempty command array"
+        )
+    checked_in_path = False
+    for index, argument in enumerate(value):
+        candidate = Path(argument)
+        if candidate.is_absolute():
+            if index == 0:
+                continue
+            raise ConfigurationError(
+                f".showroom.toml project {project_name!r} delivery paths must be relative"
+            )
+        resolved = (root / candidate).resolve(strict=False)
+        if not _inside(root, resolved):
+            raise ConfigurationError(
+                f".showroom.toml project {project_name!r} delivery must stay inside the worktree"
+            )
+        checked_in_path = checked_in_path or resolved.is_file()
+    if not checked_in_path:
+        raise ConfigurationError(
+            f".showroom.toml project {project_name!r} delivery must include a checked-in command path"
+        )
+    return tuple(value)
+
+
 def configured_projects(project: Project) -> dict[str, dict[str, Any]]:
     path = project.worktree_root / ".showroom.toml"
     if not path.exists():
@@ -197,16 +228,10 @@ def configured_projects(project: Project) -> dict[str, dict[str, Any]]:
             raise ConfigurationError(f"configured Xcode project does not exist: {resolved}")
         if not isinstance(scheme, str) or not scheme:
             raise ConfigurationError(f".showroom.toml project {name!r} needs a nonempty scheme")
-        if (
-            not isinstance(delivery, list)
-            or not delivery
-            or not all(isinstance(value, str) and value for value in delivery)
-        ):
-            raise ConfigurationError(f".showroom.toml project {name!r} delivery must be a nonempty command array")
         projects[name] = {
             "project": str(resolved.relative_to(project.worktree_root)),
             "scheme": scheme,
-            "delivery": tuple(delivery),
+            "delivery": _delivery_command(project.worktree_root, delivery, name),
         }
     if not projects:
         raise ConfigurationError(".showroom.toml must define at least one named project")

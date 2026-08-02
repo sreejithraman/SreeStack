@@ -12,8 +12,8 @@
       "minProperties": 1,
       "additionalProperties": false,
       "properties": {
-        "device": { "$ref": "#/$defs/surface" },
-        "testflight": { "$ref": "#/$defs/surface" }
+        "device": { "$ref": "#/$defs/device" },
+        "testflight": { "$ref": "#/$defs/testflight" }
       }
     }
   },
@@ -23,19 +23,31 @@
       "minItems": 1,
       "items": { "type": "string", "minLength": 1 }
     },
-    "surface": {
+    "device": {
       "type": "object",
       "additionalProperties": false,
       "required": ["start", "verify", "lifecycle_owner", "required_arguments"],
       "properties": {
         "start": { "$ref": "#/$defs/argv" },
         "verify": { "$ref": "#/$defs/argv" },
-        "lifecycle_owner": { "enum": ["manual", "provider"] },
-        "provider": { "type": "string", "minLength": 1 },
+        "lifecycle_owner": { "const": "manual" },
         "required_arguments": {
           "type": "array",
-          "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$" }
+          "maxItems": 0
+        }
+      }
+    },
+    "testflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "verify", "lifecycle_owner", "provider", "required_arguments"],
+      "properties": {
+        "start": { "$ref": "#/$defs/argv" },
+        "verify": { "$ref": "#/$defs/argv" },
+        "lifecycle_owner": { "const": "provider" },
+        "provider": { "type": "string", "minLength": 1 },
+        "required_arguments": {
+          "const": ["build-number"]
         }
       }
     }

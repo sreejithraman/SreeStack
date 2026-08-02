@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "skills" / "showroom" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from showroom_lib.delivery import validate_description, validate_result  # noqa: E402
+from showroom_lib.delivery import run_delivery, validate_description, validate_result  # noqa: E402
 from showroom_lib.errors import AdapterError, ConfigurationError  # noqa: E402
 from showroom_lib.project import configured_projects, detect_config, detect_project  # noqa: E402
 
@@ -48,7 +48,7 @@ pending = surface == 'testflight' and operation == 'start'
 result = {
     'protocol_version': 1, 'surface': surface, 'operation': operation,
     'verification': {'status': 'pending' if pending else 'passed', 'detail': 'ok', 'checks': {'delivery': 'pending' if pending else 'passed'}},
-    'location': {'device': 'Test iPhone' if surface == 'device' else None, 'artifact': 'TestFlight build' if surface == 'testflight' else None},
+    'location': {'device': 'Test iPhone'} if surface == 'device' else {'url': 'https://appstoreconnect.apple.com/apps'},
     'provider': 'app-store-connect' if surface == 'testflight' else None,
     'provider_resource_id': None if pending or surface == 'device' else 'build_123',
     'evidence_paths': [], 'log_paths': [], 'availability_limitations': ['test fixture']
@@ -93,6 +93,14 @@ class ConfigurationTests(ProjectDeliveryCase):
         with self.assertRaisesRegex(ConfigurationError, "inside the worktree"):
             configured_projects(detect_project(self.repo))
 
+    def test_delivery_command_must_include_a_checked_in_path(self) -> None:
+        self.config_path.write_text(
+            'version = 1\n[deal]\nproject = "ios/Deal/Deal.xcodeproj"\nscheme = "Deal"\ndelivery = ["node", "../delivery.mjs"]\n',
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ConfigurationError, "inside the worktree"):
+            configured_projects(detect_project(self.repo))
+
     def test_missing_config_keeps_old_discovery(self) -> None:
         self.config_path.unlink()
         (self.repo / "package.json").write_text('{"scripts":{"dev":"vite"}}', encoding="utf-8")
@@ -108,6 +116,25 @@ class ProtocolTests(ProjectDeliveryCase):
                 "start": "device install", "verify": ["device", "verify"], "lifecycle_owner": "manual",
                 "required_arguments": [], "extra": True,
             }}})
+
+    def test_description_rejects_wrong_lifecycle_and_argument_shapes(self) -> None:
+        for value in (
+            {"protocol_version": True, "surfaces": {"device": {
+                "start": ["device", "install"], "verify": ["device", "verify"],
+                "lifecycle_owner": "manual", "required_arguments": [],
+            }}},
+            {"protocol_version": 1, "surfaces": {"device": {
+                "start": ["device", "install"], "verify": ["device", "verify"],
+                "lifecycle_owner": "provider", "provider": "vendor", "required_arguments": [],
+            }}},
+            {"protocol_version": 1, "surfaces": {"testflight": {
+                "start": ["testflight", "upload"], "verify": ["testflight", "verify"],
+                "lifecycle_owner": "provider", "provider": "app-store-connect",
+                "required_arguments": ["-build-number"],
+            }}},
+        ):
+            with self.assertRaises(ConfigurationError):
+                validate_description(value)
 
     def test_result_accepts_pending_provider_without_resource_id(self) -> None:
         value = {
@@ -138,6 +165,72 @@ class ProtocolTests(ProjectDeliveryCase):
         }
         with self.assertRaisesRegex(AdapterError, "inside the worktree or Showroom state"):
             validate_result(value, surface="device", operation="start", worktree=self.repo, showroom_dir=self.root / "state")
+
+    def test_result_rejects_bad_status_types_and_missing_artifacts(self) -> None:
+        value = {
+            "protocol_version": True,
+            "surface": "device",
+            "operation": "verify",
+            "verification": {"status": [], "detail": "bad", "checks": {}},
+            "location": {"artifact": "missing.app"},
+            "evidence_paths": [],
+            "log_paths": [],
+            "availability_limitations": [],
+        }
+        with self.assertRaises(AdapterError):
+            validate_result(
+                value,
+                surface="device",
+                operation="verify",
+                worktree=self.repo,
+                showroom_dir=self.root / "state",
+            )
+        value["protocol_version"] = 1
+        value["verification"]["status"] = "passed"
+        with self.assertRaisesRegex(AdapterError, "does not exist"):
+            validate_result(
+                value,
+                surface="device",
+                operation="verify",
+                worktree=self.repo,
+                showroom_dir=self.root / "state",
+            )
+
+    def test_result_requires_the_surface_location(self) -> None:
+        value = {
+            "protocol_version": 1,
+            "surface": "device",
+            "operation": "verify",
+            "verification": {"status": "passed", "detail": "ok", "checks": {}},
+            "location": {"url": "https://example.invalid"},
+            "evidence_paths": [],
+            "log_paths": [],
+            "availability_limitations": [],
+        }
+        with self.assertRaisesRegex(AdapterError, "needs location device"):
+            validate_result(
+                value,
+                surface="device",
+                operation="verify",
+                worktree=self.repo,
+                showroom_dir=self.root / "state",
+            )
+
+    def test_delivery_cannot_reuse_a_stale_result_file(self) -> None:
+        showroom_dir = self.root / "state"
+        showroom_dir.mkdir()
+        (showroom_dir / "delivery-device-verify.json").write_text("{}", encoding="utf-8")
+        with self.assertRaisesRegex(AdapterError, "did not write result JSON"):
+            run_delivery(
+                command=(sys.executable, "-c", "pass"),
+                operation_argv=("device", "verify"),
+                surface="device",
+                operation="verify",
+                arguments={},
+                required_arguments=(),
+                worktree=self.repo,
+                showroom_dir=showroom_dir,
+            )
 
 
 class CliIntegrationTests(ProjectDeliveryCase):
