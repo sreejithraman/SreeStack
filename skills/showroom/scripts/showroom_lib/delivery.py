@@ -68,7 +68,10 @@ def validate_description(value: Any) -> dict[str, Any]:
         item = _object(
             raw,
             f"delivery surface {name!r}",
-            {"start", "verify", "lifecycle_owner", "provider", "required_arguments"},
+            {
+                "start", "verify", "lifecycle_owner", "provider", "required_arguments",
+                "start_credentials", "verify_credentials",
+            },
             {"start", "verify", "lifecycle_owner", "required_arguments"},
         )
         owner = item["lifecycle_owner"]
@@ -91,6 +94,18 @@ def validate_description(value: Any) -> dict[str, Any]:
             or len(set(required_arguments)) != len(required_arguments)
         ):
             raise ConfigurationError(f"delivery surface {name!r} required_arguments must be unique names")
+        credential_fields: dict[str, tuple[str, ...]] = {}
+        for field in ("start_credentials", "verify_credentials"):
+            credentials = item.get(field, [])
+            if (
+                not isinstance(credentials, list)
+                or not all(isinstance(credential, str) and credential == "apple" for credential in credentials)
+                or len(credentials) != len(set(credentials))
+            ):
+                raise ConfigurationError(
+                    f"delivery surface {name!r} {field} supports only one apple credential"
+                )
+            credential_fields[field] = tuple(credentials)
         if name == "device" and (
             owner != "manual" or "provider" in item or required_arguments
         ):
@@ -109,6 +124,7 @@ def validate_description(value: Any) -> dict[str, Any]:
             "lifecycle_owner": owner,
             "provider": provider,
             "required_arguments": tuple(required_arguments),
+            **credential_fields,
         }
     return {"protocol_version": PROTOCOL_VERSION, "surfaces": surfaces}
 
@@ -279,6 +295,7 @@ def run_delivery(
     required_arguments: tuple[str, ...],
     worktree: Path,
     showroom_dir: Path,
+    environment: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     missing = [name for name in required_arguments if not arguments.get(name)]
     if missing:
@@ -293,12 +310,15 @@ def run_delivery(
     argv.extend(("--result-json", str(result_path)))
     try:
         completed = subprocess.run(
-            argv, cwd=worktree, check=False, capture_output=True, text=True, shell=False, timeout=20 * 60,
+            argv, cwd=worktree, check=False, capture_output=True, text=True, shell=False,
+            timeout=20 * 60, env=environment,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise AdapterError(f"delivery {operation} failed: {exc}") from exc
+    stdout = _redact_environment(completed.stdout, environment)
+    stderr = _redact_environment(completed.stderr, environment)
     log_path.write_text(
-        f"command: {json.dumps(argv)}\nexit: {completed.returncode}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
+        f"command: {json.dumps(argv)}\nexit: {completed.returncode}\nstdout:\n{stdout}\nstderr:\n{stderr}",
         encoding="utf-8",
     )
     os.chmod(log_path, 0o600)
@@ -315,3 +335,15 @@ def run_delivery(
         raise AdapterError(f"delivery {operation} exited {completed.returncode} but reported passed; see {log_path}")
     result["log_paths"] = [*result["log_paths"], str(log_path)]
     return result
+
+
+def _redact_environment(value: str, environment: dict[str, str] | None) -> str:
+    text = value
+    for name, secret in (environment or {}).items():
+        if (
+            name.startswith("SHOWROOM_APPLE_")
+            and name != "SHOWROOM_APPLE_PROFILE"
+            and secret
+        ):
+            text = text.replace(secret, "[redacted]")
+    return text

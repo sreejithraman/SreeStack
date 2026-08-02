@@ -4,7 +4,7 @@ The checked-in command prefix from `.showroom.toml` implements protocol version 
 
 ## Describe
 
-`<delivery> describe --json` must only inspect checked-in project facts. It returns the shape defined by [delivery-description.schema.json](delivery-description.schema.json). `start` and `verify` are argv suffixes. Device takes no required argument. TestFlight requires `build-number`, which Showroom saves for later checks.
+`<delivery> describe --json` must only inspect checked-in project facts. It returns the shape defined by [delivery-description.schema.json](delivery-description.schema.json). `start` and `verify` are argv suffixes. Device takes no required argument. TestFlight requires `build-number`, which Showroom saves for later checks. An operation that needs the shared Apple profile declares `start_credentials` or `verify_credentials` as `["apple"]`; Showroom then fails closed when that profile is missing or locked.
 
 ## Start and verify
 

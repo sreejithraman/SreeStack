@@ -111,6 +111,10 @@ class CliTests(unittest.TestCase):
         self.run_cli("start", "--adapter", "evidence-only", "--json")
         self.assertFalse(marker.exists())
 
+    def test_apple_status_without_profiles_is_empty(self) -> None:
+        result = json.loads(self.run_cli("apple", "status", "--json").stdout)
+        self.assertEqual(result, {"default_profile": None, "profiles": []})
+
 
 if __name__ == "__main__":
     unittest.main()

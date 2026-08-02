@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from . import __version__
+from .apple import list_profiles, lock_profile, profile_status, setup_profile, unlock_profile
 from .core import cleanup, doctor, get_record, list_records, register, renew, resolve_id, set_pinned, start, stop, verify
 from .errors import ShowroomError
 from .paths import state_root
@@ -50,6 +51,25 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser.add_argument("project", nargs="?")
     doctor_parser.add_argument("--cwd", type=Path, default=Path.cwd())
     _add_common(doctor_parser)
+
+    apple_parser = commands.add_parser("apple", help="manage shared local Apple signing profiles")
+    apple_commands = apple_parser.add_subparsers(dest="apple_command", required=True)
+    apple_setup = apple_commands.add_parser("setup", help="create one machine-wide signing profile")
+    apple_setup.add_argument("--profile", default="default")
+    apple_setup.add_argument("--team-id", required=True)
+    apple_setup.add_argument("--key-id", required=True)
+    apple_setup.add_argument("--issuer-id", required=True)
+    apple_setup.add_argument("--api-key", type=Path, required=True)
+    apple_setup.add_argument("--certificate", type=Path, action="append", required=True)
+    apple_setup.add_argument("--unlock-hours", type=float, default=8.0)
+    apple_setup.add_argument("--default", action="store_true", dest="make_default")
+    _add_common(apple_setup)
+    for name in ("status", "unlock", "lock"):
+        child = apple_commands.add_parser(name)
+        child.add_argument("--profile")
+        if name == "unlock":
+            child.add_argument("--hours", type=float)
+        _add_common(child)
 
     register_parser = commands.add_parser("register", help="register a hosted or evidence review surface")
     register_parser.add_argument("--cwd", type=Path, default=Path.cwd())
@@ -138,6 +158,28 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.project,
                 args.surface,
             )
+        elif args.command == "apple":
+            if args.apple_command == "setup":
+                result = setup_profile(
+                    root,
+                    name=args.profile,
+                    team_id=args.team_id,
+                    key_id=args.key_id,
+                    issuer_id=args.issuer_id,
+                    api_key_path=args.api_key,
+                    certificates=args.certificate,
+                    unlock_seconds=int(args.unlock_hours * 60 * 60),
+                    make_default=args.make_default,
+                )
+            elif args.apple_command == "status":
+                result = profile_status(root, args.profile) if args.profile else list_profiles(root)
+            elif args.apple_command == "unlock":
+                result = unlock_profile(root, args.profile, hours=args.hours)
+            elif args.apple_command == "lock":
+                result = lock_profile(root, args.profile)
+            else:  # pragma: no cover - argparse enforces this
+                parser.error(f"unsupported apple command: {args.apple_command}")
+                return 2
         elif args.command == "list":
             result = list_records(registry)
         elif args.command == "doctor":

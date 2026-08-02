@@ -27,6 +27,7 @@ Adapters are internal seams. `web-local` and `ios-simulator` own local resources
 - Other platforms: `$XDG_STATE_HOME/showroom/` or `~/.local/state/showroom/`.
 - Registry: atomic, locked JSON with schema versioning.
 - Per-showroom directories: logs, evidence, generated launchd property lists, and non-secret metadata.
+- Apple profiles: non-secret metadata plus dedicated macOS keychains under `credentials/apple/`.
 - macOS LaunchAgents: generated under the state directory and loaded into the current GUI user domain only after explicit authorization.
 
 No state path, hostname, credential, provider token, generated property list, simulator UDID, or personal signing setting is committed.
@@ -46,6 +47,8 @@ The web adapter writes exact ownership metadata before its first external mutati
 Showroom detects common project files and follows checked-in scripts, Xcode containers, shared schemes, and release workflows. Ambiguous repos may use `.showroom.toml` to name one project, Xcode project, scheme, and delivery command. Runtime and machine values remain outside this file.
 
 The delivery command describes its Device and TestFlight surfaces without side effects. Showroom passes a private result path to start and verify actions, then validates the result against the versioned contract. Device uses manual lifecycle ownership and a 24-hour record. TestFlight uses provider ownership and no guessed expiration. Neither stop path removes the external resource.
+
+An operation can declare the global Apple credential capability. Showroom fails closed when it is absent or locked. During a run, a machine lock protects the user's keychain search list, a temporary API key file stays under private state, and a `finally` path restores and removes both run-scoped changes. Repositories receive only run-scoped environment values and never own the credentials.
 
 ## Registry and common result
 

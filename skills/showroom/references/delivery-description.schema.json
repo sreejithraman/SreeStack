@@ -23,6 +23,12 @@
       "minItems": 1,
       "items": { "type": "string", "minLength": 1 }
     },
+    "credentials": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "const": "apple" },
+      "maxItems": 1
+    },
     "device": {
       "type": "object",
       "additionalProperties": false,
@@ -31,6 +37,8 @@
         "start": { "$ref": "#/$defs/argv" },
         "verify": { "$ref": "#/$defs/argv" },
         "lifecycle_owner": { "const": "manual" },
+        "start_credentials": { "$ref": "#/$defs/credentials" },
+        "verify_credentials": { "$ref": "#/$defs/credentials" },
         "required_arguments": {
           "type": "array",
           "maxItems": 0
@@ -46,6 +54,8 @@
         "verify": { "$ref": "#/$defs/argv" },
         "lifecycle_owner": { "const": "provider" },
         "provider": { "type": "string", "minLength": 1 },
+        "start_credentials": { "$ref": "#/$defs/credentials" },
+        "verify_credentials": { "$ref": "#/$defs/credentials" },
         "required_arguments": {
           "const": ["build-number"]
         }

@@ -12,9 +12,10 @@ Give the reviewer a surface they can use. A build or test supports the surface; 
 1. Detect the repo, worktree, project, and native run or release path. If `.showroom.toml` exists, read [configuration.md](references/configuration.md). Finish when one project and target surface are clear.
 2. Read [contract.md](references/contract.md). Pick the first fit: an existing project surface, a durable provider surface, a local platform surface, then evidence only. Finish when the choice and its owner are clear.
 3. Run `showroom doctor [project] --json`. Use `python3 <skill-dir>/scripts/showroom` when `showroom` is not on `PATH`. If a delivery command fails, read [delivery-command.md](references/delivery-command.md), inspect the repo's current release script, and repair the smallest checked-in command plus contract tests. Finish when doctor passes without delivery side effects.
-4. Start or register the surface. Keep approval needs clear for auth, public access, spend, and durable resources. Finish when one normalized record owns the exact local resources or names the external owner.
-5. Verify through the closest user surface. Capture visible proof for visual work. Finish when `showroom verify <id> --json` records the current result.
-6. Return the record with its location, evidence, limits, end time, and exact inspect, verify, renew, pin, unpin, and stop commands.
+4. When the chosen delivery operation declares Apple credentials, read [apple-signing.md](references/apple-signing.md) and run `showroom apple status --json`. Ask for the one-time setup or session unlock only when status names that need. Finish when the global profile is ready without copying credentials into the worktree.
+5. Start or register the surface. Keep approval needs clear for auth, public access, spend, and durable resources. Finish when one normalized record owns the exact local resources or names the external owner.
+6. Verify through the closest user surface. Capture visible proof for visual work. Finish when `showroom verify <id> --json` records the current result.
+7. Return the record with its location, evidence, limits, end time, and exact inspect, verify, renew, pin, unpin, and stop commands.
 
 ## Selection
 
@@ -37,6 +38,7 @@ Use an installed `vercel-deploy`, `netlify-deploy`, `cloudflare-deploy`, or `ren
 - Never invoke Tailscale Funnel without explicit approval.
 - Require approval for public access, provider deployment, persistent services, user settings, and TestFlight uploads.
 - Store runtime state outside the repo. Keep host names, tokens, credentials, device IDs, and signing data out of checked-in config.
+- Keep Apple credentials in the dedicated global profile. Require an explicit session unlock and fail closed when a delivery operation declares Apple credentials.
 - Act only on exact Showroom-owned resources. For manual and provider delivery, stop the record and leave the external app or build unchanged.
 - Do not reset Tailscale, kill by process name or port, erase normal simulators, or delete unrelated provider resources.
 - Run `showroom cleanup --dry-run` before material cleanup and show exact targets when approval is needed.

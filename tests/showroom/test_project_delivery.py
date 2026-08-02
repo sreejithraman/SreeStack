@@ -132,6 +132,15 @@ class ProtocolTests(ProjectDeliveryCase):
                 "required_arguments": [], "extra": True,
             }}})
 
+    def test_description_accepts_explicit_apple_credentials(self) -> None:
+        value = validate_description({"protocol_version": 1, "surfaces": {"testflight": {
+            "start": ["testflight", "upload"], "verify": ["testflight", "verify"],
+            "lifecycle_owner": "provider", "provider": "app-store-connect",
+            "required_arguments": ["build-number"],
+            "start_credentials": ["apple"], "verify_credentials": ["apple"],
+        }}})
+        self.assertEqual(value["surfaces"]["testflight"]["start_credentials"], ("apple",))
+
     def test_description_rejects_wrong_lifecycle_and_argument_shapes(self) -> None:
         for value in (
             {"protocol_version": True, "surfaces": {"device": {
@@ -298,6 +307,34 @@ class ProtocolTests(ProjectDeliveryCase):
                 worktree=self.repo,
                 showroom_dir=showroom_dir,
             )
+
+    def test_delivery_log_redacts_shared_apple_environment(self) -> None:
+        showroom_dir = self.root / "state"
+        environment = {
+            **os.environ,
+            "SHOWROOM_APPLE_PROFILE": "personal",
+            "SHOWROOM_APPLE_KEY_PATH": "/private/secret/key.p8",
+        }
+        with self.assertRaisesRegex(AdapterError, "did not write result JSON"):
+            run_delivery(
+                command=(
+                    sys.executable,
+                    "-c",
+                    "import os; print('personal', os.environ['SHOWROOM_APPLE_KEY_PATH'])",
+                ),
+                operation_argv=("device", "verify"),
+                surface="device",
+                operation="verify",
+                arguments={},
+                required_arguments=(),
+                worktree=self.repo,
+                showroom_dir=showroom_dir,
+                environment=environment,
+            )
+        log = (showroom_dir / "delivery-device-verify.log").read_text()
+        self.assertNotIn("/private/secret/key.p8", log)
+        self.assertIn("[redacted]", log)
+        self.assertIn("personal", log)
 
 
 class CliIntegrationTests(ProjectDeliveryCase):

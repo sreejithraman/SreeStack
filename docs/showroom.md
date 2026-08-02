@@ -34,6 +34,8 @@ python3 -m unittest discover -s tests/showroom -v
 - `cleanup [--dry-run]`: reconcile expired, missing-worktree, stopped, and stale local-resource records. Dry-run includes exact adapter commands and paths when available.
 - `doctor [project]`: report state, platform, project config, and delivery-contract checks without starting delivery.
 - `register`: normalize an externally created hosted or evidence-only surface.
+- `apple setup`: create a shared local signing profile once for all repositories and worktrees.
+- `apple status` / `apple unlock` / `apple lock`: inspect or control its session access.
 
 Use `--json` for Codex workflows. Exit code `0` indicates command success, `1` indicates a completed but unhealthy verification/doctor/cleanup result, and `2` indicates invalid input or a blocked operation.
 
@@ -92,6 +94,8 @@ The iOS adapter detects one checked-in Xcode container and one shared scheme. If
 Simulator operations require a working Xcode/CoreSimulator user session. A build without a launched app and visual evidence remains unverified.
 
 TestFlight stays outside the per-edit Simulator adapter. A named project's delivery command may advertise Device and TestFlight support. Showroom validates its result, saves its logs, and re-runs its read-only verify action. Device records have a 24-hour lease and manual ownership. TestFlight records use provider ownership and no guessed end time. Stopping either record leaves the installed app or provider build unchanged.
+
+A delivery operation may declare a required shared Apple profile. Showroom keeps that profile under its machine state, not the repository. One setup imports non-extractable signing identities into a dedicated keychain and stores the App Store Connect key there. One session unlock serves every repository and worktree until timeout, sleep, logout, reboot, or `showroom apple lock`. Showroom adds the keychain only for the serialized delivery run, lends a temporary API-key file through process environment, then restores the search list and removes the file. See `skills/showroom/references/apple-signing.md`.
 
 `showroom doctor <project>` calls only the delivery command's side-effect-free `describe --json` action.
 

@@ -16,7 +16,7 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `launch-swarm` | Build a direct task or spec-rooted ticket set and deliver merge-ready PRs, stacked where needed. |
 | `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
 | `motion-websites` | Art-direct, motion-score, build, and verify expressive websites. |
-| `showroom` | Create, verify, lease, and hand off the best available cross-project review surface. |
+| `showroom` | Create, verify, lease, and hand off review surfaces, with shared local Apple delivery profiles. |
 | `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
 | `review-push-and-watch` | Review, publish, watch, and fix one GitHub PR until ready or blocked. |
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
