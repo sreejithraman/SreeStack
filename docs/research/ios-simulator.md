@@ -3,7 +3,7 @@
 Research date: 2026-07-20
 
 This note records the Apple-supported interfaces relevant to an iOS preview
-adapter and separates them from `previewctl` policy. The local first-party
+adapter and separates them from `showroom` policy. The local first-party
 command reference was inspected with Xcode 26.6 (build 17F113). No Simulator
 device was created, cloned, booted, erased, modified, or deleted during this
 research.
@@ -32,7 +32,7 @@ research.
   limitation. [Apple: Running on simulated or physical
   devices][apple-run-destinations]
 - Ownership is not built into `simctl`. “Manager-owned clone,” lease, reuse,
-  worktree identity, and exact-resource cleanup are `previewctl` concepts. The
+  worktree identity, and exact-resource cleanup are `showroom` concepts. The
   registry must therefore be the authority for destructive actions.
 
 ## Source classification
@@ -188,7 +188,7 @@ registered UDID.
 1. Create a manager-owned template for an explicit device type/runtime, or
    select only a previously registered manager template.
 2. Clone that manager-owned template for each stable project/worktree/device
-   configuration. Give the clone a human-readable `previewctl` prefix, but use
+   configuration. Give the clone a human-readable `showroom` prefix, but use
    its returned UDID—not its name—as identity.
 3. Record `manager_owned: true`, the clone UDID, source template UDID, device
    type, runtime, Xcode build, project/worktree identity, and creation time
@@ -304,7 +304,7 @@ XCUIApplication launch][apple-xcui-launch]
 **Implementation inference.** When a project supplies a preview-navigation UI
 test, run it against the exact destination UDID with a result bundle and retain
 the selected test identifier. Prefer a small, deterministic navigation test
-over encoding app-specific UI logic in `previewctl`. Treat its assertions and
+over encoding app-specific UI logic in `showroom`. Treat its assertions and
 `XCUIApplication` state as stronger interactive verification than a bare
 `simctl launch`.
 

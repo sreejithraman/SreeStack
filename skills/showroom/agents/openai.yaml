@@ -1,0 +1,4 @@
+interface:
+  display_name: "Showroom"
+  short_description: "Create verified project review surfaces"
+  default_prompt: "Use $showroom to create and verify the best available review surface for this project."

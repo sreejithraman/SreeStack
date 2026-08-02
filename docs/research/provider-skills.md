@@ -12,20 +12,20 @@ Researched 2026-07-20 from the current Codex manual and the official OpenAI skil
 
 ## Recommended seam
 
-Keep provider dispatch in the `preview` skill:
+Keep provider dispatch in the `showroom` skill:
 
-1. Detect an existing project-native PR or branch preview before creating anything.
+1. Detect an existing project-native PR or branch surface before creating anything.
 2. If durable hosting is requested or required, select an installed provider skill from project configuration and invoke it as an agent workflow.
-3. Verify the returned surface according to the preview contract when provider policy permits.
-4. Normalize the provider result into `previewctl` with a provider-neutral registration command or evidence-only record.
+3. Verify the returned surface according to the review-surface contract when provider policy permits.
+4. Normalize the provider result into `showroom` with a provider-neutral registration command or evidence-only record.
 
-Keep `previewctl` responsible for project/worktree identity, local adapters, registry records, leases, normalized rendering, verification metadata, and exact cleanup. Do not put provider deployment commands, credentials, or provider-specific schemas in the CLI core.
+Keep `showroom` responsible for project/worktree identity, local adapters, registry records, leases, normalized rendering, verification metadata, and exact cleanup. Do not put provider deployment commands, credentials, or provider-specific schemas in the CLI core.
 
-Provider records should allow opaque fields such as `provider_resource_id`, `provider_url`, and lifecycle ownership (`previewctl`, `provider`, or `pull-request`). Cleanup should report provider-owned resources rather than deleting them unless an installed provider workflow explicitly supplies an exact, authorized deletion action.
+Provider records should allow opaque fields such as `provider_resource_id`, `provider_url`, and lifecycle ownership (`showroom`, `provider`, or `pull-request`). Cleanup should report provider-owned resources rather than deleting them unless an installed provider workflow explicitly supplies an exact, authorized deletion action.
 
 ## Installation implication
 
-The `preview` skill may recommend installing a missing curated provider skill, but it must not silently install one. Absence of a hosted-provider skill falls through to a local platform adapter or evidence-only handoff.
+The `showroom` skill may recommend installing a missing curated provider skill, but it must not silently install one. Absence of a hosted-provider skill falls through to a local platform adapter or evidence-only handoff.
 
 ## Residual uncertainty
 

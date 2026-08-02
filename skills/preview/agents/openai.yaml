@@ -1,4 +1,0 @@
-interface:
-  display_name: "Preview"
-  short_description: "Create verified project review surfaces"
-  default_prompt: "Use $preview to create and verify the best available review surface for this project."

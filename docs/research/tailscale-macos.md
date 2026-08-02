@@ -2,7 +2,7 @@
 
 Research date and source access date: **2026-07-20**. This note covers the
 web-local adapter only. It records current provider and platform behavior,
-then derives implementation requirements for `previewctl`. It does not
+then derives implementation requirements for `showroom`. It does not
 authorize or perform any Tailscale, Funnel, Services, or `launchd` mutation.
 
 ## Recommendation
@@ -106,7 +106,7 @@ Implementation implications:
   operation. Do not reconstruct cleanup flags from project state that may have
   changed.
 - Never use `tailscale serve reset` during normal stop or cleanup because it
-  can remove routes not created by `previewctl`.
+  can remove routes not created by `showroom`.
 - Treat “already absent” as success during idempotent stop. Treat “present but
   no longer matches the registry-owned target” as a conflict requiring manual
   review, not permission to remove it.
@@ -207,7 +207,7 @@ Policy:
   an administrator has defined/approved the service or configured
   auto-approval, and the user has deliberately opted into that topology.
 - Never tag or reauthenticate the developer's Mac, create a tailnet service,
-  edit policy, or approve an advertisement from `previewctl`.
+  edit policy, or approve an advertisement from `showroom`.
 - Services start in background mode automatically. Verification must check the
   configured endpoint and approval/advertisement state; pending approval is
   not a successful preview.
@@ -385,7 +385,7 @@ Read-only `doctor` should report, without trying to repair:
    evidence, use fixture tests from supported client versions, and fail closed
    on an unknown shape.
 2. **Port creation is not documented as atomic.** Registry locking protects
-   cooperating `previewctl` processes, not a concurrent human Tailscale CLI
+   cooperating `showroom` processes, not a concurrent human Tailscale CLI
    command. Recheck immediately before and after creation; never overwrite a
    surprising route.
 3. **HTTPS setup can be interactive and tailnet-wide.** There is no basis for
