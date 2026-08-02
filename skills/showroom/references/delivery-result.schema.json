@@ -27,6 +27,7 @@
         "detail": { "type": "string" },
         "checks": {
           "type": "object",
+          "propertyNames": { "minLength": 1 },
           "additionalProperties": { "$ref": "#/$defs/status" }
         }
       }

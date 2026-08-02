@@ -142,6 +142,10 @@ class ProtocolTests(ProjectDeliveryCase):
                 "start": ["device", "install"], "verify": ["device", "verify"],
                 "lifecycle_owner": "provider", "provider": "vendor", "required_arguments": [],
             }}},
+            {"protocol_version": 1, "surfaces": {"device": {
+                "start": ["device", "install"], "verify": ["device", "verify"],
+                "lifecycle_owner": "manual", "provider": None, "required_arguments": [],
+            }}},
             {"protocol_version": 1, "surfaces": {"testflight": {
                 "start": ["testflight", "upload"], "verify": ["testflight", "verify"],
                 "lifecycle_owner": "provider", "provider": "app-store-connect",

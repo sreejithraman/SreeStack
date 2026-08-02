@@ -91,7 +91,9 @@ def validate_description(value: Any) -> dict[str, Any]:
             or len(set(required_arguments)) != len(required_arguments)
         ):
             raise ConfigurationError(f"delivery surface {name!r} required_arguments must be unique names")
-        if name == "device" and (owner != "manual" or provider is not None or required_arguments):
+        if name == "device" and (
+            owner != "manual" or "provider" in item or required_arguments
+        ):
             raise ConfigurationError(
                 "device delivery must use manual ownership, no provider, and no required arguments"
             )
