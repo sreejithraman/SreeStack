@@ -2,7 +2,7 @@
 
 ## Project discovery
 
-Showroom owns no project file. Detect the project from checked-in native files and use its existing scripts, schemes, release paths, and provider setup. When discovery is ambiguous, stop with the exact choices or register a surface created through the project's own workflow.
+Detect the project from checked-in native files and use its existing scripts, schemes, release paths, and provider setup. When discovery is ambiguous, use optional [configuration.md](configuration.md) to name stable project facts.
 
 Keep runtime state, hostnames, ports, Simulator IDs, personal signing values, and credentials outside the repository. Machine registry records follow [registry.schema.json](registry.schema.json).
 

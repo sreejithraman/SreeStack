@@ -28,10 +28,13 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     start_parser = commands.add_parser("start", help="start or return the current worktree showroom")
+    start_parser.add_argument("project", nargs="?")
+    start_parser.add_argument("surface", nargs="?", choices=("simulator", "device", "testflight"))
     start_parser.add_argument("--adapter")
     start_parser.add_argument("--cwd", type=Path, default=Path.cwd())
     start_parser.add_argument("--approve-persistence", action="store_true", help="authorize adapter-owned persistent user service changes")
     start_parser.add_argument("--approve-tailscale-config", action="store_true", help="authorize exact Tailscale Serve configuration changes")
+    start_parser.add_argument("--build-number")
     _add_common(start_parser)
     for name in ("status", "verify", "pin", "unpin", "stop"):
         _add_common(commands.add_parser(name), identifier=True)
@@ -43,7 +46,10 @@ def build_parser() -> argparse.ArgumentParser:
     cleanup_parser = commands.add_parser("cleanup")
     cleanup_parser.add_argument("--dry-run", action="store_true")
     _add_common(cleanup_parser)
-    _add_common(commands.add_parser("doctor"))
+    doctor_parser = commands.add_parser("doctor")
+    doctor_parser.add_argument("project", nargs="?")
+    doctor_parser.add_argument("--cwd", type=Path, default=Path.cwd())
+    _add_common(doctor_parser)
 
     register_parser = commands.add_parser("register", help="register a hosted or evidence review surface")
     register_parser.add_argument("--cwd", type=Path, default=Path.cwd())
@@ -52,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
     register_parser.add_argument("--type", dest="record_type", required=True)
     register_parser.add_argument("--provider")
     register_parser.add_argument("--provider-resource-id")
-    register_parser.add_argument("--lifecycle-owner", choices=("showroom", "provider", "pull-request", "pr"), default="provider")
+    register_parser.add_argument("--lifecycle-owner", choices=("showroom", "provider", "pull-request", "pr", "manual"), default="provider")
     surface = register_parser.add_mutually_exclusive_group(required=True)
     surface.add_argument("--url")
     surface.add_argument("--device")
@@ -124,12 +130,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 root,
                 args.cwd,
                 args.adapter,
-                {"persistence": args.approve_persistence, "tailscale_config": args.approve_tailscale_config},
+                {
+                    "persistence": args.approve_persistence,
+                    "tailscale_config": args.approve_tailscale_config,
+                    "delivery_arguments": {"build-number": args.build_number} if args.build_number else {},
+                },
+                args.project,
+                args.surface,
             )
         elif args.command == "list":
             result = list_records(registry)
         elif args.command == "doctor":
-            result = doctor(registry)
+            result = doctor(registry, args.cwd, args.project)
         elif args.command == "cleanup":
             result = cleanup(registry, root, args.dry_run)
         elif args.command == "register":

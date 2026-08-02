@@ -16,9 +16,15 @@ python3 ~/.agents/skills/showroom/scripts/showroom --help
 
 An optional executable symlink on `PATH` is a user configuration change; create it only with explicit approval.
 
+Run the standard-library test suite from the source checkout:
+
+```sh
+python3 -m unittest discover -s tests/showroom -v
+```
+
 ## Commands
 
-- `start`: detect the project and return an existing healthy lease or start the selected local adapter.
+- `start [project] [simulator|device|testflight]`: return an existing healthy record or start the selected surface. A named project defaults to Simulator.
 - `status [id]`: return one normalized record. Without an ID, resolve the current worktree/profile.
 - `list`: list machine records.
 - `verify [id]`: exercise the adapter's real surface and update verification evidence.
@@ -26,7 +32,7 @@ An optional executable symlink on `PATH` is a user configuration change; create 
 - `pin [id]` / `unpin [id]`: disable expiration or create a fresh lease.
 - `stop [id]`: stop only exact registered resources.
 - `cleanup [--dry-run]`: reconcile expired, missing-worktree, stopped, and stale local-resource records. Dry-run includes exact adapter commands and paths when available.
-- `doctor`: report state-directory and platform prerequisites without repairing them.
+- `doctor [project]`: report state, platform, project config, and delivery-contract checks without starting delivery.
 - `register`: normalize an externally created hosted or evidence-only surface.
 
 Use `--json` for Codex workflows. Exit code `0` indicates command success, `1` indicates a completed but unhealthy verification/doctor/cleanup result, and `2` indicates invalid input or a blocked operation.
@@ -35,7 +41,29 @@ Each stored handoff renders lifecycle commands with the exact Python interpreter
 
 ## Project discovery
 
-Showroom owns no project dotfile. It detects common project files and uses checked-in native run paths. Web projects use an existing `dev` or `start` package script. iOS projects use checked-in Xcode containers and shared schemes. When a repository has more than one valid path, use its own tooling to create the surface and then call `showroom register`.
+Showroom detects common project files and uses checked-in native run paths. Web projects use an existing `dev` or `start` package script. iOS projects use checked-in Xcode containers and shared schemes.
+
+An ambiguous repo may add `.showroom.toml` with stable project facts:
+
+```toml
+version = 1
+
+[deal]
+project = "ios/Deal/Deal.xcodeproj"
+scheme = "Deal"
+delivery = ["node", "scripts/deal-delivery.mjs"]
+```
+
+Run named surfaces as:
+
+```sh
+showroom start deal
+showroom start deal device
+showroom start deal testflight --build-number 12
+showroom doctor deal
+```
+
+See `skills/showroom/references/configuration.md` and `delivery-command.md` for the strict contracts. Keep runtime signing, account, device, and build data outside TOML.
 
 The registry definition is in the skill's `references/registry.schema.json`.
 
@@ -63,7 +91,9 @@ The iOS adapter detects one checked-in Xcode container and one shared scheme. If
 
 Simulator operations require a working Xcode/CoreSimulator user session. A build without a launched app and visual evidence remains unverified.
 
-TestFlight is deliberately outside the per-edit Simulator adapter. Use a project's existing authorized distribution workflow only for meaningful durable checkpoints, then register the resulting review surface without storing signing or App Store credentials in `showroom`.
+TestFlight stays outside the per-edit Simulator adapter. A named project's delivery command may advertise Device and TestFlight support. Showroom validates its result, saves its logs, and re-runs its read-only verify action. Device records have a 24-hour lease and manual ownership. TestFlight records use provider ownership and no guessed end time. Stopping either record leaves the installed app or provider build unchanged.
+
+`showroom doctor <project>` calls only the delivery command's side-effect-free `describe --json` action.
 
 ## Hosted registration
 
@@ -82,5 +112,5 @@ showroom register \
   --json
 ```
 
-`showroom` records provider resources but does not duplicate deployment or deletion logic from provider skills. Provider- and pull-request-owned resources are not deleted by generic cleanup. `showroom stop` on such a record stops only the local registration and marks its verification stale; the external resource remains owned by its provider or pull-request lifecycle.
+`showroom` records provider resources but does not duplicate deployment or deletion logic from provider skills. Provider-, pull-request-, and manual-owned resources are not deleted by generic cleanup. `showroom stop` on such a record stops only the local record and marks its verification stale; the external resource keeps its own lifecycle.
 Registered URLs are health-checked through a provider-neutral HTTP probe. Artifacts are checked for existence. A recorded command is not considered verified until its execution transcript or equivalent evidence is attached.
