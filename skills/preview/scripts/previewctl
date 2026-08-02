@@ -5,7 +5,7 @@ import sys
 
 sys.dont_write_bytecode = True
 
-from previewctl_lib.cli import main
+from previewctl_lib.cli import main  # noqa: E402
 
 
 if __name__ == "__main__":
