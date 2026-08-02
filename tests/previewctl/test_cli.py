@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -74,6 +75,29 @@ class CliTests(unittest.TestCase):
         result = self.run_cli("cleanup", "--dry-run", "--json")
         self.assertEqual(json.loads(result.stdout)["actions"], [])
         self.assertFalse(self.state.exists())
+
+    def test_cli_does_not_write_bytecode_into_skill(self) -> None:
+        skill = self.root / "preview"
+        shutil.copytree(
+            ROOT / "skills" / "preview",
+            skill,
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+        env = dict(self.env)
+        env.pop("PYTHONDONTWRITEBYTECODE", None)
+        env.pop("PYTHONPYCACHEPREFIX", None)
+
+        result = subprocess.run(
+            [str(skill / "scripts" / "previewctl"), "--version"],
+            cwd=self.repo,
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(list(skill.rglob("__pycache__")), [])
+        self.assertEqual(list(skill.rglob("*.pyc")), [])
 
     def test_verify_failed_exits_one_with_json_record(self) -> None:
         record = json.loads(self.run_cli("start", "--adapter", "evidence-only", "--json").stdout)
