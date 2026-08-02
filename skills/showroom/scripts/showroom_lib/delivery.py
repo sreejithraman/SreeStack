@@ -17,25 +17,35 @@ STATUSES = {"pending", "passed", "failed", "blocked", "stale"}
 ARGUMENT_NAME = re.compile(r"^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$")
 
 
-def _object(value: Any, label: str, allowed: set[str], required: set[str]) -> dict[str, Any]:
+def _object(
+    value: Any,
+    label: str,
+    allowed: set[str],
+    required: set[str],
+    error_type: type[ConfigurationError | AdapterError] = ConfigurationError,
+) -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise ConfigurationError(f"{label} must be an object")
+        raise error_type(f"{label} must be an object")
     unknown = set(value) - allowed
     missing = required - set(value)
     if unknown:
-        raise ConfigurationError(f"{label} has unknown field(s): {', '.join(sorted(unknown))}")
+        raise error_type(f"{label} has unknown field(s): {', '.join(sorted(unknown))}")
     if missing:
-        raise ConfigurationError(f"{label} is missing field(s): {', '.join(sorted(missing))}")
+        raise error_type(f"{label} is missing field(s): {', '.join(sorted(missing))}")
     return value
 
 
-def _argv(value: Any, label: str) -> tuple[str, ...]:
+def _argv(
+    value: Any,
+    label: str,
+    error_type: type[ConfigurationError | AdapterError] = ConfigurationError,
+) -> tuple[str, ...]:
     if (
         not isinstance(value, list)
         or not value
         or not all(isinstance(item, str) and item for item in value)
     ):
-        raise ConfigurationError(f"{label} must be a nonempty command array")
+        raise error_type(f"{label} must be a nonempty command array")
     return tuple(value)
 
 
@@ -162,10 +172,16 @@ def validate_result(
         "protocol_version", "surface", "operation", "verification", "location", "provider",
         "provider_resource_id", "evidence_paths", "log_paths", "availability_limitations",
     }
-    document = _object(value, "delivery result", allowed, {
-        "protocol_version", "surface", "operation", "verification", "location", "evidence_paths",
-        "log_paths", "availability_limitations",
-    })
+    document = _object(
+        value,
+        "delivery result",
+        allowed,
+        {
+            "protocol_version", "surface", "operation", "verification", "location",
+            "evidence_paths", "log_paths", "availability_limitations",
+        },
+        AdapterError,
+    )
     if type(document["protocol_version"]) is not int or document["protocol_version"] != PROTOCOL_VERSION:
         raise AdapterError(f"unsupported delivery result protocol version: {document['protocol_version']!r}")
     if document["surface"] != surface or document["operation"] != operation:
@@ -175,6 +191,7 @@ def validate_result(
         "delivery result verification",
         {"status", "detail", "checks"},
         {"status", "detail", "checks"},
+        AdapterError,
     )
     if (
         not isinstance(verification["status"], str)
@@ -192,12 +209,17 @@ def validate_result(
         "delivery result location",
         {"url", "device", "artifact", "command"},
         set(),
+        AdapterError,
     )
     normalized_location = {"url": None, "device": None, "artifact": None, "command": None}
     normalized_location.update(location)
     if normalized_location["command"] is not None:
         normalized_location["command"] = list(
-            _argv(normalized_location["command"], "delivery result location command")
+            _argv(
+                normalized_location["command"],
+                "delivery result location command",
+                AdapterError,
+            )
         )
     for key in ("url", "device"):
         if normalized_location[key] is not None and (

@@ -211,6 +211,16 @@ class ProtocolTests(ProjectDeliveryCase):
                 showroom_dir=self.root / "state",
             )
 
+    def test_malformed_result_is_an_adapter_error(self) -> None:
+        with self.assertRaisesRegex(AdapterError, "missing field"):
+            validate_result(
+                {"protocol_version": 1},
+                surface="device",
+                operation="verify",
+                worktree=self.repo,
+                showroom_dir=self.root / "state",
+            )
+
     def test_result_requires_the_surface_location(self) -> None:
         value = {
             "protocol_version": 1,
