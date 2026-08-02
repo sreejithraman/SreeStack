@@ -82,6 +82,17 @@ class IOSImageTests(unittest.TestCase):
         )
         self.assertFalse(self.assess(rich, rich)[0])
 
+    def test_rejects_system_chrome_around_blank_app_content(self) -> None:
+        before = bmp([(0, 0, 0)] * 400, 20, 20)
+        colors = []
+        for y in range(20):
+            for x in range(20):
+                if x < 2 or x >= 18 or y < 2 or y >= 18:
+                    colors.append((x * 10, y * 10, (x + y) * 5))
+                else:
+                    colors.append((255, 255, 255))
+        self.assertFalse(self.assess(before, bmp(colors, 20, 20))[0])
+
 
 if __name__ == "__main__":
     unittest.main()

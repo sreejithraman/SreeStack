@@ -65,13 +65,17 @@ def _sample_bmp(path: Path) -> tuple[bytes, ...]:
     row_size = ((width * bits_per_pixel + 31) // 32) * 4
     if offset + row_size * height > len(payload):
         raise IOSAdapterError(f"truncated screenshot bitmap: {path}")
-    x_step = max(1, width // 64)
-    y_step = max(1, height // 64)
+    x_start = width // 10
+    x_end = width - x_start
+    y_start = height // 10
+    y_end = height - y_start
+    x_step = max(1, (x_end - x_start) // 64)
+    y_step = max(1, (y_end - y_start) // 64)
     return tuple(
         payload[
             offset + y * row_size + x * bytes_per_pixel :
             offset + y * row_size + x * bytes_per_pixel + 3
         ]
-        for y in range(0, height, y_step)
-        for x in range(0, width, x_step)
+        for y in range(y_start, y_end, y_step)
+        for x in range(x_start, x_end, x_step)
     )
