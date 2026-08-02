@@ -265,7 +265,7 @@ def run_delivery(
     argv.extend(("--result-json", str(result_path)))
     try:
         completed = subprocess.run(
-            argv, cwd=worktree, check=False, capture_output=True, text=True, shell=False, timeout=60 * 60,
+            argv, cwd=worktree, check=False, capture_output=True, text=True, shell=False, timeout=20 * 60,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise AdapterError(f"delivery {operation} failed: {exc}") from exc

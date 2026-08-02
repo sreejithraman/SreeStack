@@ -92,6 +92,17 @@ class ProjectDeliveryAdapter:
         expected_provider = record.get("provider")
         if expected_provider and result["provider"] not in {None, expected_provider}:
             raise AdapterError("delivery verification provider changed")
+        if record.get("lifecycle_owner") == "manual" and (
+            result["provider"] or result["provider_resource_id"]
+        ):
+            raise AdapterError("manual delivery verification cannot claim a provider resource")
+        expected_resource = record.get("provider_resource_id")
+        if (
+            expected_resource
+            and result["provider_resource_id"]
+            and result["provider_resource_id"] != expected_resource
+        ):
+            raise AdapterError("delivery verification provider resource changed")
         if (
             record.get("lifecycle_owner") == "provider"
             and result["verification"]["status"] == "passed"

@@ -29,11 +29,12 @@ Give the reviewer a surface they can use. A build or test supports the surface; 
 
 Read [hosted-providers.md](references/hosted-providers.md) when durable hosting is needed.
 
-Use an installed provider skill for provider deployment. Do not copy its commands into Showroom. If the skill is missing, state that limit and use a local or evidence surface. Do not install or switch providers without approval.
+Use an installed `vercel-deploy`, `netlify-deploy`, `cloudflare-deploy`, or `render-deploy` skill for provider deployment. Do not copy its commands into Showroom. Then use `showroom register` to save the result and its provider, pull-request, or Showroom owner. If the skill is missing, state that limit and use a local or evidence surface. Do not install or switch providers without approval.
 
 ## Safety
 
 - Keep surfaces private by default.
+- Never invoke Tailscale Funnel without explicit approval.
 - Require approval for public access, provider deployment, persistent services, user settings, and TestFlight uploads.
 - Store runtime state outside the repo. Keep host names, tokens, credentials, device IDs, and signing data out of checked-in config.
 - Act only on exact Showroom-owned resources. For manual and provider delivery, stop the record and leave the external app or build unchanged.

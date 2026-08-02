@@ -58,6 +58,7 @@ result_path.write_text(json.dumps(result))
             encoding="utf-8",
         )
         self.fake.chmod(0o755)
+        subprocess.run(["git", "-C", str(self.repo), "add", "delivery.py"], check=True)
         self.config_path = self.repo / ".showroom.toml"
         self.config_path.write_text(
             f'''version = 1
@@ -85,6 +86,11 @@ class ConfigurationTests(ProjectDeliveryCase):
         with self.assertRaisesRegex(ConfigurationError, "unknown key"):
             configured_projects(detect_project(self.repo))
 
+    def test_config_version_requires_an_integer(self) -> None:
+        self.config_path.write_text(self.config_path.read_text().replace("version = 1", "version = true"), encoding="utf-8")
+        with self.assertRaisesRegex(ConfigurationError, "version = 1"):
+            configured_projects(detect_project(self.repo))
+
     def test_configured_project_path_cannot_escape_worktree(self) -> None:
         self.config_path.write_text(
             'version = 1\n[deal]\nproject = "../Other.xcodeproj"\nscheme = "Deal"\ndelivery = ["node", "delivery.mjs"]\n',
@@ -99,6 +105,15 @@ class ConfigurationTests(ProjectDeliveryCase):
             encoding="utf-8",
         )
         with self.assertRaisesRegex(ConfigurationError, "inside the worktree"):
+            configured_projects(detect_project(self.repo))
+
+        untracked = self.repo / "untracked.py"
+        untracked.write_text("pass\n", encoding="utf-8")
+        self.config_path.write_text(
+            'version = 1\n[deal]\nproject = "ios/Deal/Deal.xcodeproj"\nscheme = "Deal"\ndelivery = ["node", "untracked.py"]\n',
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ConfigurationError, "checked-in command path"):
             configured_projects(detect_project(self.repo))
 
     def test_missing_config_keeps_old_discovery(self) -> None:
@@ -261,6 +276,18 @@ class CliIntegrationTests(ProjectDeliveryCase):
         self.assertEqual("stopped", stopped["status"])
         self.assertEqual(["device:start", "device:verify"], (self.repo / "events.log").read_text().splitlines())
 
+    def test_device_verification_cannot_claim_a_provider(self) -> None:
+        started = json.loads(self.run_cli("start", "deal", "device", "--json").stdout)
+        self.fake.write_text(
+            self.fake.read_text().replace(
+                "'provider': 'app-store-connect' if surface == 'testflight' else None,",
+                "'provider': 'app-store-connect',",
+            ),
+            encoding="utf-8",
+        )
+        result = self.run_cli("verify", started["id"], "--json", ok=False)
+        self.assertIn("manual delivery verification", result.stderr)
+
     def test_testflight_start_is_provider_owned_without_guessed_expiry(self) -> None:
         started = json.loads(self.run_cli("start", "deal", "testflight", "--build-number", "12", "--json").stdout)
         self.assertEqual("provider", started["lifecycle_owner"])
@@ -276,6 +303,13 @@ class CliIntegrationTests(ProjectDeliveryCase):
         first = json.loads(self.run_cli("start", "deal", "testflight", "--build-number", "12", "--json").stdout)
         second = json.loads(self.run_cli("start", "deal", "testflight", "--build-number", "13", "--json").stdout)
         self.assertNotEqual(first["id"], second["id"])
+
+    def test_testflight_verification_rejects_provider_resource_drift(self) -> None:
+        started = json.loads(self.run_cli("start", "deal", "testflight", "--build-number", "12", "--json").stdout)
+        self.run_cli("verify", started["id"], "--json")
+        self.fake.write_text(self.fake.read_text().replace("build_123", "build_456"), encoding="utf-8")
+        result = self.run_cli("verify", started["id"], "--json", ok=False)
+        self.assertIn("provider resource changed", result.stderr)
 
     def test_testflight_requires_declared_argument(self) -> None:
         result = self.run_cli("start", "deal", "testflight", "--json", ok=False)

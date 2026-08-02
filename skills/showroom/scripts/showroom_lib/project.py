@@ -187,7 +187,9 @@ def _delivery_command(root: Path, value: Any, project_name: str) -> tuple[str, .
             raise ConfigurationError(
                 f".showroom.toml project {project_name!r} delivery must stay inside the worktree"
             )
-        checked_in_path = checked_in_path or resolved.is_file()
+        if resolved.is_file():
+            relative = str(resolved.relative_to(root))
+            checked_in_path = checked_in_path or _git(root, "ls-files", "--error-unmatch", relative) is not None
     if not checked_in_path:
         raise ConfigurationError(
             f".showroom.toml project {project_name!r} delivery must include a checked-in command path"
@@ -203,7 +205,11 @@ def configured_projects(project: Project) -> dict[str, dict[str, Any]]:
         document = tomllib.loads(path.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError) as exc:
         raise ConfigurationError(f"invalid .showroom.toml: {exc}") from exc
-    if not isinstance(document, dict) or document.get("version") != 1:
+    if (
+        not isinstance(document, dict)
+        or type(document.get("version")) is not int
+        or document.get("version") != 1
+    ):
         raise ConfigurationError(".showroom.toml must set version = 1")
     projects: dict[str, dict[str, Any]] = {}
     for name, raw in document.items():
