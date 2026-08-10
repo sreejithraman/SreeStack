@@ -61,9 +61,11 @@ Run named surfaces as:
 ```sh
 showroom start deal
 showroom start deal device
-showroom start deal testflight --build-number 12
+showroom start deal testflight
 showroom doctor deal
 ```
+
+Automatic TestFlight numbering needs Apple start credentials in the delivery description. Use `--build-number` only when another release process owns the number; that manual path skips Showroom's App Store Connect check and reservation.
 
 See `skills/showroom/references/configuration.md` and `delivery-command.md` for the strict contracts. Keep runtime signing, account, device, and build data outside TOML.
 

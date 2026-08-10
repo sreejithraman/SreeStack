@@ -17,6 +17,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from showroom_lib.apple import (  # noqa: E402
     API_KEY_SERVICE,
+    _run,
     delivery_environment,
     load_profile,
     lock_profile,
@@ -125,6 +126,12 @@ class AppleProfileTests(unittest.TestCase):
             runner=self.security,
             secrets=self.security,
         )
+
+    def test_run_reports_uncaptured_command_failure(self) -> None:
+        completed = subprocess.CompletedProcess(("security", "import"), 1, None, None)
+        with patch("showroom_lib.apple.subprocess.run", return_value=completed):
+            with self.assertRaisesRegex(ConfigurationError, "exit 1"):
+                _run(("security", "import"), capture=False)
 
     def test_setup_keeps_secrets_out_of_profile_store(self) -> None:
         result = self.setup()

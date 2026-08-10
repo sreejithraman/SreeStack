@@ -176,7 +176,8 @@ def _run(
     except OSError as exc:
         raise ConfigurationError(f"Apple signing command failed: {exc}") from exc
     if check and completed.returncode != 0:
-        detail = completed.stderr.strip() or completed.stdout.strip() or f"exit {completed.returncode}"
+        detail = (completed.stderr or "").strip() or (completed.stdout or "").strip()
+        detail = detail or f"exit {completed.returncode}"
         raise ConfigurationError(f"Apple signing command failed: {detail}")
     return completed
 

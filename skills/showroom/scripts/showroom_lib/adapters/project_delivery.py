@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -26,12 +27,18 @@ class ProjectDeliveryAdapter:
         _, surface = self._surface(context)
         arguments = dict(context.approvals.get("delivery_arguments", {}))
         surface_name = context.config.surface_name or ""
-        with delivery_environment(
-            context.state_root,
-            surface=surface_name,
-            operation="start",
-            required="apple" in surface["start_credentials"],
-        ) as environment:
+        provided_environment = context.approvals.get("delivery_environment")
+        environment_context = (
+            nullcontext(provided_environment)
+            if provided_environment is not None
+            else delivery_environment(
+                context.state_root,
+                surface=surface_name,
+                operation="start",
+                required="apple" in surface["start_credentials"],
+            )
+        )
+        with environment_context as environment:
             result = run_delivery(
                 command=context.config.delivery or (),
                 operation_argv=surface["start"],

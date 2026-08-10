@@ -6,7 +6,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,8 +16,11 @@ SCRIPTS = ROOT / "skills" / "showroom" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from showroom_lib.delivery import run_delivery, validate_description, validate_result  # noqa: E402
+from showroom_lib.core import start  # noqa: E402
 from showroom_lib.errors import AdapterError, ConfigurationError  # noqa: E402
 from showroom_lib.project import configured_projects, detect_config, detect_project  # noqa: E402
+from showroom_lib.registry import Registry  # noqa: E402
+from showroom_lib.testflight import TestFlightBuild  # noqa: E402
 
 
 class ProjectDeliveryCase(unittest.TestCase):
@@ -412,10 +417,54 @@ class CliIntegrationTests(ProjectDeliveryCase):
         result = self.run_cli("verify", started["id"], "--json", ok=False)
         self.assertIn("provider resource changed", result.stderr)
 
-    def test_testflight_requires_declared_argument(self) -> None:
-        result = self.run_cli("start", "deal", "testflight", "--json", ok=False)
-        self.assertEqual(2, result.returncode)
-        self.assertIn("--build-number", result.stderr)
+
+class AutomaticTestFlightTests(ProjectDeliveryCase):
+    def test_testflight_allocates_build_number_without_a_cli_argument(self) -> None:
+        state = self.root / "state"
+        self.fake.write_text(
+            self.fake.read_text(encoding="utf-8").replace(
+                "'required_arguments': ['build-number']",
+                "'required_arguments': ['build-number'], 'start_credentials': ['apple']",
+            ),
+            encoding="utf-8",
+        )
+
+        @contextmanager
+        def environment(*args, **kwargs):
+            yield {"SHOWROOM_APPLE_PROFILE": "personal"}
+
+        with (
+            patch("showroom_lib.core.delivery_environment", environment),
+            patch(
+                "showroom_lib.core.allocate_testflight_build",
+                return_value=TestFlightBuild("world.sree.deal", "1.1", "1"),
+            ) as allocate,
+        ):
+            started = start(
+                Registry(state),
+                state,
+                self.repo,
+                project_name="deal",
+                surface_name="testflight",
+            )
+
+        allocate.assert_called_once()
+        self.assertEqual(
+            {"build-number": "1"},
+            started["resources"]["delivery"]["arguments"],
+        )
+        log = Path(started["log_paths"][0]).read_text(encoding="utf-8")
+        self.assertIn('"--build-number", "1"', log)
+
+    def test_automatic_numbering_requires_declared_apple_credentials(self) -> None:
+        with self.assertRaisesRegex(ConfigurationError, "apple start credentials"):
+            start(
+                Registry(self.root / "state"),
+                self.root / "state",
+                self.repo,
+                project_name="deal",
+                surface_name="testflight",
+            )
 
 
 if __name__ == "__main__":

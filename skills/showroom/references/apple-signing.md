@@ -51,3 +51,7 @@ A repository asks for the profile without naming it or storing account data:
 The default profile applies across repositories. `SHOWROOM_APPLE_PROFILE` can choose another global profile for one run. Showroom fails before the repository command when a required profile is absent or locked.
 
 The repository command receives `SHOWROOM_APPLE_TEAM_ID`, `SHOWROOM_APPLE_KEY_ID`, `SHOWROOM_APPLE_ISSUER_ID`, `SHOWROOM_APPLE_KEY_PATH`, and `SHOWROOM_APPLE_KEYCHAIN_PATH`. Treat them as run-only inputs and redact them from results and logs.
+
+For automatic TestFlight numbering, the delivery surface declares Apple start credentials. Showroom reads the selected scheme's bundle ID, app version, and platform, checks App Store Connect, and reserves the next positive integer build number in machine state before it runs the repository command. The counter is scoped to the bundle ID and app version, so a new app version starts at `1`. The machine reservation keeps automatic starts distinct while Apple processes a prior upload. Keep the app version in Xcode and build numbers out of `.showroom.toml`.
+
+`--build-number` remains a manual override for a release process that owns its own number. It skips the App Store Connect check and Showroom's reservation.

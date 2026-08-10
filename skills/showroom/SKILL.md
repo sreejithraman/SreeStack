@@ -22,6 +22,7 @@ Give the reviewer a surface they can use. A build or test supports the surface; 
 - Use an iOS Simulator for routine iOS visual work. Use Device or TestFlight only when the user asks or the change needs that surface.
 - Use a local web surface for active web or API work unless a useful branch surface exists or the user needs a longer-lived URL.
 - Use TestFlight for a meaningful checkpoint after explicit approval. A pending Apple processing state remains pending.
+- For TestFlight, run `showroom start <project> testflight` for automatic build numbering. Use `--build-number` only when an external release process owns the number.
 - Use emulator evidence or an installable test build for Android.
 - Launch desktop apps and capture visible evidence.
 - Use a private endpoint for APIs when possible.
