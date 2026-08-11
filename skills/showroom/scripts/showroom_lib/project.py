@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import subprocess
+import tomllib
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +37,9 @@ class ProjectConfig:
     cleanup_policy: str
     profile: str
     ios: dict[str, Any]
+    project_name: str | None = None
+    surface_name: str | None = None
+    delivery: tuple[str, ...] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -51,6 +55,9 @@ class ProjectConfig:
             "cleanup_policy": self.cleanup_policy,
             "profile": self.profile,
             "ios": self.ios,
+            "project_name": self.project_name,
+            "surface_name": self.surface_name,
+            "delivery": list(self.delivery) if self.delivery else None,
         }
 
 
@@ -149,9 +156,114 @@ def _detect_command(root: Path, kind: str) -> tuple[str, ...] | None:
     return None
 
 
-def detect_config(project: Project) -> ProjectConfig:
+def _inside(root: Path, value: Path) -> bool:
+    try:
+        value.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _delivery_command(root: Path, value: Any, project_name: str) -> tuple[str, ...]:
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(argument, str) and argument for argument in value)
+    ):
+        raise ConfigurationError(
+            f".showroom.toml project {project_name!r} delivery must be a nonempty command array"
+        )
+    checked_in_path = False
+    for index, argument in enumerate(value):
+        candidate = Path(argument)
+        if candidate.is_absolute():
+            if index == 0:
+                continue
+            raise ConfigurationError(
+                f".showroom.toml project {project_name!r} delivery paths must be relative"
+            )
+        resolved = (root / candidate).resolve(strict=False)
+        if not _inside(root, resolved):
+            raise ConfigurationError(
+                f".showroom.toml project {project_name!r} delivery must stay inside the worktree"
+            )
+        if resolved.is_file():
+            relative = str(resolved.relative_to(root))
+            checked_in_path = checked_in_path or _git(root, "ls-files", "--error-unmatch", relative) is not None
+    if not checked_in_path:
+        raise ConfigurationError(
+            f".showroom.toml project {project_name!r} delivery must include a checked-in command path"
+        )
+    return tuple(value)
+
+
+def configured_projects(project: Project) -> dict[str, dict[str, Any]]:
+    path = project.worktree_root / ".showroom.toml"
+    if not path.exists():
+        return {}
+    try:
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ConfigurationError(f"invalid .showroom.toml: {exc}") from exc
+    if (
+        not isinstance(document, dict)
+        or type(document.get("version")) is not int
+        or document.get("version") != 1
+    ):
+        raise ConfigurationError(".showroom.toml must set version = 1")
+    projects: dict[str, dict[str, Any]] = {}
+    for name, raw in document.items():
+        if name == "version":
+            continue
+        if not isinstance(raw, dict):
+            raise ConfigurationError(f".showroom.toml project {name!r} must be a table")
+        unknown = set(raw) - {"project", "scheme", "delivery"}
+        if unknown:
+            raise ConfigurationError(
+                f".showroom.toml project {name!r} has unknown key(s): {', '.join(sorted(unknown))}"
+            )
+        xcode_project = raw.get("project")
+        scheme = raw.get("scheme")
+        delivery = raw.get("delivery")
+        if not isinstance(xcode_project, str) or not xcode_project:
+            raise ConfigurationError(f".showroom.toml project {name!r} needs a nonempty project path")
+        resolved = (project.worktree_root / xcode_project).resolve(strict=False)
+        if Path(xcode_project).is_absolute() or not _inside(project.worktree_root, resolved):
+            raise ConfigurationError(f".showroom.toml project {name!r} path must stay inside the worktree")
+        if resolved.suffix != ".xcodeproj" or not resolved.is_dir():
+            raise ConfigurationError(f"configured Xcode project does not exist: {resolved}")
+        if not isinstance(scheme, str) or not scheme:
+            raise ConfigurationError(f".showroom.toml project {name!r} needs a nonempty scheme")
+        projects[name] = {
+            "project": str(resolved.relative_to(project.worktree_root)),
+            "scheme": scheme,
+            "delivery": _delivery_command(project.worktree_root, delivery, name),
+        }
+    if not projects:
+        raise ConfigurationError(".showroom.toml must define at least one named project")
+    return projects
+
+
+def detect_config(project: Project, project_name: str | None = None, surface_name: str | None = None) -> ProjectConfig:
     root = project.worktree_root
-    kind = _detect_kind(root)
+    projects = configured_projects(project)
+    selected_project: dict[str, Any] | None = None
+    if project_name is not None:
+        if not projects:
+            raise ConfigurationError(f"project {project_name!r} needs a .showroom.toml entry")
+        selected_project = projects.get(project_name)
+        if selected_project is None:
+            available = ", ".join(sorted(projects))
+            raise ConfigurationError(f"unknown showroom project {project_name!r}; available: {available}")
+    kind = "ios" if selected_project else _detect_kind(root)
+    profile = project_name or "default"
+    if surface_name and project_name:
+        profile = f"{project_name}-{surface_name}"
+    ios = {}
+    delivery = None
+    if selected_project:
+        ios = {"project": selected_project["project"], "scheme": selected_project["scheme"]}
+        delivery = selected_project["delivery"]
     return ProjectConfig(
         kind=kind,
         working_directory=root,
@@ -163,8 +275,11 @@ def detect_config(project: Project) -> ProjectConfig:
         evidence=(),
         lease_hours=24.0,
         cleanup_policy="lease",
-        profile="default",
-        ios={},
+        profile=profile,
+        ios=ios,
+        project_name=project_name,
+        surface_name=surface_name,
+        delivery=delivery,
     )
 
 

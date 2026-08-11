@@ -64,7 +64,11 @@ class CommandResult:
 
 class CommandRunner(Protocol):
     def run(
-        self, argv: Sequence[str], *, cwd: Path | None = None
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path | None = None,
+        timeout_seconds: float | None = None,
     ) -> CommandResult: ...
 
 
@@ -75,17 +79,25 @@ class SubprocessRunner:
         self.timeout_seconds = timeout_seconds
 
     def run(
-        self, argv: Sequence[str], *, cwd: Path | None = None
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path | None = None,
+        timeout_seconds: float | None = None,
     ) -> CommandResult:
-        completed = subprocess.run(
-            list(argv),
-            cwd=cwd,
-            check=False,
-            capture_output=True,
-            text=True,
-            shell=False,
-            timeout=self.timeout_seconds,
-        )
+        timeout = self.timeout_seconds if timeout_seconds is None else timeout_seconds
+        try:
+            completed = subprocess.run(
+                list(argv),
+                cwd=cwd,
+                check=False,
+                capture_output=True,
+                text=True,
+                shell=False,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return CommandResult(124, "", f"command timed out after {timeout:.2f} seconds")
         return CommandResult(completed.returncode, completed.stdout, completed.stderr)
 
 

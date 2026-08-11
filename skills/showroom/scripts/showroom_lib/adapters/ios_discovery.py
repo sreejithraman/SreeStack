@@ -192,9 +192,15 @@ class IOSDiscoveryMixin:
         return candidates[0]
 
     def _checked(
-        self, argv: Sequence[str], *, cwd: Path | None = None
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path | None = None,
+        timeout_seconds: float | None = None,
     ) -> CommandResult:
-        result = self._runner.run(argv, cwd=cwd)
+        result = self._runner.run(
+            argv, cwd=cwd, timeout_seconds=timeout_seconds
+        )
         if result.returncode != 0:
             raise CommandFailure(argv, result)
         return result

@@ -1,19 +1,32 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import os
 import shlex
 import shutil
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from .adapters.base import AdapterContext
 from .adapters.loader import load_adapter
+from .apple import delivery_environment
+from .delivery import describe
 from .errors import AdapterError, ConfigurationError
 from .paths import showroom_directory
-from .project import ProjectConfig, Project, detect_project, detect_config, showroom_id
+from .project import (
+    Project,
+    ProjectConfig,
+    configured_projects,
+    detect_config,
+    detect_project,
+    showroom_id,
+)
 from .registry import Registry
+from .testflight import allocate_testflight_build
 from .timeutil import expires_at, format_time, now, parse_time
 
 
@@ -24,6 +37,8 @@ VERIFICATION_STATUSES = {"pending", "passed", "failed", "blocked", "stale"}
 
 
 def choose_adapter(config: ProjectConfig) -> str:
+    if config.surface_name in {"device", "testflight"}:
+        return "project-delivery"
     if config.kind == "ios":
         return "ios-simulator"
     if config.kind in {"web", "api"}:
@@ -79,6 +94,8 @@ def new_record(
         "lifecycle_owner": "showroom",
         "cleanup_policy": config.cleanup_policy,
         "profile": config.profile,
+        "project_name": config.project_name,
+        "surface_name": config.surface_name,
         "status": "starting",
         "repository": {
             "id": project.repository_id,
@@ -142,9 +159,53 @@ def resolve_id(registry: Registry, value: str | None, cwd: Path | None = None, a
 
 
 def start(registry: Registry, state: Path, cwd: Path | None = None, adapter_name: str | None = None,
-          approvals: dict[str, bool] | None = None) -> dict[str, Any]:
+          approvals: dict[str, Any] | None = None, project_name: str | None = None,
+          surface_name: str | None = None) -> dict[str, Any]:
     project = detect_project(cwd)
-    config = detect_config(project)
+    if project_name and surface_name is None:
+        surface_name = "simulator"
+    config = detect_config(project, project_name, surface_name)
+    delivery_arguments = (approvals or {}).get("delivery_arguments", {})
+    if config.surface_name == "testflight" and not delivery_arguments.get("build-number"):
+        if not config.delivery:
+            raise ConfigurationError("automatic TestFlight numbering needs a delivery command")
+        description = describe(config.delivery, config.working_directory)
+        surface = description["surfaces"].get("testflight")
+        if surface is None:
+            raise ConfigurationError("delivery command does not support testflight")
+        if "apple" not in surface["start_credentials"]:
+            raise ConfigurationError(
+                "automatic TestFlight numbering needs apple start credentials; "
+                "declare them or pass --build-number"
+            )
+        with delivery_environment(
+            state,
+            surface="testflight",
+            operation="start",
+            required=True,
+        ) as environment:
+            allocation = allocate_testflight_build(state, config, environment)
+            automatic = copy.deepcopy(approvals or {})
+            automatic["delivery_arguments"] = {"build-number": allocation.number}
+            automatic["delivery_identity"] = {
+                "bundle-id": allocation.bundle_id,
+                "app-version": allocation.version,
+                "build-number": allocation.number,
+            }
+            automatic["delivery_environment"] = environment
+            return start(
+                registry,
+                state,
+                cwd,
+                adapter_name,
+                automatic,
+                project_name,
+                surface_name,
+            )
+    if config.surface_name == "testflight" and delivery_arguments:
+        delivery_identity = (approvals or {}).get("delivery_identity", delivery_arguments)
+        identity = json.dumps(delivery_identity, sort_keys=True, separators=(",", ":"))
+        config = replace(config, profile=f"{config.profile}-{hashlib.sha256(identity.encode()).hexdigest()[:8]}")
     selected = adapter_name or choose_adapter(config)
     if config.cleanup_policy in {"provider", "pull-request"}:
         raise ConfigurationError(
@@ -211,7 +272,7 @@ def start(registry: Registry, state: Path, cwd: Path | None = None, adapter_name
                 if not registry.delete_if(identifier, lambda value: value == existing):
                     raise AdapterError(f"showroom changed during interrupted-start recovery: {identifier}")
         if changed:
-            return start(registry, state, cwd, adapter_name, approvals)
+            return start(registry, state, cwd, adapter_name, approvals, project_name, surface_name)
         existing = None
 
     if existing and existing.get("status") == "stopping":
@@ -220,7 +281,7 @@ def start(registry: Registry, state: Path, cwd: Path | None = None, adapter_name
         with registry.resource_lock(_resource_scope(selected, identifier)):
             latest = registry.get(identifier)
         if latest is None or latest.get("status") != "stopping":
-            return start(registry, state, cwd, adapter_name, approvals)
+            return start(registry, state, cwd, adapter_name, approvals, project_name, surface_name)
         operation_started = latest.get("operation", {}).get("started_at")
         stale = bool(
             operation_started
@@ -229,7 +290,7 @@ def start(registry: Registry, state: Path, cwd: Path | None = None, adapter_name
         if not stale:
             raise AdapterError(f"showroom stop already in progress: {identifier}")
         stop(registry, state, identifier)
-        return start(registry, state, cwd, adapter_name, approvals)
+        return start(registry, state, cwd, adapter_name, approvals, project_name, surface_name)
 
     record = new_record(project, config, selected, current, state)
     # Reserving the stable identity before adapter work prevents two starts from
@@ -315,7 +376,7 @@ def _record_context(record: dict[str, Any], state: Path) -> AdapterContext | Non
         return None
     try:
         project = detect_project(worktree)
-        config = detect_config(project)
+        config = detect_config(project, record.get("project_name"), record.get("surface_name"))
     except (ConfigurationError, OSError):
         return None
     return _context(project, config, state, record["id"])
@@ -418,7 +479,11 @@ def _stop_locked(registry: Registry, state: Path, identifier: str, remove: bool 
                 and not current.get("pinned"),
             )
         return record
-    if not record.get("registered") and record.get("lifecycle_owner") != "showroom":
+    if (
+        not record.get("registered")
+        and record.get("lifecycle_owner") != "showroom"
+        and record.get("adapter") != "project-delivery"
+    ):
         raise AdapterError(f"showroom lifecycle is owned by {record.get('lifecycle_owner')!r}")
     if expected_renewed_at is not None:
         renewed = record.get("timestamps", {}).get("renewed_at")
@@ -677,7 +742,7 @@ def register(registry: Registry, project: Project, *, adapter: str, profile: str
     return registry.update(operation)
 
 
-def doctor(registry: Registry) -> dict[str, Any]:
+def doctor(registry: Registry, cwd: Path | None = None, project_name: str | None = None) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     adapters: dict[str, Any] = {}
     try:
@@ -699,4 +764,29 @@ def doctor(registry: Registry) -> dict[str, Any]:
         "xcrun": shutil.which("xcrun"),
         "detail": "Requires a logged-in macOS session, an installed Simulator runtime, and project-specific discovery.",
     }
+    if project_name is not None:
+        try:
+            project = detect_project(cwd)
+            config = detect_config(project, project_name, "simulator")
+            checks.append({
+                "name": "project-config",
+                "ok": True,
+                "detail": f"{project_name}: {config.ios['project']} ({config.ios['scheme']})",
+            })
+            description = describe(config.delivery or (), project.worktree_root)
+            checks.append({
+                "name": "delivery-contract",
+                "ok": True,
+                "detail": f"supported surfaces: {', '.join(sorted(description['surfaces']))}",
+            })
+        except (ConfigurationError, OSError) as exc:
+            checks.append({"name": "project-config", "ok": False, "detail": str(exc)})
+    elif cwd is not None:
+        try:
+            project = detect_project(cwd)
+            names = sorted(configured_projects(project))
+            if names:
+                checks.append({"name": "project-config", "ok": True, "detail": f"configured projects: {', '.join(names)}"})
+        except (ConfigurationError, OSError) as exc:
+            checks.append({"name": "project-config", "ok": False, "detail": str(exc)})
     return {"ok": all(check["ok"] for check in checks), "checks": checks, "adapters": adapters}

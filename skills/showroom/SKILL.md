@@ -1,57 +1,47 @@
 ---
 name: showroom
-description: Showroom creates, verifies, and hands off the best available review surface after Codex changes product behavior. Use for web, mobile, desktop, API, CLI, library, infrastructure, and data projects when a reviewer needs a URL, running device, artifact, command, transcript, plan, or report with lifecycle details.
+description: Showroom creates and verifies review surfaces after product work, adopts ambiguous projects through optional checked-in configuration, and repairs repo delivery commands that fail its contract. Use when a reviewer needs a URL, running device, artifact, command, transcript, plan, or report with lifecycle details.
 ---
 
 # Showroom
 
-Produce evidence that a reviewer can actually use. Treat a build or passing test as supporting evidence, not automatically as the review surface.
+Give the reviewer a surface they can use. A build or test supports the surface; it does not replace one.
 
 ## Workflow
 
-1. Detect the repository, worktree, project kind, and its native run or release paths. Showroom owns no project file.
-2. Read [contract.md](references/contract.md) before selecting or reporting a surface.
-3. Select the first suitable surface:
-   1. Existing project-native PR or branch review surface.
-   2. Configured hosted provider when durable availability is required.
-   3. Local platform surface for active or uncommitted work.
-   4. Evidence-only surface when no interactive surface exists.
-4. Run `showroom doctor --json` before creating local resources. Invoke the bundled CLI as `python3 <skill-dir>/scripts/showroom` when it is not installed on `PATH`.
-5. Start or register the selected surface. Keep provider selection visible; never hide authentication, public exposure, spending, or durable resource creation inside an unattended command.
-6. Verify through the closest real user surface. For visual or interactive work, capture visible evidence after launching the product.
-7. Return the normalized record and lifecycle commands in the final handoff.
+1. Detect the repo, worktree, project, and native run or release path. If `.showroom.toml` exists, read [configuration.md](references/configuration.md). Finish when one project and target surface are clear.
+2. Read [contract.md](references/contract.md). Pick the first fit: an existing project surface, a durable provider surface, a local platform surface, then evidence only. Finish when the choice and its owner are clear.
+3. Run `showroom doctor [project] --json`. Use `python3 <skill-dir>/scripts/showroom` when `showroom` is not on `PATH`. If a delivery command fails, read [delivery-command.md](references/delivery-command.md), inspect the repo's current release script, and repair the smallest checked-in command plus contract tests. Finish when doctor passes without delivery side effects.
+4. When the chosen delivery operation declares Apple credentials, read [apple-signing.md](references/apple-signing.md) and run `showroom apple status --json`. Ask for the one-time setup or session unlock only when status names that need. Finish when the global profile is ready without copying credentials into the worktree.
+5. Start or register the surface. Keep approval needs clear for auth, public access, spend, and durable resources. Finish when one normalized record owns the exact local resources or names the external owner.
+6. Verify through the closest user surface. Capture visible proof for visual work. Finish when `showroom verify <id> --json` records the current result.
+7. Return the record with its location, evidence, limits, end time, and exact inspect, verify, renew, pin, unpin, and stop commands.
 
-## Selection rules
+## Selection
 
-- Choose a local web surface for active web/API work unless the project already provides a usable branch surface or the user needs durable access.
-- Choose an iOS Simulator run for iOS interaction or visual work. A build alone is insufficient; launch the app and capture configured evidence.
-- Treat TestFlight as an optional durable distribution workflow for meaningful checkpoints, never as the per-edit default. Require explicit authorization and use the project's existing release tooling.
-- Choose emulator evidence or an installable testing build for Android.
-- Launch desktop applications and capture visible evidence.
-- Choose a private endpoint for APIs when possible.
-- Choose a runnable example, transcript, generated artifact, plan, or report for CLI, library, infrastructure, and data projects.
-- Do not manufacture an interactive surface when an evidence-only handoff is more faithful.
+- Use an iOS Simulator for routine iOS visual work. Use Device or TestFlight only when the user asks or the change needs that surface.
+- Use a local web surface for active web or API work unless a useful branch surface exists or the user needs a longer-lived URL.
+- Use TestFlight for a meaningful checkpoint after explicit approval. A pending Apple processing state remains pending.
+- For TestFlight, run `showroom start <project> testflight` for automatic build numbering. Use `--build-number` only when an external release process owns the number.
+- Use emulator evidence or an installable test build for Android.
+- Launch desktop apps and capture visible evidence.
+- Use a private endpoint for APIs when possible.
+- Use a runnable example, transcript, artifact, plan, or report when no true interactive surface fits.
+- Do not create an interactive surface when evidence gives a truer review.
 
-## Hosted providers
+Read [hosted-providers.md](references/hosted-providers.md) when durable hosting is needed.
 
-Read [hosted-providers.md](references/hosted-providers.md) when a durable surface is required.
-
-Invoke an installed `vercel-deploy`, `netlify-deploy`, `cloudflare-deploy`, or `render-deploy` skill as a workflow. Do not reproduce its deployment commands inside this skill or `showroom`. After deployment, normalize the provider result with `showroom register` and record whether the provider, pull request, or `showroom` owns cleanup.
-
-If the configured provider skill is unavailable, report that limitation and fall through to a local or evidence-only surface. Do not silently install a skill or switch providers.
+Use an installed `vercel-deploy`, `netlify-deploy`, `cloudflare-deploy`, or `render-deploy` skill for provider deployment. Do not copy its commands into Showroom. Then use `showroom register` to save the result and its provider, pull-request, or Showroom owner. If the skill is missing, state that limit and use a local or evidence surface. Do not install or switch providers without approval.
 
 ## Safety
 
-- Never create public exposure by default. Never invoke Tailscale Funnel implicitly.
-- Require explicit authorization before public exposure, provider deployment with meaningful external effects, persistent service installation, or user-level configuration changes.
-- Keep origins and local endpoints private by default.
-- Store runtime state outside repositories. Never commit hostnames, tokens, credentials, generated state, Simulator IDs, or personal signing configuration.
-- Act only on exact resources registered as Showroom-owned. Never broadly reset Tailscale, kill by process name or port, erase ordinary simulators, or delete unrelated deployments or files.
-- Run `showroom cleanup --dry-run` before material cleanup and present the exact targets when authorization is required.
-- State that local surfaces are unavailable while the host sleeps, is off, or loses required connectivity.
-
-## Completion
-
-Do not report success until `showroom verify <id> --json` or equivalent platform verification records a result. Include limitations even when verification passes.
-
-Use the common handoff shape in [contract.md](references/contract.md). Include evidence paths and the exact commands to inspect, renew, pin, stop, and clean up the surface.
+- Keep surfaces private by default.
+- Never invoke Tailscale Funnel without explicit approval.
+- Require approval for public access, provider deployment, persistent services, user settings, and TestFlight uploads.
+- Store runtime state outside the repo. Keep host names, tokens, credentials, device IDs, and signing data out of checked-in config.
+- Keep Apple credentials in the dedicated global profile. Require an explicit session unlock and fail closed when a delivery operation declares Apple credentials.
+- Act only on exact Showroom-owned resources. For manual and provider delivery, stop the record and leave the external app or build unchanged.
+- Do not reset Tailscale, kill by process name or port, erase normal simulators, or delete unrelated provider resources.
+- Run `showroom cleanup --dry-run` before material cleanup and show exact targets when approval is needed.
+- State that local surfaces fail while the host sleeps, shuts down, or loses needed access.
+- Do not report success until `showroom verify <id> --json` records the result.

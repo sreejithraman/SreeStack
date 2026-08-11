@@ -58,8 +58,9 @@ class FakeRunner:
         self.devices: dict[str, dict[str, object]] = {}
         self.clone_ids = iter((CLONE_ONE, CLONE_TWO))
         self.fail_build = fail_build
+        self.frame_ready = False
 
-    def run(self, argv, *, cwd=None):
+    def run(self, argv, *, cwd=None, timeout_seconds=None):
         command = tuple(str(item) for item in argv)
         self.calls.append(command)
         self.call_cwds.append(Path(cwd) if cwd is not None else None)
@@ -131,7 +132,7 @@ class FakeRunner:
         if command[0:3] == ("xcrun", "simctl", "launch"):
             return CommandResult(0, "example.Demo: 4321\n", "")
         if command[0:4] == ("xcrun", "simctl", "io", command[3]) and command[4] == "screenshot":
-            Path(command[-1]).write_bytes(b"png")
+            Path(command[-1]).write_bytes(b"ready" if self.frame_ready else b"not-ready")
             return CommandResult(0)
         if command[0:3] == ("xcrun", "simctl", "shutdown"):
             self.devices[command[3]]["state"] = "Shutdown"
@@ -191,6 +192,7 @@ class IOSAdapterTests(unittest.TestCase):
         self.store = FakeOwnership()
         self.runner = FakeRunner()
         self.attempts = iter(("attempt-one", "attempt-two", "attempt-three"))
+        self.settle_calls = []
 
     def request(
         self, *, worktree=None, worktree_id="worktree-one", showroom_id="srm_ios_demo", **overrides
@@ -214,11 +216,19 @@ class IOSAdapterTests(unittest.TestCase):
         )
 
     def adapter(self, runner=None):
+        selected_runner = runner or self.runner
+
+        def settle(seconds):
+            self.settle_calls.append(seconds)
+            selected_runner.frame_ready = True
+
         return IOSSimulatorAdapter(
-            runner or self.runner,
+            selected_runner,
             self.store,
             clock=lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
             token_factory=lambda: next(self.attempts),
+            sleeper=settle,
+            screenshot_assessor=lambda _baseline, _candidate, _deadline: selected_runner.frame_ready,
         )
 
     def test_full_flow_uses_exact_argv_and_captures_evidence(self) -> None:
@@ -233,6 +243,7 @@ class IOSAdapterTests(unittest.TestCase):
         )
         self.assertEqual(result.verification_status, "passed")
         self.assertEqual(result.launch_pid, 4321)
+        self.assertEqual(self.settle_calls, [0.25])
         self.assertTrue(any(path.endswith("screenshot.png") for path in result.evidence_paths))
         self.assertIn(
             ("xcrun", "simctl", "openurl", CLONE_ONE, "demo://screen/42?token=secret"),
@@ -253,11 +264,13 @@ class IOSAdapterTests(unittest.TestCase):
         other_scheme = self.repo / "Demo.xcodeproj/xcshareddata/xcschemes/Other.xcscheme"
         other_scheme.write_text("<Scheme/>", encoding="utf-8")
         class TwoSchemeRunner(FakeRunner):
-            def run(inner_self, argv, *, cwd=None):
+            def run(inner_self, argv, *, cwd=None, timeout_seconds=None):
                 if "-list" in argv:
                     inner_self.calls.append(tuple(argv))
                     return inner_self.ok({"project": {"schemes": ["Demo", "Other"]}})
-                return super(TwoSchemeRunner, inner_self).run(argv, cwd=cwd)
+                return super(TwoSchemeRunner, inner_self).run(
+                    argv, cwd=cwd, timeout_seconds=timeout_seconds
+                )
         with self.assertRaises(DiscoveryError):
             self.adapter(TwoSchemeRunner()).discover_shared_scheme(
                 self.request(scheme=None),
@@ -298,6 +311,8 @@ class IOSAdapterTests(unittest.TestCase):
             clock=lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
             token_factory=lambda: next(self.attempts),
             recording_runner=recorder,
+            sleeper=lambda _: setattr(self.runner, "frame_ready", True),
+            screenshot_assessor=lambda _baseline, _candidate, _deadline: self.runner.frame_ready,
         )
         result = adapter.start(self.request(recording=True, recording_seconds=1.5))
         self.assertTrue(any(path.endswith("recording.mov") for path in result.evidence_paths))
@@ -344,6 +359,7 @@ class IOSAdapterTests(unittest.TestCase):
 
     def test_cleanup_refuses_ownership_and_observation_drift(self) -> None:
         result = self.adapter().start(self.request())
+        start_call_count = len(self.runner.calls)
         with self.assertRaises(OwnershipDrift):
             self.adapter().cleanup(
                 self.request(worktree_id="other"), result.simulator_udid
@@ -355,7 +371,7 @@ class IOSAdapterTests(unittest.TestCase):
             self.adapter().cleanup(self.request(), result.simulator_udid)
         destructive = [
             call
-            for call in self.runner.calls
+            for call in self.runner.calls[start_call_count:]
             if call[0:3] in {
                 ("xcrun", "simctl", "delete"),
                 ("xcrun", "simctl", "shutdown"),
@@ -366,6 +382,7 @@ class IOSAdapterTests(unittest.TestCase):
 
     def test_cleanup_survives_deleted_worktree_using_manager_state_cwd(self) -> None:
         result = self.adapter().start(self.request())
+        start_call_count = len(self.runner.calls)
         shutil.rmtree(self.repo)
         cleanup = self.adapter().cleanup(
             self.request(),
@@ -375,7 +392,9 @@ class IOSAdapterTests(unittest.TestCase):
         self.assertEqual(cleanup.status, "deleted")
         destructive_indexes = [
             index
-            for index, call in enumerate(self.runner.calls)
+            for index, call in enumerate(
+                self.runner.calls[start_call_count:], start=start_call_count
+            )
             if call[0:3]
             in {
                 ("xcrun", "simctl", "terminate"),

@@ -4,7 +4,7 @@
 
 After interactive product work, produce the best available verified review surface and report it through one provider-neutral record. A review surface may be a URL, device, artifact, command, transcript, plan, or report.
 
-The system is standalone and owns no project file. It reads native project files but keeps runtime state and machine values outside the repository. It does not depend on `sree.world`.
+The system is standalone. It reads native project files and optional `.showroom.toml`, while keeping runtime state and machine values outside the repository. It does not depend on `sree.world`.
 
 ## Modules and seams
 
@@ -19,7 +19,7 @@ The `showroom` skill is the policy module. Its interface is the user intent plus
 
 Hosted provider skills remain separate workflow modules. The skill invokes an installed provider skill and then asks the `showroom` command to register its result. Provider deployment logic and credentials never enter Showroom.
 
-Adapters are internal seams. The first concrete adapter is `web-local`; the second is `ios-simulator`. Other project kinds can return evidence-only records until a real adapter earns a common interface.
+Adapters are internal seams. `web-local` and `ios-simulator` own local resources. `project-delivery` runs a checked-in argv contract for Device and TestFlight, validates untrusted JSON, and owns only the Showroom record. Other project kinds can return evidence-only records until a real adapter earns a common interface.
 
 ## Files and state
 
@@ -27,6 +27,7 @@ Adapters are internal seams. The first concrete adapter is `web-local`; the seco
 - Other platforms: `$XDG_STATE_HOME/showroom/` or `~/.local/state/showroom/`.
 - Registry: atomic, locked JSON with schema versioning.
 - Per-showroom directories: logs, evidence, generated launchd property lists, and non-secret metadata.
+- Apple profiles: non-secret metadata plus dedicated macOS keychains under `credentials/apple/`.
 - macOS LaunchAgents: generated under the state directory and loaded into the current GUI user domain only after explicit authorization.
 
 No state path, hostname, credential, provider token, generated property list, simulator UDID, or personal signing setting is committed.
@@ -43,7 +44,11 @@ The web adapter writes exact ownership metadata before its first external mutati
 
 ## Project boundary
 
-Showroom detects common project files and follows checked-in scripts, Xcode containers, shared schemes, and release workflows. It does not ask projects to adopt a Showroom file. Ambiguous projects use their native tooling and register the resulting surface.
+Showroom detects common project files and follows checked-in scripts, Xcode containers, shared schemes, and release workflows. Ambiguous repos may use `.showroom.toml` to name one project, Xcode project, scheme, and delivery command. Runtime and machine values remain outside this file.
+
+The delivery command describes its Device and TestFlight surfaces without side effects. Showroom passes a private result path to start and verify actions, then validates the result against the versioned contract. Device uses manual lifecycle ownership and a 24-hour record. TestFlight uses provider ownership and no guessed expiration. Neither stop path removes the external resource.
+
+An operation can declare the global Apple credential capability. Showroom fails closed when it is absent or locked. During a run, a machine lock protects the user's keychain search list, a temporary API key file stays under private state, and a `finally` path restores and removes both run-scoped changes. Repositories receive only run-scoped environment values and never own the credentials.
 
 ## Registry and common result
 
