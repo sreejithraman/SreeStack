@@ -1,6 +1,6 @@
 ---
 name: design-eng
-description: Emil Kowalski's compact guide to interface motion and polish.
+description: Interface motion. Use when planning, building, or reviewing UI animation, gestures, interaction feedback, motion performance, or reduced-motion support.
 disable-model-invocation: true
 ---
 
