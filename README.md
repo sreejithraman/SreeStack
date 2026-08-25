@@ -10,6 +10,7 @@ SreeStack collects practical skills for implementation, review, verification, mu
 |---|---|
 | `toolcraft-brainstorming` | Define Toolcraft product behavior and app contracts before implementation. |
 | `toolcraft-browser` | Verify generated Toolcraft apps through their visible browser surface. |
+| `design-eng` | Plan, build, and review interface motion with a compact set of motion rules. |
 | `forever-components-inspo` | Search the Forever Components manifest for UI references. |
 | `gemini-review` | Send the current diff through a guarded, read-only Gemini review runner. |
 | `goal-swarm` | Split user- or parent-authorized work into bounded parallel-agent shards. |
