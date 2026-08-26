@@ -1,6 +1,6 @@
 ---
 name: review-push-and-watch
-description: Review, push, and watch. Use when one branch or GitHub PR should be locally reviewed, published, watched through review feedback and CI, and fixed until its current head is ready or blocked, or when another skill needs one PR handled.
+description: Use when one branch or GitHub PR must be reviewed locally, pushed, watched through CI and review feedback, and fixed until ready or blocked.
 ---
 
 # Review, Push, And Watch

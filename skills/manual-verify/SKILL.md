@@ -1,6 +1,6 @@
 ---
 name: manual-verify
-description: Manual verify. Use when changed behavior can be exercised through browser, CLI, API, file, or workflow.
+description: Use after a behavior change when the result can be exercised through a browser, CLI, API, file, device, or user workflow.
 ---
 
 # Manual Verify

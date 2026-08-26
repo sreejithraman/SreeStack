@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Review/fix loop. Use when a local diff needs repeated review, accepted-finding fixes, and verification before handoff or push, or when another skill needs a current local quality check.
+description: Use when a local diff needs repeated review, accepted-finding fixes, and verification before handoff or push, or when another skill requests a current local quality check.
 ---
 
 # Review Fix Loop

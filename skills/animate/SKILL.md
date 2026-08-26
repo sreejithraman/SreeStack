@@ -1,6 +1,6 @@
 ---
 name: animate
-description: Animation implementation. Use when asked to add motion, animate a component, build a transition, or make an interaction's motion or feedback feel responsive; decide whether motion should exist, then implement and test the smallest sound solution.
+description: "Use when a task concerns interface motion: deciding whether to animate, adding or tuning transitions and enter or exit effects, shaping gesture or input feedback, or supporting reduced motion."
 ---
 
 # Animate

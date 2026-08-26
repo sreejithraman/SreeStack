@@ -1,6 +1,6 @@
 ---
 name: launch-swarm
-description: Launch swarm. Use when a direct task or spec issue with child tickets should be built and delivered as one or more merge-ready PRs through goal-swarm and review-push-and-watch, with stacks for dependent PRs and optional merge after explicit authorization.
+description: Use when a direct task, or a spec with child tickets, should be built and delivered as one or more merge-ready PRs, including stacked PRs or an explicitly authorized merge.
 ---
 
 # Launch Swarm
