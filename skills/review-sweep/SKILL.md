@@ -1,6 +1,6 @@
 ---
 name: review-sweep
-description: Review sweep. Use when raw findings from local review, PR feedback, or CI need verified triage, accepted-finding fixes, and parent-owned defers, or when another review skill needs the shared finding process.
+description: Use when findings from local review, PR feedback, or CI need verification, triage, accepted fixes, and clear parent-owned defers.
 ---
 
 # Review Sweep

@@ -1,6 +1,6 @@
 ---
 name: showroom
-description: Showroom creates and verifies review surfaces after product work, adopts ambiguous projects through optional checked-in configuration, and repairs repo delivery commands that fail its contract. Use when a reviewer needs a URL, running device, artifact, command, transcript, plan, or report with lifecycle details.
+description: Use after product work when a reviewer needs a verified URL, running app or device, artifact, command, transcript, plan, or report; also use to adopt a project into Showroom or repair its delivery command.
 ---
 
 # Showroom

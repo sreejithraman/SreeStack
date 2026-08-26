@@ -1,6 +1,6 @@
 ---
 name: goal-swarm
-description: Goal swarm. Use when the user explicitly asks for parallel agents, subagents, or agent-owned goal shards, or when an active parent skill delegates independent shards.
+description: Use when the user explicitly asks for parallel agents, subagents, or agent-owned goal shards, or when a parent skill delegates independent shards.
 argument-hint: "<goal or task>"
 ---
 

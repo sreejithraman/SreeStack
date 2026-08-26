@@ -1,6 +1,6 @@
 ---
 name: gemini-review
-description: Gemini review. Use when a diff needs external read-only review through local Antigravity CLI.
+description: Use when a local diff needs an external, read-only review through Gemini or the Antigravity CLI.
 ---
 
 Use the deterministic runner as the single review path; it owns prompt construction, safety checks, and Antigravity transport.
