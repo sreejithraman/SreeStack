@@ -1,0 +1,6 @@
+interface:
+  display_name: "Forever Components Inspo"
+  short_description: "Find UI patterns from Forever Components"
+  default_prompt: "Use $forever-components-inspo to find relevant Forever Components patterns for this interface."
+policy:
+  allow_implicit_invocation: false

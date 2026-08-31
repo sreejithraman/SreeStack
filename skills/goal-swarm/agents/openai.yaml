@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal Swarm"
+  short_description: "Split authorized work across parallel agents"
+  default_prompt: "Use $goal-swarm to split this authorized task into clear parallel-agent shards."

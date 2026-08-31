@@ -1,6 +1,6 @@
 ---
 name: kinetics-inspo
-description: Kinetics pattern search for interface motion. Use when the user mentions Kinetics or kinetics.colorion.co.
+description: Use when the user mentions Kinetics or kinetics.colorion.co and wants interface motion patterns or implementation inspiration.
 ---
 
 # Kinetics Inspo

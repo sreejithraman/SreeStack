@@ -1,0 +1,4 @@
+interface:
+  display_name: "Launch Swarm"
+  short_description: "Build and deliver merge-ready pull requests"
+  default_prompt: "Use $launch-swarm to build this task and deliver its pull requests to the requested stopping point."

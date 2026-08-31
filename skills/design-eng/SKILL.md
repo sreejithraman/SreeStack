@@ -2,6 +2,7 @@
 name: design-eng
 description: Design engineering. Use when planning, building, or reviewing interface polish, component behavior, motion, gestures, visual hierarchy, materials, typography, or accessibility.
 disable-model-invocation: true
+license: LICENSE.md
 ---
 
 # Design engineering
