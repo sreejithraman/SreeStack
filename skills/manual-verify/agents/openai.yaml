@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manual Verify"
+  short_description: "Exercise changed behavior on its real surface"
+  default_prompt: "Use $manual-verify to exercise this change through its closest real user surface."

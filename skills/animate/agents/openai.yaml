@@ -1,0 +1,4 @@
+interface:
+  display_name: "Animate"
+  short_description: "Add and tune accessible interface motion"
+  default_prompt: "Use $animate to decide whether this interaction needs motion, then implement and verify the result."

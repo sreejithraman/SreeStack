@@ -17,6 +17,8 @@ Review fix loop runs review sources over one local diff, sweeps their findings t
 
 2. Run review sources.
 
+   Run `/ponytail-review` in diff mode against the complete loop diff.
+
    Run a strict maintainability review against the Greenfield Standard below. When the user separately invokes `/thermo-nuclear-code-quality-review`, include its returned findings in this loop.
 
    Run `/code-review` when a fixed point is available, so Standards and Spec are reviewed as separate axes.

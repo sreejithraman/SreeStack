@@ -1,6 +1,7 @@
 ---
 name: animate
 description: "Use when a task concerns interface motion: deciding whether to animate, adding or tuning transitions and enter or exit effects, shaping gesture or input feedback, or supporting reduced motion."
+license: LICENSE.md
 ---
 
 # Animate
