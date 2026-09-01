@@ -1,39 +1,40 @@
 ---
 name: goal-swarm
 description: Use when the user explicitly asks for parallel agents, subagents, or agent-owned goal shards, or when a parent skill delegates independent shards.
-argument-hint: "<goal or task>"
 ---
 
-# Goal Swarm
+# Goal swarm
 
-A goal swarm turns explicit parallel-agent authorization into bounded shard work under one parent goal.
+Use parallel agents to complete one parent goal. Follow `/execute-goal` for the parent goal. Each child gets one bounded goal.
 
-A parent skill must define the parent goal and grant parallel-agent authority before it invokes this skill.
+The user or a parent skill must grant parallel-agent authority before this skill runs.
 
 ## Steps
 
-1. Create the parent goal using `references/goal-prompts.md`.
+1. Open the parent goal.
 
-   Make the expected outcome, scope, constraints, verification target, and final deliverable concrete enough that another agent could judge whether the parent goal has been satisfied.
+   Keep it active until you have added every accepted child result and the parent checks pass.
 
 2. Split the work into independent shards using `references/shard-types.md`.
 
-   Give each shard one owner, one deliverable, and responsibility that does not duplicate another shard.
+   Give each shard one owner, one result, and work that does not overlap another shard. Keep work with the parent when another agent would wait on a dependency, edit the same files, or save little time.
 
-3. Write a dedicated `/goal` prompt for each shard using `references/goal-prompts.md`.
+3. Give each child one `/execute-goal` request.
 
-   Each prompt should stand alone without extra explanation from the parent agent.
+   Write each request so the child needs no extra context. State the result, proof, owned work, inputs, limits, checks, and return form. Name shared files and paths the child must leave alone.
 
-4. Dispatch all ready shards concurrently.
+4. Start the ready shards.
 
-   Keep any unspawned work local only when there is a clear reason, such as dependency order, low value, or overlap with the parent agent's critical path.
+   Start every shard whose inputs exist. Wait to start the rest. The parent may join finished work or take a separate task that does not conflict with a child.
 
-5. Synthesize returned artifacts.
+5. Review every child result.
 
-   Inspect every shard result before trusting it. Each result is incorporated, rejected with a reason, narrowed and re-dispatched, finished locally, or marked blocked.
+   Read the evidence, then accept the result, reject it with a reason, send back a narrower request, finish it with the parent, or record its blocker. Make this choice for every child before you prepare the report.
 
-   Give every returned artifact an explicit disposition before final synthesis starts.
+6. Check and close the parent.
 
-6. Verify the parent goal.
+   Add the accepted work and run the parent checks. Close it only when every required check passes.
 
-   The final answer should name the agents spawned, shard ownership, evidence checked, and any residual risk.
+## Report
+
+Name the parent goal and state. List the agents, their work, the choice made for each result, the checks run, and known risks.
