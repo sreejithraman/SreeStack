@@ -10,6 +10,7 @@ SreeStack collects practical skills for implementation, review, verification, mu
 |---|---|
 | `animate` | Decide, implement, and test focused interface animation. |
 | `design-eng` | Plan, build, and review interface behavior, motion, hierarchy, materials, typography, and accessibility. |
+| `execute-goal` | Define one measurable goal, do the work, check the result, and record its final state. |
 | `forever-components-inspo` | Search the Forever Components manifest for UI references. |
 | `gemini-review` | Send the current diff through a guarded, read-only Gemini review runner. |
 | `goal-swarm` | Split user- or parent-authorized work into bounded parallel-agent shards. |
@@ -45,6 +46,7 @@ Some skills compose other installed skills:
 
 - `review-fix-loop` uses `ponytail-review`, `code-review`, `gemini-review`, `review-sweep`, and `manual-verify`.
 - `review-push-and-watch` uses `review-fix-loop` and `review-sweep`.
+- `goal-swarm` uses `execute-goal`.
 - `launch-swarm` uses `goal-swarm` and `review-push-and-watch`.
 - `showroom` bundles a Python 3.11 CLI of the same name. Local web surfaces use Tailscale Serve and macOS `launchd`; iOS surfaces require Xcode. Durable hosted surfaces compose separately installed provider deployment skills.
 
