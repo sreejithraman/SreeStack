@@ -18,7 +18,7 @@ SreeStack collects practical skills for implementation, review, verification, mu
 | `launch-swarm` | Build a direct task or spec-rooted ticket set and deliver merge-ready PRs, stacked where needed. |
 | `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
 | `ponytail-review` | Find code a repo or diff can delete, reuse, inline, or replace. |
-| `showroom` | Create, verify, lease, and hand off review surfaces, with shared local Apple delivery profiles. |
+| `showroom` | After UI work, show an iOS screenshot or a Tailscale URL for the local web page. |
 | `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
 | `review-push-and-watch` | Review, publish, watch, and fix one GitHub PR until ready or blocked. |
 | `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
@@ -48,7 +48,7 @@ Some skills compose other installed skills:
 - `review-push-and-watch` uses `review-fix-loop` and `review-sweep`.
 - `goal-swarm` uses `execute-goal`.
 - `launch-swarm` uses `goal-swarm` and `review-push-and-watch`.
-- `showroom` bundles a Python 3.11 CLI of the same name. Local web surfaces use Tailscale Serve and macOS `launchd`; iOS surfaces require Xcode. Durable hosted surfaces compose separately installed provider deployment skills.
+- `showroom` shows the UI after product work. Web pages use Tailscale Serve so they open away from the Mac. iOS work needs Xcode Simulator and a screenshot in the reply.
 
 Host capabilities remain host-specific. In particular, GitHub workflows require authenticated GitHub tooling, browser verification requires a supported browser-control surface, parallel work requires subagent support, and `gemini-review` requires Node.js plus the local `agy` CLI.
 
