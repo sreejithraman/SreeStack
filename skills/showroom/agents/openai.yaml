@@ -1,4 +1,4 @@
 interface:
   display_name: "Showroom"
-  short_description: "Create verified project review surfaces"
-  default_prompt: "Use $showroom to create and verify the best available review surface for this project."
+  short_description: "Show an iOS screenshot or a Tailscale web URL"
+  default_prompt: "Use $showroom to show this change as an iOS screenshot or a Tailscale URL."
