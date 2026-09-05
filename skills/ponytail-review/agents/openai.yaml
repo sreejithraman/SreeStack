@@ -1,4 +1,0 @@
-interface:
-  display_name: "Ponytail Review"
-  short_description: "Find code a repo or diff can delete"
-  default_prompt: "Use $ponytail-review to run a lazy review of this diff and find code it can delete or simplify."

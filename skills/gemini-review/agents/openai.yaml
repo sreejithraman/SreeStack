@@ -1,4 +1,0 @@
-interface:
-  display_name: "Gemini Review"
-  short_description: "Run a guarded external review of a local diff"
-  default_prompt: "Use $gemini-review to run a guarded external review of the current diff."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gemini"
+  short_description: "Prompt Gemini headlessly and assess its answer"
+  default_prompt: "Use $gemini to get a headless second opinion on this task and assess the answer."

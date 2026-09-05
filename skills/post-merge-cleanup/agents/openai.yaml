@@ -1,0 +1,7 @@
+interface:
+  display_name: "Post-merge cleanup"
+  short_description: "Remove merged task branches and build output"
+  default_prompt: "Use $post-merge-cleanup to clean up this merged task."
+
+policy:
+  allow_implicit_invocation: true

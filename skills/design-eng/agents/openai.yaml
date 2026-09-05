@@ -1,6 +1,6 @@
 interface:
-  display_name: "Design Engineering"
-  short_description: "Plan, build, and review polished interfaces"
-  default_prompt: "Use $design-eng to plan, build, or review the interface craft in this task."
+  display_name: Design Engineering
+  short_description: Plan, build, and review polished interfaces
+  default_prompt: Use $design-eng to plan, build, or review the interface craft in this task.
 policy:
   allow_implicit_invocation: false

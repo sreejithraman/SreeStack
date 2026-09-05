@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Prep"
+  short_description: "Prepare a PR; optionally merge with yolo"
+  default_prompt: "Use $pr-prep to prepare this branch or PR, handle CI and review feedback, and report readiness."
