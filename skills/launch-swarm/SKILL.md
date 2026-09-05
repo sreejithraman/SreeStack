@@ -44,11 +44,11 @@ Use this when the user wants the work carried through implementation, PR handlin
 
    Finish this step when every current owned change belongs to exactly one PR, each current PR has one reviewable purpose, and each head and immediate base are explicit.
 
-5. Review, Push, And Watch
+5. Prepare PRs
 
-   For each current PR, pass `/review-push-and-watch` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether launch restacked its history. Use review-push-and-watch ready mode for both launch modes; merge remains launch work.
+   For each current PR, pass `/pr-prep` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether launch restacked its history. Use `/pr-prep` without `yolo` for both launch modes; merge remains launch work.
 
-   Independent PRs may run in parallel. Process dependent PRs from base to tip. When a lower PR changes, restack every affected descendant and rerun `/review-push-and-watch` as required by `references/stacked-prs.md`.
+   Independent PRs may run in parallel. Process dependent PRs from base to tip. When a lower PR changes, restack every affected descendant and rerun `/pr-prep` as required by `references/stacked-prs.md`.
 
    Finish this step when every current PR head is stable or has an exact blocker.
 
@@ -60,7 +60,7 @@ Use this when the user wants the work carried through implementation, PR handlin
 
 7. Verify Readiness
 
-   Confirm each `/review-push-and-watch` result against the current branch, base, PR URL, and head SHA. Confirm every dependent base link and that no descendant remains invalidated.
+   Confirm each `/pr-prep` result against the current branch, base, PR URL, and head SHA. Confirm every dependent base link and that no descendant remains invalidated.
 
    Confirm ticket acceptance criteria, local verification, manual verification, required PR checks, review state, parent-owned defers, and delivery-wide blockers. Finish this step only when the full in-scope delivery is ready or its blockers are complete.
 
@@ -81,6 +81,6 @@ End with:
 - each branch, immediate base, PR URL, and head SHA
 - swarm shards used, or why none
 - changed files or artifact summary
-- each review-push-and-watch result
+- each pr-prep result
 - manual verification result
 - ready, merged, auto-merge enabled, or exact blocker

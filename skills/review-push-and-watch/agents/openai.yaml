@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review, Push, and Watch"
-  short_description: "Publish and watch a pull request until ready"
-  default_prompt: "Use $review-push-and-watch to review, publish, and watch this pull request until ready or blocked."

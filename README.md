@@ -1,74 +1,34 @@
 # SreeStack
 
-A curated stack of agent skills by Sree.
+The source of truth for Sree’s user skills. Browse [skills/](skills/) for the
+collection and edit skills here.
 
-SreeStack collects practical skills for implementation, review, verification, multi-agent execution, and expressive web design. Each skill is a self-contained folder whose `SKILL.md` defines when it runs and how it reaches completion.
+## Use
 
-## Skills
-
-| Skill | Purpose |
-|---|---|
-| `animate` | Decide, implement, and test focused interface animation. |
-| `design-eng` | Plan, build, and review interface behavior, motion, hierarchy, materials, typography, and accessibility. |
-| `execute-goal` | Define one measurable goal, do the work, check the result, and record its final state. |
-| `forever-components-inspo` | Search the Forever Components manifest for UI references. |
-| `gemini-review` | Send the current diff through a guarded, read-only Gemini review runner. |
-| `goal-swarm` | Split user- or parent-authorized work into bounded parallel-agent shards. |
-| `kinetics-inspo` | Search Kinetics for interface motion patterns and implementation ideas. |
-| `launch-swarm` | Build a direct task or spec-rooted ticket set and deliver merge-ready PRs, stacked where needed. |
-| `manual-verify` | Exercise changed behavior through its closest real surface and report evidence. |
-| `ponytail-review` | Find code a repo or diff can delete, reuse, inline, or replace. |
-| `showroom` | After UI work, show an iOS screenshot or a Tailscale URL for the local web page. |
-| `review-fix-loop` | Repeat local and external review, accepted fixes, and verification until stable. |
-| `review-push-and-watch` | Review, publish, watch, and fix one GitHub PR until ready or blocked. |
-| `review-sweep` | Normalize findings, verify claims, fix accepted issues, and return owned defers. |
-
-## Install
-
-Install one skill:
+Clone this repo, then symlink its `skills/` directory to `~/.agents/skills`.
+Move any existing `~/.agents/skills` folder aside first.
 
 ```bash
-cp -R skills/manual-verify ~/.agents/skills/manual-verify
+mkdir -p ~/.agents
+ln -s /absolute/path/to/SreeStack/skills ~/.agents/skills
 ```
 
-Install the full collection:
+Edit skills in this repo. See [AGENTS.md](AGENTS.md) for how to add and update them.
 
-```bash
-mkdir -p ~/.agents/skills
-cp -R skills/* ~/.agents/skills/
-```
+## Credits and thanks
 
-Restart or refresh the agent host after installation if it caches skill discovery.
+Thank you to the authors and contributors who shared the skills this collection
+uses and adapts:
 
-## Dependencies
+- [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- [Emil Kowalski](https://github.com/emilkowalski/skills) — animation and design engineering skills.
+- [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
+- [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
+- [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
+- [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.
+- [haider-nawaz](https://github.com/haider-nawaz/liquid-glass-skill) — the Liquid Glass skill.
+- [s0xDk](https://github.com/s0xDk/refactoring-ui-skill) — the Refactoring UI skill, based on Adam Wathan and Steve Schoger’s work.
+- [React Doctor](https://github.com/millionco/react-doctor) — the React diagnostics skill.
 
-Some skills compose other installed skills:
-
-- `review-fix-loop` uses `ponytail-review`, `code-review`, `gemini-review`, `review-sweep`, and `manual-verify`.
-- `review-push-and-watch` uses `review-fix-loop` and `review-sweep`.
-- `goal-swarm` uses `execute-goal`.
-- `launch-swarm` uses `goal-swarm` and `review-push-and-watch`.
-- `showroom` shows the UI after product work. Web pages use Tailscale Serve so they open away from the Mac. iOS work needs Xcode Simulator and a screenshot in the reply.
-
-Host capabilities remain host-specific. In particular, GitHub workflows require authenticated GitHub tooling, browser verification requires a supported browser-control surface, parallel work requires subagent support, and `gemini-review` requires Node.js plus the local `agy` CLI.
-
-`ponytail-review` adapts the Ponytail review rules by Dietrich Gebert under the MIT License. See `skills/ponytail-review/LICENSE.txt`.
-
-## Repository layout
-
-```text
-SreeStack/
-├── README.md
-└── skills/
-    └── <skill-name>/
-        ├── SKILL.md
-        ├── agents/
-        │   └── openai.yaml  # Codex UI metadata and invocation policy
-        ├── references/   # optional disclosed reference
-        ├── scripts/      # optional deterministic tooling
-        └── assets/       # optional reusable assets
-```
-
-## Publishing status
-
-The collection is prepared for local use and public-source review. A public license has not been selected yet; choose one before publishing or accepting contributions.
+[SOURCES.md](SOURCES.md) records per-skill sources, imported revisions, local
+changes, and gaps in the source history.

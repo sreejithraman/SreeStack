@@ -1,4 +1,4 @@
 interface:
   display_name: "Manual Verify"
-  short_description: "Exercise changed behavior on its real surface"
-  default_prompt: "Use $manual-verify to exercise this change through its closest real user surface."
+  short_description: "Test changes through real user workflows"
+  default_prompt: "Use $manual-verify to test workflows affected by these changes from the audience’s perspective."

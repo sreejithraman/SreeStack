@@ -1,62 +1,69 @@
 ---
 name: review-fix-loop
-description: Use when a local diff needs repeated review, accepted-finding fixes, and verification before handoff or push, or when another skill requests a current local quality check.
+description: Review a branch, PR, or local diff; fix accepted findings and verify before handoff or push.
 ---
 
 # Review Fix Loop
 
-Review fix loop runs review sources over one local diff, sweeps their findings through `/review-sweep`, verifies the result, and repeats until stable or blocked. It leaves commits, pushes, PR work, and merges to its caller.
+The parent owns scope, dispatch, triage, fixes, and verification. Leave commits,
+pushes, PR replies, and merges to the caller.
 
-## Steps
+1. **Scope.** Resolve the supplied base once; use the merge-base for branch
+   comparisons. Otherwise use the established parent branch or repo setting;
+   ask if ambiguous. Stop on an invalid base or empty scope.
 
-1. Scope the loop.
+   Default scope: `git diff <resolved-base> --` plus contents from
+   `git ls-files --others --exclude-standard`. This includes committed, staged,
+   unstaged, and untracked work. Honor a narrower scope when requested.
+   Gather requirements from the user, issues, or spec; repo standards; and checks.
+   Record the base, head, diff, and untracked contents for this pass.
 
-   Inspect git status, resolve the supplied review base, and identify the reviewed diff, intended behavior, affected modules, available spec or issue source, standards sources, and verification commands.
+2. **Review.** Launch a fresh, read-only subagent per brief, in parallel within
+   available slots; batch the rest:
 
-   Finish this step only when the supplied fixed point resolves and the complete diff scope is known.
+   - [Ponytail](references/ponytail.md): cuts and reuse.
+   - [Thermo](references/thermo.md): structural quality, every pass.
+   - [Standards](references/standards.md): repo rules and code smells.
+   - [Spec](references/spec.md): requirements; skip explicitly if none exist.
 
-2. Run review sources.
+   Pass each agent the same scope, requirements, standards, its brief’s absolute
+   path, and this contract:
 
-   Run `/ponytail-review` in diff mode against the complete loop diff.
+   > Read the whole supplied scope and enough surrounding code to judge it.
+   > Report findings with locations, evidence, impact, and proposed remedies,
+   > plus coverage and gaps. Leave edits and further delegation to the parent.
 
-   Run a strict maintainability review against the Greenfield Standard below. When the user separately invokes `/thermo-nuclear-code-quality-review`, include its returned findings in this loop.
+   Keep reviewers independent of earlier conclusions or the author’s defense.
+   Pause edits until all return. If the code changes during review, refresh the
+   scope and rerun affected reviews. Report unavailable subagents as a blocker.
 
-   Run `/code-review` when a fixed point is available, so Standards and Spec are reviewed as separate axes.
+   Run `/gemini` directly for a read-only review on every pass, when available.
+   Pass the resolved base, complete file scope, requirements, and standards.
+   Confirm its reported scope matches; report missing coverage as a blocker.
 
-   Run `/gemini-review` when the external-review path is available: at least on the first pass, and again after material edits.
+   Continue only when every applicable source has a report or explicit blocker.
+   Missing coverage or a failed reviewer is not a clean review.
 
-   Finish this step only when every applicable review source has returned findings or an explicit blocker.
+3. **Sweep.** Run `/review-sweep` in the parent. Keep each finding’s source,
+   including Standards versus Spec. Finish when every finding has a disposition
+   and every accepted fix is complete or blocked. Preserve intended behavior
+   and contracts within the user’s authorized scope.
 
-3. Sweep findings.
+4. **Verify.** Run planned and fix-specific checks. Use judgment to decide
+   whether `/manual-verify` would add useful confidence, based on the changed
+   behavior, risk, and existing test coverage. Invoke it when needed, even if
+   review found no fixes. Fix failures and rerun affected checks; reassess manual
+   verification after fixes. Keep evidence only while it still applies to the
+   current code. Report any verification you consider necessary but cannot run
+   as a concrete blocker.
 
-   Combine review findings and run `/review-sweep`. Treat external reviews as advisory until verified against code and project context.
+5. **Repeat.** If this pass made any fixes during sweep or verification, refresh
+   the diff and untracked contents and return to step 2 against the same base.
+   Small fixes count too. Reopen rejected or deferred findings only with new
+   evidence. Finish cleanly only after a full pass makes no fixes, needs no
+   further accepted fixes, and has complete review coverage and passing checks,
+   including any manual verification judged necessary. If a blocker prevents that,
+   report it and any unfinished work; a blocked pass is not a clean result.
 
-   `/review-sweep` owns classification, accepted-finding fixes, and parent-owned defers. Finish this step only when every finding has one disposition.
-
-4. Verify.
-
-   Run the commands from step 1 plus focused checks made necessary by fixes.
-
-   Run `/manual-verify` when the diff has a browser, user-facing, CLI, API, file, or workflow surface that can be exercised.
-
-   If verification fails because of loop changes, repair the regression and rerun verification. Finish this step when every planned check passes or has an evidenced blocker unrelated to the diff.
-
-5. Repeat.
-
-   Repeat review sources, sweep, and verification after material edits. Stop when the latest relevant review pass has no unblocked accepted findings and verification is green, or when remaining blockers are explicit.
-
-## Greenfield Standard
-
-Behavior changes require user approval; otherwise preserve intended behavior and public contracts. Within that boundary, treat the current implementation as a draft: put the seam in the right place, keep the interface small, hide complexity inside a deep module, follow local idioms, delete obsolete scaffolding, and prefer fewer concepts over patched complexity.
-
-## Report
-
-End with:
-
-- review base and diff scope
-- review sources run
-- accepted findings fixed by `/review-sweep`
-- deferred or blocked findings
-- verification commands and results
-- manual verification result or blocker
-- residual risk
+Report scope, reviews run or skipped, fixes, deferrals, blockers, checks,
+any manual verification evidence, and remaining risks.

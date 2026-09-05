@@ -38,11 +38,11 @@ Finish current planning when the order is acyclic, every current change has one 
 
 ## Create And Process
 
-Create local branches and commits for current layers from base to tip. Leave each push and PR creation to `/review-push-and-watch`, passing the exact head branch, immediate base, owned commits and files, existing PR if any, and review-push-and-watch ready mode.
+Create local branches and commits for current layers from base to tip. Leave each push and PR creation to `/pr-prep`, passing the exact head branch, immediate base, owned commits and files, existing PR if any, and ready mode without `yolo`.
 
-Run `/review-push-and-watch` on the base layer first, using its immediate base as the review base. Continue upward only after the lower layer is stable or has a blocker that does not invalidate the higher diff.
+Run `/pr-prep` on the base layer first, using its immediate base as the review base. Continue upward only after the lower layer is stable or has a blocker that does not invalidate the higher diff.
 
-Each layer has its own PR feedback and CI state. Higher-layer CI usually exercises the cumulative code through that layer. `/review-push-and-watch` owns the state of one layer; launch swarm owns the ordered set.
+Each layer has its own PR feedback and CI state. Higher-layer CI usually exercises the cumulative code through that layer. `/pr-prep` owns the state of one layer; launch swarm owns the ordered set.
 
 ## Invalidation And Restacking
 
@@ -53,10 +53,10 @@ After a lower-layer push:
 1. Mark affected descendants stale.
 2. Rebase or rebuild each descendant onto its updated immediate base from low to high.
 3. Resolve conflicts without moving changes between layers unless the stack plan is also updated.
-4. Mark the handoff as a caller-owned restack so `/review-push-and-watch` can publish it with force-with-lease after local review.
-5. Run `/review-push-and-watch` again for every changed descendant.
+4. Mark the handoff as a caller-owned restack so `/pr-prep` can publish it with force-with-lease after local review.
+5. Run `/pr-prep` again for every changed descendant.
 
-The stack is current when every layer records its latest head, intended immediate base, current diff, and current review-push-and-watch result.
+The stack is current when every layer records its latest head, intended immediate base, current diff, and current pr-prep result.
 
 ## CI Caveat
 
