@@ -1,26 +1,100 @@
 ---
 name: prototype
-description: Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.
+description: Build throwaway UI prototypes for web, mobile, or desktop. Use when the user wants to explore layouts, compare design options, or try a screen or interaction before choosing a design.
 ---
 
 # Prototype
 
-A prototype is **throwaway code that answers a question**. The question decides the shape.
+Build enough UI to answer a design question. Use the target platform and the
+project's stack so the user can judge the design where it will run.
 
-## Pick a branch
+## 1. Set the scope
 
-Identify which question is being answered — from the user's prompt, the surrounding code, or by asking if the user is around:
+Infer the screen, platform, and design question from the request and nearby code.
+Ask only when a missing choice would change what you build. State the question,
+where the prototype will run, and which options you will compare.
 
-- **"Does this logic / state model feel right?"** → [LOGIC.md](LOGIC.md). Build a single shareable HTML file — free-play buttons plus tabbed guided walkthroughs — that pushes the state machine through cases that are hard to reason about on paper, and that a non-developer can drive.
-- **"What should this look like?"** → [UI.md](UI.md). Generate several radically different UI variations on a single route, switchable via a URL search param and a floating bottom bar.
+Default to three variants; follow the user's count or single concept when given.
+Make variants differ in layout, information hierarchy, navigation, or the main
+interaction. Each should offer a clear design choice beyond color or copy.
 
-The two branches produce very different artifacts — getting this wrong wastes the whole prototype. If the question is genuinely ambiguous and the user isn't reachable, default to whichever branch better matches the surrounding code (a backend module → logic; a page or component → UI) and state the assumption at the top of the prototype.
+## 2. Choose a home
 
-## Rules that apply to both
+Prefer the existing screen with its surrounding navigation, components, and
+realistic content. A new section of a screen still belongs in that screen.
+Use a separate prototype route, screen, preview, or development target when no
+existing screen fits. Follow the project's conventions and clearly name prototype
+files. Keep prototype entry points and controls out of release builds.
 
-1. **Throwaway from day one, and clearly marked as such.** Locate the prototype code close to where it will actually be used (next to the module or page it's prototyping for) so context is obvious — but name it so a casual reader can see it's a prototype, not production. For throwaway UI routes, obey whatever routing convention the project already uses; don't invent a new top-level structure.
-2. **Trivial to run.** A UI prototype starts from one command in the project's task runner — `pnpm <name>`, `python <path>`, `bun <path>`, etc. A logic demo is a single HTML file the user double-clicks. Either way, no thinking required to start it.
-3. **No persistence by default.** State lives in memory. Persistence is the thing the prototype is _checking_, not something it should depend on. If the question explicitly involves a database, hit a scratch DB or a local file with a clear "PROTOTYPE — wipe me" name.
-4. **Skip the polish.** No tests, no error handling beyond what makes the prototype _runnable_, no abstractions. The point is to learn something fast.
-5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or render the full relevant state so the user can see what changed.
-6. **Capture it when done.** Fold any validated decision into the real code, then capture the prototype itself as a **primary source**: commit it to a throwaway branch, out of main, and leave a context pointer to that branch on the implementation issue. Capture the answer too — the verdict and the question it settled — in the issue or a commit. The main branch keeps only the validated decision.
+Match the platform:
+
+- **Web:** use the existing route where possible. A `?variant=` parameter makes
+  each option easy to reopen and share.
+- **Mobile:** use the app's UI framework and run in a simulator, emulator, or
+  device. A native preview works for layout; use the running app when judging
+  navigation, gestures, keyboard behavior, or system UI.
+- **Desktop and other platforms:** use the app's normal window or preview host,
+  with the input methods and window sizes relevant to the question.
+
+For a native app, use a browser mockup only when the user asks for one or accepts
+it as a fallback. If target tooling is missing, explain what blocks the native
+preview and what the fallback would let them judge.
+
+## 3. Build the variants
+
+Use the project's design system and components. Keep each variant's layout free
+to differ; share stable controls and fixtures where useful.
+
+Use the same representative content across variants, including relevant empty,
+loading, or crowded states. Reuse safe read-only data access where it helps.
+Stub writes and keep interaction state in memory. Add only enough behavior to
+try the flow; keep backend integration out of the prototype.
+
+Spend effort on what the user is judging: hierarchy, spacing, touch targets,
+safe areas, keyboard overlap, or window resizing as the platform requires.
+Keep the code disposable, with only enough error handling to run reliably.
+Skip automated tests for throwaway variants; verify them by running them.
+
+## 4. Make comparison easy
+
+Provide one shared development control with a clear variant label and a way to
+move between options without rebuilding. Keep it distinct from the design and
+clear of the content and controls under review. For a single concept, omit the
+variant switcher.
+
+- **Web:** a floating switcher can update `?variant=` through the router.
+  Optional arrow-key shortcuts must leave text inputs and other keyboard
+  controls alone.
+- **Mobile:** use a debug menu, sheet, or compact native picker. Respect safe
+  areas and avoid taking over app gestures or covering bottom navigation.
+- **Desktop:** use a development menu or toolbar suited to the app.
+
+Keep the same sample state when switching where practical. If variants need
+different navigation or state, reset to a known starting point and make the
+reset clear. Include a short name that explains each option's design choice.
+
+## 5. Run and show it
+
+Run each variant on the target platform and try the interactions that answer the
+question. Check that switching works and the comparison control stays out of the
+way. State any behavior you could not verify.
+
+Use `showroom` for web and iOS handoff. For other platforms, provide a screenshot
+or recording from the running prototype and the exact steps to open it. Give the
+user the run command or build target, screen, and variant controls needed to
+return to it. Screenshots should identify the variant they show.
+
+Briefly explain the tradeoff each option tests. Leave the design choice open
+until the user picks one or asks you to choose; combine parts when requested.
+
+## 6. Record the decision
+
+Once the user chooses, record which design won and why. Preserve the variants
+on a throwaway branch, out of main, with enough run steps to revisit them. Keep
+the branch pointer and verdict in the handoff or an authorized implementation
+issue update.
+
+When implementation is in scope, apply the chosen design with the project's
+normal quality checks. Remove prototype controls and unused variants from the
+production change. A prototype request alone ends with a reviewable prototype;
+it does not call for shipping the design.

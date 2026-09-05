@@ -124,6 +124,9 @@ Accepts that handoff as authorization for task-owned cleanup.
 
 - [mattpocock/skills / skills/engineering/prototype](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/prototype) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
+Adapted for UI prototypes across web, mobile, and desktop. Removed the logic
+prototype path and combined the UI workflow into `SKILL.md`.
+
 ## react-doctor
 
 - [millionco/react-doctor / skills/react-doctor](https://github.com/millionco/react-doctor/tree/79d80072817eb86c74f3dd42ce91c8104f448810/skills/react-doctor) — commit `79d80072817eb86c74f3dd42ce91c8104f448810`.
