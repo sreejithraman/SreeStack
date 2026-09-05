@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI Component Inspiration"
+  short_description: "Find fresh UI components that fit a feature"
+  default_prompt: "Use $ui-component-inspiration to find a few fresh UI components that fit this feature."
+policy:
+  allow_implicit_invocation: false
