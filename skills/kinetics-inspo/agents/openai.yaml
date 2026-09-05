@@ -1,4 +1,0 @@
-interface:
-  display_name: "Kinetics Inspo"
-  short_description: "Find interface motion patterns from Kinetics"
-  default_prompt: "Use $kinetics-inspo to find Kinetics motion patterns that fit this interaction."

@@ -48,10 +48,6 @@ the imported revisions are unknown.
 
 - Local: `skills/execute-goal` (SreeStack).
 
-## forever-components-inspo
-
-- Local: `skills/forever-components-inspo` (SreeStack).
-
 ## gemini
 
 - Local: `skills/gemini` (SreeStack), formerly `gemini-review`.
@@ -97,10 +93,6 @@ Local: use `review-fix-loop` to review, fix, and verify before committing.
 - [mattpocock/skills / skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/improve-codebase-architecture) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
 Local: default to high-level findings, recommendations, and reasons in chat; create an HTML report only on request.
-
-## kinetics-inspo
-
-- Local: `skills/kinetics-inspo` (SreeStack).
 
 ## launch-swarm
 
@@ -229,6 +221,23 @@ Local: point the review stage to `review-fix-loop`.
 ## triage
 
 - [mattpocock/skills / skills/engineering/triage](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/triage) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+
+## ui-component-inspiration
+
+- Local: `skills/ui-component-inspiration` (SreeStack).
+- [Kinetics](https://github.com/ckissi/kinetics) — motion examples and source search guidance.
+- [Forever Components](https://forevercomponents.com/infinite/) — component manifest and source search guidance.
+- [React Bits](https://reactbits.dev) — component catalog.
+- [Magic UI](https://magicui.design/docs/components) — component catalog and Shimmer Button retrieval example, checked 2026-09-02.
+- [Lightswind UI](https://lightswind.com/components) — component catalog.
+- [Aceternity UI](https://ui.aceternity.com/components) — component catalog.
+- [Hover.dev](https://www.hover.dev/components) — component catalog.
+- [Motion](https://motion.dev/docs/react) — animation tool reference.
+- [Superdesign](https://superdesign.dev) — design tool reference.
+
+Sources are live references; no component code or catalog snapshot is bundled.
+Local: manual-only in both hosts, with `disable-model-invocation: true` and
+`allow_implicit_invocation: false`.
 
 ## wait-what
 
