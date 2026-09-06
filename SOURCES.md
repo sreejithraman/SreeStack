@@ -94,6 +94,25 @@ Local: use `review-fix-loop` to review, fix, and verify before committing.
 
 Local: default to high-level findings, recommendations, and reasons in chat; create an HTML report only on request.
 
+## ios-haptics
+
+- Local: `skills/ios-haptics` (SreeStack).
+- [CharlesWiltgen/Axiom / haptics](https://github.com/CharlesWiltgen/Axiom/blob/dd3334734ecd01afab28b0ac22c49d4b5b2e5857/.claude-plugin/plugins/axiom/skills/axiom-media/skills/haptics.md) — inspiration reviewed at commit `dd3334734ecd01afab28b0ac22c49d4b5b2e5857`; no imported baseline. Found through [MCP Market](https://mcpmarket.com/tools/skills/ios-haptics).
+- [Apple: Practice audio haptic design](https://developer.apple.com/videos/play/wwdc2021/10278/) — WWDC21 session 10278.
+- [Apple: Expanding the Sensory Experience with Core Haptics](https://developer.apple.com/videos/play/wwdc2019/223/) — WWDC19 session 223; design reference.
+- [Apple: Sharpness](https://developer.apple.com/documentation/corehaptics/chhapticevent/parameterid/hapticsharpness), [parameter curves](https://developer.apple.com/documentation/corehaptics/chhapticparametercurve), and [AHAP format](https://developer.apple.com/documentation/corehaptics/representing-haptic-patterns-in-ahap-files) — design and Core Haptics references; unversioned docs, checked 2026-09-05.
+- [Apple: SensoryFeedback](https://developer.apple.com/documentation/swiftui/sensoryfeedback) and [trigger modifier](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(_:trigger:)) — unversioned docs, checked 2026-09-05.
+- [Apple: prepare()](https://developer.apple.com/documentation/uikit/uifeedbackgenerator/prepare()) — unversioned docs, checked 2026-09-05.
+- [Apple: Feedback selection](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(trigger:_:)) and [view-associated impact generator](https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator/init(style:view:)) — sources for `references/swiftui-feedback.md`; unversioned docs, checked 2026-09-05.
+- [Apple: Engine setup and recovery](https://developer.apple.com/documentation/corehaptics/preparing-your-app-to-play-haptics), [pattern players](https://developer.apple.com/documentation/corehaptics/chhapticpatternplayer), and [audio scheduling](https://developer.apple.com/documentation/avfaudio/avaudioplayer/play(attime:)) — sources for `references/core-haptics.md`; unversioned docs, checked 2026-09-05.
+
+Written locally for SwiftUI apps targeting iOS 26+; no upstream prose or code
+copied. Starts with event meaning and design, then SwiftUI state-driven feedback
+or authored Core Haptics playback. Direct UIKit emission serves control and timing
+needs, with no older-platform path. References connect worked designs, state and
+playback ownership, sound, motion, and device tuning. Example values are local
+proposals, not Apple presets. Automatic invocation uses the host defaults.
+
 ## launch-swarm
 
 - Local: `skills/launch-swarm` (SreeStack).
@@ -172,11 +191,16 @@ modes, installation steps, benchmark displays, and whole-repo debt scans.
 Local: folded the three former review skills into four read-only reviewer briefs.
 Split Matt’s Standards and Spec rules, moved dispatch and scope to the parent,
 and kept Thermo’s upstream language with a read-only, parent-scoped review contract.
-References have no invocation settings;
-Thermo runs on every review pass. Gemini runs directly. The parent sweeps findings,
-fixes accepted issues, and verifies the result. Any fix starts another full pass;
-completion requires a pass with no fixes needed. The model decides when manual
-verification adds useful confidence based on behavior, risk, and test coverage.
+References have no invocation settings. Code and mixed changes use the full loop:
+Thermo runs on every pass, Gemini runs directly, and the parent sweeps findings,
+fixes accepted issues, and verifies the result. Any fix in that loop starts another
+full pass; completion requires a pass with no fixes needed. The model decides when
+manual verification adds useful confidence based on behavior, risk, and test coverage.
+
+Docs and skill instructions alone use one focused parent review, accepted fixes,
+and targeted verification. Style preferences are optional; explicit writing rules
+still apply. Executable skill scripts use the code loop. An explicit user request
+for repeated full reviews overrides the focused path. Invocation choices stay unchanged.
 
 ## pr-prep
 
