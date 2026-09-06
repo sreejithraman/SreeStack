@@ -49,11 +49,11 @@ the imported revisions are unknown.
 
 ## goal-bee
 
-- Local: `skills/goal-bee` (SreeStack), formerly `execute-goal`.
+- Local: `skills/goal-bee` (SreeStack).
 
 ## gemini
 
-- Local: `skills/gemini` (SreeStack), formerly `gemini-review`.
+- Local: `skills/gemini` (SreeStack).
 - [Antigravity CLI docs](https://antigravity.google/docs/cli/headless/) — checked 2026-09-05 against installed agy `1.1.26`; docs are unversioned.
 
 Local: focus on self-contained headless prompts and assessing Gemini's answers.
@@ -118,7 +118,7 @@ proposals, not Apple presets. Automatic invocation uses the host defaults.
 
 ## swarm-and-push
 
-- Local: `skills/swarm-and-push` (SreeStack), formerly `launch-swarm`.
+- Local: `skills/swarm-and-push` (SreeStack).
 
 ## liquid-glass
 
@@ -209,8 +209,8 @@ for repeated full reviews overrides the focused path. Invocation choices stay un
 
 - Local: `skills/pr-prep` (SreeStack).
 
-Renamed from `review-push-and-watch`; keeps publishing, CI, and feedback
-references. Optional `yolo` authorizes merging this PR once requirements pass.
+Keeps publishing, CI, and feedback references. Optional `yolo` authorizes
+merging this PR once requirements pass.
 CI and feedback fixes return to publishing, without repeating the local review loop.
 Runs `post-merge-cleanup` after a confirmed merge.
 

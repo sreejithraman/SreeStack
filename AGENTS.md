@@ -5,6 +5,8 @@ skill folders. Built-in and plugin-managed skills stay with their hosts.
 
 - Keep `skills/` flat. Keep repo-wide source records outside it in
   [SOURCES.md](SOURCES.md), following that file's format and invocation rules.
+- Use current local skill names in source records; Git keeps local rename
+  history. Preserve upstream names and paths that identify imported sources.
 - Before modifying a skill, read its entry in `SOURCES.md` for source history,
   local adaptations, and invocation choices.
 - Upstream updates must preserve local adaptations and invocation choices
