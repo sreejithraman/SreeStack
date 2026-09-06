@@ -1,6 +1,6 @@
 # Release notes
 
-Checked on 2026-09-06. The repo remains private.
+Published on 2026-09-06: [SreeStack](https://github.com/sreejithraman/SreeStack).
 
 ## Done
 
@@ -27,16 +27,14 @@ record still notes that no license was found at the imported revision.
 Unknown import revisions remain recorded in SOURCES.md. No further upstream
 license research is planned for this release.
 
-## At publication
+## Publication
 
-GitHub rejects branch protection and rulesets for this private repo on its
-current plan. After making it public:
+- Made the repo public after merging the prep PR and confirming CI passed.
+- Protected `main`: require the `Skills and secrets` check against an up-to-date
+  base, block force pushes, and block branch deletion. These rules apply to
+  admins too. No extra reviewer is required.
+- Enabled secret scanning, push protection, and private vulnerability reporting.
+  See [SECURITY.md](SECURITY.md) for the reporting link.
 
-- Enable protection for `main`: require the `Skills and secrets` check,
-  block force pushes, and block branch deletion. Extra reviewers are optional.
-- Enable GitHub secret scanning, push protection, and private vulnerability
-  reporting where available.
-
-The checks run on pushed branches and pull requests. Merge the prep branch
-before changing visibility. No history rewrite or paid plan is needed for
-this preparation.
+The checks run on pushed branches and pull requests. Kept the existing Git
+history and account plan.

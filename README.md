@@ -30,11 +30,12 @@ This collection has no single runtime that supports every skill.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and checks, and
 [AGENTS.md](AGENTS.md) for agent instructions.
 
-## Release status and licenses
+## License
 
 SreeStack’s original work uses the [MIT License](LICENSE).
 Imported material keeps its own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-See [release notes](OPEN_SOURCE_READINESS.md) for the checks and publication steps.
+See [release notes](OPEN_SOURCE_READINESS.md) for the checks and repository settings.
+Report security issues through the [private reporting channel](SECURITY.md).
 
 ## Credits and thanks
 
