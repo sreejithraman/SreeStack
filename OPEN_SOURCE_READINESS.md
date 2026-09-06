@@ -1,58 +1,42 @@
-# Open-source readiness
+# Release notes
 
-Audit date: 2026-09-06. The repository remains private. This checklist records
-release work; it does not approve publication.
+Checked on 2026-09-06. The repo remains private.
 
-## Completed
+## Done
 
-- Added the MIT License for original work; kept upstream terms and notices.
+- Added MIT for original work and kept upstream notices. React Doctor keeps
+  its Modified MIT terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Removed merged branches and the remaining old worktree. Saved a verified
+  recovery bundle outside tracked files. Enabled deletion of merged PR branches.
+- Added setup and contribution notes.
+- Added one CI workflow for required skill fields, source entries, inline
+  local Markdown links, whitespace, and Gitleaks secret scanning.
+- Gitleaks found no secrets in the 169 commits saved before cleanup or in
+  current files. Reviewed filenames and commit subjects, and checked historical
+  file contents for personal paths, email addresses, and Tailscale addresses.
+  The checks found one old `/Users/sree/...` path in the removed gemini-review
+  skill; other matches were examples or upstream contacts. Keep the history.
+  These checks do not prove that every private fact is absent.
+- Confirmed that all 42 current skills have required fields, source entries,
+  and working inline local Markdown file links.
 
-- Removed 17 local branches whose tips were merged or matched a merged PR head.
-- Removed nine remote branches after checking their tips against merged PRs.
-- Removed one clean old worktree. The final worktree list contains the main
-  checkout and the open-source prep checkout.
-- Saved and verified a Git bundle of all refs before cleanup, outside tracked
-  files. No history rewrite or garbage collection ran.
-- Added setup and contribution notes, plus six upstream license notices fetched
-  at the recorded import revisions. See THIRD_PARTY_NOTICES.md for their scope.
-- Enabled automatic deletion of merged PR branches.
-- Ran Gitleaks 8.30.1 with redacted reports: no findings in all 169 commits in
-  the pre-cleanup bundle, 146 commits on remaining refs, or current files.
-  This scan covers known patterns, not every possible secret or private fact.
-- Compared the Apache-2.0 eli5 skill with its recorded import; it matches byte
-  for byte.
-- Checked commit author emails on remaining refs; all use GitHub noreply addresses.
-- Found no user-specific absolute paths or personal email addresses in current
-  skill files with the patterns checked.
+## Kept as requested
 
-## Resolve before publication
+Liquid Glass stays in the collection at the owner's direction. The source
+record still notes that no license was found at the imported revision.
+Unknown import revisions remain recorded in SOURCES.md. No further upstream
+license research is planned for this release.
 
-- [ ] Resolve `skills/liquid-glass`: no license file appeared in the upstream
-  tree at `2c1b2789c30dc2c9208f3b9a3811d42480714577`, and the local skill
-  declares no license. Obtain permission or remove that imported material
-  from the public release. Account for copies in Git history as well.
-- [ ] Decide how to handle `skills/react-doctor`. Its recorded revision uses
-  Modified MIT with restrictions on model training and certain paid services.
-  Keep the exact terms, obtain different terms, or omit it from the public
-  release. A plain MIT label would not describe the whole collection.
-- [ ] Resolve unknown import revisions for animate, design-eng, and
-  refactoring-ui-skill; check that notices cover the actual imported material.
-- [ ] Review old filenames, commit messages, and removed documents for private
-  context. Branch deletion does not remove content from GitHub history.
-- [ ] Pick the public history: retain the reviewed history or publish a clean
-  initial commit. If private or unlicensed material needs removal, prepare
-  and review that change before publishing.
+## At publication
 
-## Before inviting users
+GitHub rejects branch protection and rulesets for this private repo on its
+current plan. After making it public:
 
-- [ ] Try installation in a fresh skill directory and a supported agent host.
-  Test representative skills; document host and tool requirements that fail.
-- [ ] Add CI for skill structure, relative links, and secret scanning. Select
-  required checks once they pass on this repository.
-- [ ] Set a main-branch ruleset, including force-push and deletion controls.
-- [ ] Check available GitHub secret scanning and push protection settings.
-- [ ] Set up private vulnerability reporting and document a working contact
-  before adding a security policy that promises a reporting channel.
-- [ ] Review repository description, topics, and release notes.
-- [ ] Approve the final diff and make the repository public only after the
-  release blockers above are resolved.
+- Enable protection for `main`: require the `Skills and secrets` check,
+  block force pushes, and block branch deletion. Extra reviewers are optional.
+- Enable GitHub secret scanning, push protection, and private vulnerability
+  reporting where available.
+
+The checks run on pushed branches and pull requests. Merge the prep branch
+before changing visibility. No history rewrite or paid plan is needed for
+this preparation.

@@ -14,12 +14,10 @@ beside that skill. Keep repo-wide records outside `skills/`.
 
 Before submitting:
 
-- Run `git diff --check`.
-- Check that relative links and referenced files exist.
+- Run `python3 scripts/check_skills.py` and `git diff --check`.
+  CI also scans Git history for secrets.
 - For skill changes, try a sample request in the intended host and report any
   tool or account requirements. Mark checks you could not run.
 - Scan changes for secrets, personal paths, and account-specific values.
 
-Original contributions use the root [MIT License](LICENSE). Resolve the release items in
-[OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) before inviting outside
-contributions.
+Original contributions use the root [MIT License](LICENSE).

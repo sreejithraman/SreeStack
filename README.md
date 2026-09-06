@@ -34,7 +34,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and checks, and
 
 SreeStack’s original work uses the [MIT License](LICENSE).
 Imported material keeps its own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-[OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) tracks unresolved release work.
+See [release notes](OPEN_SOURCE_READINESS.md) for the checks and publication steps.
 
 ## Credits and thanks
 
