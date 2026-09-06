@@ -1,19 +1,40 @@
 # SreeStack
 
-The source of truth for Sree’s user skills. Browse [skills/](skills/) for the
-collection and edit skills here.
+A collection of agent skills for planning, coding, review, research, and UI work.
+It includes original workflows and adapted skills from the projects credited below.
+Browse [skills/](skills/) and see [SOURCES.md](SOURCES.md) for each skill’s history.
 
 ## Use
 
-Clone this repo, then symlink its `skills/` directory to `~/.agents/skills`.
-Move any existing `~/.agents/skills` folder aside first.
+Clone the repo, then link the skills you want into your agent’s skill directory.
+For a host that reads `~/.agents/skills`:
 
 ```bash
-mkdir -p ~/.agents
-ln -s /absolute/path/to/SreeStack/skills ~/.agents/skills
+git clone https://github.com/sreejithraman/SreeStack.git
+cd SreeStack
+mkdir -p ~/.agents/skills
+ln -s "$PWD/skills/tdd" ~/.agents/skills/tdd
 ```
 
-Edit skills in this repo. See [AGENTS.md](AGENTS.md) for how to add and update them.
+Repeat the last command for other skills. If that destination already exists,
+keep it or move it aside before linking. To uninstall, remove only the symlink
+you created. Pull changes in this clone to update linked skills.
+
+Read each skill before use. Some workflows need host tools for goals, agents,
+or browser control; others need GitHub CLI, Antigravity CLI, Tailscale, or Apple
+development tools. Available tools and invocation settings vary by host.
+This collection has no single runtime that supports every skill.
+
+## Contribute
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and checks, and
+[AGENTS.md](AGENTS.md) for agent instructions.
+
+## Release status and licenses
+
+Open-source preparation is in progress. A root license is still pending.
+Imported material keeps its own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) tracks unresolved release work.
 
 ## Credits and thanks
 
