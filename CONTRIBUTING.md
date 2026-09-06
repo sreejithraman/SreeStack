@@ -20,6 +20,6 @@ Before submitting:
   tool or account requirements. Mark checks you could not run.
 - Scan changes for secrets, personal paths, and account-specific values.
 
-The root license is pending. Resolve the release items in
+Original contributions use the root [MIT License](LICENSE). Resolve the release items in
 [OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) before inviting outside
 contributions.

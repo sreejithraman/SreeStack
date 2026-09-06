@@ -5,6 +5,8 @@ release work; it does not approve publication.
 
 ## Completed
 
+- Added the MIT License for original work; kept upstream terms and notices.
+
 - Removed 17 local branches whose tips were merged or matched a merged PR head.
 - Removed nine remote branches after checking their tips against merged PRs.
 - Removed one clean old worktree. The final worktree list contains the main
@@ -25,8 +27,6 @@ release work; it does not approve publication.
 
 ## Resolve before publication
 
-- [ ] Choose a root license for original work and add its copyright notice.
-  Keep upstream terms and notices attached to imported material.
 - [ ] Resolve `skills/liquid-glass`: no license file appeared in the upstream
   tree at `2c1b2789c30dc2c9208f3b9a3811d42480714577`, and the local skill
   declares no license. Obtain permission or remove that imported material

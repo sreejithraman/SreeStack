@@ -32,7 +32,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and checks, and
 
 ## Release status and licenses
 
-Open-source preparation is in progress. A root license is still pending.
+SreeStack’s original work uses the [MIT License](LICENSE).
 Imported material keeps its own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 [OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) tracks unresolved release work.
 

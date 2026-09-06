@@ -2,7 +2,8 @@
 
 This file maps bundled material to upstream license notices. See
 [SOURCES.md](SOURCES.md) for exact import revisions, paths, and local changes.
-These notices do not license SreeStack’s original work.
+SreeStack’s original work uses the root [MIT License](LICENSE). Imported
+material keeps the terms listed below; the root license does not replace them.
 
 | Source | Bundled material | Notice |
 | --- | --- | --- |
@@ -21,8 +22,8 @@ SOURCES.md, checked on 2026-09-06. Cursor’s notice comes from
 `cursor-team-kit/LICENSE`. Existing per-skill notices remain in place.
 
 React Doctor’s notice includes restrictions on model training and certain paid
-products or services. Do not describe it as plain MIT. Decide how to handle it
-before assigning a license to the collection.
+products or services. Do not describe it as plain MIT. Its terms still apply alongside
+the root license.
 
 The imported revisions for animate, design-eng, and refactoring-ui-skill remain
 unknown. Their bundled notices do not resolve those source-history gaps.
