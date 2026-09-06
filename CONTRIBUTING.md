@@ -12,6 +12,9 @@ before copying material.
 Keep each skill in one folder directly under `skills/`. Put supporting files
 beside that skill. Keep repo-wide records outside `skills/`.
 
+Install the checker dependency with
+`python3 -m pip install -r scripts/requirements-checks.txt`.
+
 Before submitting:
 
 - Run `python3 scripts/check_skills.py` and `git diff --check`.
