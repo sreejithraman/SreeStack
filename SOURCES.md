@@ -47,9 +47,9 @@ the imported revisions are unknown.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
-## execute-goal
+## goal-bee
 
-- Local: `skills/execute-goal` (SreeStack).
+- Local: `skills/goal-bee` (SreeStack), formerly `execute-goal`.
 
 ## gemini
 
@@ -116,9 +116,9 @@ needs, with no older-platform path. References connect worked designs, state and
 playback ownership, sound, motion, and device tuning. Example values are local
 proposals, not Apple presets. Automatic invocation uses the host defaults.
 
-## launch-swarm
+## swarm-and-push
 
-- Local: `skills/launch-swarm` (SreeStack).
+- Local: `skills/swarm-and-push` (SreeStack), formerly `launch-swarm`.
 
 ## liquid-glass
 

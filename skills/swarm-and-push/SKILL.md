@@ -1,11 +1,11 @@
 ---
-name: launch-swarm
+name: swarm-and-push
 description: Use when a direct task, or a spec with child tickets, should be built and delivered as one or more merge-ready PRs, including stacked PRs or an explicitly authorized merge.
 ---
 
-# Launch Swarm
+# Swarm and Push
 
-Launch swarm turns a direct task or spec-rooted ticket set into merge-ready PRs, and optionally merges them when explicitly authorized. It works the ticket frontier and forms PRs as reviewable boundaries become clear.
+Swarm and push turns a direct task or spec-rooted ticket set into merge-ready PRs, and optionally merges them when explicitly authorized. It works the ticket frontier and forms PRs as reviewable boundaries become clear.
 
 Use this when the user wants the work carried through implementation, PR handling, readiness, and optional merge.
 
@@ -26,7 +26,7 @@ Use this when the user wants the work carried through implementation, PR handlin
 
 2. Select And Assign Work
 
-   Invocation of launch swarm authorizes `/goal-swarm` when independent shards will shorten the build. For ticketed delivery, give each selected ticket one agent-owned shard. For linear work, implement locally.
+   Invocation of swarm and push authorizes `/goal-swarm` when independent shards will shorten the build. For ticketed delivery, give each selected ticket one agent-owned shard. For linear work, implement locally.
 
    Make only the current delivery units concrete. Keep later work in the ticket graph until its PR boundary becomes clear. Finish this step when each current ticket or direct task has one owner, one intended result, and a known base for its current work.
 
@@ -46,7 +46,7 @@ Use this when the user wants the work carried through implementation, PR handlin
 
 5. Prepare PRs
 
-   For each current PR, pass `/pr-prep` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether launch restacked its history. Use `/pr-prep` without `yolo` for both launch modes; merge remains launch work.
+   For each current PR, pass `/pr-prep` an exact handoff: repo and worktree, head branch, immediate base, existing PR if any, owned paths and commits, and whether this skill restacked its history. Use `/pr-prep` without `yolo` for both delivery modes; this skill owns merging.
 
    Independent PRs may run in parallel. Process dependent PRs from base to tip. When a lower PR changes, restack every affected descendant and rerun `/pr-prep` as required by `references/stacked-prs.md`.
 

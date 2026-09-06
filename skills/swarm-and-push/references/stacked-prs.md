@@ -1,10 +1,10 @@
 # Stacked Pull Requests
 
-Read this reference fully when launch delivery needs two or more dependent PRs.
+Read this reference fully when delivery needs two or more dependent PRs.
 
 ## Terms And Invariants
 
-A **stack** is an ordered set of dependent PR **layers** from base to tip. Each layer has one purpose, one head branch, one immediate base, one reviewable diff, and one PR. Launch Swarm may own independent PRs or more than one stack; each stack remains one linear chain.
+A **stack** is an ordered set of dependent PR **layers** from base to tip. Each layer has one purpose, one head branch, one immediate base, one reviewable diff, and one PR. Swarm and Push may own independent PRs or more than one stack; each stack remains one linear chain.
 
 The first layer targets the delivery base. Each later layer targets the branch immediately below it. Every owned change belongs to exactly one layer.
 
@@ -42,7 +42,7 @@ Create local branches and commits for current layers from base to tip. Leave eac
 
 Run `/pr-prep` on the base layer first, using its immediate base as the review base. Continue upward only after the lower layer is stable or has a blocker that does not invalidate the higher diff.
 
-Each layer has its own PR feedback and CI state. Higher-layer CI usually exercises the cumulative code through that layer. `/pr-prep` owns the state of one layer; launch swarm owns the ordered set.
+Each layer has its own PR feedback and CI state. Higher-layer CI usually exercises the cumulative code through that layer. `/pr-prep` owns the state of one layer; swarm and push owns the ordered set.
 
 ## Invalidation And Restacking
 

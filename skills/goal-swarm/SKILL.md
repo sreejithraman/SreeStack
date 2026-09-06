@@ -5,7 +5,7 @@ description: Use when the user explicitly asks for parallel agents, subagents, o
 
 # Goal swarm
 
-Use parallel agents to complete one parent goal. Follow `/execute-goal` for the parent goal. Each child gets one bounded goal.
+Use parallel agents to complete one parent goal. Follow `/goal-bee` for the parent goal. Each child gets one bounded goal.
 
 The user or a parent skill must grant parallel-agent authority before this skill runs.
 
@@ -19,7 +19,7 @@ The user or a parent skill must grant parallel-agent authority before this skill
 
    Give each shard one owner, one result, and work that does not overlap another shard. Keep work with the parent when another agent would wait on a dependency, edit the same files, or save little time.
 
-3. Give each child one `/execute-goal` request.
+3. Give each child one `/goal-bee` request.
 
    Write each request so the child needs no extra context. State the result, proof, owned work, inputs, limits, checks, and return form. Name shared files and paths the child must leave alone.
 
