@@ -47,13 +47,13 @@ the imported revisions are unknown.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
-## execute-goal
+## goal-bee
 
-- Local: `skills/execute-goal` (SreeStack).
+- Local: `skills/goal-bee` (SreeStack).
 
 ## gemini
 
-- Local: `skills/gemini` (SreeStack), formerly `gemini-review`.
+- Local: `skills/gemini` (SreeStack).
 - [Antigravity CLI docs](https://antigravity.google/docs/cli/headless/) — checked 2026-09-05 against installed agy `1.1.26`; docs are unversioned.
 
 Local: focus on self-contained headless prompts and assessing Gemini's answers.
@@ -116,9 +116,9 @@ needs, with no older-platform path. References connect worked designs, state and
 playback ownership, sound, motion, and device tuning. Example values are local
 proposals, not Apple presets. Automatic invocation uses the host defaults.
 
-## launch-swarm
+## swarm-and-push
 
-- Local: `skills/launch-swarm` (SreeStack).
+- Local: `skills/swarm-and-push` (SreeStack).
 
 ## liquid-glass
 
@@ -209,8 +209,8 @@ for repeated full reviews overrides the focused path. Invocation choices stay un
 
 - Local: `skills/pr-prep` (SreeStack).
 
-Renamed from `review-push-and-watch`; keeps publishing, CI, and feedback
-references. Optional `yolo` authorizes merging this PR once requirements pass.
+Keeps publishing, CI, and feedback references. Optional `yolo` authorizes
+merging this PR once requirements pass.
 CI and feedback fixes return to publishing, without repeating the local review loop.
 Runs `post-merge-cleanup` after a confirmed merge.
 

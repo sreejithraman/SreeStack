@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal Bee"
+  short_description: "Run one goal and prove the result"
+  default_prompt: "Use $goal-bee to write one measurable objective, do the work, check the result, and update the goal state."

@@ -1,6 +1,6 @@
 # Ticketed Delivery
 
-Read this reference fully when Launch Swarm receives a spec issue with child build tickets or a named subset of those tickets.
+Read this reference fully when Swarm and Push receives a spec issue with child build tickets or a named subset of those tickets.
 
 ## Resolve The Spec Root
 
@@ -16,7 +16,7 @@ Validate that:
 - the graph is acyclic
 - current ticket state and ownership are known
 
-The published spec and tickets are fixed input. When either artifact is missing, stop with the exact `/to-spec` or `/to-tickets` action the user must run. Launch Swarm consumes those user-invoked skills' output; it does not replace their planning work.
+The published spec and tickets are fixed input. When either artifact is missing, stop with the exact `/to-spec` or `/to-tickets` action the user must run. Swarm and Push consumes those user-invoked skills' output; it does not replace their planning work.
 
 Resolution is complete when the spec root, full child graph, in-scope set, and current frontier are explicit.
 

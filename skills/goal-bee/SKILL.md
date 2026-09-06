@@ -1,9 +1,9 @@
 ---
-name: execute-goal
+name: goal-bee
 description: Use when the user asks for goal-backed work or another skill assigns one goal. Write a measurable objective, do the work, check the result, and update the goal state.
 ---
 
-# Execute goal
+# Goal bee
 
 Run one goal until its stated checks pass or it meets the `blocked` rule. The goal stays active across turns. It does not grant new permissions or expand the request.
 
