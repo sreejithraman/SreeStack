@@ -1,6 +1,9 @@
 # Skill sources
 
 Sources and revisions from Caddie’s manifest and lock, copied on 2026-09-04.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled license notices
+and unresolved license checks.
+
 Recorded commits are import baselines; local files may differ. Local sources do
 not establish original authorship. Unknown means Caddie did not record the fact.
 
