@@ -20,6 +20,30 @@ in `agents/openai.yaml` aligned: `true`/`false` for manual-only skills;
 
 Adapted in SreeStack.
 
+## app-store-connect
+
+- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9813732f640495bdb7bd1f894f5df499c76cfbcf) — `skills/`; commit `9813732f640495bdb7bd1f894f5df499c76cfbcf`, imported 2026-09-08. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
+- [rorkai/App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Connect-CLI) — command reference checked against installed `asc 5.0.0` on 2026-09-06. Imported examples may cover newer commands; check installed help before use.
+
+- [Apple: Creating Your Product Page](https://developer.apple.com/app-store/product-page/) — checked 2026-09-08 for promotional text and keyword guidance; reference only.
+
+Local: one automatically discoverable skill. `skills/asc-cli-usage/SKILL.md`
+provides the main usage instructions. Each of the other 24 upstream
+`skills/<name>/SKILL.md` files maps to
+`skills/app-store-connect/references/<name>/guide.md`; supporting Markdown
+files keep their paths within each guide directory.
+
+Removed reference frontmatter, repaired cross-guide and renamed-file links,
+and changed skill references to guide references. The main file adds workflow
+routing, a request-based trigger description, installed-version checks, and
+project context lookup. Its Apple Ads
+summary is omitted because the Apple Ads guide covers it. API key creation is
+conditional on a setup request. No app-specific settings or upstream scripts
+are bundled. Upstream workflow procedures remain in the guides; project rules
+and the user's scope govern their use. Local review also requires working copies
+for screenshot cleanup, notes Bash 4 for associative-array examples, and removes
+or qualifies unsupported ranking and release-note policy claims.
+
 ## codebase-design
 
 - [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/codebase-design) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.

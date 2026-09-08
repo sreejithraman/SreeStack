@@ -52,6 +52,7 @@ uses and adapts:
 - [s0xDk](https://github.com/s0xDk/refactoring-ui-skill) — the Refactoring UI skill, based on Adam Wathan and Steve Schoger’s work.
 - [React Doctor](https://github.com/millionco/react-doctor) — the React diagnostics skill.
 - [Charles Wiltgen’s Axiom](https://github.com/CharlesWiltgen/Axiom) — inspiration for our iOS haptics skill.
+- [Rudrank Riyam’s App Store Connect CLI skills](https://github.com/rorkai/app-store-connect-cli-skills) — usage and workflow guides for our App Store Connect skill.
 
 [SOURCES.md](SOURCES.md) records per-skill sources, imported revisions, local
 changes, and gaps in the source history.
