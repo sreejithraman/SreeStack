@@ -7,6 +7,7 @@ material keeps the terms listed below; the root license does not replace them.
 
 | Source | Bundled material | Notice |
 | --- | --- | --- |
+| Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
 | Matt Pocock | Skills and Standards/Spec review references listed in SOURCES.md | [MIT](licenses/mattpocock-skills.txt) |
 | Emil Kowalski | animate and design-eng | [animate MIT](skills/animate/LICENSE.md), [design-eng MIT](skills/design-eng/LICENSE.md) |
 | Dietrich Gebert / Ponytail | review-fix-loop/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
@@ -17,8 +18,9 @@ material keeps the terms listed below; the root license does not replace them.
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
 | haider-nawaz | liquid-glass | Unresolved: no license file found at the recorded revision |
 
-The six files in `licenses/` copy upstream license files at the revisions in
-SOURCES.md, checked on 2026-09-06. Cursor’s notice comes from
+The files in `licenses/` copy upstream license files at the revisions in
+SOURCES.md. App Store Connect was checked on 2026-09-08; the other notices
+were checked on 2026-09-06. Cursor’s notice comes from
 `cursor-team-kit/LICENSE`. Existing per-skill notices remain in place.
 
 React Doctor’s notice includes restrictions on model training and certain paid
