@@ -2,6 +2,13 @@
 
 Use these options for the current prompt; keep saved settings unchanged.
 
+For sandbox auto-approval, check that the user has enabled
+`enableTerminalSandbox: true` and `toolPermission: "proceed-in-sandbox"` in
+`~/.gemini/antigravity-cli/settings.json`. This allows sandboxed commands
+without prompts; commands outside the sandbox still follow permission rules.
+`--sandbox` alone does not enable auto-approval. If setup is missing, report it;
+change saved settings only when the user asks.
+
 ```bash
 agy --add-dir <absolute-workspace> --sandbox --effort high --output-format json --print '<prompt>'
 ```
@@ -15,7 +22,7 @@ agy --add-dir <absolute-workspace> --sandbox --effort high --output-format json 
   edits. `--sandbox` restricts terminal tools; it does not make files read-only.
 - **Follow-up:** pass `--conversation <id>` from the earlier result. Omit it for
   an independent answer.
-- **Timeout:** use `--print-timeout <duration>` when the task needs more time.
+- **Timeout:** use `--print-timeout 15m` for code reviews; adjust for other tasks.
 
 Pass prompt text as a literal argument with proper shell quoting or a process
 argument array. Check the exit code, JSON status, response, and stderr; denied
@@ -24,4 +31,5 @@ If authentication needs the user, tell them what is needed before retrying.
 Follow host approval rules.
 
 See the official [headless mode docs](https://antigravity.google/docs/cli/headless/)
-for current options and response fields.
+for current options and response fields, and the
+[sandbox docs](https://antigravity.google/docs/cli/sandbox/) for auto-approval.

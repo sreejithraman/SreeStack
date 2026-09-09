@@ -3,7 +3,7 @@
 Run from the workspace, replacing the placeholders with the caller's scope:
 
 ```bash
-agy --add-dir <absolute-workspace> --sandbox --mode plan --effort high --output-format json --print '/code-review Workspace: <absolute-workspace>. Set command working directory to that exact path. Review changes against <resolved-base-commit>, including committed, staged, unstaged, and untracked changes within <file-scope>. This scope overrides origin/HEAD. Requirements and standards: <context>. Report findings with file locations, evidence, suggested fixes, and coverage gaps. Review only; do not edit files, commit, or post comments.'
+agy --add-dir <absolute-workspace> --sandbox --mode plan --effort high --output-format json --print-timeout 15m --print '/code-review Workspace: <absolute-workspace>. Set command working directory to that exact path. Review changes against <resolved-base-commit>, including committed, staged, unstaged, and untracked changes within <file-scope>. This scope overrides origin/HEAD. Requirements and standards: <context>. Inspect relevant callers and tests. Report findings with file locations, evidence, suggested fixes, and coverage gaps. Complete the review now. Review only; do not edit files, commit, or post comments.'
 ```
 
 This uses agy's installed `code-review` skill and configured Gemini model with
