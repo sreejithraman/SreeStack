@@ -79,10 +79,12 @@ the imported revisions are unknown.
 
 - Local: `skills/gemini` (SreeStack).
 - [Antigravity CLI docs](https://antigravity.google/docs/cli/headless/) — checked 2026-09-05 against installed agy `1.1.26`; docs are unversioned.
+- [Sandbox configuration](https://antigravity.google/docs/cli/sandbox/) — checked 2026-09-08 for `proceed-in-sandbox` auto-approval.
 
 Local: focus on self-contained headless prompts and assessing Gemini's answers.
 Keep headless configuration and the installed agy review command in references.
 Always request high reasoning.
+Use the user's sandbox auto-approval settings and a 15-minute review timeout.
 Preserve caller scope and report incomplete reviews; no external skill text copied.
 
 ## gh-stack
