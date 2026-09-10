@@ -24,6 +24,23 @@ Reviewers count toward the same concurrency limit as workers. Treat the configur
 limit as a ceiling; launch only agents with useful work ready now. Finish or close
 completed agents before opening more when the host counts open threads.
 
+## Choose context and reuse
+
+Set `fork_turns` explicitly on every spawn. Independent reviewers must use
+`fork_turns: "none"` in every round. Starting a new agent alone does not give it
+fresh context. Give it a complete [review brief](../../review-fix-loop/references/review-brief.md)
+without earlier verdicts or the author's defense.
+
+For workers, use `"none"` for bounded work that a complete brief can explain.
+Choose a supported partial fork (a turn count) or `"all"` when prior decisions
+matter; include the needed decisions in its brief. Check the model constraints
+below before choosing inheritance.
+
+Reuse an existing worker for related fixes within its ownership. Supply the
+changed requirements, current files, and checks. Start a new agent when stronger
+reasoning or independent judgment is needed. Worker reuse does not apply to
+independent review rounds.
+
 ## Apply settings at spawn
 
 Use the selected custom role when the host exposes it. Otherwise, read that role's
@@ -45,6 +62,5 @@ brief and explicit model and effort. Check the actual spawn result when it
 exposes those values; otherwise report the requested settings as unverified.
 
 Give each child its result, owned work, relevant paths, requirements, checks,
-and return format. A fresh reviewer gets the complete current scope and raw
-requirements without earlier reviewers' conclusions or the author's defense.
+and return format.
 Leave further delegation to the parent unless it explicitly assigns that work.
