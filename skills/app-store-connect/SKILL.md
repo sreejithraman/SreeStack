@@ -13,6 +13,8 @@ Read app IDs, auth profiles, build selection, and release rules from the current
 
 ## Command discovery
 
+CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Connect-CLI).
+
 - Check `asc version` and use the installed command’s `--help` to verify examples before running them. The guides may cover a newer CLI version.
   - `asc --help`
   - `asc builds --help`

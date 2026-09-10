@@ -1,48 +1,39 @@
-# Skill sources
+# Upstream sources and local differences
 
-Sources and revisions from Caddie’s manifest and lock, copied on 2026-09-04.
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled license notices
-and unresolved license checks.
+Use this file when updating imported skills. Each entry records the upstream
+material, the revision last imported, and current local differences.
+Source mappings also cover imported references inside locally written skills.
+See [AGENTS.md](AGENTS.md) for maintenance rules and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for license notices and gaps.
 
-Recorded commits are import baselines; local files may differ. Local sources do
-not establish original authorship. Unknown means Caddie did not record the fact.
+Commits are import baselines, not the latest versions checked. Unknown means the
+baseline was not recorded. A local source path does not prove original authorship.
+An entry without a difference note does not prove that its files match upstream.
 
-Use one entry per skill and one bullet per source, including sources of its references. Record the commit or version
-last imported; update it when pulling source changes. Add a brief note only to
-explain adaptations, combined sources, or invocation changes from upstream.
-Keep `disable-model-invocation` in `SKILL.md` and `allow_implicit_invocation`
-in `agents/openai.yaml` aligned: `true`/`false` for manual-only skills;
-`false`/`true` (or omit both) for automatic use.
+Keep one entry per skill and one bullet per imported source, followed by plain
+descriptions of current local differences, including invocation choices.
+Local-only skills need just an origin note.
 
 ## animate
 
 - [emilkowalski/skills](https://github.com/emilkowalski/skills) — `skills/animate`; commit: unknown.
 
-Adapted in SreeStack.
+Local differences are not recorded.
 
 ## app-store-connect
 
 - [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9813732f640495bdb7bd1f894f5df499c76cfbcf) — `skills/`; commit `9813732f640495bdb7bd1f894f5df499c76cfbcf`, imported 2026-09-08. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
-- [rorkai/App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Connect-CLI) — command reference checked against installed `asc 5.0.0` on 2026-09-06. Imported examples may cover newer commands; check installed help before use.
 
-- [Apple: Creating Your Product Page](https://developer.apple.com/app-store/product-page/) — checked 2026-09-08 for promotional text and keyword guidance; reference only.
-
-Local: one automatically discoverable skill. `skills/asc-cli-usage/SKILL.md`
-provides the main usage instructions. Each of the other 24 upstream
-`skills/<name>/SKILL.md` files maps to
-`skills/app-store-connect/references/<name>/guide.md`; supporting Markdown
-files keep their paths within each guide directory.
-
-Removed reference frontmatter, repaired cross-guide and renamed-file links,
-and changed skill references to guide references. The main file adds workflow
-routing, a request-based trigger description, installed-version checks, and
-project context lookup. Its Apple Ads
-summary is omitted because the Apple Ads guide covers it. API key creation is
-conditional on a setup request. No app-specific settings or upstream scripts
-are bundled. Upstream workflow procedures remain in the guides; project rules
-and the user's scope govern their use. Local review also requires working copies
-for screenshot cleanup, notes Bash 4 for associative-array examples, and removes
-or qualifies unsupported ranking and release-note policy claims.
+- One discoverable skill: upstream `skills/asc-cli-usage/SKILL.md` supplies the
+  entrypoint; the other `skills/<name>/SKILL.md` files map to local
+  `references/<name>/guide.md`. Guides retain supporting paths and local links
+  and omit skill frontmatter. The skill omits upstream scripts and app settings.
+- Guide selection by task, checks against the installed CLI, and IDs and release
+  rules from the project. API key creation requires a setup request. Apple Ads
+  detail lives in its guide only.
+- Screenshot cleanup uses working copies; associative-array examples require
+  Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
+  description, promotional text, and release-note guidance.
 
 ## codebase-design
 
@@ -53,11 +44,9 @@ or qualifies unsupported ranking and release-note policy claims.
 - [emilkowalski/skills](https://github.com/emilkowalski/skills) — `skills/emil-design-eng`; commit: unknown.
 - [emilkowalski/skills](https://github.com/emilkowalski/skills) — `skills/apple-design`; commit: unknown.
 
-Combines both sources in SreeStack.
-
-Local: `disable-model-invocation: true` and `allow_implicit_invocation: false`.
-Neither source has these restrictions on `main` as checked on 2026-09-04;
-the imported revisions are unknown.
+Combines both upstream sources in one skill. Invocation is
+manual-only: `disable-model-invocation: true` and
+`allow_implicit_invocation: false`.
 
 ## diagnosing-bugs
 
@@ -78,14 +67,6 @@ the imported revisions are unknown.
 ## gemini
 
 - Local: `skills/gemini` (SreeStack).
-- [Antigravity CLI docs](https://antigravity.google/docs/cli/headless/) — checked 2026-09-05 against installed agy `1.1.26`; docs are unversioned.
-- [Sandbox configuration](https://antigravity.google/docs/cli/sandbox/) — checked 2026-09-08 for `proceed-in-sandbox` auto-approval.
-
-Local: focus on self-contained headless prompts and assessing Gemini's answers.
-Keep headless configuration and the installed agy review command in references.
-Always request high reasoning.
-Use the user's sandbox auto-approval settings and a 15-minute review timeout.
-Preserve caller scope and report incomplete reviews; no external skill text copied.
 
 ## gh-stack
 
@@ -115,32 +96,18 @@ Preserve caller scope and report incomplete reviews; no external skill text copi
 
 - [mattpocock/skills / skills/engineering/implement](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/implement) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Local: use `review-fix-loop` to review, fix, and verify before committing.
+Uses `review-fix-loop` to review, fix, and verify before committing.
 
 ## improve-codebase-architecture
 
 - [mattpocock/skills / skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/improve-codebase-architecture) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Local: default to high-level findings, recommendations, and reasons in chat; create an HTML report only on request.
+Returns findings, recommendations, and reasons in chat; creates an HTML report
+only on request.
 
 ## ios-haptics
 
 - Local: `skills/ios-haptics` (SreeStack).
-- [CharlesWiltgen/Axiom / haptics](https://github.com/CharlesWiltgen/Axiom/blob/dd3334734ecd01afab28b0ac22c49d4b5b2e5857/.claude-plugin/plugins/axiom/skills/axiom-media/skills/haptics.md) — inspiration reviewed at commit `dd3334734ecd01afab28b0ac22c49d4b5b2e5857`; no imported baseline. Found through [MCP Market](https://mcpmarket.com/tools/skills/ios-haptics).
-- [Apple: Practice audio haptic design](https://developer.apple.com/videos/play/wwdc2021/10278/) — WWDC21 session 10278.
-- [Apple: Expanding the Sensory Experience with Core Haptics](https://developer.apple.com/videos/play/wwdc2019/223/) — WWDC19 session 223; design reference.
-- [Apple: Sharpness](https://developer.apple.com/documentation/corehaptics/chhapticevent/parameterid/hapticsharpness), [parameter curves](https://developer.apple.com/documentation/corehaptics/chhapticparametercurve), and [AHAP format](https://developer.apple.com/documentation/corehaptics/representing-haptic-patterns-in-ahap-files) — design and Core Haptics references; unversioned docs, checked 2026-09-05.
-- [Apple: SensoryFeedback](https://developer.apple.com/documentation/swiftui/sensoryfeedback) and [trigger modifier](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(_:trigger:)) — unversioned docs, checked 2026-09-05.
-- [Apple: prepare()](https://developer.apple.com/documentation/uikit/uifeedbackgenerator/prepare()) — unversioned docs, checked 2026-09-05.
-- [Apple: Feedback selection](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(trigger:_:)) and [view-associated impact generator](https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator/init(style:view:)) — sources for `references/swiftui-feedback.md`; unversioned docs, checked 2026-09-05.
-- [Apple: Engine setup and recovery](https://developer.apple.com/documentation/corehaptics/preparing-your-app-to-play-haptics), [pattern players](https://developer.apple.com/documentation/corehaptics/chhapticpatternplayer), and [audio scheduling](https://developer.apple.com/documentation/avfaudio/avaudioplayer/play(attime:)) — sources for `references/core-haptics.md`; unversioned docs, checked 2026-09-05.
-
-Written locally for SwiftUI apps targeting iOS 26+; no upstream prose or code
-copied. Starts with event meaning and design, then SwiftUI state-driven feedback
-or authored Core Haptics playback. Direct UIKit emission serves control and timing
-needs, with no older-platform path. References connect worked designs, state and
-playback ownership, sound, motion, and device tuning. Example values are local
-proposals, not Apple presets. Automatic invocation uses the host defaults.
 
 ## swarm-and-push
 
@@ -150,30 +117,22 @@ proposals, not Apple presets. Automatic invocation uses the host defaults.
 
 - [haider-nawaz/liquid-glass-skill / plugins/liquid-glass/skills/liquid-glass](https://github.com/haider-nawaz/liquid-glass-skill/tree/2c1b2789c30dc2c9208f3b9a3811d42480714577/plugins/liquid-glass/skills/liquid-glass) — commit `2c1b2789c30dc2c9208f3b9a3811d42480714577`.
 
-Local: added `disable-model-invocation: true` and
+Manual-only invocation: `disable-model-invocation: true` and
 `allow_implicit_invocation: false`; upstream has neither setting.
 
 ## manual-verify
 
 - Local: `skills/manual-verify` (SreeStack).
 
-Focuses on audience and affected user workflows; uses a browser for web apps
-and Simulator for iOS. Asks for user help with login or other user-only steps.
-
 ## post-merge-cleanup
 
-- Local: `~/.agents/skills/post-merge-cleanup`.
-
-Local: removed `disable-model-invocation: true` and set
-`allow_implicit_invocation: true` so `pr-prep` can invoke cleanup after merging.
-Accepts that handoff as authorization for task-owned cleanup.
+- Local source: `~/.agents/skills/post-merge-cleanup`; upstream origin unrecorded.
 
 ## prototype
 
 - [mattpocock/skills / skills/engineering/prototype](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/prototype) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Adapted for UI prototypes across web, mobile, and desktop. Removed the logic
-prototype path and combined the UI workflow into `SKILL.md`.
+UI prototypes for web, mobile, and desktop; no logic-prototype mode.
 
 ## react-doctor
 
@@ -182,8 +141,6 @@ prototype path and combined the UI workflow into `SKILL.md`.
 ## refactoring-ui-skill
 
 - [s0xDk/refactoring-ui-skill / SKILL.md](https://github.com/s0xDk/refactoring-ui-skill/blob/main/SKILL.md) — imported revision: unknown.
-
-Source confirmed by Sree.
 
 ## research
 
@@ -209,36 +166,21 @@ Reviewer references:
   - [ponytail-debt](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail-debt) — shortcut ceilings and upgrade triggers.
   - [ponytail-gain](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail-gain) — limits on savings claims.
 
-Local: Standards and Spec retain upstream’s reviewer briefs, 400-word limits,
-smell baseline, and separation examples. The parent supplies scope and sources
-and owns triage and fixes; references add evidence and coverage reporting.
-
-Local: Ponytail keeps the supplied diff scope and read-only parent contract.
-Retains repo reuse, proof for cuts, and coverage reporting. Omits persistent
-modes, installation steps, benchmark displays, and whole-repo debt scans.
-
-Local: folded the three former review skills into four read-only reviewer briefs.
-Split Matt’s Standards and Spec rules, moved dispatch and scope to the parent,
-and kept Thermo’s upstream language with a read-only, parent-scoped review contract.
-References have no invocation settings. Code and mixed changes use the full loop:
-Thermo runs on every pass, Gemini runs directly, and the parent sweeps findings,
-fixes accepted issues, and verifies the result. Any fix in that loop starts another
-full pass; completion requires a pass with no fixes needed. The model decides when
-manual verification adds useful confidence based on behavior, risk, and test coverage.
-
-Docs and skill instructions alone use one focused parent review, accepted fixes,
-and targeted verification. Style preferences are optional; explicit writing rules
-still apply. Executable skill scripts use the code loop. An explicit user request
-for repeated full reviews overrides the focused path. Invocation choices stay unchanged.
+- Imported material stays in read-only reference briefs. The local parent skill
+  supplies scope and owns dispatch, triage, fixes, and acceptance.
+- Standards and Spec remain separate checks and labeled reports, with their
+  upstream smell baseline, requirements checks, and 400-word limits.
+- Thermo keeps its structural review criteria within the parent's supplied scope.
+  Structural suggestions require evidence and a concrete benefit; the parent
+  decides which fixes to accept.
+- Ponytail keeps reuse, evidence for cuts, and coverage reporting within the
+  supplied diff. Persistent modes, install steps, benchmark displays, and the
+  upstream debt skill's whole-repo ledger are excluded. The brief limits savings
+  claims to observed local evidence.
 
 ## pr-prep
 
 - Local: `skills/pr-prep` (SreeStack).
-
-Keeps publishing, CI, and feedback references. Optional `yolo` authorizes
-merging this PR once requirements pass.
-CI and feedback fixes return to publishing, without repeating the local review loop.
-Runs `post-merge-cleanup` after a confirmed merge.
 
 ## review-sweep
 
@@ -256,7 +198,7 @@ Runs `post-merge-cleanup` after a confirmed merge.
 
 - [mattpocock/skills / skills/engineering/tdd](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/tdd) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Local: point the review stage to `review-fix-loop`.
+The review stage uses `review-fix-loop`.
 
 ## teach
 
@@ -281,19 +223,6 @@ Local: point the review stage to `review-fix-loop`.
 ## ui-component-inspiration
 
 - Local: `skills/ui-component-inspiration` (SreeStack).
-- [Kinetics](https://github.com/ckissi/kinetics) — motion examples and source search guidance.
-- [Forever Components](https://forevercomponents.com/infinite/) — component manifest and source search guidance.
-- [React Bits](https://reactbits.dev) — component catalog.
-- [Magic UI](https://magicui.design/docs/components) — component catalog and Shimmer Button retrieval example, checked 2026-09-02.
-- [Lightswind UI](https://lightswind.com/components) — component catalog.
-- [Aceternity UI](https://ui.aceternity.com/components) — component catalog.
-- [Hover.dev](https://www.hover.dev/components) — component catalog.
-- [Motion](https://motion.dev/docs/react) — animation tool reference.
-- [Superdesign](https://superdesign.dev) — design tool reference.
-
-Sources are live references; no component code or catalog snapshot is bundled.
-Local: manual-only in both hosts, with `disable-model-invocation: true` and
-`allow_implicit_invocation: false`.
 
 ## wait-what
 
@@ -307,8 +236,8 @@ Local: manual-only in both hosts, with `disable-model-invocation: true` and
 
 - [mattpocock/skills / skills/engineering/wizard](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/wizard) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Local: added `disable-model-invocation: true` and
-`allow_implicit_invocation: false` to make this skill manual-only.
+Manual-only invocation: `disable-model-invocation: true` and
+`allow_implicit_invocation: false`.
 
 ## writing-for-agents
 

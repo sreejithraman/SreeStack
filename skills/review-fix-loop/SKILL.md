@@ -18,14 +18,17 @@ Default scope: `git diff <resolved-base> --` plus contents from
 `git ls-files --others --exclude-standard`. This includes committed, staged,
 unstaged, and untracked work. Honor a narrower scope when requested.
 Gather requirements from the user, issues, or spec; repo standards; and checks.
-Record the base, head, diff, and untracked contents for this pass.
+Record the base, head, diff, and untracked contents for each round. Every
+reviewer reads that complete scope in every round, including the integrated
+work of all authors. Keep the original base when fixes change the diff.
 
-When the scope contains only docs or skill instructions, use the focused review
-below. Use the code review loop for code or mixed changes, including executable
-scripts bundled with skills. Judge the changed content, not its file extension.
-An explicit user request for repeated full reviews overrides the focused path.
+Use focused parent review for ordinary docs and wording-only instruction edits.
+When docs change agent behavior, use one independent reviewer as described below.
+Use the code loop for code or mixed changes, including executable skill scripts.
+Judge the changed content, not its extension. Honor an explicit request for
+additional reviewers or rounds.
 
-## Focused review: docs and skill instructions
+## Focused review: ordinary docs
 
 The parent reviews the whole scope once against the requirements and repo rules.
 Check facts, conflicting instructions, missing requirements, and broken references.
@@ -39,33 +42,67 @@ checks pass, or report concrete blockers and unfinished work.
 This path ends with targeted verification; edits do not start another full review
 or dispatch the code reviewers below. Report the result using the shared handoff.
 
+## Docs that change agent behavior
+
+Use one fresh, independent `reviewer` for changes to skill procedures, global
+instructions, or agent configuration. Follow
+[agent routing](../goal-swarm/references/agent-routing.md) for its settings.
+
+Supply the whole diff and new files, requirements, related instructions, and
+realistic sample requests. Ask the reviewer to trace what those requests would
+cause, check conflicts and missing requirements, and report findings with evidence,
+coverage, and gaps. Keep it read-only and independent of earlier conclusions.
+
+The parent triages findings, fixes accepted issues, and checks relevant links,
+examples, syntax, and skill structure. After substantive fixes, use a fresh
+reviewer on the whole updated change against the original base. Wording-only
+fixes need targeted checks. Finish after a complete clean review and passing
+checks; report missing coverage or an unavailable reviewer as a blocker.
+
 ## Code review loop
 
-1. **Review.** Launch a fresh, read-only subagent per brief, in parallel within
-   available slots; batch the rest:
+1. **Review.** Choose one reviewer for a small, clear change to one behavior.
+   Use two for substantial changes, multiple behaviors, shared contracts, risky
+   logic, or work from several agents. Keep at most two unless the user explicitly
+   requests more.
+   Reassess the choice when fixes change the scope.
 
-   - [Ponytail](references/ponytail.md): cuts and reuse.
-   - [Thermo](references/thermo.md): structural quality, every pass.
-   - [Standards](references/standards.md): repo rules and code smells.
-   - [Spec](references/spec.md): requirements; skip explicitly if none exist.
+   Use the configured `reviewer` role following
+   [agent routing](../goal-swarm/references/agent-routing.md). Use `hard_worker`
+   with the same read-only contract when review needs difficult reasoning.
+   Launch fresh agents each round, in parallel when using two, within available
+   slots. Do not resume a prior reviewer for a new round.
 
-   Pass each agent the same scope, requirements, standards, its brief’s absolute
-   path, and this contract:
+   Cover these checks in every round:
 
-   > Read the whole supplied scope and enough surrounding code to judge it.
-   > Report findings with locations, evidence, impact, and proposed remedies,
-   > plus coverage and gaps. Leave edits and further delegation to the parent.
+   - **Correctness:** bugs, regressions, edge cases, security, data loss, and
+     test gaps; use [Spec](references/spec.md) to trace requirements from the
+     user request or supplied spec.
+   - **Code quality:** [Ponytail](references/ponytail.md) for cuts and reuse,
+     [Thermo](references/thermo.md) for structure and boundaries, and
+     [Standards](references/standards.md) for repo rules.
 
-   Keep reviewers independent of earlier conclusions or the author’s defense.
+   One reviewer covers both sets. With two, assign one set to each for emphasis;
+   both still read every changed hunk and new file, trace nearby effects, and
+   may report issues outside their emphasis. Keep Spec and Standards findings
+   labeled separately even when one reviewer supplies both.
+
+   Name the change's main risks in the briefs, such as access control, concurrent
+   updates, or data migration. These guide the existing reviewers' checks; they
+   do not add another reviewer automatically.
+
+   Give each reviewer the same complete scope, requirements, standards, relevant
+   checks, and absolute paths to its briefs. Require findings with locations,
+   evidence, impact, and proposed remedies, plus coverage and gaps. Leave edits,
+   further delegation, and acceptance to the parent. A complete review may find
+   no issues. Require a concrete benefit for structural changes; preferences
+   alone do not require a fix or another round.
+
+   Keep reviewers independent of earlier conclusions or the author's defense.
    Pause edits until all return. If the code changes during review, refresh the
-   scope and rerun affected reviews. Report unavailable subagents as a blocker.
-
-   Run `/gemini` directly for a read-only review on every pass, when available.
-   Pass the resolved base, complete file scope, requirements, and standards.
-   Confirm its reported scope matches; report missing coverage as a blocker.
-
-   Continue only when every applicable source has a report or explicit blocker.
-   Missing coverage or a failed reviewer is not a clean review.
+   whole scope and restart the round. Missing coverage or an unavailable reviewer
+   is a blocker, not a clean review. Include extra or external reviews only when
+   the user explicitly requests them, and include their findings in the sweep.
 
 2. **Sweep.** Run `/review-sweep` in the parent. Keep each finding’s source,
    including Standards versus Spec. Finish when every finding has a disposition
@@ -80,15 +117,22 @@ or dispatch the code reviewers below. Report the result using the shared handoff
    current code. Report any verification you consider necessary but cannot run
    as a concrete blocker.
 
-4. **Repeat.** If this pass made any fixes during sweep or verification, refresh
-   the diff and untracked contents and return to step 1 against the same base.
-   Small fixes count too. Reopen rejected or deferred findings only with new
-   evidence. Finish cleanly only after a full pass makes no fixes, needs no
-   further accepted fixes, and has complete review coverage and passing checks,
-   including any manual verification judged necessary. If a blocker prevents that,
-   report it and any unfinished work; a blocked pass is not a clean result.
+4. **Finish or repeat.** A complete clean round with passing checks can finish,
+   including the first round. After any accepted fix or verification fix, refresh
+   the full diff and untracked contents and return to step 1 against the original base.
+   Small fixes count too; every round reviews the whole current change, not
+   just fixes or earlier findings. Reopen rejected or deferred findings only
+   with new evidence.
+
+   Finish only when the last round makes no fixes, needs no further accepted
+   fixes, has complete coverage, and passes relevant
+   checks, including any manual verification judged necessary. Continue after
+   fixes until that condition holds. If review stops making progress, diagnose
+   the repeated issue, use a stronger reviewer when needed, or report the
+   concrete blocker. An incomplete round never counts as clean.
 
 ## Handoff
 
-Report scope, review path, reviews run or skipped, fixes, deferrals, blockers, checks,
-any manual verification evidence, and remaining risks.
+Report scope, review path, round count, reviewer roles and requested settings,
+coverage, fixes, deferrals, blockers, checks, any manual verification evidence,
+and remaining risks. Distinguish confirmed settings from unverified requests.
