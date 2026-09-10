@@ -29,5 +29,5 @@ the root license.
 
 The imported revisions for animate, design-eng, and refactoring-ui-skill remain
 unknown. Their bundled notices do not resolve those source-history gaps.
-Linked API docs, component catalogs, and other live references are recorded in
-SOURCES.md; links alone are not bundled copies.
+Linked API docs, component catalogs, and other live references sit beside the
+guidance they support; links alone are not bundled copies.

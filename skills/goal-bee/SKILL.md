@@ -1,11 +1,14 @@
 ---
 name: goal-bee
-description: Use when the user asks for goal-backed work or another skill assigns one goal. Write a measurable objective, do the work, check the result, and update the goal state.
+description: Use when the user explicitly requests goal-backed work, including a child goal assigned within that request. Write a measurable objective, do the work, check the result, and update the goal state.
 ---
 
 # Goal bee
 
 Run one goal until its stated checks pass or it meets the `blocked` rule. The goal stays active across turns. It does not grant new permissions or expand the request.
+
+Require an explicit user request to create or use a goal, including when a parent
+skill assigns the work. Otherwise, complete the task without creating a goal.
 
 ## Steps
 

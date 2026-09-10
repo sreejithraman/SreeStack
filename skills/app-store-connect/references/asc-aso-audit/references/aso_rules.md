@@ -13,6 +13,9 @@ Rules enforced by the [asc-aso-audit](../guide.md) guide. Each rule links to the
 
 ## Keyword Field Rules
 
+Reference for keywords and promotional text:
+[Apple's product page guidance](https://developer.apple.com/app-store/product-page/).
+
 - **Comma-separated, no spaces after commas.** Spaces waste characters. `quran,recitation` not `quran, recitation`.
 - **Do not duplicate words already in title or subtitle.** Apple indexes all three fields together; repeating a word wastes keyword budget.
 - **Do not use the app name in keywords.** It is already indexed.
