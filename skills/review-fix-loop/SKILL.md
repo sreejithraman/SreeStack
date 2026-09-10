@@ -22,6 +22,15 @@ Record the base, head, diff, and untracked contents for each round. Every
 reviewer reads that complete scope in every round, including the integrated
 work of all authors. Keep the original base when fixes change the diff.
 
+Prepare a complete [review brief](references/review-brief.md) for each independent
+reviewer. Both reviewers get the same requirements and accepted scope changes,
+base/head, full diff and untracked contents, standards, and test evidence.
+Supply complete contents inline or through absolute paths; summaries do not
+replace them. Keep any brief files and diff snapshots outside the reviewed diff.
+Pause edits until all independent reviewers return.
+Allow inspection of nearby code. Exclude earlier reviewer verdicts and the
+author's defense from the brief and inherited context.
+
 Use focused parent review for ordinary docs and wording-only instruction edits.
 When docs change agent behavior, use one independent reviewer as described below.
 Use the code loop for code or mixed changes, including executable skill scripts.
@@ -45,12 +54,11 @@ or dispatch the code reviewers below. Report the result using the shared handoff
 ## Docs that change agent behavior
 
 Use one fresh, independent `reviewer` for changes to skill procedures, global
-instructions, or agent configuration. Follow
+instructions, or agent configuration. Set `fork_turns: "none"` explicitly. Follow
 [agent routing](../goal-swarm/references/agent-routing.md) for its settings.
 
-Supply the whole diff and new files, requirements, related instructions, and
-realistic sample requests. Ask the reviewer to trace what those requests would
-cause, check conflicts and missing requirements, and report findings with evidence,
+Add realistic sample requests to the brief. Ask the reviewer to trace their effects,
+check conflicts and missing requirements, and report findings with evidence,
 coverage, and gaps. Keep it read-only and independent of earlier conclusions.
 
 The parent triages findings, fixes accepted issues, and checks relevant links,
@@ -71,7 +79,9 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
    [agent routing](../goal-swarm/references/agent-routing.md). Use `hard_worker`
    with the same read-only contract when review needs difficult reasoning.
    Launch fresh agents each round, in parallel when using two, within available
-   slots. Do not resume a prior reviewer for a new round.
+   slots. Set `fork_turns: "none"` explicitly for every reviewer; a new agent
+   with inherited history is not a fresh-context review. Do not resume a prior
+   reviewer for a new round.
 
    Cover these checks in every round:
 
@@ -91,16 +101,15 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
    updates, or data migration. These guide the existing reviewers' checks; they
    do not add another reviewer automatically.
 
-   Give each reviewer the same complete scope, requirements, standards, relevant
-   checks, and absolute paths to its briefs. Require findings with locations,
-   evidence, impact, and proposed remedies, plus coverage and gaps. Leave edits,
-   further delegation, and acceptance to the parent. A complete review may find
+   Include the references for each reviewer's assigned emphasis in its brief.
+   Require findings with locations, evidence, impact, and proposed remedies,
+   plus coverage and gaps. Leave edits, further delegation, and acceptance to
+   the parent. A complete review may find
    no issues. Require a concrete benefit for structural changes; preferences
    alone do not require a fix or another round.
 
-   Keep reviewers independent of earlier conclusions or the author's defense.
-   Pause edits until all return. If the code changes during review, refresh the
-   whole scope and restart the round. Missing coverage or an unavailable reviewer
+   If the code changes during review, refresh the whole scope and restart the
+   round. Missing coverage or an unavailable reviewer
    is a blocker, not a clean review. Include extra or external reviews only when
    the user explicitly requests them, and include their findings in the sweep.
 
