@@ -53,9 +53,10 @@ or dispatch the code reviewers below. Report the result using the shared handoff
 
 ## Docs that change agent behavior
 
-Use one fresh, independent `reviewer` for changes to skill procedures, global
+Use one fresh, independent review agent for changes to skill procedures, global
 instructions, or agent configuration. Set `fork_turns: "none"` explicitly. Follow
-[agent routing](../goal-swarm/references/agent-routing.md) for its settings.
+[agent routing](../goal-swarm/references/agent-routing.md) for role selection and
+settings each round.
 
 Add realistic sample requests to the brief. Ask the reviewer to trace their effects,
 check conflicts and missing requirements, and report findings with evidence,
@@ -75,9 +76,8 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
    requests more.
    Reassess the choice when fixes change the scope.
 
-   Use the configured `reviewer` role following
-   [agent routing](../goal-swarm/references/agent-routing.md). Use `hard_worker`
-   with the same read-only contract when review needs difficult reasoning.
+   Follow [agent routing](../goal-swarm/references/agent-routing.md) for reviewer
+   selection and settings each round.
    Launch fresh agents each round, in parallel when using two, within available
    slots. Set `fork_turns: "none"` explicitly for every reviewer; a new agent
    with inherited history is not a fresh-context review. Do not resume a prior

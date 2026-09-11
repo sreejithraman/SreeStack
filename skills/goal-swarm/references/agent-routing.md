@@ -9,11 +9,14 @@ Keep a cohesive task with one owner. Spawn agents for independent results whose
 inputs exist, with clear ownership and checks. The parent may implement work;
 it need not delegate a small task just because it coordinates other agents.
 
-Use configured subagent defaults for routine work, `reviewer` for code review,
-and `hard_worker` when the task needs difficult reasoning. A hard task can still
-have one owner. For difficult reviews, use `hard_worker` with the same read-only
-review contract. Choose the likely capable role up front; escalate when evidence
-shows a need instead of requiring a sequence of failed attempts.
+Use configured subagent defaults for routine work and `hard_worker` when the
+task needs difficult reasoning. A hard task can still have one owner. Choose
+the likely capable role up front; failed attempts are not a prerequisite.
+
+For review, default to `reviewer`. Use `hard_worker` only for a specific unresolved
+reasoning problem named in the brief, with the same read-only review contract.
+Reassess that need each round; return to `reviewer` once it is resolved. A difficult
+project alone does not justify the exception.
 
 For reviews, request read-only child permissions when the host supports them.
 `hard_worker` otherwise inherits the parent's permissions. The read-only review
