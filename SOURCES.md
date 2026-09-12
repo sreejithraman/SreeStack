@@ -60,6 +60,15 @@ manual-only: `disable-model-invocation: true` and
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
+## frontend-web-design
+
+- [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — commit `34040c9c568585f6929bedeaad110ad08f079624`.
+
+Renamed to `frontend-web-design`, with a web-only description. Removes the
+AI-default calibration list and guidance tied to it, while keeping the rule to
+follow the brief. Omits the license frontmatter field and license file. The rest
+of the upstream wording remains. Automatic discovery stays enabled.
+
 ## goal-bee
 
 - Local: `skills/goal-bee` (SreeStack).
