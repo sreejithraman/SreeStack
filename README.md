@@ -102,6 +102,7 @@ uses and adapts:
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation and design engineering skills.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
+- [Anthropic’s skills](https://github.com/anthropics/skills) — the Frontend Web Design skill.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.
 - [haider-nawaz](https://github.com/haider-nawaz/liquid-glass-skill) — the Liquid Glass skill.

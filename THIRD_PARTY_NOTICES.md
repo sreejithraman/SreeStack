@@ -12,6 +12,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Emil Kowalski | animate and design-eng | [animate MIT](skills/animate/LICENSE.md), [design-eng MIT](skills/design-eng/LICENSE.md) |
 | Dietrich Gebert / Ponytail | review-fix-loop/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
 | Cursor | review-fix-loop/references/thermo.md | [MIT](licenses/cursor-plugins.txt) |
+| Anthropic skills | frontend-web-design | [Upstream Apache-2.0](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt) |
 | Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |
 | s0xDk / s13k | refactoring-ui-skill | [MIT and scope note](skills/refactoring-ui-skill/LICENSE) |
@@ -19,8 +20,8 @@ material keeps the terms listed below; the root license does not replace them.
 | haider-nawaz | liquid-glass | Unresolved: no license file found at the recorded revision |
 
 The files in `licenses/` copy upstream license files at the revisions in
-SOURCES.md. App Store Connect was checked on 2026-09-08; the other notices
-were checked on 2026-09-06. Cursor’s notice comes from
+SOURCES.md. Anthropic skills was checked on 2026-09-12; App Store Connect
+was checked on 2026-09-08; the other notices were checked on 2026-09-06. Cursor’s notice comes from
 `cursor-team-kit/LICENSE`. Existing per-skill notices remain in place.
 
 React Doctor’s notice includes restrictions on model training and certain paid
