@@ -16,8 +16,8 @@ Orchestration does not require or authorize a goal.
 
    Keep tasks with the parent when a child would wait on a dependency, edit the
    same files, or save little time. Give each delegated result one owner and a
-   check. Use [shard types](references/shard-types.md) when naming responsibilities
-   would clarify the split; they are not roles to fill on every task.
+   check. Use [responsibilities](references/responsibilities.md) to clarify each
+   assignment; they are not roles to fill on every task.
 
 2. Brief and dispatch.
 
