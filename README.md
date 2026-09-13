@@ -38,8 +38,11 @@ settings.
 |---|---|---|
 | [config.toml](codex/config.toml) | `~/.codex/config.toml` | Merge the listed keys into the existing file and `[agents]` table |
 | [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Add this section to the existing instructions |
-| [reviewer.toml](codex/agents/reviewer.toml) | `~/.codex/agents/reviewer.toml` | Copy this role file |
-| [hard_worker.toml](codex/agents/hard_worker.toml) | `~/.codex/agents/hard_worker.toml` | Copy this role file |
+| [junior.toml](codex/agents/junior.toml) | `~/.codex/agents/junior.toml` | Copy this rank file |
+| [engineer.toml](codex/agents/engineer.toml) | `~/.codex/agents/engineer.toml` | Copy this rank file |
+| [senior.toml](codex/agents/senior.toml) | `~/.codex/agents/senior.toml` | Copy this rank file |
+| [staff.toml](codex/agents/staff.toml) | `~/.codex/agents/staff.toml` | Copy this rank file |
+| [distinguished.toml](codex/agents/distinguished.toml) | `~/.codex/agents/distinguished.toml` | Copy this rank file |
 
 To apply these defaults, back up the local files, merge or copy only these parts, and
 check that the TOML parses. Keep unrelated values and existing instructions.
@@ -47,12 +50,14 @@ If `~/.codex/AGENTS.override.md` exists, Codex reads it instead of `AGENTS.md`;
 merge the section into that active file, or deliberately retire the override
 before using `AGENTS.md`.
 If a destination role already exists, review its differences before replacing
-it. No install script or whole-config symlink is needed for this first version.
+it.
+No install script or whole-config symlink is needed for this first version.
 
-The global instructions expect [goal-swarm](skills/goal-swarm/SKILL.md) and
+The global instructions expect [orchestration](skills/orchestration/SKILL.md),
+[goal-swarm](skills/goal-swarm/SKILL.md), and
 [review-fix-loop](skills/review-fix-loop/SKILL.md), plus their referenced skills,
 to be installed from this repo. The
-[routing reference](skills/goal-swarm/references/agent-routing.md) explains role
+[routing reference](skills/orchestration/references/agent-routing.md) explains role
 selection and the host's spawn rules. Model and effort values live in config
 and agent files; the skills own delegation, review coverage, and rounds.
 

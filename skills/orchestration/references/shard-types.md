@@ -8,8 +8,6 @@ Use for bounded code, test, config, or doc changes.
 
 Owns files or modules. Returns changed files, verification, blockers, and residual risks.
 
-May use `/implement` when the shard is a coding task.
-
 ## Explorer
 
 Use for questions, codebase discovery, technical options, or unknown-risk areas.
