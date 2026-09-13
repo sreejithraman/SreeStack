@@ -1,26 +1,36 @@
 # Agent routing
 
 Read this before spawning implementation or review agents. Reading this
-reference does not invoke goal-swarm or authorize creating a goal.
+reference does not authorize creating a goal.
 
 ## Choose work and role
 
-Keep a cohesive task with one owner. Spawn agents for independent results whose
-inputs exist, with clear ownership and checks. The parent may implement work;
-it need not delegate a small task just because it coordinates other agents.
+Choose a rank by the judgment the assignment needs. Review is an assignment,
+not a separate rank.
 
-Use configured subagent defaults for routine work and `hard_worker` when the
-task needs difficult reasoning. A hard task can still have one owner. Choose
-the likely capable role up front; failed attempts are not a prerequisite.
+| Rank | Work |
+|---|---|
+| `junior` | Explicit, easily checked work with settled requirements |
+| `engineer` | Routine implementation using established patterns; default worker |
+| `senior` | General engineering judgment; default reviewer |
+| `staff` | Substantial diagnosis or implementation requiring design judgment |
+| `distinguished` | Difficult unresolved reasoning, such as subtle concurrency or data-loss risks |
 
-For review, default to `reviewer`. Use `hard_worker` only for a specific unresolved
-reasoning problem named in the brief, with the same read-only review contract.
-Reassess that need each round; return to `reviewer` once it is resolved. A difficult
-project alone does not justify the exception.
+Choose the likely capable rank up front; failed attempts are not a prerequisite.
+File count alone does not determine difficulty. A hard task can still have one owner.
 
-For reviews, request read-only child permissions when the host supports them.
-`hard_worker` otherwise inherits the parent's permissions. The read-only review
-contract still applies, but prose alone does not enforce a filesystem restriction.
+For review, start with `senior` and select another rank when the review needs
+less or more judgment. `junior` fits mechanical checks with explicit criteria;
+`engineer` fits straightforward changes using established patterns. Use `staff`
+for substantial design questions and `distinguished` for a specific unresolved
+reasoning problem named in the brief. Choose each reviewer's rank independently
+of the implementer; two reviewers may use different ranks while both cover the
+full diff. Reassess each round; project difficulty alone does not justify keeping
+a higher rank once its reasoning problem is resolved.
+
+Every review brief must say: work read-only, report findings, and leave edits to
+the parent. Rank files allow implementation too, so this is an instruction rather
+than an enforced filesystem restriction.
 
 For code review, `/review-fix-loop` chooses the number of reviewers and rounds.
 Reviewers count toward the same concurrency limit as workers. Treat the configured
@@ -48,7 +58,8 @@ independent review rounds.
 
 Use the selected custom role when the host exposes it. Otherwise, read that role's
 model and effort from its active agent file and pass both explicitly. For routine
-work, use the effective `[agents]` defaults. Honor project and user overrides.
+work without a named rank, use the effective `[agents]` defaults. Honor project
+and user overrides.
 
 For Codex, custom agent values override explicit spawn values, which override
 `[agents]` defaults, which override parent settings. Resolve model and effort
@@ -64,6 +75,4 @@ overrides, use `fork_turns = "none"` or a supported partial fork, with a complet
 brief and explicit model and effort. Check the actual spawn result when it
 exposes those values; otherwise report the requested settings as unverified.
 
-Give each child its result, owned work, relevant paths, requirements, checks,
-and return format.
 Leave further delegation to the parent unless it explicitly assigns that work.

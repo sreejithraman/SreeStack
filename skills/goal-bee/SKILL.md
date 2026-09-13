@@ -7,6 +7,9 @@ description: Use when the user explicitly requests goal-backed work, including a
 
 Run one goal until its stated checks pass or it meets the `blocked` rule. The goal stays active across turns. It does not grant new permissions or expand the request.
 
+The current agent owns completion and may use `/orchestration` for bounded help.
+Use `/goal-swarm` when the user requests goal-backed parallel work or child goals.
+
 Require an explicit user request to create or use a goal, including when a parent
 skill assigns the work. Otherwise, complete the task without creating a goal.
 
