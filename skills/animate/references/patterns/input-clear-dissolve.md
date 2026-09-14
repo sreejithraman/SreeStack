@@ -124,7 +124,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+The reduced-motion rule only hides the glow. Bypass the JavaScript dissolve and clear the input immediately; cancel any running animation or timers when the preference changes. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 
@@ -138,7 +138,7 @@ const num = (name, fb) => {
 };
 // Minimal cubic-bezier(x1,y1,x2,y2) sampler so JS easing matches CSS.
 function bezier(str) {
-  const m = String(str).match(/cubic-bezier\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/);
+  const m = String(str).replace(/\s+/g, "").match(/cubic-bezier\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/);
   if (!m) return (t) => t;
   const [x1, y1, x2, y2] = m.slice(1).map(parseFloat);
   const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;

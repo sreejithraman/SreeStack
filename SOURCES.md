@@ -26,9 +26,18 @@ Local-only skills need just an origin note.
 - `transitions-dev/01-*.md` through `32-*.md` map to
   `references/patterns/<name>.md` with numeric prefixes removed. Exceptions:
   `18-texts-reveal.md` maps to `stagger.md`; `29-reasoning-stream.md` maps to
-  `log-stream.md`. Pattern code, variables, state hooks, reduced-motion blocks,
-  and detailed mechanics remain. Origin prose and demo-token mappings are
-  removed. Log-stream guidance uses real application status and logs.
+  `log-stream.md`. Pattern variables, state hooks, reduced-motion blocks, and detailed mechanics
+  remain. The learn-more hover selectors add fine-pointer/hover gating; other
+  pattern code keeps the source behavior except that input-clear’s easing parser
+  accepts whitespace in its declared cubic-bezier defaults. Comments use direct wording. Origin
+  prose and demo-token mappings are
+  removed. Log-stream guidance uses real application status and logs. Card-tilt
+  guidance makes touch drag optional and states its scrolling cost. Reduced-motion
+  notes correct animation-only and partial guards and require any needed
+  JavaScript bypass or cleanup. Log-stream labels its loop as mechanics and
+  states the required lifecycle controller. Spinning-counter supplies CSS plus
+  construction steps, without claiming a bundled JavaScript builder. Banner
+  stacking states its host-size prerequisite.
 - `RECIPES.md` sections join the matching menu-dropdown, tooltip, modal, toast,
   accordion, stagger, and tabs-sliding guides as variants chosen by component
   behavior. Its remaining sections map to button-press, drawer, hold-to-confirm,

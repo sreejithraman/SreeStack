@@ -29,7 +29,9 @@ React Doctor’s notice includes restrictions on model training and certain paid
 products or services. Do not describe it as plain MIT. Its terms still apply alongside
 the root license.
 
-The imported revisions for animate, design-eng, and refactoring-ui-skill remain
-unknown. Their bundled notices do not resolve those source-history gaps.
+The original parent-skill import baseline for animate remains unknown; its
+reference imports have recorded revisions in SOURCES.md. The imported revisions
+for design-eng and refactoring-ui-skill remain unknown. Bundled notices do not
+resolve those source-history gaps.
 Linked API docs, component catalogs, and other live references sit beside the
 guidance they support; links alone are not bundled copies.

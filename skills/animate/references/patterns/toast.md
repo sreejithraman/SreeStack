@@ -2,7 +2,7 @@
 
 ## When to use
 
-Toasts, snackbars, and transient confirmations that rise into view from the bottom edge — "Saved", "Copied", "Message sent". The toast translates up with a fade, a slight scale, and a cross-blur; opening runs on the slower open clock while dismissing uses the faster close clock, so arriving feels deliberate and leaving feels snappy.
+Toasts, snackbars, and transient confirmations that rise into view from the bottom edge — "Saved", "Copied", "Message sent". The toast translates up with a fade, a slight scale, and a cross-blur; entry is slower than dismissal.
 
 Use **toast** when the surface announces itself and goes away on its own; use **modal** when the user must respond before continuing.
 
@@ -69,7 +69,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

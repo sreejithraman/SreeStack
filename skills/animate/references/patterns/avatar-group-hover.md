@@ -2,9 +2,9 @@
 
 ## When to use
 
-Hovering an item in a horizontal stack (avatar row, chip group, badge cluster, segmented button) should lift the hovered item, gently lift its neighbors with a power-falloff, then snap everything back with an overshoot spring on `mouseleave`. Direction-aware easing (clean ease-in on hover, bouncy ease-out on return) is what gives the group its springy, physical feel.
+Hovering an item in a horizontal stack (avatar row, chip group, badge cluster, segmented button) should lift the hovered item, gently lift its neighbors with a power-falloff, then snap everything back with an overshoot spring on `mouseleave`. Use a direct entry and an overshooting return when that motion fits the product.
 
-Equally good for: pill stacks in a tag editor, chips in a filter bar, reaction-emoji rows, anywhere a horizontal row benefits from a "comb" interaction signal.
+Other uses include tag rows, filter chips, and reaction buttons when neighboring-item movement helps show the active position.
 
 ## HTML usage
 
@@ -76,7 +76,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

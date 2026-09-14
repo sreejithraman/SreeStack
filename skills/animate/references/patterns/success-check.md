@@ -2,7 +2,7 @@
 
 ## When to use
 
-Confirming a completed action — payment processed, file uploaded, message sent, form saved. The icon fades in, rotates upright, settles with a Y-bob, and (for SVG icons) draws its path stroke. Use whenever a status changes from "pending / unknown" to "success" and you want the moment to feel earned rather than instantaneous.
+Confirming a completed action — payment processed, file uploaded, message sent, form saved. The icon fades in, rotates upright, settles with a Y-bob, and (for SVG icons) draws its path stroke. Use whenever a status changes from "pending / unknown" to "success" and the motion helps confirm the outcome.
 
 The snippet covers the **appear transition only** — bring your own hide behavior (e.g. unmount, opacity:0, or a custom exit). This is intentional: success states are usually persistent, and a soft fade-out is rarely worth the extra DOM/JS surface.
 
@@ -122,7 +122,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+The reduced-motion rule stops the check and path animations and reveals the completed stroke. Apply the final success state without waiting for JavaScript animation sequencing. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

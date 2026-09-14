@@ -2,7 +2,7 @@
 
 ## When to use
 
-"Learn more", "See all", "Continue" — inline links or buttons with a trailing chevron that should acknowledge hover. The chevron slides toward the text's reading direction while its two arms spread apart into a full arrow, then eases back on exit with a slightly faster out clock.
+"Learn more", "See all", "Continue" — inline links or buttons with a trailing chevron that should acknowledge hover. The chevron slides toward the text's reading direction while its two arms spread apart into a full arrow, then returns on exit. Entry and exit durations can be tuned separately.
 
 A hover-only affordance: keyboard focus and touch fall back to the resting state, so nothing essential is communicated by the motion alone.
 
@@ -57,17 +57,19 @@ Map these defaults to the project’s tokens. Install only the variables this pa
   vector-effect: non-scaling-stroke;
   transition: transform var(--learn-out) var(--learn-ease);
 }
-.t-learn:hover .t-learn-chevron { transform: translateX(var(--learn-shift)); transition-duration: var(--learn-in); }
-.t-learn:hover .t-learn-arm { transition-duration: var(--learn-in); }
-.t-learn:hover .t-learn-arm-top { transform: rotate(var(--learn-spread)); }
-.t-learn:hover .t-learn-arm-bot { transform: rotate(calc(var(--learn-spread) * -1)); }
+@media (hover: hover) and (pointer: fine) {
+  .t-learn:hover .t-learn-chevron { transform: translateX(var(--learn-shift)); transition-duration: var(--learn-in); }
+  .t-learn:hover .t-learn-arm { transition-duration: var(--learn-in); }
+  .t-learn:hover .t-learn-arm-top { transform: rotate(var(--learn-spread)); }
+  .t-learn:hover .t-learn-arm-bot { transform: rotate(calc(var(--learn-spread) * -1)); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .t-learn-chevron, .t-learn-arm { transition: none !important; }
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

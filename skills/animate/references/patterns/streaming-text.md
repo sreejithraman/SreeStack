@@ -4,7 +4,7 @@
 
 Model output arriving word by word — chat responses, AI completions, any streamed paragraph. JS wraps each word in a span; words rest visible, and a replay wipes them all, then resolves them in order through opacity plus a small blur, one every `--stream-gap`.
 
-Reach for this over a typewriter effect when the text should feel like it condenses into place rather than being typed — the cross-blur reads as resolution, not keystrokes.
+Use this when whole words arrive together. Each word fades from blurred to clear rather than appearing one character at a time.
 
 ## HTML usage
 
@@ -58,7 +58,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

@@ -6,6 +6,10 @@ Sonner-style banner / toast stacking. Each new banner rises in with the **toast*
 
 Use over a single **toast** when notifications can overlap: the stack keeps the newest legible while acknowledging the queue behind it.
 
+## Layout prerequisite
+
+Give `.t-stack` a nonzero width and a collapsed height equal to the newest banner before the pointer geometry runs. Its children are absolutely positioned and do not size it. Measure the newest banner after content or font changes and update the host dimensions. The expanded hit region derives from that collapsed size and the configured gap.
+
 ## HTML usage
 
 ```html
@@ -136,7 +140,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

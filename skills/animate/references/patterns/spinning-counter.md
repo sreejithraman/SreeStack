@@ -2,9 +2,9 @@
 
 ## When to use
 
-Numbers that change with fanfare — points, prices, follower counts, dashboards KPIs. Each digit is a clipped vertical reel of 0-9 cells; the strip translates up through several full spins before landing on the target digit, with a per-column stagger and a vertical-only SVG blur while moving.
+Use for a rare, emphasized change in a score or count. Each digit is a clipped vertical reel of 0-9 cells; the strip translates up through several full spins before landing on the target digit, with a per-column stagger and a vertical-only SVG blur while moving.
 
-Reach for this over **number pop-in** when the change should feel like an event (a jackpot roll) rather than a quiet update. The reels are built in JS — one `.t-reel-col` per digit — so bring the small builder snippet from the recipe.
+Use this for a rare, emphasized number change. For a brief update, use [number pop-in](number-pop-in.md). This guide supplies the CSS and construction steps. The project must build and drive the reels in JavaScript; there is no ready-made builder here.
 
 ## HTML usage
 
@@ -63,8 +63,16 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 
-None — pure CSS. Toggle the documented HTML attributes or class names from whatever already drives state in your app.
+Implement these mechanics in the component's lifecycle:
+
+1. Create one `.t-reel-col` per digit and give it a width that fits a digit. Inside it, create a `.t-reel-strip` with enough repeated 0–9 cells for the chosen spin count. Render decimal separators and signs as steady text.
+2. Give each moving strip its own SVG filter with a unique ID and an `feGaussianBlur` element. Set `stdDeviation` to `0 Y` for vertical blur; size the filter region so it does not clip the moving digits.
+3. Start each strip at its current visible position. Read the computed cell height and numeric timing values, then set its target offset to `-(spins * 10 + digit) * cellHeight`. Use a column delay of `columnIndex * staggerMs`.
+4. Decay that column's blur to zero as it settles. On a new value, retarget from the live state and cancel old callbacks. Handle changes in digit count and keep one accessible text value while the reels remain decorative.
+5. For reduced motion, render the final digits at once without repeated cells, delays, blur, or animation work. Cancel drivers on teardown and when the preference changes.
+
+The CSS above describes the rendering structure; these JavaScript steps are required to make it run.

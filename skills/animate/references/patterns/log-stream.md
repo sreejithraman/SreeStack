@@ -87,12 +87,19 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
-## JavaScript orchestration
+## JavaScript loop mechanics
+
+This excerpt shows the stepping and wrap calculation. It is not a lifecycle controller. Before using it in a component:
+
+- Retain both timer IDs and cancel them on completion, teardown, or a reduced-motion change. Schedule another step only while the real operation is active and motion is allowed.
+- Mark the cloned text `aria-hidden="true"` and remove focus targets and duplicate IDs from it. Keep one accessible log.
+- For reduced motion, bypass this loop, remove the clone, and show a readable log with normal document flow or user-controlled scrolling. Remove the absolute positioning and clipping that would hide its contents; resetting the transform alone is insufficient.
+- When resuming motion, measure the current content and reset the offset before restarting. Bind preference and application-state changes through the project's lifecycle.
 
 ```js
-// Clone the transcript once so the wrap is seamless, then step the
+// Clone the transcript once so the wrap has no visible jump, then step the
 // scroll up --reason-lines lines every --reason-hold. The offset
 // wraps by one copy's height the moment a step lands past it — the
 // clone underneath makes the jump invisible.

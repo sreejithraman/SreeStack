@@ -2,7 +2,7 @@
 
 ## When to use
 
-A loading / "thinking" label that shimmers — streaming status, "Generating…", any in-progress copy that should feel alive without a spinner. Pure CSS: duplicate the string into `data-text` on `.t-shimmer` and tune `--shimmer-base` / `--shimmer-highlight` per theme.
+A loading / "thinking" label that shimmers — streaming status, "Generating…", in-progress text with a moving highlight. Pure CSS: duplicate the string into `data-text` on `.t-shimmer` and tune `--shimmer-base` / `--shimmer-highlight` per theme.
 
 ## HTML usage
 
@@ -87,7 +87,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+The reduced-motion rule stops the highlight animation. Keep the label readable as a steady status. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

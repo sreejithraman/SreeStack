@@ -2,7 +2,7 @@
 
 ## When to use
 
-Checkboxes, to-do completion, multi-select rows — any boolean control where the checked state should feel earned. The box's background fills first, then the checkmark draws itself via stroke-dashoffset after a short delay; unchecking reverses quickly with no draw.
+Checkboxes, to-do completion, multi-select rows — a boolean control that needs a clear state change. The box's background fills first, then the checkmark draws itself via stroke-dashoffset after a short delay; unchecking reverses quickly with no draw.
 
 Toggle `aria-checked` on the control. Like **success check**, the draw needs `stroke-dasharray` calibrated to your actual path length (`path.getTotalLength()`).
 
@@ -66,7 +66,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

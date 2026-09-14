@@ -2,7 +2,7 @@
 
 ## When to use
 
-A card / tile / media surface that tilts in 3D toward the pointer while hovered, with a soft light "glare" tracking the cursor across it. Use for product cards, credit / membership cards, feature tiles, cover art — anything that should feel physical and reactive on hover. Pointer-only (skips touch) and flattens under reduced motion.
+Use for a decorative card that tilts toward a mouse pointer, with a light highlight that follows its position. The implementation below includes held-touch drag and uses `touch-action: none`, which blocks scrolling over the card. For mouse hover only, remove that declaration, skip non-mouse events in `track`, and omit the non-mouse `pointerdown` capture handler. Choose that form when the page must scroll over the card. Reduced motion keeps the card flat.
 
 The pointer is tracked on an **outer flat wrapper** (`.t-tilt`) that never transforms, so the tilting card can't rotate its own edges out from under the cursor (which causes hover flicker). The inner `.t-tilt-card` is the element that actually rotates.
 
@@ -104,7 +104,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 
@@ -158,7 +158,7 @@ tilt.addEventListener("pointerleave", (e) => {
 
 ### Peak tilt angle
 
-The rotation magnitude is a JS constant (`MAX`, in degrees), not a CSS variable — the orchestration writes `--tilt-rx` / `--tilt-ry` from the pointer position scaled by `MAX`. Raise it for a stronger lean (the live demo goes up to ~40°); 10–16° reads as a subtle, tasteful tilt.
+The rotation magnitude is a JS constant (`MAX`, in degrees), not a CSS variable — the orchestration writes `--tilt-rx` / `--tilt-ry` from the pointer position scaled by `MAX`. Start near 10–16° for a small tilt and tune it to the card size. Larger angles obscure content more.
 
 ### Why the pointer is tracked on the flat wrapper
 

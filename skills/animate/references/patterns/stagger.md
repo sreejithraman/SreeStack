@@ -50,7 +50,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 /* Lines start translated down + blurred + invisible; .is-shown
    on the parent flips them to their resting state. The second
    line's transition-delay holds it back by --stagger-stagger
-   so the eye lands on the headline first. */
+   so the headline appears first. */
 .t-stagger-line {
   display: block;
   opacity: 0;
@@ -88,7 +88,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 

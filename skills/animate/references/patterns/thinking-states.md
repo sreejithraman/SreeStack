@@ -4,7 +4,7 @@
 
 An AI status line that narrates what the agent is doing — "Setting up a workplace", "Running a command", "Browsing files". The line shimmers while a state holds (the same masked highlight as **shimmer text**), then swaps to the next state with the **text states swap** motion: the old line exits up through a small blur while the new one rises in from below.
 
-Use this over a bare shimmer when the label changes while the work runs — the swap keeps the narration alive without a hard cut. Outgoing and incoming lines animate at the same time, so a swap costs one `--think-swap`, not two.
+Use this over a bare shimmer when the label changes while the work runs — the swap blends the outgoing and incoming labels. Outgoing and incoming lines animate at the same time, so a swap costs one `--think-swap`, not two.
 
 ## HTML usage
 
@@ -125,7 +125,7 @@ Map these defaults to the project’s tokens. Install only the variables this pa
 }
 ```
 
-The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet is required — keep it. It zeroes the transition for users who have asked for less motion at the OS level.
+Keep the reduced-motion CSS and make the final useful state available without movement. Follow the [implementation checks](../implementation.md) for JavaScript cancellation and preference changes.
 
 ## JavaScript orchestration
 
