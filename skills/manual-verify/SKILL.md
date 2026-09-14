@@ -26,3 +26,6 @@ get done, and how could these changes affect them?
    observed results, and any failures or gaps. Include screenshots or other
    evidence when useful. Base conclusions on what you exercised; distinguish
    untested behavior from passing checks.
+
+   After UI work, use `showroom` to package useful visual checkpoints. Keep
+   workflow selection and the pass or fail judgment here.
