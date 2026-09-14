@@ -23,7 +23,7 @@ reviewer reads that complete scope in every round, including the integrated
 work of all authors. Keep the original base when fixes change the diff.
 
 Prepare a complete [review brief](references/review-brief.md) for each independent
-reviewer. Both reviewers get the same requirements and accepted scope changes,
+reviewer. All reviewers get the same requirements and accepted scope changes,
 base/head, full diff and untracked contents, standards, and test evidence.
 Supply complete contents inline or through absolute paths; summaries do not
 replace them. Keep any brief files and diff snapshots outside the reviewed diff.
@@ -36,6 +36,25 @@ When docs change agent behavior, use one independent reviewer as described below
 Use the code loop for code or mixed changes, including executable skill scripts.
 Judge the changed content, not its extension. Honor an explicit request for
 additional reviewers or rounds.
+
+## Required Gemini review
+
+Send every nonempty review scope to Gemini through [Gemini](../gemini/SKILL.md),
+using its [review packet flow](../gemini/references/review.md). This applies to
+all paths below. Gemini joins the parent or native reviewers; it does not replace
+them or count toward the code path's limit of two native reviewers.
+
+Give Gemini the same complete brief and review references, with contents in the
+packet rather than paths alone. Start a fresh Gemini conversation each round.
+Include its findings in parent triage or `/review-sweep`, keeping Gemini as the
+source. A round is complete only when Gemini and all required native reviewers
+finish with full coverage. A failed, denied, or incomplete Gemini run is a blocker;
+never silently omit it or count it as clean. Follow the Gemini flow's bounded
+recovery rules and report any unresolved gap.
+
+The paths below govern repeats: code fixes start a fresh round for all reviewers;
+substantive instruction fixes do too. Ordinary docs and wording-only instruction
+fixes need targeted verification after the initial Gemini review.
 
 ## Focused review: ordinary docs
 
@@ -53,7 +72,7 @@ or dispatch the code reviewers below. Report the result using the shared handoff
 
 ## Docs that change agent behavior
 
-Use one fresh, independent review agent for changes to skill procedures, global
+Use one fresh, independent native review agent plus Gemini for changes to skill procedures, global
 instructions, or agent configuration. Set `fork_turns: "none"` explicitly. Follow
 [agent routing](../orchestration/references/agent-routing.md) for role selection and
 settings each round.
@@ -63,8 +82,8 @@ check conflicts and missing requirements, and report findings with evidence,
 coverage, and gaps. Keep it read-only and independent of earlier conclusions.
 
 The parent triages findings, fixes accepted issues, and checks relevant links,
-examples, syntax, and skill structure. After substantive fixes, use a fresh
-reviewer on the whole updated change against the original base. Wording-only
+examples, syntax, and skill structure. After substantive fixes, restart with a fresh
+native reviewer and Gemini on the whole updated change against the original base. Wording-only
 fixes need targeted checks. Finish after a complete clean review and passing
 checks; report missing coverage or an unavailable reviewer as a blocker.
 
@@ -110,8 +129,8 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
 
    If the code changes during review, refresh the whole scope and restart the
    round. Missing coverage or an unavailable reviewer
-   is a blocker, not a clean review. Include extra or external reviews only when
-   the user explicitly requests them, and include their findings in the sweep.
+   is a blocker, not a clean review. Beyond required Gemini review, include extra reviews only when the user
+   explicitly requests them, and include their findings in the sweep.
 
 2. **Sweep.** Run `/review-sweep` in the parent. Keep each finding’s source,
    including Standards versus Spec. Finish when every finding has a disposition
@@ -143,5 +162,5 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
 ## Handoff
 
 Report scope, review path, round count, reviewer roles and requested settings,
-coverage, fixes, deferrals, blockers, checks, any manual verification evidence,
+Gemini status and coverage, fixes, deferrals, blockers, checks, any manual verification evidence,
 and remaining risks. Distinguish confirmed settings from unverified requests.
