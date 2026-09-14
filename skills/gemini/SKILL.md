@@ -14,8 +14,8 @@ Send the prompt headlessly through agy and wait for the answer. Use
 [headless.md](references/headless.md) for headless configuration. Start fresh for a
 new task; keep the same conversation when asking a follow-up.
 
-For code review, use [review.md](references/review.md) to pass the exact scope
-and optionally use Gemini's installed review skill. Keep analysis read-only
+For code or docs review, use [review.md](references/review.md) to send a complete
+review packet with no tool steps requested. Keep analysis read-only
 unless the caller asks for changes.
 
 Assess the answer against the task and available evidence. Follow up when a

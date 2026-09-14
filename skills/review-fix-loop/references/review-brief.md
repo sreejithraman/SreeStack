@@ -3,7 +3,9 @@
 ## Dispatch
 
 - Agent role and requested model/effort: read the active settings.
-- Context: explicitly pass `fork_turns: "none"` to the spawn tool.
+- Context: for native reviewers, explicitly pass `fork_turns: "none"` to the
+  spawn tool. For Gemini, start a fresh conversation and embed evidence and
+  reference contents using its [packet flow](../../gemini/references/review.md).
 - Permissions: read-only; leave edits, delegation, and acceptance to the parent.
 - Emphasis: the assigned review focus; it never limits full-diff coverage.
 - Review references: absolute paths to the references selected for this emphasis.
