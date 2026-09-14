@@ -16,9 +16,44 @@ Local-only skills need just an origin note.
 
 ## animate
 
-- [emilkowalski/skills](https://github.com/emilkowalski/skills) — `skills/animate`; commit: unknown.
+- [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
+- [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`.
 
-Local differences are not recorded.
+- One automatically discoverable skill owns motion decisions, implementation,
+  tuning, and checks. Its main file links directly to task-based pattern guides.
+  Origin notes and source-based groups are absent from the skill. Current project
+  tokens, component behavior, and measured results take precedence over examples.
+- `transitions-dev/01-*.md` through `32-*.md` map to
+  `references/patterns/<name>.md` with numeric prefixes removed. Exceptions:
+  `18-texts-reveal.md` maps to `stagger.md`; `29-reasoning-stream.md` maps to
+  `log-stream.md`. Pattern variables, state hooks, reduced-motion blocks, and detailed mechanics
+  remain. The learn-more hover selectors add fine-pointer/hover gating; other
+  pattern code keeps the source behavior except that input-clear’s easing parser
+  accepts whitespace in its declared cubic-bezier defaults. Comments use direct wording. Origin
+  prose and demo-token mappings are
+  removed. Log-stream guidance uses real application status and logs. Card-tilt
+  guidance makes touch drag optional and states its scrolling cost. Reduced-motion
+  notes correct animation-only and partial guards and require any needed
+  JavaScript bypass or cleanup. Log-stream labels its loop as mechanics and
+  states the required lifecycle controller. Spinning-counter supplies CSS plus
+  construction steps, without claiming a bundled JavaScript builder. Banner
+  stacking states its host-size prerequisite.
+- `RECIPES.md` sections join the matching menu-dropdown, tooltip, modal, toast,
+  accordion, stagger, and tabs-sliding guides as variants chosen by component
+  behavior. Its remaining sections map to button-press, drawer, hold-to-confirm,
+  scroll-reveal, drag-to-dismiss, crossfade, and programmatic-animation guides.
+  Prose gives local use criteria and checks. Code examples remain except for
+  the drag dismissal test, which uses recent signed velocity toward the exit
+  instead of absolute whole-gesture average speed. Curve defaults live beside
+  examples that use them. Unsupported performance guarantees are omitted.
+- `references/implementation.md` covers shared lifecycle, access, token, and
+  rendering checks. `references/tuning.md` adapts the polish scale and rules,
+  scopes scans to the request, treats blur and values as choices, and counts
+  stagger delay from the last item's zero-based index. Toast close guidance
+  uses the pattern's 250ms starting point. Per-pattern variable blocks replace
+  the separate `_root.css` copy; global token aliases are omitted.
+- Separate dev/polish skills, command and approval flows, automatic token
+  replacement, and Refine-panel integration are omitted.
 
 ## app-store-connect
 

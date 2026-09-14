@@ -9,7 +9,8 @@ material keeps the terms listed below; the root license does not replace them.
 | --- | --- | --- |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
 | Matt Pocock | Skills and Standards/Spec review references listed in SOURCES.md | [MIT](licenses/mattpocock-skills.txt) |
-| Emil Kowalski | animate and design-eng | [animate MIT](skills/animate/LICENSE.md), [design-eng MIT](skills/design-eng/LICENSE.md) |
+| Emil Kowalski | animate and design-eng | [animate MIT](licenses/emilkowalski-animate.txt), [design-eng MIT](skills/design-eng/LICENSE.md) |
+| Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
 | Dietrich Gebert / Ponytail | review-fix-loop/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
 | Cursor | review-fix-loop/references/thermo.md | [MIT](licenses/cursor-plugins.txt) |
 | Anthropic skills | frontend-web-design | [Upstream Apache-2.0](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt) |
@@ -28,7 +29,9 @@ React Doctor’s notice includes restrictions on model training and certain paid
 products or services. Do not describe it as plain MIT. Its terms still apply alongside
 the root license.
 
-The imported revisions for animate, design-eng, and refactoring-ui-skill remain
-unknown. Their bundled notices do not resolve those source-history gaps.
+The original parent-skill import baseline for animate remains unknown; its
+reference imports have recorded revisions in SOURCES.md. The imported revisions
+for design-eng and refactoring-ui-skill remain unknown. Bundled notices do not
+resolve those source-history gaps.
 Linked API docs, component catalogs, and other live references sit beside the
 guidance they support; links alone are not bundled copies.

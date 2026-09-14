@@ -105,6 +105,7 @@ uses and adapts:
 
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation and design engineering skills.
+- [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — the Frontend Web Design skill.
