@@ -18,11 +18,13 @@ material keeps the terms listed below; the root license does not replace them.
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |
 | s0xDk / s13k | refactoring-ui-skill | [MIT and scope note](skills/refactoring-ui-skill/LICENSE) |
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
+| Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
 | haider-nawaz | liquid-glass | Unresolved: no license file found at the recorded revision |
 
 The files in `licenses/` copy upstream license files at the revisions in
 SOURCES.md. Anthropic skills was checked on 2026-09-12; App Store Connect
-was checked on 2026-09-08; the other notices were checked on 2026-09-06. Cursor’s notice comes from
+was checked on 2026-09-08; Vercel Labs react-best-practices was checked on
+2026-09-18; the other notices were checked on 2026-09-06. Cursor’s notice comes from
 `cursor-team-kit/LICENSE`. Existing per-skill notices remain in place.
 
 React Doctor’s notice includes restrictions on model training and certain paid
