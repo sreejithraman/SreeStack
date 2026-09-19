@@ -178,6 +178,24 @@ Manual-only invocation: `disable-model-invocation: true` and
 
 UI prototypes for web, mobile, and desktop; no logic-prototype mode.
 
+## react-best-practices
+
+- [vercel-labs/agent-skills / skills/react-best-practices](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/react-best-practices) — commit `063bee94c3f4df8453406c830b0a7df0f2860278`. Upstream repo README and skill frontmatter claim MIT; no license file found at this revision.
+
+Keeps the upstream rule files and the skill's category index. Local name is
+`react-best-practices` (upstream frontmatter name is `vercel-react-best-practices`).
+Omits the compiled `AGENTS.md`, contributor README, metadata, rule template, and
+section compiler files. Origin notes and license frontmatter are omitted from the
+skill. Description and When to Apply are limited to performance work. How to Use
+sits above Quick Reference and tells the agent to pick matching prefixes, then
+open only the linked files whose ids start with those prefixes and whose
+one-liners match the request, then apply the opened files. Quick Reference
+entries link to the matching rule files. Two index one-liners differ from
+upstream so they name the file's actual API or fix: `advanced-use-latest`
+(`useEffectEvent`) and `bundle-barrel-imports` (barrel-file import cost).
+Trailing whitespace is stripped from copied rule files. Automatic discovery
+stays enabled.
+
 ## react-doctor
 
 - [millionco/react-doctor / skills/react-doctor](https://github.com/millionco/react-doctor/tree/79d80072817eb86c74f3dd42ce91c8104f448810/skills/react-doctor) — commit `79d80072817eb86c74f3dd42ce91c8104f448810`.
