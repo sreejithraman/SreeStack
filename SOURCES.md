@@ -186,7 +186,8 @@ Keeps the upstream rule files and the skill's category index. Local name is
 `react-best-practices` (upstream frontmatter name is `vercel-react-best-practices`).
 Omits the compiled `AGENTS.md`, contributor README, metadata, rule template, and
 section compiler files. Origin notes and license frontmatter are omitted from the
-skill. Description and When to Apply are limited to performance work. How to Use
+skill. Description keeps the upstream trigger wording. When to Apply stays
+limited to performance work. How to Use
 sits above Quick Reference and tells the agent to pick matching prefixes, then
 open only the linked files whose ids start with those prefixes and whose
 one-liners match the request, then apply the opened files. Quick Reference

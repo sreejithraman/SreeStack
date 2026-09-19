@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: Use when writing, reviewing, or refactoring React or Next.js for load time, waterfalls, bundle size, server rendering, data fetching, or re-renders.
+description: This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
 ---
 
 # React Best Practices
