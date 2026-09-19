@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+description: "Use for React or Next.js performance work: waterfalls, bundle size, server rendering, data fetching, or re-renders."
 ---
 
 # React Best Practices
@@ -30,9 +30,9 @@ Reference these guidelines when:
 
 ## How to Use
 
-1. From the category table, pick the prefixes that match the current task.
-2. Open only the Quick Reference links whose ids start with those prefixes and whose one-liners match the request's symptoms, APIs, or files.
-3. Apply the opened files. The one-liners are only for choosing which files to open.
+1. From the category table, pick the prefixes that match the current task, or the diff when this skill is a review reference.
+2. Open only the Quick Reference links whose ids start with those prefixes and whose one-liners match the request, or the diff when this skill is a review reference.
+3. When this skill is a review reference, report findings from the opened files and leave edits to the parent. Otherwise apply the opened files. The one-liners are only for choosing which files to open.
 
 Each rule file contains:
 - Brief explanation of why it matters
