@@ -186,20 +186,32 @@ Keeps the upstream rule files and the skill's category index. Local name is
 `react-best-practices` (upstream frontmatter name is `vercel-react-best-practices`).
 Omits the compiled `AGENTS.md`, contributor README, metadata, rule template, and
 section compiler files. Origin notes and license frontmatter are omitted from the
-skill. Description keeps the upstream trigger wording. When to Apply stays
-limited to performance work. How to Use
-sits above Quick Reference and tells the agent to pick matching prefixes, then
-open only the linked files whose ids start with those prefixes and whose
-one-liners match the request, then apply the opened files. Quick Reference
-entries link to the matching rule files. Two index one-liners differ from
-upstream so they name the file's actual API or fix: `advanced-use-latest`
-(`useEffectEvent`) and `bundle-barrel-imports` (barrel-file import cost).
-Trailing whitespace is stripped from copied rule files. Automatic discovery
-stays enabled.
+skill. Description is limited to React or Next performance work (waterfalls,
+bundle size, server rendering, data fetching, re-renders) rather than upstream's
+broader write/review/refactor trigger. When to Apply stays limited to
+performance work. How to Use sits above Quick Reference and tells the agent to
+pick matching prefixes from the request, or the diff when the skill is a
+review reference, then open only the linked files whose ids start with those
+prefixes and whose one-liners match that same source. When it is a review
+reference, report findings and
+leave edits to the parent; otherwise apply the opened files. Quick Reference
+entries link to the matching rule files. Two index
+one-liners differ from upstream so they name the file's actual API or fix:
+`advanced-use-latest` (`useEffectEvent`) and `bundle-barrel-imports` (barrel-file
+import cost). Trailing whitespace is stripped from copied rule files. Automatic
+discovery stays enabled.
 
 ## react-doctor
 
-- [millionco/react-doctor / skills/react-doctor](https://github.com/millionco/react-doctor/tree/79d80072817eb86c74f3dd42ce91c8104f448810/skills/react-doctor) — commit `79d80072817eb86c74f3dd42ce91c8104f448810`.
+- [millionco/react-doctor / skills/react-doctor](https://github.com/millionco/react-doctor/tree/499a0208fca5c0422b713bdedf2b83fcc8e29d20/skills/react-doctor) — commit `499a0208fca5c0422b713bdedf2b83fcc8e29d20`.
+
+Description covers diagnostics scan or triage, design audit, runtime trace, and
+rule config. It omits `/doctor`, finishing a feature, fixing a bug, and
+committing React code. The changed-scope regression scan lives in
+`review-fix-loop` Verify. The skill omits the upstream "After making React code
+changes" commit gate and the `/doctor` remote playbook. The example command is
+the full verbose scan. The flag table includes `--base` and
+`--include-untracked` for partial scopes. Automatic discovery stays enabled.
 
 ## refactoring-ui-skill
 
@@ -240,6 +252,14 @@ Reviewer references:
   supplied diff. Persistent modes, install steps, benchmark displays, and the
   upstream debt skill's whole-repo ledger are excluded. The brief limits savings
   claims to observed local evidence.
+- When the scope includes React or Next code, every reviewer and Gemini get
+  `react-best-practices` as a review reference. The parent follows that skill's
+  How to Use against the diff and puts the skill file and those matching rule
+  files in the Gemini packet. Native reviewers follow How to Use against the
+  diff. Those findings stay labeled separately. Verify runs
+  `npx react-doctor@latest --verbose --scope changed --base <resolved-base>
+  --include-untracked` and treats a dropped score as a failed check. This does
+  not add a reviewer.
 
 ## pr-prep
 

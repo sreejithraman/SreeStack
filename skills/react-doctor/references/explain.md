@@ -2,7 +2,7 @@
 
 Explain React Doctor rules and edit `doctor.config.*` safely. Use this when a user
 wants to understand a rule or change which rules run — not for fixing diagnostics
-(that is the main `react-doctor` skill / `/doctor`).
+(that is the main `react-doctor` skill).
 
 Triggers: "why did this rule fire", "I disagree with this rule", "turn this rule off",
 "stop flagging X", "too noisy", "disable design rules".

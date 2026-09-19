@@ -111,10 +111,17 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
      [Thermo](references/thermo.md) for structure and boundaries, and
      [Standards](references/standards.md) for repo rules.
 
+   When the scope includes React or Next code, include
+   [react-best-practices](../react-best-practices/SKILL.md) in every reviewer's
+   references. Reviewers follow its How to Use against the diff. For Gemini, the
+   parent follows that How to Use against the diff and puts the skill file and
+   those matching rule files in the packet.
+
    One reviewer covers both sets. With two, assign one set to each for emphasis;
    both still read every changed hunk and new file, trace nearby effects, and
-   may report issues outside their emphasis. Keep Spec and Standards findings
-   labeled separately even when one reviewer supplies both.
+   may report issues outside their emphasis. Keep Spec, Standards, and
+   react-best-practices findings labeled separately even when one reviewer
+   supplies them.
 
    Name the change's main risks in the briefs, such as access control, concurrent
    updates, or data migration. These guide the existing reviewers' checks; they
@@ -133,17 +140,20 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
    explicitly requests them, and include their findings in the sweep.
 
 2. **Sweep.** Run `/review-sweep` in the parent. Keep each finding’s source,
-   including Standards versus Spec. Finish when every finding has a disposition
-   and every accepted fix is complete or blocked. Preserve intended behavior
-   and contracts within the user’s authorized scope.
+   including Standards versus Spec versus react-best-practices. Finish when every
+   finding has a disposition and every accepted fix is complete or blocked.
+   Preserve intended behavior and contracts within the user’s authorized scope.
 
-3. **Verify.** Run planned and fix-specific checks. Use judgment to decide
-   whether `/manual-verify` would add useful confidence, based on the changed
-   behavior, risk, and existing test coverage. Invoke it when needed, even if
-   review found no fixes. Fix failures and rerun affected checks; reassess manual
-   verification after fixes. Keep evidence only while it still applies to the
-   current code. Report any verification you consider necessary but cannot run
-   as a concrete blocker.
+3. **Verify.** Run planned and fix-specific checks. When the scope includes
+   React or Next code, run
+   `npx react-doctor@latest --verbose --scope changed --base <resolved-base> --include-untracked`
+   and put the report in test evidence. A dropped score is a failed check.
+   Use judgment to decide whether `/manual-verify` would add useful confidence,
+   based on the changed behavior, risk, and existing test coverage. Invoke it
+   when needed, even if review found no fixes. Fix failures and rerun affected
+   checks; reassess manual verification after fixes. Keep evidence only while it
+   still applies to the current code. Report any verification you consider
+   necessary but cannot run as a concrete blocker.
 
 4. **Finish or repeat.** A complete clean round with passing checks can finish,
    including the first round. After any accepted fix or verification fix, refresh
