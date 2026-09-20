@@ -1,5 +1,5 @@
 name = "staff"
-description = "Substantial diagnosis or implementation requiring design judgment."
+description = "Substantial diagnosis, implementation requiring design judgment, or difficult unresolved reasoning such as subtle concurrency or data-loss risks."
 model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 developer_instructions = """

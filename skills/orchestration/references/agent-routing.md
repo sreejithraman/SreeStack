@@ -13,8 +13,11 @@ not a separate rank.
 | `junior` | Explicit, easily checked work with settled requirements |
 | `engineer` | Routine implementation using established patterns; default worker |
 | `senior` | General engineering judgment; default reviewer |
-| `staff` | Substantial diagnosis or implementation requiring design judgment |
-| `distinguished` | Difficult unresolved reasoning, such as subtle concurrency or data-loss risks |
+| `staff` | Substantial diagnosis, implementation requiring design judgment, or difficult unresolved reasoning such as subtle concurrency or data-loss risks |
+
+This table is the allowed rank set. Select only these ranks, even when the host
+exposes others. Map a request for another rank to the closest listed rank and
+report the substitution.
 
 Choose the likely capable rank up front; failed attempts are not a prerequisite.
 File count alone does not determine difficulty. A hard task can still have one owner.
@@ -22,11 +25,11 @@ File count alone does not determine difficulty. A hard task can still have one o
 For review, start with `senior` and select another rank when the review needs
 less or more judgment. `junior` fits mechanical checks with explicit criteria;
 `engineer` fits straightforward changes using established patterns. Use `staff`
-for substantial design questions and `distinguished` for a specific unresolved
-reasoning problem named in the brief. Choose each reviewer's rank independently
-of the implementer; two reviewers may use different ranks while both cover the
-full diff. Reassess each round; project difficulty alone does not justify keeping
-a higher rank once its reasoning problem is resolved.
+for substantial design questions and difficult unresolved reasoning. Choose each
+reviewer's rank independently of the implementer; two reviewers may use
+different ranks while both cover the full diff. Reassess each round; project
+difficulty alone does not justify keeping a higher rank once its reasoning
+problem is resolved.
 
 Every review brief must say: work read-only, report findings, and leave edits to
 the parent. Rank files allow implementation too, so this is an instruction rather
@@ -56,10 +59,12 @@ independent review rounds.
 
 ## Apply settings at spawn
 
-Use the selected custom role when the host exposes it. Otherwise, read that role's
-model and effort from its active agent file and pass both explicitly. For routine
-work without a named rank, use the effective `[agents]` defaults. Honor project
-and user overrides.
+When a project or user overrides a listed rank's model or effort, use a spawn
+path where those values take effect and pass both explicitly. Otherwise, use the
+custom role for the selected allowed rank when the host exposes it. If it does
+not, read that role's model and effort from its active agent file and pass both
+explicitly. For routine work without a named rank, use the effective `[agents]`
+defaults.
 
 For Codex, custom agent values override explicit spawn values, which override
 `[agents]` defaults, which override parent settings. Resolve model and effort

@@ -42,7 +42,6 @@ settings.
 | [engineer.toml](codex/agents/engineer.toml) | `~/.codex/agents/engineer.toml` | Copy this rank file |
 | [senior.toml](codex/agents/senior.toml) | `~/.codex/agents/senior.toml` | Copy this rank file |
 | [staff.toml](codex/agents/staff.toml) | `~/.codex/agents/staff.toml` | Copy this rank file |
-| [distinguished.toml](codex/agents/distinguished.toml) | `~/.codex/agents/distinguished.toml` | Copy this rank file |
 
 To apply these defaults, back up the local files, merge or copy only these parts, and
 check that the TOML parses. Keep unrelated values and existing instructions.
