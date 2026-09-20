@@ -1,0 +1,12 @@
+# Replace /absolute/path/to/SreeStack before merging this block into an active rules file.
+prefix_rule(
+  pattern=["node", "/absolute/path/to/SreeStack/codex/scripts/worktree-start.mjs"],
+  decision="allow",
+  justification="Sync a new Codex worktree to origin/main before work starts.",
+  match=[
+    ["node", "/absolute/path/to/SreeStack/codex/scripts/worktree-start.mjs"],
+  ],
+  not_match=[
+    ["node", "/absolute/path/to/SreeStack/codex/scripts/other.mjs"],
+  ],
+)

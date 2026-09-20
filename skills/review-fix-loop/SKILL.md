@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Review a branch, PR, or local diff; fix accepted findings and verify before handoff or push.
+description: Review a branch, PR, or local diff; fix accepted findings and verify before handoff or push. Use when the user asks to review project changes and before handing off code changes that affect behavior or docs that change agent behavior.
 ---
 
 # Review Fix Loop

@@ -1,6 +1,6 @@
 ---
 name: orchestration
-description: Decide whether to delegate and coordinate agents for implementation, research, or verification. Use when choosing workers, splitting work, or integrating their results; independent review uses the routing reference under review-fix-loop.
+description: Decide whether to delegate and coordinate agents for implementation, research, or verification. Use when choosing workers, splitting work, or integrating their results.
 ---
 
 # Orchestration

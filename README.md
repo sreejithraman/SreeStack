@@ -37,7 +37,9 @@ settings.
 | Source | Destination | How to apply |
 |---|---|---|
 | [config.toml](codex/config.toml) | `~/.codex/config.toml` | Merge the listed keys into the existing file and `[agents]` table |
-| [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Add this section to the existing instructions |
+| [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Merge these shared instructions into the existing file |
+| [optional-instructions.md](codex/optional-instructions.md) | `~/.codex/AGENTS.md` | Merge only the sections you want to enable |
+| [optional.rules](codex/optional.rules) | `~/.codex/rules/default.rules` | Replace its path placeholder and merge only the rules you want to enable |
 | [junior.toml](codex/agents/junior.toml) | `~/.codex/agents/junior.toml` | Copy this rank file |
 | [engineer.toml](codex/agents/engineer.toml) | `~/.codex/agents/engineer.toml` | Copy this rank file |
 | [senior.toml](codex/agents/senior.toml) | `~/.codex/agents/senior.toml` | Copy this rank file |
@@ -46,29 +48,28 @@ settings.
 To apply these defaults, back up the local files, merge or copy only these parts, and
 check that the TOML parses. Keep unrelated values and existing instructions.
 If `~/.codex/AGENTS.override.md` exists, Codex reads it instead of `AGENTS.md`;
-merge the section into that active file, or deliberately retire the override
-before using `AGENTS.md`.
+merge these shared instructions into that active file, or deliberately retire
+the override before using `AGENTS.md`.
 If a destination role already exists, review its differences before replacing
 it.
 No install script or whole-config symlink is needed for this first version.
 
-The global instructions expect [orchestration](skills/orchestration/SKILL.md),
-[goal-swarm](skills/goal-swarm/SKILL.md), and
-[review-fix-loop](skills/review-fix-loop/SKILL.md), plus their referenced skills,
-to be installed from this repo. The
-[routing reference](skills/orchestration/references/agent-routing.md) explains role
+Orchestration and review use the
+[routing reference](skills/orchestration/references/agent-routing.md) for role
 selection and the host's spawn rules. Model and effort values live in config
 and agent files; the skills own delegation, review coverage, and rounds.
 
 These are defaults for local tasks using the same Codex home. Project config,
 explicit model choices, and custom roles can override them. Defining roles makes
-them available; the global and skill instructions request their use. Start a
+them available; the skills request their use. Start a
 new task after applying the files and check the effective settings. Existing
 tasks may retain their selections. Keep any installed links on a stable clone,
 not a temporary worktree.
 
 Sample checks after installation:
 
+- Every nonempty review scope also receives a separate Gemini review. Native
+  reviewer counts below do not include Gemini.
 - A small behavior change uses one reviewer; substantial changes, multiple
   behaviors, shared contracts, risky logic, or work from several agents use two.
   Each reviewer reads the whole diff in every round.
