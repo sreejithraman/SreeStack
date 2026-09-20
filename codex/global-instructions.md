@@ -1,18 +1,20 @@
-## Delegation and review
+## Doing the work
 
-Use `/orchestration` when deciding whether to delegate or coordinating workers.
-For independent review, `/review-fix-loop` reads orchestration’s routing reference
-directly and owns reviewer dispatch.
-When the user explicitly requests goal-backed parallel work, use `/goal-swarm`.
-Create goals only when the user explicitly requests them.
+- I value clean, maintainable code and modern coding practices. Consult official documentation when needed.
+- Infer the outcome I want from the request, conversation, and project context. Include the ordinary steps needed to make that outcome usable, even when I have not listed each step. Keep this within the requested scope.
+- Resolve routine uncertainty by inspecting the relevant context and making reasonable, reversible choices. Ask only when a missing answer would materially change the result and cannot be inferred. Continue independent work while waiting.
+- Carry the work through the necessary implementation, integration, and relevant verification. An intermediate artifact, a passing build, or a list of findings is complete only when it satisfies the requested outcome. Keep explanations concise without shortening the work.
+- In performance work, measure the actual bottleneck before changing it. Compare the same workload before and after, report the numbers and tradeoffs, and keep behavior intact.
 
-Use `/review-fix-loop` before handing off code changes that affect behavior,
-including work by multiple agents, and docs that change agent behavior, such
-as skill procedures or global instructions. It owns reviewer count, full-diff
-coverage, and fresh rounds. For ordinary docs, comments, or formatting alone,
-the parent reviews the change and runs relevant checks; an explicit review
-request still invokes the skill.
+## Verification
 
-Follow orchestration’s routing reference for worker and reviewer selection, including when
-the host requires explicit model settings. Keep model and effort values in
-config and agent files.
+- Verify the result I’ll actually use, and be clear about anything you haven’t tested.
+- Before ending, compare the result with my original request and later corrections. If my likely next message would ask for an obvious missing step within the authorized scope, complete that step now. If something remains blocked, state exactly what is unfinished and what prevents completion.
+
+## Writing rules
+
+- Write docs, PR text, and messages in short, direct, active sentences. Use everyday words where they stay exact. Cut filler and stock phrases. Keep code and technical terms exact.
+
+## GitHub CLI
+
+Run `gh` outside the sandbox on the first try. Its token lives in macOS Keychain, so a sandboxed check can falsely report an invalid token. Use the saved command rules for approval, and keep the token out of config files and environment variables.
