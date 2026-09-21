@@ -160,12 +160,20 @@ only on request.
 
 - Local: `skills/swarm-and-push` (SreeStack).
 
-## liquid-glass
+## swift-testing-modernization
 
-- [haider-nawaz/liquid-glass-skill / plugins/liquid-glass/skills/liquid-glass](https://github.com/haider-nawaz/liquid-glass-skill/tree/2c1b2789c30dc2c9208f3b9a3811d42480714577/plugins/liquid-glass/skills/liquid-glass) — commit `2c1b2789c30dc2c9208f3b9a3811d42480714577`.
+- Local: `skills/swift-testing-modernization` (SreeStack).
 
-Manual-only invocation: `disable-model-invocation: true` and
-`allow_implicit_invocation: false`; upstream has neither setting.
+## swiftui
+
+- Local: `skills/swiftui` (SreeStack).
+
+Includes focused guidance for current platform materials and Liquid Glass rather
+than keeping a separate visual-effect skill.
+
+## uikit
+
+- Local: `skills/uikit` (SreeStack).
 
 ## manual-verify
 
