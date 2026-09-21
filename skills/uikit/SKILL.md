@@ -1,6 +1,6 @@
 ---
 name: uikit
-description: Build, review, or restructure UIKit interfaces, or decide whether an existing UIKit surface should stay UIKit or adopt SwiftUI. Use for view-controller ownership and containment, scenes and trait context, adaptive layout and safe areas, collection identity, or modernization of legacy UIKit environment code.
+description: UIKit interface work. Use when building, maintaining, or modernizing UIKit controllers, scenes, traits, adaptive layout, collections, or Liquid Glass; or deciding whether an existing UIKit surface should adopt SwiftUI.
 ---
 
 # UIKit
@@ -16,13 +16,18 @@ ownership and lifecycle explicit.
    object owns the window, content, navigation, and mutable state.
 2. Read only the references needed for the task:
    - [Choosing SwiftUI or UIKit](../swiftui/references/framework-choice.md) when the
-     framework is not fixed or the work could introduce a framework boundary.
+     framework is not fixed or the work could introduce a framework boundary. If
+     SwiftUI owns the affected surface, continue with `swiftui` and end this
+     workflow. For a hybrid, name the boundary and continue here only for the
+     UIKit-owned side.
    - [View controllers and collections](references/view-controllers-and-collections.md)
      for containment, lifecycle ownership, lists, or stable item identity.
    - [Scenes and traits](references/scenes-and-traits.md) for windows, screens,
      geometry, orientation, environment changes, or deprecated global lookups.
    - [Layout and safe areas](references/layout-and-safe-areas.md) for constraints,
      margins, bars, keyboard interaction, or resizable interfaces.
+   - [Materials and Liquid Glass](references/materials-and-glass.md) when adopting
+     current UIKit materials or reviewing custom glass effects.
 3. Choose the nearest valid context. UI code should normally derive environment
    from its view or controller; non-UI code should receive the specific value or
    capability it needs.
