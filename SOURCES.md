@@ -19,10 +19,13 @@ Local-only skills need just an origin note.
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
 - [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`.
 
-- One automatically discoverable skill owns motion decisions, implementation,
-  tuning, and checks. Its main file links directly to task-based pattern guides.
+- One automatically discoverable cross-platform skill owns motion decisions,
+  implementation, tuning, and checks. Its entrypoint holds the shared motion gate
+  and routes web work to the imported task-based pattern guides and SwiftUI or
+  UIKit work to guidance grounded in current Apple documentation.
   Origin notes and source-based groups are absent from the skill. Current project
-  tokens, component behavior, and measured results take precedence over examples.
+  tokens, platform conventions, component behavior, and measured results take
+  precedence over examples.
 - `transitions-dev/01-*.md` through `32-*.md` map to
   `references/patterns/<name>.md` with numeric prefixes removed. Exceptions:
   `18-texts-reveal.md` maps to `stagger.md`; `29-reasoning-stream.md` maps to
