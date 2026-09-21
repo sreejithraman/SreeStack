@@ -160,6 +160,10 @@ only on request.
 
 - Local: `skills/swarm-and-push` (SreeStack).
 
+## swift-testing-modernization
+
+- Local: `skills/swift-testing-modernization` (SreeStack).
+
 ## liquid-glass
 
 - [haider-nawaz/liquid-glass-skill / plugins/liquid-glass/skills/liquid-glass](https://github.com/haider-nawaz/liquid-glass-skill/tree/2c1b2789c30dc2c9208f3b9a3811d42480714577/plugins/liquid-glass/skills/liquid-glass) — commit `2c1b2789c30dc2c9208f3b9a3811d42480714577`.
