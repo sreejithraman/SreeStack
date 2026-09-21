@@ -232,6 +232,13 @@ the full verbose scan. The flag table includes `--base` and
 
 - [s0xDk/refactoring-ui-skill / SKILL.md](https://github.com/s0xDk/refactoring-ui-skill/blob/main/SKILL.md) — imported revision: unknown.
 
+The automatically discoverable entrypoint owns shared visual hierarchy and
+system decisions, then routes web work to the imported rules, references, and
+CSS token asset and SwiftUI or UIKit work to Apple-platform guidance grounded
+in current Apple documentation. The imported web content is preserved in
+`references/web.md`; current project conventions and platform semantics take
+precedence over its starting values.
+
 ## research
 
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.

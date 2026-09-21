@@ -1,6 +1,6 @@
 # Building the color system
 
-The scales in SKILL.md tell you *what* to define. This tells you *how to pick the values*,
+The scales in [web.md](web.md) tell you *what* to define. This tells you *how to pick the values*,
 and how to keep them from looking washed out or failing contrast.
 
 ## Why HSL
