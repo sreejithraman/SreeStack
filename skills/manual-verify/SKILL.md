@@ -1,6 +1,6 @@
 ---
 name: manual-verify
-description: Verify changes through real user workflows when hands-on testing would add confidence, including web apps in a browser and iOS apps in Simulator.
+description: Verify changes through real user workflows when hands-on testing would add confidence, including web apps in a browser and native iOS or macOS apps.
 ---
 
 # Manual Verify
@@ -18,8 +18,9 @@ evidence, not the verdict.
 
 2. **Choose the interface.** Use the product surface its users use. For a web
    app, read [web verification](references/web.md). For an iOS app, read
-   [iOS verification](references/ios.md). Use the same observe-act-observe loop
-   for other interactive products with the best available interface tooling.
+   [iOS verification](references/ios.md). For a native Mac app, read
+   [macOS verification](references/macos.md). Use the same observe-act-observe
+   loop for other interactive products with the best available interface tooling.
 
 3. **Observe, act, observe.** Start from a known state and wait for the interface
    to settle. Identify the environment and external effects before exercising a
@@ -33,14 +34,18 @@ evidence, not the verdict.
    state before continuing. Prefer semantic targets such as roles, labels, and
    identifiers; use coordinates only when the interface exposes no stable target.
 
-   If an interaction appears to fail because the interface moved or was still
-   loading, recapture its state and retry once. Treat a repeated failure as
-   evidence instead of retrying until it disappears.
+   If an interaction produces no expected change, record that outcome before any
+   retry. Retry once only when observable evidence shows that the target moved or
+   the interface had not settled, and count the retry as a separate attempt.
+   Treat a repeated failure as evidence instead of retrying until it disappears.
 
    When the reported behavior is intermittent, choose a bounded attempt count
-   before testing, repeat the same controlled workflow, and record every outcome.
-   Report `reproduced` or `not reproduced in N attempts`; do not turn one
-   successful attempt into a pass for the intermittent report.
+   before testing. Restore an equivalent known state with disposable or uniquely
+   identified data before every planned attempt so earlier outcomes cannot affect
+   later ones. Record every outcome. Recovery retries are separate from the
+   planned attempt count and must be recorded separately. Report `reproduced` or
+   `not reproduced in N attempts`; do not turn one successful attempt into a pass
+   for the intermittent report.
 
 4. **Judge the result.** Compare the observed result with the workflow's expected
    result. Check function and usability, including relevant layout, readability,
@@ -52,12 +57,28 @@ evidence, not the verdict.
    - transient states that settle correctly; and
    - expected states, such as a disabled submit action for incomplete input.
 
-5. **Report evidence.** For each workflow, state what was exercised, the expected
-   result, the observed result, and its status: `passed`, `failed` or `reproduced`,
-   `not reproduced in N attempts`, or `blocked` or `untested`. A result that was
-   not reproduced is not a pass. Include screenshots, logs, or semantic snapshots
-   when they explain the conclusion. Name any untested behavior or environmental
-   gap rather than treating it as passing.
+   When the expected result includes persisted data or an output artifact, verify
+   it through a fresh read path rather than relying on the current screen alone.
+
+5. **Report evidence.** For each workflow, state what was exercised and the
+   expected and observed result. Give each required acceptance assertion a status:
+
+   - `passed` when the observed result matched the expected assertion;
+   - `failed` when the observed result differed from the expected assertion;
+   - `blocked` when a missing prerequisite prevented the check; or
+   - `untested` when the selected check was not exercised.
+
+   Report defect reproduction separately as `reproduced` or
+   `not reproduced in N attempts`. A reproduced defect makes its affected
+   assertion and the overall workflow `failed`. When the defect is not reproduced,
+   report that outcome beside the acceptance status and state that it does not
+   establish that the defect is fixed.
+
+   A workflow passes when every required assertion passed. Otherwise report every
+   non-passing assertion and use `failed` when any assertion failed, then
+   `blocked`, then `untested` as the overall status. Include screenshots, logs, or
+   semantic snapshots when they explain the conclusion. Name any untested
+   behavior or environmental gap rather than treating it as passing.
 
 If login or another step requires the user, tell them exactly what to do and
 where, then resume after they finish. Continue independent checks meanwhile.

@@ -28,6 +28,10 @@ Simulator and Xcode tooling.
   any interaction that may move the target.
 - Exercise text input, gestures, scrolling, orientation, permissions, and
   background or foreground transitions when they belong to the selected workflow.
+- When a save or update should persist, verify it through a fresh read path by
+  relaunching and refetching, inspecting the stored value through an independent
+  interface, or reopening through a path known to create a new model and reload
+  durable storage. Record the persisted value observed.
 - Check both function and presentation: hit targets, clipping, Dynamic Type where
   relevant, safe areas, keyboard avoidance, and expected system dialogs.
 - Capture application logs when the app crashes, exits, hangs, or behaves
