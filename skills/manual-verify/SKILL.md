@@ -5,27 +5,62 @@ description: Verify changes through real user workflows when hands-on testing wo
 
 # Manual Verify
 
-Think like someone who uses this product: who are they, what are they trying to
-get done, and how could these changes affect them?
+Exercise the product through the interface its users operate. Judge whether the
+workflow works and remains usable; a successful command or build is supporting
+evidence, not the verdict.
 
-1. **Choose workflows.** Read the changes and identify the affected audience
-   and tasks. Use judgment to pick realistic workflows, including nearby behavior
-   that could break. Cover relevant error or edge cases without turning every
-   change into a full product audit.
+## Workflow
 
-2. **Use the product.** Use a browser for web apps and iOS Simulator for iOS apps.
-   For other tools, use the interface their users would use. Carry out the chosen
-   workflows and compare what happens with what the user needs. Check that the
-   result makes sense and is usable, beyond whether the action succeeds.
+1. **Choose workflows.** Read the request and changes. Identify the affected
+   users, their goal, and nearby behavior the change could break. Select the
+   smallest useful set of realistic workflows covering the main path and any
+   material error or edge case. State the expected result of each workflow.
 
-   If login or another step needs the user, tell them exactly what to do and
-   where, then resume once they finish. Continue any independent checks meanwhile.
-   If the environment cannot support a needed check, report the gap.
+2. **Choose the interface.** Use the product surface its users use. For a web
+   app, read [web verification](references/web.md). For an iOS app, read
+   [iOS verification](references/ios.md). Use the same observe-act-observe loop
+   for other interactive products with the best available interface tooling.
 
-3. **Report what happened.** Briefly state the workflows tested, expected and
-   observed results, and any failures or gaps. Include screenshots or other
-   evidence when useful. Base conclusions on what you exercised; distinguish
-   untested behavior from passing checks.
+3. **Observe, act, observe.** Start from a known state and wait for the interface
+   to settle. Identify the environment and external effects before exercising a
+   consequential workflow. Use disposable accounts, fixtures, and provider test
+   modes when available. Complete an irreversible or externally visible action
+   only when the task authorizes it; otherwise stop at the last safe step and
+   report the remaining gap.
 
-   After UI work, use `showroom` to package useful visual checkpoints. Keep
-   workflow selection and the pass or fail judgment here.
+   Inspect both the rendered appearance and semantic representation when
+   available. Perform one meaningful interaction, then inspect the resulting
+   state before continuing. Prefer semantic targets such as roles, labels, and
+   identifiers; use coordinates only when the interface exposes no stable target.
+
+   If an interaction appears to fail because the interface moved or was still
+   loading, recapture its state and retry once. Treat a repeated failure as
+   evidence instead of retrying until it disappears.
+
+   When the reported behavior is intermittent, choose a bounded attempt count
+   before testing, repeat the same controlled workflow, and record every outcome.
+   Report `reproduced` or `not reproduced in N attempts`; do not turn one
+   successful attempt into a pass for the intermittent report.
+
+4. **Judge the result.** Compare the observed result with the workflow's expected
+   result. Check function and usability, including relevant layout, readability,
+   focus, input, navigation, loading, empty, disabled, and error states. Distinguish:
+
+   - functional failures, such as the wrong destination or an unresponsive action;
+   - visual failures, such as clipped, overlapping, unreadable, or misplaced content;
+   - crashes and unexpected exits;
+   - transient states that settle correctly; and
+   - expected states, such as a disabled submit action for incomplete input.
+
+5. **Report evidence.** For each workflow, state what was exercised, the expected
+   result, the observed result, and its status: `passed`, `failed` or `reproduced`,
+   `not reproduced in N attempts`, or `blocked` or `untested`. A result that was
+   not reproduced is not a pass. Include screenshots, logs, or semantic snapshots
+   when they explain the conclusion. Name any untested behavior or environmental
+   gap rather than treating it as passing.
+
+If login or another step requires the user, tell them exactly what to do and
+where, then resume after they finish. Continue independent checks meanwhile.
+
+After UI work, use `showroom` to package useful visual checkpoints. Keep workflow
+selection and the pass or fail judgment in this skill.
