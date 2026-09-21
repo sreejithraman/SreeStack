@@ -1,6 +1,6 @@
 ---
 name: uikit
-description: Build, review, or restructure UIKit interfaces. Use for view-controller ownership and containment, scenes and trait context, adaptive layout and safe areas, collection identity, or modernization of legacy UIKit environment code.
+description: Build, review, or restructure UIKit interfaces, or decide whether an existing UIKit surface should stay UIKit or adopt SwiftUI. Use for view-controller ownership and containment, scenes and trait context, adaptive layout and safe areas, collection identity, or modernization of legacy UIKit environment code.
 ---
 
 # UIKit
@@ -15,6 +15,8 @@ ownership and lifecycle explicit.
    data source, deployment targets, and user-visible behavior. Identify which
    object owns the window, content, navigation, and mutable state.
 2. Read only the references needed for the task:
+   - [Choosing SwiftUI or UIKit](../swiftui/references/framework-choice.md) when the
+     framework is not fixed or the work could introduce a framework boundary.
    - [View controllers and collections](references/view-controllers-and-collections.md)
      for containment, lifecycle ownership, lists, or stable item identity.
    - [Scenes and traits](references/scenes-and-traits.md) for windows, screens,

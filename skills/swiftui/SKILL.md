@@ -1,6 +1,6 @@
 ---
 name: swiftui
-description: Build, review, or restructure SwiftUI interfaces for Apple platforms. Use for state ownership and data flow, view composition and identity, navigation and presentation, or platform materials including Liquid Glass.
+description: Build, review, or restructure SwiftUI interfaces for Apple platforms, or choose SwiftUI versus UIKit for new Apple UI. Use for state ownership and data flow, view composition and identity, navigation and presentation, or platform materials including Liquid Glass.
 ---
 
 # SwiftUI
@@ -15,6 +15,8 @@ architecture and deployment targets unless the task changes them.
    design system. Trace each mutable value to its source of truth and each user
    action to the code that owns its effect.
 2. Read only the references needed for the task:
+   - [Choosing SwiftUI or UIKit](references/framework-choice.md) when the framework
+     is not fixed or the work could introduce a framework boundary.
    - [State and data flow](references/state-and-data-flow.md) for ownership,
      Observation, bindings, environment values, or editable drafts.
    - [Composition and identity](references/composition-and-identity.md) for view
