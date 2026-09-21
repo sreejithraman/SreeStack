@@ -1,0 +1,4 @@
+interface:
+  display_name: "SwiftUI"
+  short_description: "Build maintainable SwiftUI interfaces"
+  default_prompt: "Use $swiftui to build this interface with clear state ownership, stable identity, and native platform structure."

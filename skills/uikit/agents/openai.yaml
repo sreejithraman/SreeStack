@@ -1,0 +1,4 @@
+interface:
+  display_name: "UIKit"
+  short_description: "Build adaptive UIKit interfaces"
+  default_prompt: "Use $uikit to build this interface with explicit controller ownership, scene context, and adaptive layout."
