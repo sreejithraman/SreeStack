@@ -64,8 +64,13 @@ not prove completion. Apply the same checks to a short packet sent with `--print
 - Denied Gemini tool: supply the needed evidence directly when reading it is
   allowed. This fixes a tool dependency; it does not grant a denied action.
 - Timeout or transient service failure: retry once in a fresh conversation with
-  the same snapshot. Persistent failure, missing auth, quota, or policy refusal
-  leaves Gemini review incomplete; report the exact cause and needed next step.
+  the same snapshot. Persistent failure, missing auth, or policy refusal leaves
+  the review incomplete. Report that cause.
+- Quota: when the result error or stderr says quota is exhausted, report
+  quota and stop. That includes quota reached, quota exceeded, and
+  RESOURCE_EXHAUSTED. A run that ends on quota is quota even when its
+  coverage is partial. Quota stays separate from auth, policy, timeout, and
+  a partial review that did not end on quota.
 - Host approval denial, including Codex auto-review: follow the host's stated
   reason. Use a narrower request only if it resolves that reason within existing
   permission. Do not switch tools, wrap the command, or change approval settings
@@ -74,7 +79,8 @@ not prove completion. Apply the same checks to a short packet sent with `--print
 
 Keep saved permissions unchanged. Do not use `--dangerously-skip-permissions`
 for this flow. A required review does not promise approval or authorize sending
-material that the host forbids. Report blockers rather than claiming a clean round.
+material that the host forbids. Report the incomplete run and its cause. The
+caller decides whether that gap blocks the round.
 
 The [headless docs](https://antigravity.google/docs/cli/headless/) define stdin
 messages, result events, and soft denials. The

@@ -68,8 +68,8 @@ not a temporary worktree.
 
 Sample checks after installation:
 
-- Every nonempty review scope also receives a separate Gemini review. Native
-  reviewer counts below do not include Gemini.
+- Every nonempty review scope also runs the external model step in
+  review-fix-loop. Native reviewer counts below do not include that step.
 - A small behavior change uses one reviewer; substantial changes, multiple
   behaviors, shared contracts, risky logic, or work from several agents use two.
   Each reviewer reads the whole diff in every round.

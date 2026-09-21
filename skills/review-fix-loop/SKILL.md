@@ -37,24 +37,36 @@ Use the code loop for code or mixed changes, including executable skill scripts.
 Judge the changed content, not its extension. Honor an explicit request for
 additional reviewers or rounds.
 
-## Required Gemini review
+## External model review
 
-Send every nonempty review scope to Gemini through [Gemini](../gemini/SKILL.md),
-using its [review packet flow](../gemini/references/review.md). This applies to
-all paths below. Gemini joins the parent or native reviewers; it does not replace
-them or count toward the code path's limit of two native reviewers.
+Send every nonempty review scope through this step, on every path below. It joins
+the parent or native reviewers. It does not replace them or count toward the code
+path's limit of two native reviewers.
 
-Give Gemini the same complete brief and review references, with contents in the
-packet rather than paths alone. Start a fresh Gemini conversation each round.
-Include its findings in parent triage or `/review-sweep`, keeping Gemini as the
-source. A round is complete only when Gemini and all required native reviewers
-finish with full coverage. A failed, denied, or incomplete Gemini run is a blocker;
-never silently omit it or count it as clean. Follow the Gemini flow's bounded
-recovery rules and report any unresolved gap.
+Run Gemini first, through [Gemini](../gemini/SKILL.md) and its
+[review packet flow](../gemini/references/review.md). Give it the same complete
+brief and review references, with contents in the packet. Start a fresh Gemini
+conversation each round. A finished Gemini review ends this step. Include its
+findings in parent triage or `/review-sweep`, labeled Gemini.
 
-The paths below govern repeats: code fixes start a fresh round for all reviewers;
-substantive instruction fixes do too. Ordinary docs and wording-only instruction
-fixes need targeted verification after the initial Gemini review.
+When the Gemini flow reports quota, Gemini is not required for that round.
+Follow [the quota fallback](references/external-model.md): one OpenCode review
+of the same packet on GLM Flash 5.3. A finished fallback joins triage, labeled
+GLM. Record a fallback that does not run or does not finish as not finished.
+That record is not a blocker, and native coverage can still complete the round.
+
+Quota is the only Gemini miss that settles this step without a finished review.
+Every other incomplete Gemini run stays a blocker, including auth failure,
+policy refusal, timeout after the Gemini recovery retry, host approval denial,
+denied required evidence, and partial coverage. A round is complete when Gemini
+or the fallback has finished, or the Gemini flow reported quota and the
+fallback is recorded as not finished, and every required native reviewer has
+full coverage.
+
+The paths below govern repeats. Code fixes and substantive instruction fixes
+start a fresh round for native reviewers and this step. Ordinary docs and
+wording-only instruction fixes need targeted verification after the initial
+external model review.
 
 ## Focused review: ordinary docs
 
@@ -72,7 +84,7 @@ or dispatch the code reviewers below. Report the result using the shared handoff
 
 ## Docs that change agent behavior
 
-Use one fresh, independent native review agent plus Gemini for changes to skill procedures, global
+Use one fresh, independent native review agent plus the external model review for changes to skill procedures, global
 instructions, or agent configuration. Set `fork_turns: "none"` explicitly. Follow
 [agent routing](../orchestration/references/agent-routing.md) for role selection and
 settings each round.
@@ -83,9 +95,10 @@ coverage, and gaps. Keep it read-only and independent of earlier conclusions.
 
 The parent triages findings, fixes accepted issues, and checks relevant links,
 examples, syntax, and skill structure. After substantive fixes, restart with a fresh
-native reviewer and Gemini on the whole updated change against the original base. Wording-only
+native reviewer and this step on the whole updated change against the original base. Wording-only
 fixes need targeted checks. Finish after a complete clean review and passing
-checks; report missing coverage or an unavailable reviewer as a blocker.
+checks. Missing native coverage or an unavailable native reviewer is a blocker.
+Settle the external model step by its own rule.
 
 ## Code review loop
 
@@ -113,9 +126,9 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
 
    When the scope includes React or Next code, include
    [react-best-practices](../react-best-practices/SKILL.md) in every reviewer's
-   references. Reviewers follow its How to Use against the diff. For Gemini, the
-   parent follows that How to Use against the diff and puts the skill file and
-   those matching rule files in the packet.
+   references. Reviewers follow its How to Use against the diff. For the external
+   model packet, the parent follows that How to Use against the diff and puts the
+   skill file and those matching rule files in the packet.
 
    One reviewer covers both sets. With two, assign one set to each for emphasis;
    both still read every changed hunk and new file, trace nearby effects, and
@@ -135,8 +148,9 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
    alone do not require a fix or another round.
 
    If the code changes during review, refresh the whole scope and restart the
-   round. Missing coverage or an unavailable reviewer
-   is a blocker, not a clean review. Beyond required Gemini review, include extra reviews only when the user
+   round. Missing native coverage or an unavailable native reviewer
+   is a blocker, not a clean review. Settle the external model step by its own
+   rule. Beyond that step, include extra reviews only when the user
    explicitly requests them, and include their findings in the sweep.
 
 2. **Sweep.** Run `/review-sweep` in the parent. Keep each finding’s source,
@@ -163,8 +177,8 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
    with new evidence.
 
    Finish only when the last round makes no fixes, needs no further accepted
-   fixes, has complete coverage, and passes relevant
-   checks, including any manual verification judged necessary. Continue after
+   fixes, has complete native coverage, has a settled external model step, and
+   passes relevant checks, including any manual verification judged necessary. Continue after
    fixes until that condition holds. If review stops making progress, diagnose
    the repeated issue, use a stronger reviewer when needed, or report the
    concrete blocker. An incomplete round never counts as clean.
@@ -172,5 +186,7 @@ checks; report missing coverage or an unavailable reviewer as a blocker.
 ## Handoff
 
 Report scope, review path, round count, reviewer roles and requested settings,
-Gemini status and coverage, fixes, deferrals, blockers, checks, any manual verification evidence,
+external model status and coverage (Gemini, or GLM after a quota report,
+including a fallback recorded as not finished), fixes, deferrals, blockers,
+checks, any manual verification evidence,
 and remaining risks. Distinguish confirmed settings from unverified requests.

@@ -255,10 +255,11 @@ Reviewer references:
   supplied diff. Persistent modes, install steps, benchmark displays, and the
   upstream debt skill's whole-repo ledger are excluded. The brief limits savings
   claims to observed local evidence.
-- When the scope includes React or Next code, every reviewer and Gemini get
-  `react-best-practices` as a review reference. The parent follows that skill's
-  How to Use against the diff and puts the skill file and those matching rule
-  files in the Gemini packet. Native reviewers follow How to Use against the
+- When the scope includes React or Next code, every native reviewer and the
+  external model review get `react-best-practices` as a review reference. The
+  parent follows that skill's How to Use against the diff and puts the skill
+  file and those matching rule files in the external model packet. Native
+  reviewers follow How to Use against the
   diff. Those findings stay labeled separately. Verify runs
   `npx react-doctor@latest --verbose --scope changed --base <resolved-base>
   --include-untracked` and treats a dropped score as a failed check. This does
