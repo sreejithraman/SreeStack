@@ -58,6 +58,10 @@ Local-only skills need just an origin note.
 - Separate dev/polish skills, command and approval flows, automatic token
   replacement, and Refine-panel integration are omitted.
 
+## app-intents
+
+- Local: `skills/app-intents` (SreeStack).
+
 ## app-store-connect
 
 - [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9813732f640495bdb7bd1f894f5df499c76cfbcf) — `skills/`; commit `9813732f640495bdb7bd1f894f5df499c76cfbcf`, imported 2026-09-08. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
