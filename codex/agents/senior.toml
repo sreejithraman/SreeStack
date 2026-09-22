@@ -1,7 +1,7 @@
 name = "senior"
 description = "General engineering judgment and default independent review."
-model = "gpt-5.6-sol"
-model_reasoning_effort = "medium"
+model = "gpt-6-sol"
+model_reasoning_effort = "high"
 developer_instructions = """
 Complete the parent's bounded assignment within its ownership and permissions.
 Check the result against the supplied criteria. Return the result, evidence,

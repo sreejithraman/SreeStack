@@ -1,7 +1,7 @@
 name = "engineer"
 description = "Routine implementation using established patterns."
-model = "gpt-5.6-terra"
-model_reasoning_effort = "high"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
 developer_instructions = """
 Complete the parent's bounded assignment within its ownership and permissions.
 Check the result against the supplied criteria. Return the result, evidence,
