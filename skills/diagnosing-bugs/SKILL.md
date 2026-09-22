@@ -34,6 +34,21 @@ Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give
 9. **Differential loop.** Run the same input through old-version vs new-version (or two configs) and diff outputs.
 10. **HITL bash script.** Last resort. If a human must click, drive _them_ with `scripts/hitl-loop.template.sh` so the loop is still structured. Captured output feeds back to you.
 
+For an Apple-platform app, use the normal loop above and load the references
+that match the evidence you need:
+
+- Runtime behavior, crashes, or suspected hangs: start with
+  [`references/apple-runtime.md`](references/apple-runtime.md).
+- Slow launch, hitches, excess CPU, or other measured performance regressions:
+  read [`references/apple-performance.md`](references/apple-performance.md).
+  For a hang, classify and reproduce it with the runtime reference first, then
+  use the performance reference when the delay needs measurement or profiling.
+- Growing memory, abandoned objects, retain cycles, or memory-pressure
+  termination: read [`references/apple-memory.md`](references/apple-memory.md).
+
+These references refine the loop; they do not replace it. After the cause and
+repair are established, use `manual-verify` for the final user workflow check.
+
 Build the right feedback loop, and the bug is 90% fixed.
 
 ### Tighten the loop
