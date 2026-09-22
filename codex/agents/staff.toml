@@ -1,7 +1,7 @@
 name = "staff"
 description = "Substantial diagnosis, implementation requiring design judgment, or difficult unresolved reasoning such as subtle concurrency or data-loss risks."
-model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model = "gpt-6-sol"
+model_reasoning_effort = "max"
 developer_instructions = """
 Complete the parent's bounded assignment within its ownership and permissions.
 Check the result against the supplied criteria. Return the result, evidence,
