@@ -1,0 +1,4 @@
+interface:
+  display_name: "App Intents"
+  short_description: "Connect app actions to Apple system surfaces"
+  default_prompt: "Use $app-intents to expose this app action through the appropriate Apple system surfaces."
