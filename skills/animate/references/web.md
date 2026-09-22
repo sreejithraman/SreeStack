@@ -47,7 +47,7 @@ Extend current tokens before adding new curves or times. Add a library only when
 
 ## Access and input
 
-- For motion on a web control, use `web-interface` for the action's activation,
+- For motion on a web control, use `ui-design` for the action's activation,
   cancellation, pointer, and keyboard contract. This skill owns the moving
   feedback's timing and interruption.
 - Honor `prefers-reduced-motion`. Replace large movement, zoom, parallax, and bounce with a short fade, color change, or instant state change.

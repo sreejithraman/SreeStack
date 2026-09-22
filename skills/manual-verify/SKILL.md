@@ -25,9 +25,9 @@ evidence, not the verdict.
 
    For an interface audit, identify the requested dimensions first: visual
    system, motion, behavior, or accessibility. Load only their specialists:
-   `ui-visual-design` for visual systems, `animate` for motion, `web-interface`
-   for web behavior or accessibility, and `swiftui` or `uikit` for native Apple
-   behavior or accessibility. Then inventory every surface, component, state,
+   `ui-design` for visual systems and web behavior or accessibility, `animate`
+   for motion, and `swiftui` or `uikit` for native Apple behavior or
+   accessibility. Then inventory every surface, component, state,
    input method, and accessibility path relevant to the selected dimensions. If
    no matching specialist exists, use the project's platform guidance and the
    observe-act-observe workflow below. Turn every applicable criterion within

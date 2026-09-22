@@ -99,17 +99,6 @@ Local-only skills need just an origin note.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
-## web-interface
-
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component behavior and access guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
-- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — press activation and cancellation behavior, contrast, and reduced-transparency guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
-
-The automatically discoverable local synthesis is limited to browser component
-behavior and accessibility: native semantics, labels and relationships, focus,
-status announcements, pointer and keyboard activation, edge states, and stale
-async work. Visual direction moved to `ui-visual-design`; motion remains with
-`animate`.
-
 ## goal-bee
 
 - Local: `skills/goal-bee` (SreeStack).
@@ -239,22 +228,25 @@ changes" commit gate and the `/doctor` remote playbook. The example command is
 the full verbose scan. The flag table includes `--base` and
 `--include-untracked` for partial scopes. Automatic discovery stays enabled.
 
-## ui-visual-design
+## ui-design
 
-- [s0xDk/refactoring-ui-skill](https://github.com/s0xDk/refactoring-ui-skill) — imported revision: unknown; its `SKILL.md`, reference write-ups, and CSS tokens are adapted into the local web references and token asset.
+- [s0xDk/refactoring-ui-skill](https://github.com/s0xDk/refactoring-ui-skill) — imported revision: unknown; its `SKILL.md`, reference write-ups, and CSS tokens are adapted into the local entrypoint, web references, and token asset.
 - [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — art-direction calibration and critique; commit `34040c9c568585f6929bedeaad110ad08f079624`.
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — web typography guidance, including optical sizing; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` while the earlier local import baseline remains unknown.
-- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — web typography and material guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — web typography, component behavior, and access guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — typography, materials, press activation and cancellation, contrast, and reduced-transparency guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 
 The automatically discoverable skill owns cross-platform visual hierarchy,
-system decisions, and art direction. It routes web work to adapted Refactoring
-UI references and an optional CSS token asset, and SwiftUI or UIKit work to
-Apple-platform guidance grounded in current Apple documentation. Inherited
+system decisions, and art direction plus browser component behavior and
+accessibility. It routes web visual work to adapted Refactoring UI references
+and an optional CSS token asset, browser interaction work to a focused behavior
+reference, and SwiftUI or UIKit visual work to Apple-platform guidance grounded
+in current Apple documentation. Native structure, behavior, and accessibility
+remain with `swiftui` and `uikit`; motion remains with `animate`. Inherited
 numeric recipes are contextual fallback heuristics rather than requirements.
 The art-direction reference preserves Anthropic's subject-matter grounding,
 generated-design tells, two-pass self-critique, restraint guidance, and Chanel
 editing mnemonic while removing CSS implementation and general copywriting
-material. Browser behavior and accessibility live in `web-interface`.
+material.
 
 ## research
 

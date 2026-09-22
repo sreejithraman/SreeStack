@@ -1,4 +1,4 @@
-<!-- Modified from Anthropic's frontend-design skill at commit 34040c9c568585f6929bedeaad110ad08f079624. Licensed under Apache-2.0; see ../../../licenses/anthropics-frontend-design.txt. -->
+<!-- Modified for SreeStack. -->
 
 # Art direction for a distinct identity
 
@@ -29,7 +29,9 @@ Write a compact direction before building:
 - One or two principles that make the direction specific to this brief
 
 These are anchors, not required counts. Expand them into a usable semantic
-system only as the interface demands.
+system only as the interface demands. For implementation, continue with
+[web visual design](web.md) or
+[Apple-platform visual design](apple-platforms.md), whichever owns the surface.
 
 ## Detect the generic answer
 

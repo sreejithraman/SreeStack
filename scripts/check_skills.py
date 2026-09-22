@@ -1,4 +1,4 @@
-"""Check required skill fields, source entries, and inline local Markdown links."""
+"""Check required skill fields, source entries, and local Markdown targets."""
 
 from pathlib import Path
 import re
@@ -59,12 +59,14 @@ for path in files:
     if path.suffix.lower() != ".md" or not path.is_file():
         continue
     tokens = markdown.parse(path.read_text())
-    links = [
-        child.attrGet("href")
-        for token in tokens if token.children
-        for child in token.children if child.type == "link_open"
-    ]
-    for target in links:
+    targets = []
+    for token in tokens:
+        for child in token.children or []:
+            if child.type == "link_open":
+                targets.append(child.attrGet("href"))
+            elif child.type == "image":
+                targets.append(child.attrGet("src"))
+    for target in targets:
         if target is None:
             continue
         link = urlsplit(target)
@@ -76,4 +78,4 @@ for path in files:
 if errors:
     print("\n".join(errors), file=sys.stderr)
     sys.exit(1)
-print(f"Checked {len(skills)} skills and inline local Markdown links.")
+print(f"Checked {len(skills)} skills and local Markdown targets.")

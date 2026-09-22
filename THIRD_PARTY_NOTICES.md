@@ -13,10 +13,10 @@ material keeps the terms listed below; the root license does not replace them.
 | Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
 | Dietrich Gebert / Ponytail | review-fix-loop/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
 | Cursor | review-fix-loop/references/thermo.md | [MIT](licenses/cursor-plugins.txt) |
-| Anthropic skills | ui-visual-design art-direction guidance | [Apache-2.0](licenses/anthropics-frontend-design.txt) ([upstream](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt)) |
+| Anthropic skills | ui-design art-direction guidance | [Apache-2.0](licenses/anthropics-frontend-design.txt) ([upstream](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt)) |
 | Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |
-| s0xDk / s13k | ui-visual-design web references and token asset | [MIT and scope note](licenses/s0xdk-refactoring-ui-skill.txt) |
+| s0xDk / s13k | ui-design skill, web references, and token asset | [MIT and scope note](licenses/s0xdk-refactoring-ui-skill.txt) |
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
 | Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
 

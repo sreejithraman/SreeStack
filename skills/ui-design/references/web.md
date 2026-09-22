@@ -66,6 +66,10 @@ Generated or computed shades are acceptable when they produce stable,
 reviewable, accessible tokens. Avoid uncontrolled runtime transformations that
 create slightly different colors across components or states.
 
+On a colored surface, a neutral gray foreground can read muddy and detached.
+Start from the surface hue, then tune saturation and lightness until the role is
+clear and the rendered pairing meets its contrast target.
+
 Use [systems](systems.md) when building or repairing a palette from scratch.
 
 ### Shape, borders, and depth
@@ -84,6 +88,11 @@ tight `0 1px 3px` contact shadow to a softer `0 15px 35px` overlay shadow, but
 tune color, opacity, and geometry against the actual surfaces. Use
 [techniques](techniques.md) when emulated light or prominent shadows are part of
 the direction.
+
+When elevation communicates interaction, move a pressed control toward its
+surface and lift a legitimately dragged item above its siblings. Treat that as
+supporting feedback, not the only state cue, and use `animate` for timing and
+interruption.
 
 ## Working method
 
@@ -134,7 +143,9 @@ the interaction unless the product has evidence for a different pattern.
 
 ## Invariants to verify
 
-- Color is not the only signal for state or meaning.
+- Color is not the only signal for state or meaning. In charts, make series
+  separable by lightness or contrast and a secondary cue such as shape, pattern,
+  label, or position rather than relying on hue alone.
 - Text and essential graphics meet the applicable measured contrast criterion
   on every real surface and material.
 - Functional control boundaries remain perceptible; decorative separators need

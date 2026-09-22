@@ -53,7 +53,7 @@ steps into exact proposed changes, findings, and checks.
    VoiceOver reading paths. Use
    `manual-verify` for visual or interactive acceptance checks. Use `animate` for
    motion design, `ios-haptics` for tactile feedback when its iOS 26+ SwiftUI scope
-   applies, `ui-visual-design` for visual hierarchy and token-system work, and
+   applies, `ui-design` for visual hierarchy and token-system work, and
    `diagnosing-bugs` when a failure or performance regression needs investigation.
 
 After performance diagnosis identifies the bottleneck, use the data-flow and
