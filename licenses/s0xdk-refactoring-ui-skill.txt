@@ -1,3 +1,14 @@
+SreeStack scope note
+
+The upstream text below applies to the s0xDk/s13k material adapted into
+skills/ui-visual-design/references/diagnose.md, systems.md, techniques.md, and
+web.md, plus skills/ui-visual-design/assets/tokens.css. In its final paragraph,
+“this repository” means the upstream refactoring-ui-skill repository. It does
+not claim coverage of SreeStack's combined ui-visual-design skill or material
+from other sources.
+
+Upstream license and scope note (verbatim)
+
 MIT License
 
 Copyright (c) 2026 s13k

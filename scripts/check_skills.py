@@ -6,6 +6,7 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
+from markdown_it import MarkdownIt
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,19 +41,32 @@ for folder in skills:
             value = metadata.get(field) if isinstance(metadata, dict) else None
             if not isinstance(value, str) or not value.strip():
                 errors.append(f"{skill.relative_to(ROOT)}: missing or empty {field}")
-            elif field == "name":
-                source_name = value.strip()
+        name = metadata.get("name") if isinstance(metadata, dict) else None
+        if isinstance(name, str) and name.strip():
+            source_name = name.strip()
+            if source_name != folder.name:
+                errors.append(
+                    f"{skill.relative_to(ROOT)}: name {source_name!r} "
+                    f"does not match folder {folder.name!r}"
+                )
     if f"\n## {source_name}\n" not in sources:
         errors.append(
             f"skills/{folder.name}: missing SOURCES.md entry for {source_name}"
         )
 
+markdown = MarkdownIt()
 for path in files:
     if path.suffix.lower() != ".md" or not path.is_file():
         continue
-    text = re.sub(r"```.*?```|~~~.*?~~~", "", path.read_text(), flags=re.S)
-    text = re.sub(r"(`+).*?\1", "", text, flags=re.S)
-    for target in re.findall(r"\]\(([^\s)]+)\)", text):
+    tokens = markdown.parse(path.read_text())
+    links = [
+        child.attrGet("href")
+        for token in tokens if token.children
+        for child in token.children if child.type == "link_open"
+    ]
+    for target in links:
+        if target is None:
+            continue
         link = urlsplit(target)
         if link.scheme or link.netloc or not link.path or link.path.startswith("/"):
             continue

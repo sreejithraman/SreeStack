@@ -17,8 +17,8 @@ Local-only skills need just an origin note.
 ## animate
 
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — press feedback and measured rendering guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
-- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — gesture-intent guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — press feedback and measured rendering guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — gesture-intent guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`.
 
 - One automatically discoverable cross-platform skill owns motion decisions,
@@ -99,19 +99,16 @@ Local-only skills need just an origin note.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
-## frontend-web-design
+## web-interface
 
-- [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — commit `34040c9c568585f6929bedeaad110ad08f079624`.
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
-- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — press activation and cancellation behavior, contrast, and reduced-transparency guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component behavior and access guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — press activation and cancellation behavior, contrast, and reduced-transparency guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 
-Renamed to `frontend-web-design`, with a web-only description. Removes the
-AI-default calibration list and guidance tied to it, while keeping the rule to
-follow the brief. Adds local ownership boundaries for visual-system work and
-web component behavior, plus access and input completion rules. Omits the
-license frontmatter field and license file. The remaining upstream wording is
-preserved. Automatic discovery includes art direction, component interaction,
-and web accessibility work.
+The automatically discoverable local synthesis is limited to browser component
+behavior and accessibility: native semantics, labels and relationships, focus,
+status announcements, pointer and keyboard activation, edge states, and stale
+async work. Visual direction moved to `ui-visual-design`; motion remains with
+`animate`.
 
 ## goal-bee
 
@@ -173,7 +170,7 @@ only on request.
 ## swiftui
 
 - Local: `skills/swiftui` (SreeStack).
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 
 Includes focused guidance for current platform materials and Liquid Glass rather
 than keeping a separate visual-effect skill. Redistributed behavior and access
@@ -183,7 +180,7 @@ remains framework- and task-based.
 ## uikit
 
 - Local: `skills/uikit` (SreeStack).
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 
 Redistributed behavior and access guidance is folded into the normal UIKit
 workflow; automatic invocation remains framework- and task-based.
@@ -191,8 +188,8 @@ workflow; automatic invocation remains framework- and task-based.
 ## manual-verify
 
 - Local: `skills/manual-verify` (SreeStack).
-- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — interface-review criteria; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
-- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — interface-review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 
 Imported criteria apply to evidence-based interface audits. Automatic
 invocation remains limited to hands-on verification where it adds confidence.
@@ -242,20 +239,22 @@ changes" commit gate and the `/doctor` remote playbook. The example command is
 the full verbose scan. The flag table includes `--base` and
 `--include-untracked` for partial scopes. Automatic discovery stays enabled.
 
-## refactoring-ui
+## ui-visual-design
 
-- [s0xDk/refactoring-ui-skill / SKILL.md](https://github.com/s0xDk/refactoring-ui-skill/blob/main/SKILL.md) — imported revision: unknown.
-- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — web typography and material guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [s0xDk/refactoring-ui-skill](https://github.com/s0xDk/refactoring-ui-skill) — imported revision: unknown; its `SKILL.md`, reference write-ups, and CSS tokens are adapted into the local web references and token asset.
+- [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — art-direction calibration and critique; commit `34040c9c568585f6929bedeaad110ad08f079624`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — web typography guidance, including optical sizing; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — web typography and material guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 
-The automatically discoverable entrypoint owns shared visual hierarchy and
-system decisions, then routes web work to the imported rules, references, and
-CSS token asset and SwiftUI or UIKit work to Apple-platform guidance grounded
-in current Apple documentation. The imported web content is preserved in
-`references/web.md`, with locally integrated typography and material checks;
-current project conventions and platform semantics take precedence over its
-starting values. The repository directory retains the upstream
-`refactoring-ui-skill` name; the current local skill name and invocation are
-`refactoring-ui`.
+The automatically discoverable skill owns cross-platform visual hierarchy,
+system decisions, and art direction. It routes web work to adapted Refactoring
+UI references and an optional CSS token asset, and SwiftUI or UIKit work to
+Apple-platform guidance grounded in current Apple documentation. Inherited
+numeric recipes are contextual fallback heuristics rather than requirements.
+The art-direction reference preserves Anthropic's subject-matter grounding,
+generated-design tells, two-pass self-critique, restraint guidance, and Chanel
+editing mnemonic while removing CSS implementation and general copywriting
+material. Browser behavior and accessibility live in `web-interface`.
 
 ## research
 

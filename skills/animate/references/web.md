@@ -47,9 +47,9 @@ Extend current tokens before adding new curves or times. Add a library only when
 
 ## Access and input
 
-- Start press feedback on pointer or key down, but commit the action only on a
-  valid activation or release. Clear the pressed state when input cancels, leaves
-  the allowed target, or becomes a drag; keep keyboard feedback equally clear.
+- For motion on a web control, use `web-interface` for the action's activation,
+  cancellation, pointer, and keyboard contract. This skill owns the moving
+  feedback's timing and interruption.
 - Honor `prefers-reduced-motion`. Replace large movement, zoom, parallax, and bounce with a short fade, color change, or instant state change.
 - Gate hover-only motion with `@media (hover: hover) and (pointer: fine)`.
 - Keep controls usable while decorative motion runs.

@@ -1,10 +1,15 @@
 # Diagnosing existing UI
 
+Use this reference for web surfaces. For native Apple UI, use
+[Apple-platform visual design](apple-platforms.md).
+
 Use this when the task is *improve this*, not *build this*. Complaints about UI are almost
 always vague ("looks off", "feels cheap"). Each vague symptom maps to a small number of
 specific, mechanical fixes.
 
-Work down the table in order — the top entries account for most of the damage.
+Start near the top because those causes are common, then skip any hypothesis the
+rendered interface does not support. The fixes are candidate moves; adapt them
+to the platform, product system, content, and measured result.
 
 | Symptom | What's actually wrong | Fix |
 |---|---|---|
@@ -17,11 +22,11 @@ Work down the table in order — the top entries account for most of the damage.
 | Headline over a photo is unreadable at some sizes | The image is too dynamic, not the text | Semi-transparent overlay; or lower image contrast (+brightness to compensate); or desaturate + multiply a brand color; or a large-blur, zero-offset text-shadow used as a glow |
 | Primary content too big *and* secondary content too small | Font size doing all the hierarchy work | Move the emphasis to weight (600/700) and color; pull sizes back toward the middle of the scale |
 | Big red button for something that isn't the main action | Styled by semantics instead of hierarchy | Give destructive actions secondary or tertiary treatment; save the red primary button for the confirmation dialog |
-| Page title feels oversized and dominates | `h1` styled as an `h1` | Section titles are usually labels. 16px is fine. Consider hiding it visually |
+| Page title feels oversized and dominates | Heading semantics were mistaken for required visual weight | Keep the correct heading level, then use a quieter, body-like visual size when the composition calls for it |
 | Data reads like a database dump (`Name:`, `Email:`, `Phone:`) | Naive label/value pairs | Drop labels the format or context already implies; merge label into value ("3 bedrooms"); otherwise make the label visibly secondary |
 | Icon next to text overpowers it | Solid icons cover more surface area | Lower the icon's contrast (softer color) |
 | 1px border either invisible or harsh | Trying to solve weight with color | Keep the soft color, go to 2px |
-| Large icons look chunky and crude | Icons drawn at 16–24px, scaled up | Don't scale. Put the icon at its intended size inside a colored circle/square |
+| Large icons look chunky and crude | Small-format icon geometry was scaled too far | Render near the icon's intended size and use a surrounding shape when it needs more presence |
 | Screenshot is an unreadable mush of tiny detail | Full-size screenshot scaled down | Screenshot a smaller (tablet) viewport, or crop to one region, or draw a simplified illustration of the UI |
 | Logo turns to mush as a favicon | Detailed artwork scaled down | Redraw a simplified version at the target size |
 | Layout spread thin across a huge viewport | Filling the screen because it's there | Use only the width the content needs. Or split into columns rather than stretching |
@@ -33,8 +38,8 @@ Work down the table in order — the top entries account for most of the damage.
 | Long centered paragraphs are hard to read | Center alignment past 2–3 lines | Left-align. Or rewrite the copy shorter so centering works |
 | Numeric table columns hard to compare | Left-aligned numbers | Right-align them |
 | Justified text has rivers of whitespace | No hyphenation | `hyphens: auto`, or don't justify |
-| Flat, plain, "nothing wrong but nothing right" | No visual accents anywhere | Colored accent border (top of a card, under a heading, side of an alert, active nav item); change a section's background color; a ≤30° two-hue gradient; a subtle low-contrast pattern or geometric shape — it doesn't need to cover the whole background, running it along just one edge works too |
-| Feels unfinished / prototype-y | Browser defaults everywhere | Replace bullets with icons; custom checkboxes and radios in a brand color; promote testimonial quotes into visual elements; style links distinctively |
+| Flat, plain, "nothing wrong but nothing right" | No visual accents anywhere | Add one role-specific accent: a border, section background, restrained two-hue gradient, low-contrast pattern, or geometric shape |
+| Feels unfinished / prototype-y | Defaults and custom styling are mixed without a system | Keep native controls when they fit; apply a coherent type, spacing, color, and focus system; customize controls only when their complete interaction and access behavior can be preserved |
 | Screen is blank for new users | Empty state was an afterthought | Illustration + a clear headline + an emphasized call to action. Hide tabs/filters/search that do nothing until content exists |
 | A component looks generic | Default mental model of the component | Break the box — multi-column dropdowns with icons and descriptions, tables with combined columns and inline images, radio groups as selectable cards |
 | Elements look pasted onto the page | Everything is in its own rectangle | Overlap layers: negative margins so a card straddles two backgrounds, or extends past its parent's edges |

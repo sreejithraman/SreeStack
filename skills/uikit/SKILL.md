@@ -53,7 +53,9 @@ steps into exact proposed changes, findings, and checks.
    for each active scene rather than swapping symbols mechanically.
 8. Build the affected targets and exercise resizing, traits, navigation, data
    updates, edge states, interruption, and repeated input relevant to the change.
+   When behavior or accessibility is in scope, exercise the supported touch,
+   pointer, keyboard, focus, announcement, and VoiceOver reading paths.
    Use `manual-verify` for visual or interactive
-   acceptance checks, `animate` for motion, `refactoring-ui` for visual hierarchy
+   acceptance checks, `animate` for motion, `ui-visual-design` for visual hierarchy
    and token-system work, and `diagnosing-bugs` for runtime failures or performance
    regressions.

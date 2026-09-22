@@ -54,9 +54,9 @@ examples. Check what the requested scope makes available:
 - Light, dark, and increased-contrast appearances.
 - Reduced Transparency when the interface uses translucent materials.
 - Default, selected, pressed, disabled, loading, empty, and error states that apply.
-- Touch targets, spacing between controls, VoiceOver reading order, and any pointer or keyboard path the app supports.
+- Touch-target sizing and spacing between controls.
 
-Use Accessibility Inspector for contrast and representation checks when it is
-available; otherwise report that manual check as outstanding. Inspect screenshots
+Use Accessibility Inspector for contrast checks when it is available; otherwise
+report that manual check as outstanding. Inspect screenshots
 at full size; a scaled-down overview can hide weak contrast, bad baselines, and
 cramped controls.

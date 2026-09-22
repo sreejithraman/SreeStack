@@ -48,10 +48,12 @@ steps into exact proposed changes, findings, and checks.
    status, validation, and errors when focus does not move and the change would
    otherwise be missed.
 7. Build the affected targets and exercise main, edge-state, interruption, and
-   repeated-input transitions. Use
+   repeated-input transitions. When behavior or accessibility is in scope,
+   exercise the supported touch, pointer, keyboard, focus, announcement, and
+   VoiceOver reading paths. Use
    `manual-verify` for visual or interactive acceptance checks. Use `animate` for
    motion design, `ios-haptics` for tactile feedback when its iOS 26+ SwiftUI scope
-   applies, `refactoring-ui` for visual hierarchy and token-system work, and
+   applies, `ui-visual-design` for visual hierarchy and token-system work, and
    `diagnosing-bugs` when a failure or performance regression needs investigation.
 
 After performance diagnosis identifies the bottleneck, use the data-flow and

@@ -107,10 +107,10 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Anthropic’s skills](https://github.com/anthropics/skills) — the Frontend Web Design skill.
+- [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-visual-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.
-- [s0xDk](https://github.com/s0xDk/refactoring-ui-skill) — the Refactoring UI skill, based on Adam Wathan and Steve Schoger’s work.
+- [s0xDk](https://github.com/s0xDk/refactoring-ui-skill) — web-system guidance used by `ui-visual-design`, based on Adam Wathan and Steve Schoger’s work.
 - [React Doctor](https://github.com/millionco/react-doctor) — the React diagnostics skill.
 - [Vercel’s agent-skills](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices) — the React Best Practices skill, originally created by [Shu Ding](https://x.com/shuding).
 - [Charles Wiltgen’s Axiom haptics guide](https://github.com/CharlesWiltgen/Axiom/blob/dd3334734ecd01afab28b0ac22c49d4b5b2e5857/.claude-plugin/plugins/axiom/skills/axiom-media/skills/haptics.md) — inspiration for our locally written iOS haptics skill; no upstream prose or code copied.
