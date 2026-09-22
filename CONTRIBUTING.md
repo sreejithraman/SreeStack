@@ -10,10 +10,12 @@ in SOURCES.md; follow AGENTS.md for what belongs there. Put technical citations
 beside the relevant guidance and credit authors in README.md. Include license
 notices and check the terms before copying material.
 
-Keep invocation fields aligned: manual-only skills use
-`disable-model-invocation: true` in `SKILL.md` and
-`allow_implicit_invocation: false` in `agents/openai.yaml`; automatically
-discoverable skills use the opposite values or omit both.
+Keep invocation settings aligned across hosts. For an explicit-only skill, set
+`disable-model-invocation: true` in `SKILL.md` for Claude Code
+and `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex.
+For automatic discovery in both hosts, omit those restrictions (or set their
+opposite values). See [skill mechanics](skills/writing-for-agents/SKILL-MECHANICS.md)
+for the invocation choice.
 
 Keep each skill in one folder directly under `skills/`. Put supporting files
 beside that skill. Keep repo-wide records outside `skills/`.
