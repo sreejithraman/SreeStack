@@ -195,7 +195,12 @@ invocation remains limited to hands-on verification where it adds confidence.
 
 - [mattpocock/skills / skills/engineering/prototype](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/prototype) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-UI prototypes for web, mobile, and desktop; no logic-prototype mode.
+UI prototypes for web, mobile, and desktop; no logic-prototype mode. The local
+workflow chooses enough distinct options to expose the decision, coordinates
+with `ui-design`, `animate`, `swiftui` or `uikit`, `manual-verify`, and
+`showroom`, and adds explicit rules for live side effects, unavailable target
+tooling, comparison-control verification, durable decisions, and proportional
+prototype retention and cleanup.
 
 ## react-best-practices
 

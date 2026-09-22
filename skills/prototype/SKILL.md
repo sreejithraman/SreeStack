@@ -1,100 +1,136 @@
 ---
 name: prototype
-description: Build throwaway UI prototypes for web, mobile, or desktop. Use when the user wants to explore layouts, compare design options, or try a screen or interaction before choosing a design.
+description: Build runnable, disposable UI prototypes for web, mobile, or desktop. Use to answer a design question by trying one concept or comparing meaningfully different layouts or interactions before production implementation.
 ---
 
 # Prototype
 
-Build enough UI to answer a design question. Use the target platform and the
-project's stack so the user can judge the design where it will run.
+Build enough UI to answer a design question on the target platform.
+A prototype is an exploration surface, not authorization to ship the result.
 
-## 1. Set the scope
+## 1. Frame the experiment
 
-Infer the screen, platform, and design question from the request and nearby code.
-Ask only when a missing choice would change what you build. State the question,
-where the prototype will run, and which options you will compare.
+Inspect the request, current interface, nearby code, and available tooling. State
+the design question, where the prototype will run, and what evidence would make
+the options distinguishable. Ask only when a missing choice would materially
+change what you build; continue safe, reversible work while waiting.
 
-Default to three variants; follow the user's count or single concept when given.
-Make variants differ in layout, information hierarchy, navigation, or the main
-interaction. Each should offer a clear design choice beyond color or copy.
+Choose an option set large enough to expose the real decision:
 
-## 2. Choose a home
+- Use one concept when the question is whether a specific direction works.
+- Use two when the decision is a genuine tradeoff.
+- Add further options when each represents a distinct direction that the
+  existing set does not test.
+
+Variants should differ in layout, information hierarchy, navigation, behavior,
+or motion rather than only color or copy. Follow a count the user specifies.
+
+## 2. Choose the real surface
 
 Prefer the existing screen with its surrounding navigation, components, and
-realistic content. A new section of a screen still belongs in that screen.
-Use a separate prototype route, screen, preview, or development target when no
-existing screen fits. Follow the project's conventions and clearly name prototype
-files. Keep prototype entry points and controls out of release builds.
+representative content. Use a separate prototype route, screen, preview, or
+development target when no existing screen fits. Clearly mark prototype files,
+entry points, and controls, and keep them out of release builds.
+
+Load only the specialists the experiment needs:
+
+- Use `ui-design` for visual direction and for browser behavior or
+  accessibility.
+- Use `animate` when motion is part of the question.
+- Use `swiftui` or `uikit` for native Apple construction and behavior.
 
 Match the platform:
 
-- **Web:** use the existing route where possible. A `?variant=` parameter makes
-  each option easy to reopen and share.
-- **Mobile:** use the app's UI framework and run in a simulator, emulator, or
-  device. A native preview works for layout; use the running app when judging
-  navigation, gestures, keyboard behavior, or system UI.
-- **Desktop and other platforms:** use the app's normal window or preview host,
-  with the input methods and window sizes relevant to the question.
+- **Web:** use the existing route when possible. A query parameter can make each
+  option easy to reopen and share.
+- **SwiftUI or UIKit:** use the app's framework. A preview can answer a static
+  layout question; use the running app for navigation, gestures, keyboard
+  behavior, system UI, or other runtime behavior.
+- **Other mobile or desktop platforms:** use the app's normal framework and
+  host, with the relevant input methods and window sizes.
 
-For a native app, use a browser mockup only when the user asks for one or accepts
-it as a fallback. If target tooling is missing, explain what blocks the native
-preview and what the fallback would let them judge.
+Use a browser mockup for a native product only when the user requests or accepts
+that fidelity. When target tooling is unavailable, state the blocking tooling
+gap and what the fallback can and cannot establish.
 
-## 3. Build the variants
+## 3. Build safely
 
-Use the project's design system and components. Keep each variant's layout free
-to differ; share stable controls and fixtures where useful.
+Use the project's components and design system while allowing each option to
+make its intended structural choice. Share stable fixtures and controls rather
+than forcing the options through one premature abstraction.
 
-Use the same representative content across variants, including relevant empty,
-loading, or crowded states. Reuse safe read-only data access where it helps.
-Stub writes and keep interaction state in memory. Add only enough behavior to
-try the flow; keep backend integration out of the prototype.
+Use the same representative content and meaningful empty, loading, error, or
+crowded states across options. Reuse safe read-only data access when helpful.
+Stub writes, keep experimental state local, and prevent external side effects.
+Add only enough behavior to try the flow.
 
-Spend effort on what the user is judging: hierarchy, spacing, touch targets,
-safe areas, keyboard overlap, or window resizing as the platform requires.
-Keep the code disposable, with only enough error handling to run reliably.
-Skip automated tests for throwaway variants; verify them by running them.
+When the requested workflow would write real data or cause another external
+effect, keep that step stubbed, state exactly what was not exercised, and offer
+a provider test mode, disposable account, or local fixture instead.
+
+Spend effort on the dimensions the question tests, such as hierarchy, spacing,
+touch targets, safe areas, keyboard overlap, resizing, or motion character.
+
+Keep the code disposable but reliable enough to evaluate. Prefer running the
+prototype over production-grade automated coverage. Add a narrow test only when
+non-obvious experimental logic would otherwise make the result untrustworthy.
 
 ## 4. Make comparison easy
 
-Provide one shared development control with a clear variant label and a way to
-move between options without rebuilding. Keep it distinct from the design and
-clear of the content and controls under review. For a single concept, omit the
-variant switcher.
+For multiple options, provide one development-only control that identifies the
+current option and switches without rebuilding. Keep it visually separate from
+the interface under review and away from its controls.
 
-- **Web:** a floating switcher can update `?variant=` through the router.
-  Optional arrow-key shortcuts must leave text inputs and other keyboard
-  controls alone.
-- **Mobile:** use a debug menu, sheet, or compact native picker. Respect safe
-  areas and avoid taking over app gestures or covering bottom navigation.
+- **Web:** a switcher can update the option through the project's router.
+  Keyboard shortcuts must leave text inputs and other controls alone.
+- **Mobile:** use a debug menu, sheet, or compact native picker that respects
+  safe areas and existing gestures.
 - **Desktop:** use a development menu or toolbar suited to the app.
 
-Keep the same sample state when switching where practical. If variants need
-different navigation or state, reset to a known starting point and make the
-reset clear. Include a short name that explains each option's design choice.
+Keep sample state stable while switching when that makes the comparison fair.
+When options require different state or navigation, reset to a known starting
+point and make the reset visible. Give each option a short name that states its
+design choice.
 
-## 5. Run and show it
+## 5. Exercise and present
 
-Run each variant on the target platform and try the interactions that answer the
-question. Check that switching works and the comparison control stays out of the
-way. State any behavior you could not verify.
+Run every option on the target platform and exercise the interactions that
+answer the design question. Use `manual-verify` when the judgment depends on a
+real workflow. Use `showroom` to package useful visual evidence.
 
-Use `showroom` for web and iOS handoff. For other platforms, provide a screenshot
-or recording from the running prototype and the exact steps to open it. Give the
-user the run command or build target, screen, and variant controls needed to
-return to it. Screenshots should identify the variant they show.
+For multiple options, exercise the switcher and confirm that its control stays
+clear of the interface and interactions under review.
 
-Briefly explain the tradeoff each option tests. Leave the design choice open
-until the user picks one or asks you to choose; combine parts when requested.
+Provide the run command or build target, entry screen, option controls, and any
+environment prerequisite needed to return to the prototype. Identify each
+screenshot or recording by option. Explain the tradeoff each option tests and
+state any behavior or platform condition that remains unverified.
 
-## 6. Record the decision
+Leave the choice open until the user picks one or asks you to choose. Combine
+parts only when the resulting direction remains coherent and testable.
 
-Once the user chooses, record which design won and why. Preserve the variants
-on a throwaway branch, out of main, with enough run steps to revisit them. Keep
-the branch pointer and verdict in the handoff or an authorized implementation
-issue update.
+## 6. Record and dispose
 
-When implementation is in scope, apply the chosen design with the project's
-normal quality checks. Remove prototype controls and unused variants from the
-production change. A prototype request alone ends with a reviewable prototype;
-it does not call for shipping the design.
+Before a decision, keep the prototype reviewable on the task branch or another
+clearly marked development surface. Once a direction is chosen, record the
+winner and why in a durable project surface already in scope, such as a PR
+description, project note, or authorized issue update.
+
+When production implementation is in scope, apply the chosen direction with the
+project's normal quality checks and remove prototype controls and unused
+options. Preserve the prototype branch or artifacts when the user requests it,
+revisiting the comparison still has value, or no durable project record is
+authorized. When retained, record the branch pointer and run steps in the
+durable record when one is available. Otherwise retain the decision and
+evidence there, then clean up the disposable work.
+
+A prototype-only request ends with a reviewable prototype, not a production
+change.
+
+## Done
+
+The prototype is ready for a decision when the design question is explicit,
+each option tests a distinct answer, relevant states and interactions run on the
+target surface, comparison is easy, and the evidence and remaining gaps are
+clear. After a decision, completion also requires a recorded verdict and an
+explicit disposition for the disposable work.
