@@ -14,6 +14,13 @@ Keep one entry per skill and one bullet per imported source, followed by plain
 descriptions of current local differences, including invocation choices.
 Local-only skills need just an origin note.
 
+## add-to-snip-snap
+
+- [sreejithraman/snip-snap / .agents/skills/add-to-snip-snap](https://github.com/sreejithraman/snip-snap/tree/25d60ed7ddc2a090ef231793faab9f6d446e0580/.agents/skills/add-to-snip-snap) — commit `25d60ed7ddc2a090ef231793faab9f6d446e0580`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
+
+- The local skill reports an unavailable `snipsnap` command explicitly before
+  the shared add workflow.
+
 ## animate
 
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
