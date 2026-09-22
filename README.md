@@ -26,6 +26,10 @@ Read each skill before use. Some workflows need host tools for goals, agents,
 or browser control; others need GitHub CLI, Antigravity CLI, Tailscale, or Apple
 development tools. Available tools and invocation settings vary by host.
 This collection has no single runtime that supports every skill.
+`add-to-snip-snap` requires the `snipsnap` command on `PATH`; verify it with
+`command -v snipsnap`. Installing or copying only the GUI app does not expose
+the CLI automatically. A Snip Snap Homebrew cask release that declares the
+bundled `snipsnap` binary does.
 
 ## Codex defaults
 
@@ -116,6 +120,7 @@ uses and adapts:
 - [Charles Wiltgen’s Axiom haptics guide](https://github.com/CharlesWiltgen/Axiom/blob/dd3334734ecd01afab28b0ac22c49d4b5b2e5857/.claude-plugin/plugins/axiom/skills/axiom-media/skills/haptics.md) — inspiration for our locally written iOS haptics skill; no upstream prose or code copied.
 - [Rudrank Riyam’s App Store Connect CLI skills](https://github.com/rorkai/app-store-connect-cli-skills) — usage and workflow guides for our App Store Connect skill.
 - [superagents-lab’s xcode27-skills](https://github.com/superagents-lab/xcode27-skills) — coverage input for independently written Xcode security and SwiftUI SDK 27 guidance; no upstream prose or code copied.
+- [Snip Snap](https://github.com/sreejithraman/snip-snap) — the add-to-snip-snap skill and its CLI workflow.
 
 [SOURCES.md](SOURCES.md) records upstream paths, import revisions, and current
 differences to preserve. Git records how the skills changed over time.

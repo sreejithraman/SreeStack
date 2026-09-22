@@ -7,6 +7,7 @@ material keeps the terms listed below; the root license does not replace them.
 
 | Source | Bundled material | Notice |
 | --- | --- | --- |
+| Sree Raman / Snip Snap | add-to-snip-snap | [MIT](licenses/sreejithraman-snip-snap.txt) |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
 | Matt Pocock | Skills and Standards/Spec review references listed in SOURCES.md | [MIT](licenses/mattpocock-skills.txt) |
 | Emil Kowalski | animate; motion and gesture behavior; typography and materials; interface access/input and review guidance | [animate MIT](licenses/emilkowalski-animate.txt), [design engineering MIT](licenses/emilkowalski-design-eng.txt) |
