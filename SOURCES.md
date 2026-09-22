@@ -194,8 +194,9 @@ workflow; automatic invocation remains framework- and task-based.
 
 Imported criteria apply to evidence-based interface audits. Automatic
 invocation remains limited to hands-on verification where it adds confidence.
-iOS tool routing uses available Xcode MCP, CLI, and interface tools without a
-dependency on the Build iOS Apps plugin.
+Web checks follow the requested deployment; iOS checks follow the requested
+Simulator or device target. iOS tool routing uses available Xcode MCP, CLI, and
+interface tools without a dependency on the Build iOS Apps plugin.
 
 ## post-merge-cleanup
 
