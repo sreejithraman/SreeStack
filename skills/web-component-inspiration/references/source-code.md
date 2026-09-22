@@ -1,4 +1,4 @@
-# Source code
+# Web source code
 
 Inspect source for serious candidates during discovery. Keep those files in a temporary folder. Change the project only after the user chooses a component or asks you to choose and build.
 

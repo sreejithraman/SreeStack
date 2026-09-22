@@ -1,0 +1,6 @@
+interface:
+  display_name: "Web Component Inspiration"
+  short_description: "Find checked web patterns for a feature"
+  default_prompt: "Use $web-component-inspiration to find checked web component patterns that fit this feature."
+policy:
+  allow_implicit_invocation: false
