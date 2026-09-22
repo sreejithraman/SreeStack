@@ -90,6 +90,10 @@ Local-only skills need just an origin note.
 ## diagnosing-bugs
 
 - [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/diagnosing-bugs) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- Local adaptation: adds conditional Apple-platform references for runtime,
+  performance, and memory diagnosis. They use current Apple documentation and
+  local Xcode capability discovery, with Instruments as the default profiler
+  and ETTrace as an optional project choice.
 
 ## domain-modeling
 
