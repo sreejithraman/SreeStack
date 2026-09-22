@@ -2,8 +2,16 @@
 
 Use a Simulator that supports the app's deployment target. Identify the project
 or workspace, scheme, build configuration, Simulator model, and runtime used for
-the check. Prefer XcodeBuildMCP when it is available; otherwise use the host's
-Simulator and Xcode tooling.
+the check. Choose the shortest available path that can observe the required
+result: Xcode's MCP tools can build, run, interact with the Simulator, and capture
+screenshots; `xcodebuild` and `xcrun simctl` cover build, install, and launch;
+Simulator or computer-use tools can provide the remaining interaction. Check
+the connected tool's capabilities before relying on it. Xcode 27 adds Simulator
+interaction to its MCP server ([Xcode 27 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes)); external agents connect through
+[`xcrun mcpbridge`](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode).
+Before using those MCP tools, open the target project or workspace in Xcode. If
+Xcode's headless MCP server is enabled, `xcrun mcp-server open <project-or-workspace>`
+can open it instead; check `xcrun mcp-server status` when discovery fails.
 
 ## Build and launch
 
