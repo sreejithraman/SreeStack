@@ -37,12 +37,19 @@ Extend current tokens before adding new curves or times. Add a library only when
 - Use transitions for state changes that must retarget and springs for gesture-driven values.
 - Start an interruption from the live on-screen value, not the previous target.
 - Carry release velocity into gesture motion and project it toward the likely resting point.
-- Keep dragged content attached to the pointer, preserve the grab offset, and capture the pointer through the gesture.
+- For a drag without competing browser scrolling, capture the active pointer on
+  pointer down, preserve its grab offset, and keep the content attached through
+  the gesture. When drag intent competes with scrolling, declare the browser's
+  allowed pan axis and defer capture until the drag wins. Follow
+  [drag to dismiss](patterns/drag-to-dismiss.md) for arbitration and cancellation.
 - Apply rising resistance past a drag boundary rather than a hard stop.
 - Enter and exit along paths that preserve spatial meaning. Tune their times separately when the system response should be faster.
 
 ## Access and input
 
+- For motion on a web control, use `ui-design` for the action's activation,
+  cancellation, pointer, and keyboard contract. This skill owns the moving
+  feedback's timing and interruption.
 - Honor `prefers-reduced-motion`. Replace large movement, zoom, parallax, and bounce with a short fade, color change, or instant state change.
 - Gate hover-only motion with `@media (hover: hover) and (pointer: fine)`.
 - Keep controls usable while decorative motion runs.

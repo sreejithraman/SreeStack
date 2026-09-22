@@ -1,14 +1,19 @@
 # Techniques
 
+Use these as opt-in techniques when they solve a diagnosed visual problem.
+Examples are starting values; preserve a coherent product system and judge the
+result on its rendered surface.
+
 ## Emulating a light source
 
 Raised and inset are the same trick: decide the element's **profile**, then mimic how light
 would hit that shape. Light comes from above, and people look slightly *down* at their
 screens — so you see the top edge of a raised element and the bottom edge of an inset one.
 
-Each element needs **both** effects — the lit edge and the blocked light. They go in a
-single comma-separated `box-shadow`. Two `box-shadow` declarations on one selector do not
-combine; the second silently discards the first.
+When this dimensional effect fits the direction, pair a lit edge with blocked
+light so the profile reads coherently. Put both in one comma-separated
+`box-shadow`; two declarations on one selector do not combine, and the second
+replaces the first.
 
 **Raised** (button, card) — lit top edge, shadow cast below:
 
@@ -42,12 +47,12 @@ face.
 Note both lit edges are `inset` — a non-inset shadow with a negative Y offset draws *above*
 the element, not on its bottom lip.
 
-Two rules: **hand-pick the lighter color** rather than overlaying semi-transparent white —
+For this technique, **hand-pick the lighter color** rather than overlaying semi-transparent white —
 white overlays drain the saturation out of the underlying color, which is why both examples
 above use a solid `hsl()` sampled from the element's own hue. (On a neutral grey or near-
 black surface there is no saturation to lose, so `hsla(0,0%,100%,.15)` is fine there.) And
-**keep blur radii tiny** — these edges are sharp in the real world, like the shadow under a
-wall outlet.
+**keep blur radii restrained** — these edges are sharp in the real world, like
+the shadow under a wall outlet.
 
 Don't chase photorealism. Borrow the cue and stop.
 
@@ -66,14 +71,17 @@ box-shadow:
   0 3px 6px   hsla(0, 0%, 0%, .10);  /* contact — tighter, sharper */
 ```
 
-The two parts must differ *substantially* in offset and blur or the effect is invisible —
-that's a ~3x difference in both here.
+The two parts need enough difference in offset and blur to remain perceptible.
+The roughly threefold difference in the example is a starting point, not a
+required ratio.
 
 **Which one is darker depends on elevation, and this is the whole point.** At rest on the
-surface the contact shadow is the darker of the two (`.24` against the cast shadow's `.12`);
+surface the contact shadow is the darker of the two (`.24` against the cast
+shadow's `.12` in this example);
 as the object lifts, it fades out and ends up lighter, until at the top of the scale it's
-gone entirely. Don't fix the alphas — let them cross over. Keep both inside `.05–.25`;
-anything heavier reads as a smudge rather than a shadow.
+gone entirely. Let the alphas cross over rather than fixing one relationship
+throughout the scale. Values around `.05–.25` are a useful starting range;
+judge heavier values against the actual surface and direction.
 
 The tradeoff: at the lowest elevations the two shadows converge in geometry (`0 1px 3px` +
 `0 1px 2px`) and the technique buys you little beyond a slightly crisper edge.
@@ -129,43 +137,47 @@ Default to trusting the type designer. Two exceptions:
   what makes them scannable. Caps are uniform blocks, so default tracking crowds them. Add
   about `+0.05em`.
 
-## Choosing typefaces without taste
+## Choosing a UI typeface
 
-- Neutral sans-serif is the safe default. The system font stack is a legitimate choice:
+- A neutral sans-serif or system stack is a legitimate choice when another
+  element carries the identity:
   `-apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue`.
-- **Ignore families with fewer than five weights.** Filtering Google Fonts to 10+ styles cuts
-  ~85% of the options and what remains skews toward carefully-made families.
+- Confirm that the family has the writing systems, symbols, styles, and weights
+  required by the product. More styles are useful only when they serve real roles.
 - Optimize for legibility: taller x-height, wider default tracking. Avoid condensed faces
   with short x-heights for UI text.
-- Sort by popularity — a widely used font is usually a good font. And inspect sites you admire.
+- Inspect the face at the actual sizes, weights, and content before committing.
 
-## Personality is four decisions
+## Personality levers
 
 Not a vibe — four concrete levers:
 
-1. **Typeface.** Serif → elegant/classic. Rounded sans → playful. Neutral sans → plain, lets
-   other elements carry the personality.
-2. **Color.** Blue is safe and nobody objects. Gold reads expensive. Pink reads fun.
-3. **Border radius.** Small = neutral, large = playful, none = formal. Be consistent.
-4. **Language.** "Thank you Mr. Benson" vs "Sweet, thanks Steve!" changes the product's
-   character more than any color choice.
+1. **Typeface.** Its construction, contrast, width, and historical associations
+   influence the voice.
+2. **Color.** Hue, saturation, contrast, and proportion establish mood and emphasis.
+3. **Shape.** Corner treatment and geometry can make a system feel precise,
+   utilitarian, soft, or expressive.
+4. **Language.** Vocabulary and rhythm affect character as strongly as visual choices.
 
-If you can't decide, look at the other sites your users spend time in. Don't imitate direct
-competitors — you'll look like a lesser version of them.
+If the direction is unclear, study the visual world around the subject and the
+interfaces the audience already understands. Use competitors to learn conventions,
+then make the product's own position explicit.
 
-## Grids are overrated
+## Use grids where they help
 
-A grid is just fluid percentage widths chosen from a constrained set. That's the wrong tool
-whenever an element has an optimal *fixed* size:
+A fluid grid is the wrong tool when an element has a content-driven optimal
+size. Common cases include:
 
-- **Sidebars** should be a fixed width sized to their contents; the main area flexes and runs
-  its own internal grid.
-- **Cards and forms** get a `max-width` and only shrink when the viewport is actually smaller.
+- **Sidebars** often use a stable content-driven width while the main area
+  flexes and runs its own internal grid.
+- **Cards and forms** often benefit from a `max-width`, shrinking when available
+  space requires it.
   Sizing a login card as "6 columns, then 8 columns at medium" produces the absurd result of
   the card being *wider* on medium screens than on large ones.
 - Inside components, don't use a percentage unless you genuinely want the thing to scale.
 
-Don't compromise a component's size until the screen actually forces you to.
+Preserve a component's useful size until content or available space gives a
+reason to change it.
 
 **Think in columns, not width.** When a component wants to stay narrow (a form field) but
 sits in a wide layout, don't stretch it to fill the space — split the supporting content
@@ -212,5 +224,6 @@ downscale the logo.
   inset shadow — `box-shadow: inset 0 0 0 1px hsla(0,0%,0%,.1)` — rather than a border. Borders
   clash with the image's own colors; nobody notices the shadow.
 
-**Photos themselves.** Bad photography ruins an otherwise good design. Hire a photographer or
-use good stock. Never design against placeholders planning to shoot something on a phone later.
+**Photos themselves.** Image quality and composition can dominate the result.
+Use representative imagery early enough to validate crops, contrast, and layout;
+placeholders hide those constraints.
