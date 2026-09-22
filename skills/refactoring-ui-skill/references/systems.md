@@ -13,9 +13,10 @@ your eye already uses:
 - **Saturation** — how vivid. 0% is grey (at which point hue is meaningless), 100% is intense.
 - **Lightness** — 0% black, 100% white, 50% the pure hue.
 
-Two shades of the same color share a hue in HSL and look nothing alike in hex. Design tools
-mostly show HSB, browsers only understand HSL — don't confuse them. In HSB, 100% brightness
-is only white when saturation is 0; HSB at S100/B100 equals HSL at S100/L50.
+Two shades of the same color share a hue in HSL and look unrelated in hex. Design tools
+often show HSB, while browsers accept HSL directly — don't confuse the models. In HSB,
+100% brightness is only white when saturation is 0; HSB at S100/B100 equals HSL at
+S100/L50.
 
 ## Picking the base (500)
 

@@ -17,6 +17,8 @@ Local-only skills need just an origin note.
 ## animate
 
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — press feedback and measured rendering guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — gesture-intent guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
 - [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`.
 
 - One automatically discoverable cross-platform skill owns motion decisions,
@@ -47,10 +49,14 @@ Local-only skills need just an origin note.
   scroll-reveal, drag-to-dismiss, crossfade, and programmatic-animation guides.
   Prose gives local use criteria and checks. Code examples remain except for
   the drag dismissal test, which uses recent signed velocity toward the exit
-  instead of absolute whole-gesture average speed. Curve defaults live beside
-  examples that use them. Unsupported performance guarantees are omitted.
+  instead of absolute whole-gesture average speed. Drag dismissal also preserves
+  an intent threshold and an explicit browser pan-axis contract before claiming
+  direction, and shared web guidance keeps press feedback separate from valid
+  action commitment. Curve defaults live beside examples that use them.
+  Unsupported performance guarantees are omitted.
 - `references/implementation.md` covers shared lifecycle, access, token, and
-  rendering checks. `references/tuning.md` adapts the polish scale and rules,
+  measured rendering checks, including inherited custom-property scope.
+  `references/tuning.md` adapts the polish scale and rules,
   scopes scans to the request, treats blur and values as choices, and counts
   stagger delay from the last item's zero-based index. Toast close guidance
   uses the pattern's 250ms starting point. Per-pattern variable blocks replace
@@ -81,15 +87,6 @@ Local-only skills need just an origin note.
 
 - [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/codebase-design) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-## design-eng
-
-- [emilkowalski/skills](https://github.com/emilkowalski/skills) — `skills/emil-design-eng`; commit: unknown.
-- [emilkowalski/skills](https://github.com/emilkowalski/skills) — `skills/apple-design`; commit: unknown.
-
-Combines both upstream sources in one skill. Invocation is
-manual-only: `disable-model-invocation: true` and
-`allow_implicit_invocation: false`.
-
 ## diagnosing-bugs
 
 - [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/diagnosing-bugs) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
@@ -105,11 +102,16 @@ manual-only: `disable-model-invocation: true` and
 ## frontend-web-design
 
 - [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — commit `34040c9c568585f6929bedeaad110ad08f079624`.
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — press activation and cancellation behavior, contrast, and reduced-transparency guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
 
 Renamed to `frontend-web-design`, with a web-only description. Removes the
 AI-default calibration list and guidance tied to it, while keeping the rule to
-follow the brief. Omits the license frontmatter field and license file. The rest
-of the upstream wording remains. Automatic discovery stays enabled.
+follow the brief. Adds local ownership boundaries for visual-system work and
+web component behavior, plus access and input completion rules. Omits the
+license frontmatter field and license file. The remaining upstream wording is
+preserved. Automatic discovery includes art direction, component interaction,
+and web accessibility work.
 
 ## goal-bee
 
@@ -171,17 +173,29 @@ only on request.
 ## swiftui
 
 - Local: `skills/swiftui` (SreeStack).
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
 
 Includes focused guidance for current platform materials and Liquid Glass rather
-than keeping a separate visual-effect skill.
+than keeping a separate visual-effect skill. Redistributed behavior and access
+guidance is folded into the normal SwiftUI workflow; automatic invocation
+remains framework- and task-based.
 
 ## uikit
 
 - Local: `skills/uikit` (SreeStack).
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+
+Redistributed behavior and access guidance is folded into the normal UIKit
+workflow; automatic invocation remains framework- and task-based.
 
 ## manual-verify
 
 - Local: `skills/manual-verify` (SreeStack).
+- [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — interface-review criteria; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
+
+Imported criteria apply to evidence-based interface audits. Automatic
+invocation remains limited to hands-on verification where it adds confidence.
 
 ## post-merge-cleanup
 
@@ -228,16 +242,20 @@ changes" commit gate and the `/doctor` remote playbook. The example command is
 the full verbose scan. The flag table includes `--base` and
 `--include-untracked` for partial scopes. Automatic discovery stays enabled.
 
-## refactoring-ui-skill
+## refactoring-ui
 
 - [s0xDk/refactoring-ui-skill / SKILL.md](https://github.com/s0xDk/refactoring-ui-skill/blob/main/SKILL.md) — imported revision: unknown.
+- [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — web typography and material guidance; commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`.
 
 The automatically discoverable entrypoint owns shared visual hierarchy and
 system decisions, then routes web work to the imported rules, references, and
 CSS token asset and SwiftUI or UIKit work to Apple-platform guidance grounded
 in current Apple documentation. The imported web content is preserved in
-`references/web.md`; current project conventions and platform semantics take
-precedence over its starting values.
+`references/web.md`, with locally integrated typography and material checks;
+current project conventions and platform semantics take precedence over its
+starting values. The repository directory retains the upstream
+`refactoring-ui-skill` name; the current local skill name and invocation are
+`refactoring-ui`.
 
 ## research
 

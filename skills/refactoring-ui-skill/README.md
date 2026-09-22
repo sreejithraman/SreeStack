@@ -6,9 +6,10 @@ derived from *[Refactoring UI](https://www.refactoringui.com/)* by Adam Wathan
 and Steve Schoger. Its Apple-platform branch adapts the same systems thinking
 to native typography, semantic colors, adaptive layout, and accessibility.
 
-The web rules and CSS values were cross-checked against the book. Apple-specific
-guidance follows current Apple documentation instead of translating CSS values
-literally.
+The web rules and CSS values were cross-checked against the book. Typography
+and material guidance also adapts Emil Kowalski's `apple-design` skill.
+Apple-specific guidance follows current Apple documentation instead of
+translating CSS values literally.
 
 ## What it does
 
@@ -51,9 +52,11 @@ If you find the web guidance useful, buy the book:
 **https://www.refactoringui.com/**
 
 The Apple-platform guidance follows the Apple documentation cited in that
-reference.
+reference. The typography and material additions credit Emil Kowalski; see the
+repository's [third-party notices](../../THIRD_PARTY_NOTICES.md).
 
 ## License
 
-MIT for the contents of this repo (see [LICENSE](LICENSE)). Does not extend to the book
-itself.
+MIT for the contents of this repo (see [LICENSE](LICENSE)). Does not extend to
+the book itself. Imported material is covered by the repository's
+[third-party notices](../../THIRD_PARTY_NOTICES.md).

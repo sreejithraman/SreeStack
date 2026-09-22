@@ -1,6 +1,6 @@
 ---
 name: uikit
-description: UIKit interface work. Use when building, maintaining, or modernizing UIKit controllers, scenes, traits, adaptive layout, collections, or Liquid Glass; or deciding whether an existing UIKit surface should adopt SwiftUI.
+description: UIKit interface work. Use when building, reviewing, maintaining, or modernizing UIKit controllers, scenes, traits, adaptive layout, collections, component feedback, async or edge-state behavior, accessibility semantics, or Liquid Glass; or deciding whether an existing UIKit surface should adopt SwiftUI.
 ---
 
 # UIKit
@@ -8,6 +8,10 @@ description: UIKit interface work. Use when building, maintaining, or modernizin
 Build each interface around its actual view-controller, view, window, and scene
 context. Preserve the product's architecture and deployment targets while making
 ownership and lifecycle explicit.
+
+For an authorized build or fix, implement and test the workflow below. For a
+plan or review, leave the product unchanged and turn its implementation and test
+steps into exact proposed changes, findings, and checks.
 
 ## Workflow
 
@@ -34,10 +38,22 @@ ownership and lifecycle explicit.
 4. Use standard controls and containers where they express the behavior. If a
    SwiftUI island is appropriate, place `UIHostingController` at an explicit
    containment boundary and keep one owner for state and lifecycle.
-5. For modernization, replace a deprecated or global assumption end to end. Trace
+5. For interactive components, give immediate feedback and keep loading, empty,
+   disabled, error, and overflow states close to the action or content they
+   describe. Cancel or identify interrupted and repeated async work so an older
+   callback cannot overwrite the current state. Prefer platform controls and
+   strong defaults over extra options; preserve valid activation and cancellation.
+6. Preserve useful accessibility semantics. Expose the control's name, value,
+   state, and actions, and keep focus and announcements aligned with the task and
+   reading order rather than an incidental view hierarchy. Announce visible async
+   status, validation, and errors when focus does not move and the change would
+   otherwise be missed.
+7. For modernization, replace a deprecated or global assumption end to end. Trace
    every caller, pass local context where needed, and preserve supported behavior
    for each active scene rather than swapping symbols mechanically.
-6. Build the affected targets and exercise resizing, traits, navigation, and data
-   updates relevant to the change. Use `manual-verify` for visual or interactive
-   acceptance checks, `animate` for motion, and `diagnosing-bugs` for runtime
-   failures or performance regressions.
+8. Build the affected targets and exercise resizing, traits, navigation, data
+   updates, edge states, interruption, and repeated input relevant to the change.
+   Use `manual-verify` for visual or interactive
+   acceptance checks, `animate` for motion, `refactoring-ui` for visual hierarchy
+   and token-system work, and `diagnosing-bugs` for runtime failures or performance
+   regressions.

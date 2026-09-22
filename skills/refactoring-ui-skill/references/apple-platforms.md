@@ -37,6 +37,8 @@ See Apple's [Color](https://developer.apple.com/design/human-interface-guideline
 - When custom elevation is necessary, define a small semantic scale and tune it on the rendered surface. Combine separation cues sparingly; a surface rarely needs a strong border, shadow, material, and background change at once.
 - Keep corner treatment consistent with the component family and platform. Match container shapes, hit regions, clipping, and content backgrounds.
 - Check legibility over translucent or variable materials in every supported appearance. Apparent material color can change with content and system settings.
+- When Reduce Transparency is enabled, replace blur or translucent separation
+  with a more opaque surface and preserve the boundary and hierarchy it conveyed.
 
 Apple's [Materials](https://developer.apple.com/design/human-interface-guidelines/materials) guidance explains why material selection and contrast must be evaluated in context.
 
@@ -50,6 +52,7 @@ examples. Check what the requested scope makes available:
 - Short, long, localized, and right-to-left content.
 - Every supported Dynamic Type size, including accessibility sizes.
 - Light, dark, and increased-contrast appearances.
+- Reduced Transparency when the interface uses translucent materials.
 - Default, selected, pressed, disabled, loading, empty, and error states that apply.
 - Touch targets, spacing between controls, VoiceOver reading order, and any pointer or keyboard path the app supports.
 

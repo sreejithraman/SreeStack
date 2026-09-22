@@ -1,8 +1,8 @@
 # Web visual design
 
 Visual design is not talent. It is a small set of systems decisions made **once**, plus a
-handful of techniques for creating hierarchy. This skill is those systems and those
-techniques.
+handful of techniques for creating hierarchy. This reference supplies the web-specific
+systems and techniques.
 
 The single biggest cause of amateur-looking UI is picking values ad hoc — 17px here,
 `#3B82F6` there, `lighten(5%)` for a hover state. Design *from a scale*, always.
@@ -56,9 +56,17 @@ Two weights is enough:
 Nothing below 400 in UI. To de-emphasize, use a lighter *color* or smaller *size* — never a
 lighter weight.
 
+Choose typefaces that contain the weights, symbols, and writing systems the
+product needs. Tune tracking for the face, size, and script instead of applying
+one letter-spacing value everywhere. Enable optical sizing when a variable font
+supports it. Let text and layout scale together with relative units, then test
+the user's larger text settings instead of treating overflow as an edge case.
+
 ### Color
 
-You need far more colors than a five-swatch palette generator gives you.
+A visual direction may start with a few named palette anchors. Treat them as the
+identity, not the complete interface system; a working UI needs enough shades and
+semantic roles for its content and states.
 
 - **Greys: 8–10 shades.** Almost all of a UI is grey — text, backgrounds, panels, borders,
   form controls. Three or four shades always runs out. Start at a very dark grey, not true
@@ -76,11 +84,28 @@ color, `100` a background tint; an alert component uses both, so design one and 
 two values off it. Then fill `700` and `300` as the perfect compromise between their
 neighbours, then `800 600 400 200` the same way.
 
-**Write colors as HSL, not hex.** `hsl(220, 95%, 34%)` and `hsl(220, 65%, 61%)` are
-visibly related; `#03369E` and `#507DD7` are not.
+**Use HSL while deriving related shades.** `hsl(220, 95%, 34%)` and
+`hsl(220, 65%, 61%)` expose their relationship while `#03369E` and `#507DD7`
+do not. Preserve the project's required token format. If an approved design plan
+uses named hex anchors, keep those anchors and convert representations only while
+tuning the surrounding ramps.
 
 **Never generate shades at runtime** with `lighten()` / `darken()`. That is how you end up
 with 35 slightly different blues.
+
+### Materials and hierarchy
+
+- Use solid surfaces for primary content, raised or translucent surfaces for
+  controls that float above it, and scrims for blocking tasks.
+- Prefer one restrained separation treatment. Avoid stacking a strong border,
+  shadow, blur, and background change on the same surface.
+- Dim the background for a modal task. Keep a parallel, non-blocking panel
+  connected to the main flow without a heavy scrim.
+- Check text and controls over every real material. Avoid stacked light
+  translucent layers where contrast collapses, and provide a solid fallback when
+  the user's environment requests reduced transparency.
+- Match surface weight to size and role. A large panel can need stronger
+  separation than a chip or compact control.
 
 ### Shadows — five elevations
 

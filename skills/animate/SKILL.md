@@ -7,6 +7,10 @@ description: "Design, implement, and tune web, SwiftUI, and UIKit interface moti
 
 Build the requested motion on its real platform. An instant state change is a valid result when motion would add delay without meaning.
 
+For an authorized build or fix, implement and test the workflow below. For a
+plan or review, leave the product unchanged and report the proposed motion or
+instant alternative, exact changes, and checks the implementation must pass.
+
 ## Process
 
 1. Inspect the real interaction, nearby motion, design tokens, target platform and supported versions, input methods, use rate, state changes, and runnable surface. Finish when every animated element in scope has this evidence.
@@ -51,7 +55,9 @@ Keep content steady while someone reads or acts on it. Decorative motion must no
 
 ## Handoff
 
-Deliver the implemented result first. When the gate rejects motion, deliver the instant or static alternative instead. Then state:
+For a build, deliver the implemented result first. When the gate rejects motion,
+deliver the instant or static alternative instead. For a plan or review, deliver
+the proposal or findings without editing the product. Then state:
 
 - The motion gate result and purpose.
 - The platform mechanism and reduced-motion behavior.

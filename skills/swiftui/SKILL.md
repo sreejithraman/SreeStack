@@ -1,6 +1,6 @@
 ---
 name: swiftui
-description: SwiftUI interface work on Apple platforms. Use when choosing SwiftUI versus UIKit; building or restructuring SwiftUI views, state flow, navigation, presentation, or Liquid Glass; or applying a diagnosed SwiftUI performance fix.
+description: SwiftUI interface work on Apple platforms. Use when choosing SwiftUI versus UIKit; building, reviewing, or restructuring SwiftUI views, state flow, navigation, presentation, component feedback, async or edge-state behavior, accessibility semantics, or Liquid Glass; or applying a diagnosed SwiftUI performance fix.
 ---
 
 # SwiftUI
@@ -8,6 +8,10 @@ description: SwiftUI interface work on Apple platforms. Use when choosing SwiftU
 Shape the interface around SwiftUI's ownership, identity, and environment rather
 than reproducing an imperative view hierarchy. Preserve the product's existing
 architecture and deployment targets unless the task changes them.
+
+For an authorized build or fix, implement and test the workflow below. For a
+plan or review, leave the product unchanged and turn its implementation and test
+steps into exact proposed changes, findings, and checks.
 
 ## Workflow
 
@@ -33,11 +37,22 @@ architecture and deployment targets unless the task changes them.
 4. Prefer native containers and controls for the target platform. Add a UIKit or
    AppKit bridge at a deliberate boundary when SwiftUI lacks the required behavior;
    keep lifecycle and ownership on one side of that boundary.
-5. Build the affected targets and exercise the changed state transitions. Use
+5. For interactive components, give immediate feedback and keep loading, empty,
+   disabled, error, and overflow states close to the action or content they
+   describe. Prevent interrupted or repeated async work from letting an older
+   result overwrite the current state. Prefer platform controls and strong
+   defaults over extra options; preserve valid activation and cancellation.
+6. Preserve useful accessibility semantics. Expose the control's name, value,
+   state, and actions, and keep focus and announcements aligned with the task and
+   reading order rather than an incidental view hierarchy. Announce visible async
+   status, validation, and errors when focus does not move and the change would
+   otherwise be missed.
+7. Build the affected targets and exercise main, edge-state, interruption, and
+   repeated-input transitions. Use
    `manual-verify` for visual or interactive acceptance checks. Use `animate` for
    motion design, `ios-haptics` for tactile feedback when its iOS 26+ SwiftUI scope
-   applies, and `diagnosing-bugs` when a failure or performance regression needs
-   investigation.
+   applies, `refactoring-ui` for visual hierarchy and token-system work, and
+   `diagnosing-bugs` when a failure or performance regression needs investigation.
 
 After performance diagnosis identifies the bottleneck, use the data-flow and
 composition guidance here to narrow invalidation or reduce body work without

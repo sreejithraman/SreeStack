@@ -26,6 +26,7 @@ for folder in skills:
         errors.append(f"skills/{folder.name}: missing SKILL.md")
         continue
     text = skill.read_text()
+    source_name = folder.name
     frontmatter = re.match(r"\A---\n(.*?)\n---(?:\n|$)", text, re.S)
     if not frontmatter:
         errors.append(f"{skill.relative_to(ROOT)}: missing frontmatter")
@@ -39,8 +40,12 @@ for folder in skills:
             value = metadata.get(field) if isinstance(metadata, dict) else None
             if not isinstance(value, str) or not value.strip():
                 errors.append(f"{skill.relative_to(ROOT)}: missing or empty {field}")
-    if f"\n## {folder.name}\n" not in sources:
-        errors.append(f"skills/{folder.name}: missing SOURCES.md entry")
+            elif field == "name":
+                source_name = value.strip()
+    if f"\n## {source_name}\n" not in sources:
+        errors.append(
+            f"skills/{folder.name}: missing SOURCES.md entry for {source_name}"
+        )
 
 for path in files:
     if path.suffix.lower() != ".md" or not path.is_file():

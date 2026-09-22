@@ -1,6 +1,6 @@
 ---
 name: manual-verify
-description: Verify changes through real user workflows when hands-on testing would add confidence, including web apps in a browser and native iOS or macOS apps.
+description: Exercise and assess real user workflows when hands-on acceptance testing or an evidence-based interface audit would add confidence, including web apps in a browser and native iOS or macOS apps.
 ---
 
 # Manual Verify
@@ -12,9 +12,25 @@ evidence, not the verdict.
 ## Workflow
 
 1. **Choose workflows.** Read the request and changes. Identify the affected
-   users, their goal, and nearby behavior the change could break. Select the
-   smallest useful set of realistic workflows covering the main path and any
-   material error or edge case. State the expected result of each workflow.
+   users, their goal, and nearby behavior the change could break.
+
+   Treat verification of a changed workflow or behavior as acceptance work.
+   Treat a whole-surface visual, interaction-quality, or accessibility judgment
+   as an interface audit. If the request includes both, apply each completeness
+   rule to its own scope.
+
+   For acceptance verification, select the smallest useful set of realistic
+   workflows covering the main path and any material error or edge case. State
+   the expected result of each workflow.
+
+   For an interface audit, first inventory every in-scope surface, component,
+   state, input method, and accessibility path. Load `refactoring-ui` for visual
+   systems and `animate` for motion. For implementation criteria, load
+   `frontend-web-design` on web and `swiftui` or `uikit` for the framework in a
+   native Apple project. If no matching specialist exists, use the project's
+   platform guidance and the observe-act-observe workflow below. Turn every
+   applicable criterion from that inventory into an assertion; do not sample the
+   audit down to a representative subset.
 
 2. **Choose the interface.** Use the product surface its users use. For a web
    app, read [web verification](references/web.md). For an iOS app, read
@@ -60,6 +76,12 @@ evidence, not the verdict.
    When the expected result includes persisted data or an output artifact, verify
    it through a fresh read path rather than relying on the current screen alone.
 
+   When accessibility is in scope, check names, roles, values, states, label and
+   error relationships, task-ordered focus, keyboard traps, text scaling, and
+   whether visible async status is announced when focus does not move.
+   When materials are affected, check increased contrast and reduced transparency
+   where the platform exposes them.
+
 5. **Report evidence.** For each workflow, state what was exercised and the
    expected and observed result. Give each required acceptance assertion a status:
 
@@ -79,6 +101,13 @@ evidence, not the verdict.
    `blocked`, then `untested` as the overall status. Include screenshots, logs, or
    semantic snapshots when they explain the conclusion. Name any untested
    behavior or environmental gap rather than treating it as passing.
+
+   For an interface review, report each issue with its location, observed
+   behavior, exact change, and reason, then rank the findings by user impact.
+
+   An interface audit is complete only when every inventoried item and applicable
+   specialist criterion is `passed`, `failed`, `blocked`, or explicitly
+   `untested`. The audit passes only when all required assertions pass.
 
 If login or another step requires the user, tell them exactly what to do and
 where, then resume after they finish. Continue independent checks meanwhile.

@@ -9,7 +9,7 @@ material keeps the terms listed below; the root license does not replace them.
 | --- | --- | --- |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
 | Matt Pocock | Skills and Standards/Spec review references listed in SOURCES.md | [MIT](licenses/mattpocock-skills.txt) |
-| Emil Kowalski | animate and design-eng | [animate MIT](licenses/emilkowalski-animate.txt), [design-eng MIT](skills/design-eng/LICENSE.md) |
+| Emil Kowalski | animate; motion and gesture behavior; typography and materials; interface access/input and review guidance | [animate MIT](licenses/emilkowalski-animate.txt), [design engineering MIT](licenses/emilkowalski-design-eng.txt) |
 | Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
 | Dietrich Gebert / Ponytail | review-fix-loop/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
 | Cursor | review-fix-loop/references/thermo.md | [MIT](licenses/cursor-plugins.txt) |
@@ -31,8 +31,10 @@ products or services. Do not describe it as plain MIT. Its terms still apply alo
 the root license.
 
 The original parent-skill import baseline for animate remains unknown; its
-reference imports have recorded revisions in SOURCES.md. The imported revisions
-for design-eng and refactoring-ui-skill remain unknown. Bundled notices do not
-resolve those source-history gaps.
+reference imports have recorded revisions in SOURCES.md. The redistributed
+design engineering guidance is tied there to commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`,
+while its earlier local import baseline remains unknown. The imported revision
+for refactoring-ui-skill also remains unknown. Bundled notices do not resolve
+those source-history gaps.
 Linked API docs, component catalogs, and other live references sit beside the
 guidance they support; links alone are not bundled copies.

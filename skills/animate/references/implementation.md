@@ -12,6 +12,9 @@ Read the full selected pattern, then implement it within the project’s compone
 ## Tokens and rendering
 
 - Each pattern includes its variables. Map them to existing project tokens and keep theme overrides. Add only the values the interaction needs. Scope tokens to avoid collisions across patterns.
+- Watch inherited custom properties in large subtrees. When measurement shows
+  that changing one restyles many descendants, update the narrowest owning
+  element or state hook instead.
 - Preserve required structure when adapting selectors. Measure size when a pattern depends on height or width; recheck after content or font changes.
 - Measure layout, paint, blur, masks, and large surfaces on target browsers. CSS or WAAPI alone does not guarantee compositor execution. Keep `will-change` only where measurement supports it; remove permanent hints when they do not help.
 - Treat library-specific hooks, including Base UI state attributes and Motion options, as examples. Check the installed API before use.
