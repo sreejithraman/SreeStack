@@ -345,9 +345,10 @@ The review stage uses `review-fix-loop`.
 
 - [mattpocock/skills / skills/engineering/triage](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/triage) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-## ui-component-inspiration
+## web-component-inspiration
 
-- Local: `skills/ui-component-inspiration` (SreeStack).
+- Local: `skills/web-component-inspiration` (SreeStack); explicit-only and
+  web-scoped.
 
 ## wait-what
 
