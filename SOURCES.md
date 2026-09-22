@@ -367,6 +367,16 @@ Manual-only invocation: `disable-model-invocation: true` and
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
+## xcode-security-audit
+
+- [superagents-lab/xcode27-skills / audit-xcode-security-settings](https://github.com/superagents-lab/xcode27-skills/tree/6f9ff8d5ad6000491cb0f483a776b7062e41cd97/audit-xcode-security-settings) — commit `6f9ff8d5ad6000491cb0f483a776b7062e41cd97`, used as coverage input.
+- Local adaptation: a greenfield workflow grounded in current Apple
+  documentation and effective Xcode settings. It chooses among native Xcode
+  tools, command-line tools, structured project editing, and Xcode through
+  computer use based on which is easiest and reliable. It does not require an
+  Xcode-hosted agent, mutate during an audit, keep a fixed settings catalog, or
+  fold C bounds-safety migration into general hardening.
+
 ## orchestration
 
 - Local: `skills/orchestration` (SreeStack).

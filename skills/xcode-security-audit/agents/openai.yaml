@@ -1,0 +1,4 @@
+interface:
+  display_name: "Xcode Security Audit"
+  short_description: "Audit Xcode security settings"
+  default_prompt: "Use $xcode-security-audit to audit this Xcode project and propose compatible security hardening."
