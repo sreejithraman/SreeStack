@@ -1,6 +1,6 @@
 ---
 name: swiftui
-description: SwiftUI interface work on Apple platforms. Use when choosing SwiftUI versus UIKit; building, reviewing, or restructuring SwiftUI views, state flow, navigation, presentation, component feedback, async or edge-state behavior, accessibility semantics, or Liquid Glass; or applying a diagnosed SwiftUI performance fix.
+description: SwiftUI interface work on Apple platforms. Use when choosing SwiftUI versus UIKit; building, reviewing, or restructuring SwiftUI views, state flow, navigation, presentation, collection interactions, toolbars, remote images, document apps, accessibility semantics, Liquid Glass, or SDK migration fixes; or applying a diagnosed SwiftUI performance fix.
 ---
 
 # SwiftUI
@@ -29,6 +29,16 @@ steps into exact proposed changes, findings, and checks.
      boundaries, collection identity, update scope, or restructuring a large view.
    - [Navigation and presentation](references/navigation-and-presentation.md) for
      stacks, split views, routes, sheets, dialogs, or restoration.
+   - [SDK 27 migration](references/sdk-27-migration.md) when an Xcode 27 build
+     introduces `@State`, result-builder, or preview diagnostics.
+   - [Collection interactions](references/collection-interactions.md) for
+     reordering or swipe actions in lists, stacks, grids, or custom layouts.
+   - [Toolbars](references/toolbars.md) for overflow, pinned items, visibility
+     priority, or minimization behavior.
+   - [Remote images](references/remote-images.md) for `AsyncImage` loading,
+     request policy, session choice, or caching.
+   - [Document apps](references/document-apps.md) for creating or migrating a
+     document-based app, viewer, reader, or writer.
    - [Materials and Liquid Glass](references/materials-and-glass.md) when adopting
      current platform materials or reviewing custom glass effects.
 3. Make the source of truth and view identity explicit before changing layout.
