@@ -1,17 +1,26 @@
 # iOS Verification
 
-Use a Simulator that supports the app's deployment target. Identify the project
-or workspace, scheme, build configuration, Simulator model, and runtime used for
-the check. Choose the shortest available path that can observe the required
-result: Xcode's MCP tools can build, run, interact with the Simulator, and capture
-screenshots; `xcodebuild` and `xcrun simctl` cover build, install, and launch;
-Simulator or computer-use tools can provide the remaining interaction. Check
-the connected tool's capabilities before relying on it. Xcode 27 adds Simulator
-interaction to its MCP server ([Xcode 27 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes)); external agents connect through
+Use the target named by the task: a Simulator that supports the app's deployment
+target for Simulator checks, or suitable hardware for physical-device checks.
+When the task leaves the target open, use Simulator if it can exercise the
+selected workflow; otherwise use a suitable device. Identify the project or
+workspace, scheme, build configuration, and either device model and OS version
+or Simulator model and runtime.
+For Simulator checks, choose the shortest available path that can observe the
+required result: Xcode's MCP tools can build, run, interact with the Simulator,
+and capture screenshots; `xcodebuild` and `xcrun simctl` cover build, install,
+and launch; Simulator or computer-use tools can provide the remaining
+interaction. Check the connected tool's capabilities before relying on it.
+Xcode 27 adds Simulator interaction to its MCP server
+([Xcode 27 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes)); external agents connect through
 [`xcrun mcpbridge`](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode).
 Before using those MCP tools, open the target project or workspace in Xcode. If
 Xcode's headless MCP server is enabled, `xcrun mcp-server open <project-or-workspace>`
 can open it instead; check `xcrun mcp-server status` when discovery fails.
+For physical-device checks, choose the device as Xcode's run destination or use
+[`xcrun devicectl`](https://developer.apple.com/documentation/xcode/xcode-command-line-tool-reference)
+for available device operations. Interact through the device or connected
+interface tooling; check its capabilities before relying on it.
 
 ## Build and launch
 
@@ -44,15 +53,16 @@ can open it instead; check `xcrun mcp-server status` when discovery fails.
   relevant, safe areas, keyboard avoidance, and expected system dialogs.
 - Capture application logs when the app crashes, exits, hangs, or behaves
   differently from the visible state. Use the process and bundle identifier to
-  separate app output from unrelated Simulator noise.
+  separate app output from unrelated system noise.
 
 Keep an explicitly requested Simulator check in Simulator. Exercise the portions
 the Simulator supports and name the exact device-only step that remains unverified.
-Use a physical device when the request includes device verification and suitable
-hardware is available.
+For physical-device checks, use available Xcode and device controls; if suitable
+hardware is unavailable, report the device-specific assertions as blocked.
 
 ## Evidence
 
-Record the scheme, Simulator model and runtime, workflow states, and relevant
-screenshots or logs. A successful build proves that the app compiled; the
-interaction and resulting state prove whether the workflow worked.
+Record the scheme, target device model and OS version or Simulator model and
+runtime, workflow states, and relevant screenshots or logs. A successful build
+proves that the app compiled; the interaction and resulting state prove whether
+the workflow worked.

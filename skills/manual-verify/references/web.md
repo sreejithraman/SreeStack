@@ -1,8 +1,10 @@
 # Web Verification
 
-Use the browser environment already attached to the task when possible. Start or
-locate the development server, open the exact changed route, and record the
-viewport or device mode when it affects the result.
+Use the requested deployment and the browser environment already attached to
+the task when possible. For a local change, start or locate the development
+server; for a live site, open its URL.
+Reach the exact route or state under test and record the URL, viewport, or
+device mode when they affect the result.
 
 ## Observe and interact
 
@@ -21,6 +23,6 @@ viewport or device mode when it affects the result.
 ## Evidence
 
 Capture the states that establish the result: the initial condition, the outcome,
-and any failure. Record the route, viewport, and relevant console or network
+and any failure. Record the URL, viewport, and relevant console or network
 evidence. Do not infer success from a screenshot when behavior required an
 interaction.
