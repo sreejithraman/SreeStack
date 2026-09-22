@@ -115,7 +115,7 @@ uses and adapts:
 - [Vercel’s agent-skills](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices) — the React Best Practices skill, originally created by [Shu Ding](https://x.com/shuding).
 - [Charles Wiltgen’s Axiom haptics guide](https://github.com/CharlesWiltgen/Axiom/blob/dd3334734ecd01afab28b0ac22c49d4b5b2e5857/.claude-plugin/plugins/axiom/skills/axiom-media/skills/haptics.md) — inspiration for our locally written iOS haptics skill; no upstream prose or code copied.
 - [Rudrank Riyam’s App Store Connect CLI skills](https://github.com/rorkai/app-store-connect-cli-skills) — usage and workflow guides for our App Store Connect skill.
-- [superagents-lab’s xcode27-skills](https://github.com/superagents-lab/xcode27-skills) — coverage input for the independently written `xcode-security-audit` skill; no upstream prose or code copied.
+- [superagents-lab’s xcode27-skills](https://github.com/superagents-lab/xcode27-skills) — coverage input for independently written Xcode security and SwiftUI SDK 27 guidance; no upstream prose or code copied.
 
 [SOURCES.md](SOURCES.md) records upstream paths, import revisions, and current
 differences to preserve. Git records how the skills changed over time.

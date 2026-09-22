@@ -164,11 +164,12 @@ only on request.
 
 - Local: `skills/swiftui` (SreeStack).
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — component-behavior and access guidance redistributed from the retired local `design-eng` adaptation; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [superagents-lab/xcode27-skills / swiftui-whats-new-27](https://github.com/superagents-lab/xcode27-skills/tree/6f9ff8d5ad6000491cb0f483a776b7062e41cd97/swiftui-whats-new-27) — commit `6f9ff8d5ad6000491cb0f483a776b7062e41cd97`, used as a coverage map for independently written SDK 27 guidance.
 
 Includes focused guidance for current platform materials and Liquid Glass rather
 than keeping a separate visual-effect skill. Redistributed behavior and access
-guidance is folded into the normal SwiftUI workflow; automatic invocation
-remains framework- and task-based.
+guidance and current SDK migration and feature guidance are folded into the
+normal SwiftUI workflow; automatic invocation remains framework- and task-based.
 
 ## uikit
 
