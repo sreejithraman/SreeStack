@@ -1,4 +1,4 @@
-# Source registry
+# Web source registry
 
 Use this as a set of leads, not a list of endorsements. Check live pages and terms on each run. Add or remove one row when the source set changes; do not copy full component lists here.
 
