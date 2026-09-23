@@ -38,8 +38,6 @@ Reference these guidelines when:
 2. Open only the Quick Reference links whose ids start with those prefixes and whose one-liners match the request, or the diff when this skill is a review reference.
 3. When this skill is a review reference, report findings from the opened files and leave edits to the parent. Otherwise apply only rules that fit the project's versions and existing architecture. The one-liners are only for choosing which files to open.
 
-Rule files provide the relevant rationale, examples, tradeoffs, and references.
-
 ## Quick Reference
 
 ### 1. Eliminating Waterfalls (CRITICAL)

@@ -12,6 +12,48 @@ that changes a React-owned element between server rendering and hydration can
 create a mismatch even if it removes a visible theme flash. React does not
 guarantee that it will repair differing attributes during hydration.
 
+**Incorrect (breaks SSR):**
+
+```tsx
+function ThemeWrapper({ children }: { children: ReactNode }) {
+  // localStorage is not available on server - throws error
+  const theme = localStorage.getItem('theme') || 'light'
+
+  return (
+    <div className={theme}>
+      {children}
+    </div>
+  )
+}
+```
+
+Server-side rendering will fail because `localStorage` is undefined.
+
+**Incorrect (visual flickering):**
+
+```tsx
+function ThemeWrapper({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    // Runs after hydration - causes visible flash
+    const stored = localStorage.getItem('theme')
+    if (stored) {
+      setTheme(stored)
+    }
+  }, [])
+
+  return (
+    <div className={theme}>
+      {children}
+    </div>
+  )
+}
+```
+
+Component first renders with default value (`light`), then updates after
+hydration, causing a visible flash of incorrect content.
+
 Prefer a theme value the server can know, such as a preference cookie. Render
 the same value into the HTML and the client's initial props. After hydration,
 later user changes can update both the UI and the cookie. If the system color
