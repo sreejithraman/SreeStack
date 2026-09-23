@@ -217,11 +217,13 @@ prototype retention and cleanup.
 
 - [vercel-labs/agent-skills / skills/react-best-practices](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/react-best-practices) — commit `063bee94c3f4df8453406c830b0a7df0f2860278`. Upstream repo README and skill frontmatter claim MIT; no license file found at this revision.
 
-Keeps 68 upstream rule topics and a task-based index. The low-value
-`client-event-listeners` and `js-cache-storage` recipes are omitted because
-their global listener and cache examples were brittle across provider, SSR,
-and invalidation boundaries. Local name is `react-best-practices` (upstream
-frontmatter name is `vercel-react-best-practices`).
+Keeps all 70 upstream rule topics and a task-based index.
+`client-event-listeners` retains the shared-listener pattern with an app-owned
+boundary instead of an SWR subscription and module-wide callback registry.
+`js-cache-storage` retains the repeated-read pattern with a bounded operation
+example instead of a module-level storage or cookie cache. Local name is
+`react-best-practices` (upstream frontmatter name is
+`vercel-react-best-practices`).
 Omits the compiled `AGENTS.md`, contributor README, metadata, rule template, and
 section compiler files. Origin notes and license frontmatter are omitted from the
 skill. Description is limited to React or Next performance work (waterfalls,

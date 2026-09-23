@@ -5,7 +5,7 @@ description: "Use for React or Next.js performance work: waterfalls, bundle size
 
 # React Best Practices
 
-Performance patterns for React and Next.js applications. The 68 rules are
+Performance patterns for React and Next.js applications. The 70 rules are
 candidates, not a checklist or a promise of impact. Locate the bottleneck in
 the actual workload before changing code. Check the project's React, Next.js,
 compiler, and data-layer choices; compare the same workload before and after.
@@ -26,7 +26,7 @@ Reference these guidelines when:
 | Eliminating Waterfalls | `async-` |
 | Bundle Size Optimization | `bundle-` |
 | Server-Side Performance | `server-` |
-| Client-Side Data Fetching | `client-` |
+| Client-Side Data, Events, and Storage | `client-` |
 | Re-render Optimization | `rerender-` |
 | Rendering Performance | `rendering-` |
 | JavaScript Performance | `js-` |
@@ -73,9 +73,10 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`server-parallel-nested-fetching`](rules/server-parallel-nested-fetching.md) - Chain nested fetches per item in Promise.all
 - [`server-after-nonblocking`](rules/server-after-nonblocking.md) - Use after() for non-blocking operations
 
-### Client-Side Data Fetching
+### Client-Side Data, Events, and Storage
 
 - [`client-swr-dedup`](rules/client-swr-dedup.md) - Use existing SWR caching for request deduplication
+- [`client-event-listeners`](rules/client-event-listeners.md) - Share repeated global listeners at an app-owned boundary
 - [`client-passive-event-listeners`](rules/client-passive-event-listeners.md) - Use passive listeners for scroll
 - [`client-localstorage-schema`](rules/client-localstorage-schema.md) - Version and minimize localStorage data
 
@@ -117,6 +118,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`js-index-maps`](rules/js-index-maps.md) - Build Map for repeated lookups
 - [`js-cache-property-access`](rules/js-cache-property-access.md) - Cache object properties in loops
 - [`js-cache-function-results`](rules/js-cache-function-results.md) - Scope caches for repeated pure calculations
+- [`js-cache-storage`](rules/js-cache-storage.md) - Avoid repeated storage reads in measured hot paths
 - [`js-combine-iterations`](rules/js-combine-iterations.md) - Combine multiple filter/map into one loop
 - [`js-length-check-first`](rules/js-length-check-first.md) - Check array length before expensive comparison
 - [`js-early-exit`](rules/js-early-exit.md) - Return early from functions
