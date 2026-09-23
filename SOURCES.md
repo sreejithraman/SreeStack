@@ -240,13 +240,16 @@ discovery stays enabled.
 
 - [millionco/react-doctor / skills/react-doctor](https://github.com/millionco/react-doctor/tree/499a0208fca5c0422b713bdedf2b83fcc8e29d20/skills/react-doctor) — commit `499a0208fca5c0422b713bdedf2b83fcc8e29d20`.
 
-Description covers diagnostics scan or triage, design audit, runtime trace, and
-rule config. It omits `/doctor`, finishing a feature, fixing a bug, and
-committing React code. The changed-scope regression scan lives in
+Description covers diagnostics scans or fixes, static design checks, browser
+performance traces, and rule config. It omits `/doctor`, finishing a feature,
+fixing a bug, and committing React code. The changed-scope regression scan lives in
 `review-fix-loop` Verify. The skill omits the upstream "After making React code
 changes" commit gate and the `/doctor` remote playbook. The example command is
 the full verbose scan. The flag table includes `--base` and
-`--include-untracked` for partial scopes. Automatic discovery stays enabled.
+`--include-untracked` for partial scopes. Scan-only requests report findings
+without edits, and static design diagnostics do not stand in for a rendered UI
+audit. The unsupported upstream `version` frontmatter field is omitted.
+Automatic discovery stays enabled.
 
 ## ui-design
 

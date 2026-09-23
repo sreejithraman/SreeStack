@@ -1,20 +1,30 @@
 ---
 name: react-doctor
-description: Use when asked to scan, triage, or clean up React diagnostics, run a UI design audit, record a runtime performance trace, or configure Doctor rules.
-version: "1.2.0"
+description: Use React Doctor to scan or fix React diagnostics, run its static design checks, capture a browser performance trace, or explain and configure Doctor rules.
 ---
 
 # React Doctor
 
-Scans React codebases for security, performance, correctness, and architecture issues. Outputs a 0–100 health score.
+React Doctor scans React codebases for security, performance, correctness, and
+architecture issues. Its 0–100 score summarizes those diagnostics, not the
+whole product experience. For scan or triage requests, report findings without
+editing code. Fix accepted findings when the request includes cleanup or
+implementation.
 
-## For general cleanup or code improvement:
+## For a general scan or cleanup
 
-Run `npx react-doctor@latest --verbose` (the default `--scope full`) to scan the full codebase. Fix issues by severity — errors first, then warnings.
+Run `npx react-doctor@latest --verbose` (the default `--scope full`) to scan the
+full codebase. Triage findings by impact and evidence, with errors before
+warnings. Fix in-scope findings only when the task calls for changes.
 
-## For a focused UI design audit:
+## For static design diagnostics
 
-Run `npx react-doctor@latest design --verbose`. This selects only design-tagged UI composition, typography, interaction, accessibility, and motion rules, including focused rules that remain opt-in during a general health scan.
+Run `npx react-doctor@latest design --verbose`. This selects design-tagged UI
+composition, typography, interaction, accessibility, and motion rules,
+including focused rules that remain opt-in during a general health scan. Treat
+the result as source-code findings. For an audit of the rendered interface and
+real interactions, use `manual-verify` with `ui-design` rather than treating a
+clean scan as a pass.
 
 ## For runtime performance problems:
 
