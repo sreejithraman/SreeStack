@@ -1,8 +1,9 @@
 # Custom playback
 
-Use Core Haptics to implement an authored tactile timeline: a custom rhythm,
-shaped continuous effect, live texture, or coordinated audio and touch. Keep the
-pattern definition separate from the owner that manages playback.
+Use [Core Haptics](https://developer.apple.com/documentation/corehaptics/playing-collision-based-haptic-patterns)
+on supported iOS versions (iOS 13+) to implement an authored tactile timeline:
+a custom rhythm, shaped continuous effect, live texture, or coordinated audio
+and touch. Keep the pattern definition separate from its playback owner.
 
 ## Translate the design into events
 
@@ -53,7 +54,7 @@ give every sustained effect an explicit stop condition.
 ## Own the engine in the feature
 
 Check `CHHapticEngine.capabilitiesForHardware().supportsHaptics` before creating
-an engine. The iOS 26 deployment target does not replace that check. If unsupported,
+an engine. API availability does not replace that check. If unsupported,
 continue the interaction without tactile output.
 
 Keep engine, players, and registered resource IDs with a stable feature owner,

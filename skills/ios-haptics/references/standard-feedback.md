@@ -1,8 +1,16 @@
-# SwiftUI feedback
+# Standard feedback
 
-Use `sensoryFeedback` to express the meaning of a state change. Keep the modifier
-on a view that remains mounted when the event arrives. Native controls may
-already provide feedback; inspect before adding a second response.
+Use SwiftUI [`sensoryFeedback`](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(_:trigger:))
+on iOS 17+ to express the meaning of a state change. For UIKit controls or
+earlier deployment targets, use [UIKit feedback generators](https://developer.apple.com/documentation/uikit/uifeedbackgenerator)
+(available on iOS 10+) for standard events. Keep a SwiftUI modifier on a view
+that remains mounted when the event arrives. Native controls may already
+provide feedback; inspect before adding a second response.
+
+Use `UISelectionFeedbackGenerator` for discrete selection,
+`UIImpactFeedbackGenerator` for contact, and
+`UINotificationFeedbackGenerator` for success, warning, or error. Match the
+feedback to the event rather than the framework that owns the screen.
 
 ## Choose the trigger
 
@@ -19,7 +27,8 @@ variant to filter transitions or its feedback-selection variant to return the
 right response or `nil`.
 
 The operation owner emits a fresh completion only after it knows the result.
-The view below consumes that event; it does not infer success from a button tap.
+The iOS 17+ view below consumes that event; it does not infer success from a
+button tap.
 
 ```swift
 import SwiftUI
@@ -35,6 +44,7 @@ struct SaveCompletion: Equatable {
 }
 
 @MainActor
+@available(iOS 17.0, *)
 struct SaveStatus: View {
     let completion: SaveCompletion?
     let hapticsEnabled: Bool
@@ -84,10 +94,14 @@ a discrete control event needs to bypass view update timing.
 
 ## Direct UIKit emission
 
-Use this path for an existing UIKit control or a demonstrated need for direct
-standard feedback. Keep its generator with the interaction owner, call it on
-the main actor, and use the relevant view when creating a view-associated
-generator such as `UIImpactFeedbackGenerator(style:view:)`.
+Use this path for an existing UIKit control, a SwiftUI target below iOS 17, or
+a demonstrated need for direct standard feedback. Keep its generator with the
+interaction owner and call it on the main actor. Use the relevant view with a
+view-associated generator such as
+[`UIImpactFeedbackGenerator(style:view:)`](https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator/init(style:view:))
+on iOS 17.5+; use `UIImpactFeedbackGenerator(style:)` on earlier versions.
+The [soft and rigid impact styles](https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator/feedbackstyle)
+require iOS 13+; choose light, medium, or heavy for older targets.
 
 Map the design to `selectionChanged()`, `impactOccurred()`, or
 `notificationOccurred(_:)`. Keep gesture thresholds and outcome selection in
@@ -103,7 +117,5 @@ permanent preparation timer.
 ## Sources
 
 - [Feedback types](https://developer.apple.com/documentation/swiftui/sensoryfeedback)
-- [Trigger modifier](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(_:trigger:))
 - [Feedback selection](https://developer.apple.com/documentation/swiftui/view/sensoryfeedback(trigger:_:))
-- [View-associated impact generator](https://developer.apple.com/documentation/uikit/uiimpactfeedbackgenerator/init(style:view:))
 - [Generator preparation](https://developer.apple.com/documentation/uikit/uifeedbackgenerator/prepare())

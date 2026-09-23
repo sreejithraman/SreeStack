@@ -6,13 +6,13 @@ starting points for device comparison, not Apple presets or tested claims.
 
 ## Establish a consistent set of responses
 
-| Meaning | First choice in SwiftUI | Design check |
-| --- | --- | --- |
-| A discrete value changed | `.selection` | Emit for a new step, not each drag sample. |
-| Contact or snapping | `.impact` | Match weight and flexibility to the apparent contact. |
-| A task succeeded | `.success` | The result must be true when feedback occurs. |
-| A decision needs care | `.warning` | Pair with the warning becoming relevant; silence while it simply remains visible. |
-| An action failed | `.error` | Show the reason and a way to recover. A drag reaching its limit is not automatically an error. |
+| Meaning | SwiftUI | UIKit | Design check |
+| --- | --- | --- | --- |
+| A discrete value changed | `.selection` | `UISelectionFeedbackGenerator` | Emit for a new step, not each drag sample. |
+| Contact or snapping | `.impact` | `UIImpactFeedbackGenerator` | Match the apparent contact. |
+| A task succeeded | `.success` | `UINotificationFeedbackGenerator` success | The result must be true when feedback occurs. |
+| A decision needs care | `.warning` | `UINotificationFeedbackGenerator` warning | Pair with the warning becoming relevant; silence while it simply remains visible. |
+| An action failed | `.error` | `UINotificationFeedbackGenerator` error | Show the reason and a way to recover. A drag reaching its limit is not automatically an error. |
 
 Use weight to compare light and heavy impacts, and flexibility to compare soft
 and rigid character. These are different choices; rigid is not merely stronger
@@ -71,25 +71,28 @@ still make sense with sound off.
 
 The event is a successful save, not the tap that requested it. Use `.success`
 when the operation confirms the result, alongside the saved state. Use `.error`
-with a recoverable failure. The spinner needs no repeated pulse.
+with a recoverable failure. In UIKit, use notification feedback for the same
+outcomes. The spinner needs no repeated pulse.
 
 Represent each completion as a new event so two successful saves both produce
 feedback. Decide whether a result still belongs to the active UI if the user
 leaves while saving. Test fast and slow saves, consecutive saves, and cancellation.
 If feedback feels disconnected, fix the state transition before its strength.
-The [SwiftUI example](swiftui-feedback.md) consumes these outcome events.
+The [SwiftUI example](standard-feedback.md) consumes these outcome events.
 
 ### Snap: make a useful alignment detectable
 
 A crop handle enters alignment and the guide appears. Start with a light impact
-or compare a rigid impact if the contact should feel firm. Use `.selection` for
-a control with several equal steps. Sound may add little to an editing tool.
+or compare a rigid impact on iOS 13+ if the contact should feel firm. Use
+`.selection` for a control with several equal steps. Sound may add little to
+an editing tool.
 
 Emit on entry into alignment. Require movement beyond a slightly wider release
 boundary before the snap can occur again; this prevents tiny movements near the
 edge from causing repeated feedback. Test approach, reversal, and rapid dragging.
-Use SwiftUI first. If distinct direct events need tighter control than view
-updates provide, use the UIKit path described in the implementation reference.
+Use the owning framework's standard feedback first. For a SwiftUI gesture whose
+distinct events need tighter control than view updates provide, use the UIKit
+generator path in the [standard feedback reference](standard-feedback.md).
 
 ### Reveal: let the user feel a transformation
 
