@@ -7,7 +7,12 @@ tags: javascript, cache, memoization, performance
 
 ## Cache Repeated Function Calls
 
-Use a module-level Map to cache function results when the same function is called repeatedly with the same inputs during render.
+Cache a pure calculation when profiling shows repeated work. Keep the cache at
+the narrowest useful lifetime: a render or request for user data, and a bounded
+module cache only for stable, non-sensitive inputs. React Compiler may already
+memoize calculations inside components and hooks. The example below only avoids
+duplicate names within one render; its `Map` is rebuilt on the next render and
+may cost more than it saves when most names are unique.
 
 **Incorrect (redundant computation):**
 
@@ -26,27 +31,19 @@ function ProjectList({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Correct (cached results):**
+**Correct (deduplicate within this render):**
 
 ```typescript
-// Module-level cache
-const slugifyCache = new Map<string, string>()
-
-function cachedSlugify(text: string): string {
-  if (slugifyCache.has(text)) {
-    return slugifyCache.get(text)!
-  }
-  const result = slugify(text)
-  slugifyCache.set(text, result)
-  return result
-}
-
 function ProjectList({ projects }: { projects: Project[] }) {
+  const slugs = new Map<string, string>()
   return (
     <div>
       {projects.map(project => {
-        // Computed only once per unique project name
-        const slug = cachedSlugify(project.name)
+        let slug = slugs.get(project.name)
+        if (slug === undefined) {
+          slug = slugify(project.name)
+          slugs.set(project.name, slug)
+        }
 
         return <ProjectCard key={project.id} slug={slug} />
       })}
@@ -55,26 +52,9 @@ function ProjectList({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Simpler pattern for single-value functions:**
-
-```typescript
-let isLoggedInCache: boolean | null = null
-
-function isLoggedIn(): boolean {
-  if (isLoggedInCache !== null) {
-    return isLoggedInCache
-  }
-
-  isLoggedInCache = document.cookie.includes('auth=')
-  return isLoggedInCache
-}
-
-// Clear cache when auth changes
-function onAuthChange() {
-  isLoggedInCache = null
-}
-```
-
-Use a Map (not a hook) so it works everywhere: utilities, event handlers, not just React components.
+If the same input array stays stable across renders and React Compiler is not
+handling this calculation, compare a component-level `useMemo` against the
+uncached version. Do not keep login, permission, or request-derived results in
+a module cache.
 
 Reference: [How we made the Vercel Dashboard twice as fast](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)

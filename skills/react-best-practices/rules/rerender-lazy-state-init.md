@@ -12,47 +12,30 @@ Pass a function to `useState` for expensive initial values. Without the function
 **Incorrect (runs on every render):**
 
 ```tsx
-function FilteredList({ items }: { items: Item[] }) {
-  // buildSearchIndex() runs on EVERY render, even after initialization
-  const [searchIndex, setSearchIndex] = useState(buildSearchIndex(items))
-  const [query, setQuery] = useState('')
-
-  // When query changes, buildSearchIndex runs again unnecessarily
-  return <SearchResults index={searchIndex} query={query} />
-}
-
-function UserProfile() {
-  // JSON.parse runs on every render
-  const [settings, setSettings] = useState(
-    JSON.parse(localStorage.getItem('settings') || '{}')
-  )
-
-  return <SettingsForm settings={settings} onChange={setSettings} />
+function Editor() {
+  // The initial draft is rebuilt on every render but used only once.
+  const [draft, setDraft] = useState(createEmptyDraft())
+  return <DraftEditor draft={draft} onChange={setDraft} />
 }
 ```
 
-**Correct (runs only once):**
+**Correct (defers creation to initialization):**
 
 ```tsx
-function FilteredList({ items }: { items: Item[] }) {
-  // buildSearchIndex() runs ONLY on initial render
-  const [searchIndex, setSearchIndex] = useState(() => buildSearchIndex(items))
-  const [query, setQuery] = useState('')
-
-  return <SearchResults index={searchIndex} query={query} />
-}
-
-function UserProfile() {
-  // JSON.parse runs only on initial render
-  const [settings, setSettings] = useState(() => {
-    const stored = localStorage.getItem('settings')
-    return stored ? JSON.parse(stored) : {}
-  })
-
-  return <SettingsForm settings={settings} onChange={setSettings} />
+function Editor() {
+  // The draft is created for initialization, not every update.
+  const [draft, setDraft] = useState(() => createEmptyDraft())
+  return <DraftEditor draft={draft} onChange={setDraft} />
 }
 ```
 
-Use lazy initialization when computing initial values from localStorage/sessionStorage, building data structures (indexes, maps), reading from the DOM, or performing heavy transformations.
+Use lazy initialization for expensive, pure initial state. If a value must
+follow changing props, derive it during render or memoize the calculation
+instead of freezing it in state. In server-rendered apps, the initializer also
+runs during server rendering: DOM or browser-storage reads can throw or produce
+a different first client render and a hydration mismatch. Use a server-provided
+initial value or an intentional client-only/post-hydration path for that data.
+React Strict Mode may call an initializer twice in development, so it must stay
+pure ([React `useState`](https://react.dev/reference/react/useState)).
 
 For simple primitives (`useState(0)`), direct references (`useState(props.value)`), or cheap literals (`useState({})`), the function form is unnecessary.

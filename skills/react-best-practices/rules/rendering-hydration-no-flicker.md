@@ -1,13 +1,16 @@
 ---
-title: Prevent Hydration Mismatch Without Flickering
+title: Prevent Theme Flicker Without Hydration Mismatch
 impact: MEDIUM
-impactDescription: avoids visual flicker and hydration errors
-tags: rendering, ssr, hydration, localStorage, flicker
+impactDescription: keeps the first paint consistent with hydration
+tags: rendering, ssr, hydration, theme, flicker
 ---
 
-## Prevent Hydration Mismatch Without Flickering
+## Prevent Theme Flicker Without Hydration Mismatch
 
-When rendering content that depends on client-side storage (localStorage, cookies), avoid both SSR breakage and post-hydration flickering by injecting a synchronous script that updates the DOM before React hydrates.
+The server and the first client render must produce matching markup. A script
+that changes a React-owned element between server rendering and hydration can
+create a mismatch even if it removes a visible theme flash. React does not
+guarantee that it will repair differing attributes during hydration.
 
 **Incorrect (breaks SSR):**
 
@@ -48,35 +51,45 @@ function ThemeWrapper({ children }: { children: ReactNode }) {
 }
 ```
 
-Component first renders with default value (`light`), then updates after hydration, causing a visible flash of incorrect content.
+Component first renders with default value (`light`), then updates after
+hydration, causing a visible flash of incorrect content.
 
-**Correct (no flicker, no hydration mismatch):**
+Prefer a theme value the server can know, such as a preference cookie. Render
+the same value into the HTML and the client's initial props. After hydration,
+later user changes can update both the UI and the cookie. If the system color
+scheme is enough, CSS `prefers-color-scheme` avoids a client-storage read.
+
+For example, have the framework's server entry read and validate the cookie,
+then pass that same value to the client during hydration:
 
 ```tsx
-function ThemeWrapper({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <div id="theme-wrapper">
-        {children}
-      </div>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              try {
-                var theme = localStorage.getItem('theme') || 'light';
-                var el = document.getElementById('theme-wrapper');
-                if (el) el.className = theme;
-              } catch (e) {}
-            })();
-          `,
-        }}
-      />
-    </>
-  )
+import type { ReactNode } from 'react'
+
+type Theme = 'light' | 'dark'
+
+function ThemeShell({
+  initialTheme,
+  children,
+}: {
+  initialTheme: Theme
+  children: ReactNode
+}) {
+  return <div data-theme={initialTheme}>{children}</div>
 }
 ```
 
-The inline script executes synchronously before showing the element, ensuring the DOM already has the correct value. No flickering, no hydration mismatch.
+The server render and initial client render must receive the same
+`initialTheme`. Wire up later user changes with the app's existing theme state
+and cookie updates.
 
-This pattern is especially useful for theme toggles, user preferences, authentication states, and any client-only data that should render immediately without flashing default values.
+For a localStorage-only preference, the server cannot know the value. Choose
+the tradeoff deliberately: use a framework-supported pre-paint theme script
+only when it works with the app's Content Security Policy and hydration model,
+or accept a post-hydration update. Do not copy a script that mutates a
+React-owned element and claim it guarantees both no flicker and no mismatch.
+
+Check the rendered first paint and hydration on a fresh load, with JavaScript
+delayed, under the app's real CSP and theme choices.
+
+References: [React hydration](https://react.dev/reference/react-dom/client/hydrateRoot),
+[Next.js hydration errors](https://nextjs.org/docs/messages/react-hydration-error).

@@ -217,24 +217,41 @@ prototype retention and cleanup.
 
 - [vercel-labs/agent-skills / skills/react-best-practices](https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/react-best-practices) — commit `063bee94c3f4df8453406c830b0a7df0f2860278`. Upstream repo README and skill frontmatter claim MIT; no license file found at this revision.
 
-Keeps the upstream rule files and the skill's category index. Local name is
-`react-best-practices` (upstream frontmatter name is `vercel-react-best-practices`).
+Keeps all 70 upstream rule topics and a task-based index.
+`client-event-listeners` retains the shared-listener pattern with an app-owned
+boundary instead of an SWR subscription and module-wide callback registry.
+`js-cache-storage` retains the repeated-read pattern with a bounded operation
+example instead of a module-level storage or cookie cache. Local name is
+`react-best-practices` (upstream frontmatter name is
+`vercel-react-best-practices`).
 Omits the compiled `AGENTS.md`, contributor README, metadata, rule template, and
 section compiler files. Origin notes and license frontmatter are omitted from the
 skill. Description is limited to React or Next performance work (waterfalls,
 bundle size, server rendering, data fetching, re-renders) rather than upstream's
 broader write/review/refactor trigger. When to Apply stays limited to
-performance work. How to Use sits above Quick Reference and tells the agent to
-pick matching prefixes from the request, or the diff when the skill is a
-review reference, then open only the linked files whose ids start with those
-prefixes and whose one-liners match that same source. When it is a review
-reference, report findings and
-leave edits to the parent; otherwise apply the opened files. Quick Reference
-entries link to the matching rule files. Two index
-one-liners differ from upstream so they name the file's actual API or fix:
+performance work. The entrypoint retains upstream category priorities as a
+triage aid, treats actual impact as workload-dependent, requires before/after
+measurement, and checks project versions and existing architecture. How to Use
+sits above Quick Reference and selects matching prefixes from the bottleneck,
+task, or diff when the skill is a review
+reference, then opens only linked files whose ids and one-liners match. As a
+review reference, it reports findings and leaves edits to the parent;
+otherwise it applies only fitting rules. Quick Reference entries link to the
+matching rule files. Two original index one-liners differ from upstream so
+they name the file's actual API or fix:
 `advanced-use-latest` (`useEffectEvent`) and `bundle-barrel-imports` (barrel-file
-import cost). Trailing whitespace is stripped from copied rule files. Automatic
-discovery stays enabled.
+import cost). Additional one-liners reflect the adapted caching, SWR, and
+hydration guidance. The cross-request LRU example caches only immutable,
+versioned public data and requires access scope and invalidation for mutable
+data. Function caching excludes auth state. SWR examples apply only when SWR is
+already the project's data layer and scope
+session-dependent keys to identity and authorization. The hydration guide
+replaces a DOM-mutating inline script with server-consistent theme guidance.
+The memoization rule follows React Compiler guidance without urging removal
+of existing memoization. The lazy initializer
+example uses pure state instead of browser storage or changing props. Trailing
+whitespace is stripped from copied rule files. Automatic discovery stays
+enabled.
 
 ## react-doctor
 

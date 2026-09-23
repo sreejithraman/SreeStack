@@ -1,70 +1,40 @@
 ---
-title: Cache Storage API Calls
+title: Bound Repeated Storage Reads
 impact: LOW-MEDIUM
-impactDescription: reduces expensive I/O
+impactDescription: avoids repeated synchronous reads in measured hot paths
 tags: javascript, localStorage, storage, caching, performance
 ---
 
-## Cache Storage API Calls
+## Bound Repeated Storage Reads
 
-`localStorage`, `sessionStorage`, and `document.cookie` are synchronous and expensive. Cache reads in memory.
-
-**Incorrect (reads storage on every call):**
-
-```typescript
-function getTheme() {
-  return localStorage.getItem('theme') ?? 'light'
-}
-// Called 10 times = 10 storage reads
-```
-
-**Correct (Map cache):**
+Browser storage reads are synchronous. If a measured operation reads the same
+value repeatedly, read it once for that operation:
 
 ```typescript
-const storageCache = new Map<string, string | null>()
-
-function getLocalStorage(key: string) {
-  if (!storageCache.has(key)) {
-    storageCache.set(key, localStorage.getItem(key))
+function exportRows(rows: Row[]) {
+  // Called from a client-side user action.
+  let format: 'json' | 'csv' = 'csv'
+  try {
+    if (localStorage.getItem('export-format') === 'json') format = 'json'
+  } catch {
+    // Storage can be blocked; keep the default.
   }
-  return storageCache.get(key)
-}
-
-function setLocalStorage(key: string, value: string) {
-  localStorage.setItem(key, value)
-  storageCache.set(key, value)  // keep cache in sync
+  return rows.map(row => formatRow(row, format))
 }
 ```
 
-Use a Map (not a hook) so it works everywhere: utilities, event handlers, not just React components.
+This snapshot is intentionally short-lived. If many components need the value,
+use the app's existing reactive state or store and keep it in sync with writes.
+A longer-lived cache needs a complete invalidation path for same-tab writes,
+other tabs, removals, and `clear()`; the `storage` event fires in other
+documents, not the writer, and its key is `null` for `clear()`. Avoid a
+module-level cache for session-dependent values or cookies whose changes the
+app cannot observe reliably.
 
-**Cookie caching:**
+Read browser storage only on the client. In a server-rendered view, choose an
+initial value that agrees with hydration or use an intentional post-hydration
+path; see [theme hydration](rendering-hydration-no-flicker.md).
 
-```typescript
-let cookieCache: Record<string, string> | null = null
-
-function getCookie(name: string) {
-  if (!cookieCache) {
-    cookieCache = Object.fromEntries(
-      document.cookie.split('; ').map(c => c.split('='))
-    )
-  }
-  return cookieCache[name]
-}
-```
-
-**Important (invalidate on external changes):**
-
-If storage can change externally (another tab, server-set cookies), invalidate cache:
-
-```typescript
-window.addEventListener('storage', (e) => {
-  if (e.key) storageCache.delete(e.key)
-})
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    storageCache.clear()
-  }
-})
-```
+References: [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API),
+[storage event](https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event),
+[StorageEvent](https://developer.mozilla.org/en-US/docs/Web/API/StorageEvent).

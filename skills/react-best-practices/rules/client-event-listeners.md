@@ -1,74 +1,55 @@
 ---
-title: Deduplicate Global Event Listeners
+title: Share Repeated Global Event Listeners
 impact: LOW
-impactDescription: single listener for N components
-tags: client, swr, event-listeners, subscription
+impactDescription: can reduce duplicate handlers for the same global event
+tags: client, event-listeners, subscription
 ---
 
-## Deduplicate Global Event Listeners
+## Share Repeated Global Event Listeners
 
-Use `useSWRSubscription()` to share global event listeners across component instances.
+When profiling shows many components doing duplicate work for the same global
+event, give the listener one owner at the relevant app or feature boundary.
+The browser can handle multiple listeners; their count alone is not a reason to
+add a global registry or a new data-fetching dependency.
 
-**Incorrect (N instances = N listeners):**
+For related shortcuts owned by one feature, one effect can dispatch both:
 
 ```tsx
-function useKeyboardShortcut(key: string, callback: () => void) {
+import { useEffect } from 'react'
+
+function EditorShortcuts({
+  save,
+  closePreview,
+}: {
+  save: () => void
+  closePreview: () => void
+}) {
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === key) {
-        callback()
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault()
+        save()
+      } else if (event.key === 'Escape') {
+        closePreview()
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [key, callback])
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [save, closePreview])
+
+  return null
 }
 ```
 
-When using the `useKeyboardShortcut` hook multiple times, each instance will register a new listener.
+Mount this owner once for the feature. When distant components need to register
+independent actions, use the project's existing shortcut or event manager. If
+none exists and measured duplicate work warrants one, create a feature-owned
+dispatcher. Keep each registration distinct, remove it on unmount, and scope
+the single listener and callbacks to the same lifetime. If the project already
+uses SWR subscriptions for this purpose, account for `SWRConfig` cache-provider
+boundaries rather than pairing provider-scoped listeners with a module-global
+callback map.
 
-**Correct (N instances = 1 listener):**
-
-```tsx
-import useSWRSubscription from 'swr/subscription'
-
-// Module-level Map to track callbacks per key
-const keyCallbacks = new Map<string, Set<() => void>>()
-
-function useKeyboardShortcut(key: string, callback: () => void) {
-  // Register this callback in the Map
-  useEffect(() => {
-    if (!keyCallbacks.has(key)) {
-      keyCallbacks.set(key, new Set())
-    }
-    keyCallbacks.get(key)!.add(callback)
-
-    return () => {
-      const set = keyCallbacks.get(key)
-      if (set) {
-        set.delete(callback)
-        if (set.size === 0) {
-          keyCallbacks.delete(key)
-        }
-      }
-    }
-  }, [key, callback])
-
-  useSWRSubscription('global-keydown', () => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.metaKey && keyCallbacks.has(e.key)) {
-        keyCallbacks.get(e.key)!.forEach(cb => cb())
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  })
-}
-
-function Profile() {
-  // Multiple shortcuts will share the same listener
-  useKeyboardShortcut('p', () => { /* ... */ })
-  useKeyboardShortcut('k', () => { /* ... */ })
-  // ...
-}
-```
+Reference: [SWR subscription](https://swr.vercel.app/docs/subscription),
+[SWR cache providers](https://swr.vercel.app/docs/advanced/cache).
