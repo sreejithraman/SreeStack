@@ -229,10 +229,11 @@ section compiler files. Origin notes and license frontmatter are omitted from th
 skill. Description is limited to React or Next performance work (waterfalls,
 bundle size, server rendering, data fetching, re-renders) rather than upstream's
 broader write/review/refactor trigger. When to Apply stays limited to
-performance work. The entrypoint treats rule impact as workload-dependent,
-requires before/after measurement, and checks project versions and existing
-architecture. How to Use sits above Quick Reference and selects matching
-prefixes from the bottleneck, task, or diff when the skill is a review
+performance work. The entrypoint retains upstream category priorities as a
+triage aid, treats actual impact as workload-dependent, requires before/after
+measurement, and checks project versions and existing architecture. How to Use
+sits above Quick Reference and selects matching prefixes from the bottleneck,
+task, or diff when the skill is a review
 reference, then opens only linked files whose ids and one-liners match. As a
 review reference, it reports findings and leaves edits to the parent;
 otherwise it applies only fitting rules. Quick Reference entries link to the

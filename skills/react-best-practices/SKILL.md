@@ -19,18 +19,18 @@ Reference these guidelines when:
 - Refactoring React/Next.js for load time or re-renders
 - Optimizing bundle size or load times
 
-## Rule Categories
+## Rule Categories by Priority
 
-| Category | Prefix |
-|----------|--------|
-| Eliminating Waterfalls | `async-` |
-| Bundle Size Optimization | `bundle-` |
-| Server-Side Performance | `server-` |
-| Client-Side Data, Events, and Storage | `client-` |
-| Re-render Optimization | `rerender-` |
-| Rendering Performance | `rendering-` |
-| JavaScript Performance | `js-` |
-| Advanced Patterns | `advanced-` |
+| Priority | Category | Impact | Prefix |
+|----------|----------|--------|--------|
+| 1 | Eliminating Waterfalls | CRITICAL | `async-` |
+| 2 | Bundle Size Optimization | CRITICAL | `bundle-` |
+| 3 | Server-Side Performance | HIGH | `server-` |
+| 4 | Client-Side Data, Events, and Storage | MEDIUM-HIGH | `client-` |
+| 5 | Re-render Optimization | MEDIUM | `rerender-` |
+| 6 | Rendering Performance | MEDIUM | `rendering-` |
+| 7 | JavaScript Performance | LOW-MEDIUM | `js-` |
+| 8 | Advanced Patterns | LOW | `advanced-` |
 
 ## How to Use
 
@@ -42,7 +42,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 
 ## Quick Reference
 
-### Eliminating Waterfalls
+### 1. Eliminating Waterfalls (CRITICAL)
 
 - [`async-cheap-condition-before-await`](rules/async-cheap-condition-before-await.md) - Check cheap sync conditions before awaiting flags or remote values
 - [`async-defer-await`](rules/async-defer-await.md) - Move await into branches where actually used
@@ -51,7 +51,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`async-api-routes`](rules/async-api-routes.md) - Start promises early, await late in API routes
 - [`async-suspense-boundaries`](rules/async-suspense-boundaries.md) - Use Suspense to stream content
 
-### Bundle Size Optimization
+### 2. Bundle Size Optimization (CRITICAL)
 
 - [`bundle-barrel-imports`](rules/bundle-barrel-imports.md) - Avoid barrel-file import cost
 - [`bundle-analyzable-paths`](rules/bundle-analyzable-paths.md) - Prefer statically analyzable import and file-system paths to avoid broad bundles and traces
@@ -60,7 +60,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`bundle-conditional`](rules/bundle-conditional.md) - Load modules only when feature is activated
 - [`bundle-preload`](rules/bundle-preload.md) - Preload on hover/focus for perceived speed
 
-### Server-Side Performance
+### 3. Server-Side Performance (HIGH)
 
 - [`server-auth-actions`](rules/server-auth-actions.md) - Authenticate server actions like API routes
 - [`server-cache-react`](rules/server-cache-react.md) - Use React.cache() for per-request deduplication
@@ -73,14 +73,14 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`server-parallel-nested-fetching`](rules/server-parallel-nested-fetching.md) - Chain nested fetches per item in Promise.all
 - [`server-after-nonblocking`](rules/server-after-nonblocking.md) - Use after() for non-blocking operations
 
-### Client-Side Data, Events, and Storage
+### 4. Client-Side Data, Events, and Storage (MEDIUM-HIGH)
 
 - [`client-swr-dedup`](rules/client-swr-dedup.md) - Use existing SWR caching for request deduplication
 - [`client-event-listeners`](rules/client-event-listeners.md) - Share repeated global listeners at an app-owned boundary
 - [`client-passive-event-listeners`](rules/client-passive-event-listeners.md) - Use passive listeners for scroll
 - [`client-localstorage-schema`](rules/client-localstorage-schema.md) - Version and minimize localStorage data
 
-### Re-render Optimization
+### 5. Re-render Optimization (MEDIUM)
 
 - [`rerender-defer-reads`](rules/rerender-defer-reads.md) - Don't subscribe to state only used in callbacks
 - [`rerender-memo`](rules/rerender-memo.md) - Extract expensive work into memoized components
@@ -98,7 +98,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`rerender-use-ref-transient-values`](rules/rerender-use-ref-transient-values.md) - Use refs for transient frequent values
 - [`rerender-no-inline-components`](rules/rerender-no-inline-components.md) - Don't define components inside components
 
-### Rendering Performance
+### 6. Rendering Performance (MEDIUM)
 
 - [`rendering-animate-svg-wrapper`](rules/rendering-animate-svg-wrapper.md) - Animate div wrapper, not SVG element
 - [`rendering-content-visibility`](rules/rendering-content-visibility.md) - Use content-visibility for long lists
@@ -112,7 +112,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`rendering-resource-hints`](rules/rendering-resource-hints.md) - Use React DOM resource hints for preloading
 - [`rendering-script-defer-async`](rules/rendering-script-defer-async.md) - Use defer or async on script tags
 
-### JavaScript Performance
+### 7. JavaScript Performance (LOW-MEDIUM)
 
 - [`js-batch-dom-css`](rules/js-batch-dom-css.md) - Group CSS changes via classes or cssText
 - [`js-index-maps`](rules/js-index-maps.md) - Build Map for repeated lookups
@@ -129,7 +129,7 @@ Rule files provide the relevant rationale, examples, tradeoffs, and references.
 - [`js-flatmap-filter`](rules/js-flatmap-filter.md) - Use flatMap to map and filter in one pass
 - [`js-request-idle-callback`](rules/js-request-idle-callback.md) - Defer non-critical work to browser idle time
 
-### Advanced Patterns
+### 8. Advanced Patterns (LOW)
 
 - [`advanced-effect-event-deps`](rules/advanced-effect-event-deps.md) - Don't put `useEffectEvent` results in effect deps
 - [`advanced-event-handler-refs`](rules/advanced-event-handler-refs.md) - Store event handlers in refs
