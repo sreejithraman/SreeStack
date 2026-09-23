@@ -1,13 +1,15 @@
 ---
 name: ios-haptics
-description: Design, implement, and tune haptics for SwiftUI apps targeting iOS 26+. Use for system feedback, custom Core Haptics or AHAP patterns, matching touch with sound and motion, and diagnosing missing, repeated, or mistimed feedback.
+description: Design, implement, tune, or diagnose haptics in SwiftUI and UIKit iOS apps. Use for system tactile feedback, custom Core Haptics or AHAP patterns, and touch coordinated with motion or sound.
 ---
 
 # iOS haptics
 
-Build feedback for SwiftUI apps with an iOS 26 minimum deployment target.
-Use `sensoryFeedback` for standard interactions and Core Haptics when the design
-needs an authored pattern. Hardware support and user preferences still matter.
+Build tactile feedback for iOS apps using SwiftUI or UIKit. Preserve the app's
+deployment target and choose APIs available to it. Use system feedback for
+standard interactions and Core Haptics when the design needs an authored
+pattern. Hardware support and user preferences still matter. Use `animate` for
+visual motion when the two need coordination.
 
 ## Design the interaction first
 
@@ -39,16 +41,12 @@ tuning feedback. It covers system meanings, pattern controls, shared timing, and
 worked designs. Choose rhythm and duration before strength; stronger feedback
 cannot repair the wrong trigger.
 
-Start with SwiftUI feedback:
-
-- `.selection` for discrete changes.
-- `.impact` with suitable weight or flexibility for contact and snapping.
-- `.success`, `.warning`, or `.error` for a meaningful outcome.
-
-Read [SwiftUI feedback](references/swiftui-feedback.md) when implementing these
-choices. Keep triggers tied to real state transitions or explicit events. This
-reference also covers direct UIKit emission when an existing UIKit control or
-an event that must bypass SwiftUI update timing calls for it.
+Start with system feedback: selection for discrete changes, impact for contact
+and snapping, and success, warning, or error for meaningful outcomes. SwiftUI
+uses `sensoryFeedback`; UIKit uses selection, impact, and notification generators.
+Read [Standard feedback](references/standard-feedback.md) for triggers, API
+availability, and implementation. Tie feedback to real state transitions or
+explicit events.
 
 Use Core Haptics when the design needs a distinct rhythm, an intensity envelope,
 a sustained texture, or authored audio and touch on one timeline. Read
@@ -74,10 +72,10 @@ haptic with the new event timing rather than an old animation delay.
 
 ## Verify behavior, then tune on a device
 
-Compile examples and changes for iOS 26 using the project's Swift concurrency
-settings. Check ordinary use, repeated outcomes, failure, cancellation, and
-preferences. Add tests for meaningful event-selection or lifecycle branches;
-a mock proves requests, not sensations.
+Compile examples and changes for the app's supported iOS versions using the
+project's Swift concurrency settings. Check ordinary use, repeated outcomes,
+failure, cancellation, and preferences. Add tests for meaningful event-selection
+or lifecycle branches; a mock proves requests, not sensations.
 
 Compare the proposed feel on supported physical hardware in the real flow:
 
