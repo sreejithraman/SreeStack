@@ -353,6 +353,10 @@ Reviewer references:
 
 - [mattpocock/skills / skills/engineering/tdd](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/tdd) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
+Automatic discovery includes feature and bug work, but not ordinary
+integration-test additions by themselves. Seams established by the spec or
+project conventions count as pre-agreed; user confirmation is reserved for
+material unresolved choices.
 The review stage uses `review-fix-loop`.
 
 ## teach
