@@ -5,44 +5,44 @@ description: "Use for React or Next.js performance work: waterfalls, bundle size
 
 # React Best Practices
 
-Comprehensive performance optimization guide for React and Next.js applications. Contains 70 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
+Performance patterns for React and Next.js applications. The 68 rules are
+candidates, not a checklist or a promise of impact. Locate the bottleneck in
+the actual workload before changing code. Check the project's React, Next.js,
+compiler, and data-layer choices; compare the same workload before and after.
 
 ## When to Apply
 
 Reference these guidelines when:
+
 - Eliminating waterfalls in data fetching (client or server-side)
 - Reviewing code for performance issues
 - Refactoring React/Next.js for load time or re-renders
 - Optimizing bundle size or load times
 
-## Rule Categories by Priority
+## Rule Categories
 
-| Priority | Category | Impact | Prefix |
-|----------|----------|--------|--------|
-| 1 | Eliminating Waterfalls | CRITICAL | `async-` |
-| 2 | Bundle Size Optimization | CRITICAL | `bundle-` |
-| 3 | Server-Side Performance | HIGH | `server-` |
-| 4 | Client-Side Data Fetching | MEDIUM-HIGH | `client-` |
-| 5 | Re-render Optimization | MEDIUM | `rerender-` |
-| 6 | Rendering Performance | MEDIUM | `rendering-` |
-| 7 | JavaScript Performance | LOW-MEDIUM | `js-` |
-| 8 | Advanced Patterns | LOW | `advanced-` |
+| Category | Prefix |
+|----------|--------|
+| Eliminating Waterfalls | `async-` |
+| Bundle Size Optimization | `bundle-` |
+| Server-Side Performance | `server-` |
+| Client-Side Data Fetching | `client-` |
+| Re-render Optimization | `rerender-` |
+| Rendering Performance | `rendering-` |
+| JavaScript Performance | `js-` |
+| Advanced Patterns | `advanced-` |
 
 ## How to Use
 
-1. From the category table, pick the prefixes that match the current task, or the diff when this skill is a review reference.
+1. From the category table, pick the prefixes that match the measured bottleneck or the current task; when this skill is a review reference, use the diff.
 2. Open only the Quick Reference links whose ids start with those prefixes and whose one-liners match the request, or the diff when this skill is a review reference.
-3. When this skill is a review reference, report findings from the opened files and leave edits to the parent. Otherwise apply the opened files. The one-liners are only for choosing which files to open.
+3. When this skill is a review reference, report findings from the opened files and leave edits to the parent. Otherwise apply only rules that fit the project's versions and existing architecture. The one-liners are only for choosing which files to open.
 
-Each rule file contains:
-- Brief explanation of why it matters
-- Incorrect code example with explanation
-- Correct code example with explanation
-- Additional context and references
+Rule files provide the relevant rationale, examples, tradeoffs, and references.
 
 ## Quick Reference
 
-### 1. Eliminating Waterfalls (CRITICAL)
+### Eliminating Waterfalls
 
 - [`async-cheap-condition-before-await`](rules/async-cheap-condition-before-await.md) - Check cheap sync conditions before awaiting flags or remote values
 - [`async-defer-await`](rules/async-defer-await.md) - Move await into branches where actually used
@@ -51,7 +51,7 @@ Each rule file contains:
 - [`async-api-routes`](rules/async-api-routes.md) - Start promises early, await late in API routes
 - [`async-suspense-boundaries`](rules/async-suspense-boundaries.md) - Use Suspense to stream content
 
-### 2. Bundle Size Optimization (CRITICAL)
+### Bundle Size Optimization
 
 - [`bundle-barrel-imports`](rules/bundle-barrel-imports.md) - Avoid barrel-file import cost
 - [`bundle-analyzable-paths`](rules/bundle-analyzable-paths.md) - Prefer statically analyzable import and file-system paths to avoid broad bundles and traces
@@ -60,11 +60,11 @@ Each rule file contains:
 - [`bundle-conditional`](rules/bundle-conditional.md) - Load modules only when feature is activated
 - [`bundle-preload`](rules/bundle-preload.md) - Preload on hover/focus for perceived speed
 
-### 3. Server-Side Performance (HIGH)
+### Server-Side Performance
 
 - [`server-auth-actions`](rules/server-auth-actions.md) - Authenticate server actions like API routes
 - [`server-cache-react`](rules/server-cache-react.md) - Use React.cache() for per-request deduplication
-- [`server-cache-lru`](rules/server-cache-lru.md) - Use LRU cache for cross-request caching
+- [`server-cache-lru`](rules/server-cache-lru.md) - Scope and invalidate cross-request caches of shared data
 - [`server-dedup-props`](rules/server-dedup-props.md) - Avoid duplicate serialization in RSC props
 - [`server-hoist-static-io`](rules/server-hoist-static-io.md) - Hoist static I/O (fonts, logos) to module level
 - [`server-no-shared-module-state`](rules/server-no-shared-module-state.md) - Avoid module-level mutable request state in RSC/SSR
@@ -73,14 +73,13 @@ Each rule file contains:
 - [`server-parallel-nested-fetching`](rules/server-parallel-nested-fetching.md) - Chain nested fetches per item in Promise.all
 - [`server-after-nonblocking`](rules/server-after-nonblocking.md) - Use after() for non-blocking operations
 
-### 4. Client-Side Data Fetching (MEDIUM-HIGH)
+### Client-Side Data Fetching
 
-- [`client-swr-dedup`](rules/client-swr-dedup.md) - Use SWR for automatic request deduplication
-- [`client-event-listeners`](rules/client-event-listeners.md) - Deduplicate global event listeners
+- [`client-swr-dedup`](rules/client-swr-dedup.md) - Use existing SWR caching for request deduplication
 - [`client-passive-event-listeners`](rules/client-passive-event-listeners.md) - Use passive listeners for scroll
 - [`client-localstorage-schema`](rules/client-localstorage-schema.md) - Version and minimize localStorage data
 
-### 5. Re-render Optimization (MEDIUM)
+### Re-render Optimization
 
 - [`rerender-defer-reads`](rules/rerender-defer-reads.md) - Don't subscribe to state only used in callbacks
 - [`rerender-memo`](rules/rerender-memo.md) - Extract expensive work into memoized components
@@ -98,13 +97,13 @@ Each rule file contains:
 - [`rerender-use-ref-transient-values`](rules/rerender-use-ref-transient-values.md) - Use refs for transient frequent values
 - [`rerender-no-inline-components`](rules/rerender-no-inline-components.md) - Don't define components inside components
 
-### 6. Rendering Performance (MEDIUM)
+### Rendering Performance
 
 - [`rendering-animate-svg-wrapper`](rules/rendering-animate-svg-wrapper.md) - Animate div wrapper, not SVG element
 - [`rendering-content-visibility`](rules/rendering-content-visibility.md) - Use content-visibility for long lists
 - [`rendering-hoist-jsx`](rules/rendering-hoist-jsx.md) - Extract static JSX outside components
 - [`rendering-svg-precision`](rules/rendering-svg-precision.md) - Reduce SVG coordinate precision
-- [`rendering-hydration-no-flicker`](rules/rendering-hydration-no-flicker.md) - Use inline script for client-only data
+- [`rendering-hydration-no-flicker`](rules/rendering-hydration-no-flicker.md) - Keep theme first paint and hydration consistent
 - [`rendering-hydration-suppress-warning`](rules/rendering-hydration-suppress-warning.md) - Suppress expected mismatches
 - [`rendering-activity`](rules/rendering-activity.md) - Use Activity component for show/hide
 - [`rendering-conditional-render`](rules/rendering-conditional-render.md) - Use ternary, not && for conditionals
@@ -112,13 +111,12 @@ Each rule file contains:
 - [`rendering-resource-hints`](rules/rendering-resource-hints.md) - Use React DOM resource hints for preloading
 - [`rendering-script-defer-async`](rules/rendering-script-defer-async.md) - Use defer or async on script tags
 
-### 7. JavaScript Performance (LOW-MEDIUM)
+### JavaScript Performance
 
 - [`js-batch-dom-css`](rules/js-batch-dom-css.md) - Group CSS changes via classes or cssText
 - [`js-index-maps`](rules/js-index-maps.md) - Build Map for repeated lookups
 - [`js-cache-property-access`](rules/js-cache-property-access.md) - Cache object properties in loops
-- [`js-cache-function-results`](rules/js-cache-function-results.md) - Cache function results in module-level Map
-- [`js-cache-storage`](rules/js-cache-storage.md) - Cache localStorage/sessionStorage reads
+- [`js-cache-function-results`](rules/js-cache-function-results.md) - Scope caches for repeated pure calculations
 - [`js-combine-iterations`](rules/js-combine-iterations.md) - Combine multiple filter/map into one loop
 - [`js-length-check-first`](rules/js-length-check-first.md) - Check array length before expensive comparison
 - [`js-early-exit`](rules/js-early-exit.md) - Return early from functions
@@ -129,7 +127,7 @@ Each rule file contains:
 - [`js-flatmap-filter`](rules/js-flatmap-filter.md) - Use flatMap to map and filter in one pass
 - [`js-request-idle-callback`](rules/js-request-idle-callback.md) - Defer non-critical work to browser idle time
 
-### 8. Advanced Patterns (LOW)
+### Advanced Patterns
 
 - [`advanced-effect-event-deps`](rules/advanced-effect-event-deps.md) - Don't put `useEffectEvent` results in effect deps
 - [`advanced-event-handler-refs`](rules/advanced-event-handler-refs.md) - Store event handlers in refs

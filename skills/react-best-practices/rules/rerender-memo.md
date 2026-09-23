@@ -41,4 +41,7 @@ function Profile({ user, loading }: Props) {
 }
 ```
 
-**Note:** If your project has [React Compiler](https://react.dev/learn/react-compiler) enabled, manual memoization with `memo()` and `useMemo()` is not necessary. The compiler automatically optimizes re-renders.
+**Note:** [React Compiler](https://react.dev/learn/react-compiler/introduction)
+usually removes the need for new manual memoization. Check whether this
+component is compiled before adding it. Leave existing memoization in place
+unless a measured change and tests justify removing it.
