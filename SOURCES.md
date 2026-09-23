@@ -146,7 +146,9 @@ Local-only skills need just an origin note.
 
 - [mattpocock/skills / skills/engineering/implement](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/implement) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Uses `review-fix-loop` to review, fix, and verify before committing.
+Uses `tdd` at seams inferred from the spec and project context rather than
+requiring user confirmation for every seam. Uses `review-fix-loop` to review,
+fix, and verify before committing.
 
 ## improve-codebase-architecture
 
@@ -353,6 +355,9 @@ Reviewer references:
 
 - [mattpocock/skills / skills/engineering/tdd](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/tdd) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
+Automatic discovery is limited to test-first work rather than ordinary
+integration-test requests. Test seams come from the requested behavior and
+project context; user confirmation is reserved for material unresolved choices.
 The review stage uses `review-fix-loop`.
 
 ## teach
