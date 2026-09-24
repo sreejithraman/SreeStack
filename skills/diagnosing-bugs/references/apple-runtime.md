@@ -34,6 +34,9 @@ only when it distinguishes a hypothesis.
 
 Done when one recorded target and build reproduce the exact symptom with a
 bounded pass/fail signal.
+For an unreplayable field crash, a report matched to the affected build can
+support the parent skill's provisional diagnosis; it does not satisfy this
+reproduction gate or verify a fix.
 
 ## Capture the smallest useful evidence
 

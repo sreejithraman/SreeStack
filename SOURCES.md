@@ -100,7 +100,9 @@ Local-only skills need just an origin note.
 - Local adaptation: adds conditional Apple-platform references for runtime,
   performance, and memory diagnosis. They use current Apple documentation and
   local Xcode capability discovery, with Instruments as the default profiler
-  and ETTrace as an optional project choice.
+  and ETTrace as an optional project choice. Allows provisional, artifact-backed
+  diagnosis when a runnable reproduction is unavailable without treating it as
+  verification of a fix.
 
 ## domain-modeling
 
