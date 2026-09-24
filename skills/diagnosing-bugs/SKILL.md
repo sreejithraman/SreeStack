@@ -67,7 +67,9 @@ The goal is not a clean repro but a **higher reproduction rate**. Loop the trigg
 
 ### When you genuinely cannot build a loop
 
-Stop and say so explicitly. List what you tried. Ask the user for: (a) access to whatever environment reproduces it, (b) a redacted captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or (c) permission to add temporary production instrumentation. Do **not** proceed to hypothesise without a loop.
+Stop and say so explicitly. List what you tried. Ask the user for: (a) access to whatever environment reproduces it, (b) a redacted captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or (c) permission to add temporary production instrumentation.
+
+An artifact that captures the exact symptom in the affected build but cannot be replayed supports a **provisional diagnosis**. Skip Phases 2 and 4, form ranked, falsifiable hypotheses, and compare their predictions with the artifact, code, or independent observations. State what the evidence supports and what remains untested. This path does not meet the loop criterion below; do not enter Phase 5 or claim a verified fix until a runnable reproduction is available. Without a loop or matching artifact, stop before hypothesising.
 
 ### Completion criterion — a tight loop that goes red
 
@@ -78,7 +80,7 @@ Phase 1 is done when the loop is **tight** and **red-capable**: you can name **o
 - [ ] **Fast** — seconds, not minutes.
 - [ ] **Agent-runnable** — you can run it unattended; a human in the loop only via `scripts/hitl-loop.template.sh`.
 
-If you catch yourself reading code to build a theory before this command exists, **stop — jumping straight to a hypothesis is the exact failure this skill prevents.** No red-capable command, no Phase 2.
+If you catch yourself reading code to build a theory before this command exists and have no matching artifact, **stop — jumping straight to a hypothesis is the exact failure this skill prevents.** No red-capable command, no Phase 2.
 
 ## Phase 2 — Reproduce + minimise
 
@@ -98,7 +100,7 @@ Why bother: a minimal repro shrinks the hypothesis space in Phase 3 (fewer movin
 
 Done when **every remaining element is load-bearing** — removing any one of them makes the loop go green.
 
-Do not proceed until you have reproduced **and** minimised.
+Do not proceed until you have reproduced **and** minimised. The provisional artifact path above skips this phase for diagnosis only.
 
 ## Phase 3 — Hypothesise
 

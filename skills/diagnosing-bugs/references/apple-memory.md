@@ -22,6 +22,9 @@ out this difference in
 Done when the expected lifetime or footprint is explicit, the observed signal
 is repeatable, and the investigation is classified as bounded use, object
 retention, an allocation leak, or memory-pressure termination.
+For an unreplayable field termination, a matching jetsam report can support
+provisional classification; it does not establish a repeatable signal or verify
+a fix.
 
 ## Inspect object lifetime
 
