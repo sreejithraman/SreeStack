@@ -88,7 +88,8 @@ Local-only skills need just an origin note.
   detail lives in its guide only.
 - Screenshot cleanup uses working copies; associative-array examples require
   Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
-  description, promotional text, and release-note guidance.
+  description, promotional text, and release-note guidance. Build-ID guidance
+  uses the `--build-id` flag required by the installed CLI.
 
 ## codebase-design
 
