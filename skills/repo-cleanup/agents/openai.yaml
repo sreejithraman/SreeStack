@@ -1,0 +1,7 @@
+interface:
+  display_name: "Repository cleanup"
+  short_description: "Clean up repository work and refresh its default branch"
+  default_prompt: "Use $repo-cleanup to clean up this repository."
+
+policy:
+  allow_implicit_invocation: true

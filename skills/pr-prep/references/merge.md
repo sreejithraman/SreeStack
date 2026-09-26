@@ -1,6 +1,7 @@
 # Merge
 
-Use only when `pr-prep` was invoked with `yolo` and the PR is ready.
+Use only when the user explicitly requested merging the scoped PR (including
+`/pr-prep yolo`) and the PR is ready.
 
 Before merging, recheck the PR’s current head and base, required checks,
 required approvals, unresolved review threads, and mergeability. Use results

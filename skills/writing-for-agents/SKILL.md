@@ -13,6 +13,8 @@ A **context pointer** is a reference held in the agent's context that names some
 
 A pointer does two jobs — state what the material is, and list the **branches** that should trigger reaching it (a branch is a distinct case the document handles, so different runs take different paths through it). Every word of an always-loaded pointer costs on every turn, so it earns even harder pruning than the body:
 
+Phrase each branch as a request or observable situation that should load the target. For a skill description, `Use when the user asks to clean up a finished task or unused worktree` is a trigger; keep the detailed capabilities and procedure in the skill body.
+
 - **Front-load the leading word** — the pointer is where it does its triggering work.
 - **One trigger per branch.** Synonyms that rename a single branch are one branch written twice; collapse them and keep only genuinely distinct branches.
 - **Cut identity the body already carries.**
