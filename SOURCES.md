@@ -441,7 +441,7 @@ Manual-only invocation: `disable-model-invocation: true` and
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 - Local adaptation: documents paired Claude Code and Codex invocation settings
-  for shared skills.
+  for shared skills and writes context pointers as request-shaped triggers.
 
 ## xcode-security-audit
 

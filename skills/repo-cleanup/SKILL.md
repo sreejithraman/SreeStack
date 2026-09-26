@@ -1,6 +1,6 @@
 ---
 name: repo-cleanup
-description: Clean up repository branches, worktree resources, review surfaces, and build output after finished or abandoned work, or during repository housekeeping. Safely refresh the local default branch.
+description: Use when the user asks to clean up finished or abandoned work, worktrees, or other repository housekeeping.
 ---
 
 # Repository cleanup
@@ -21,7 +21,9 @@ Clean up only resources whose owner and disposal reason are established. A merge
 2. **Check eligibility.** Inspect staged, unstaged, and untracked files in
    affected worktrees. A merged pull request establishes completion only for its
    merge-time source head; a branch tip reachable from its intended base is also complete.
-   An explicit request to abandon work establishes abandonment for that work.
+   An explicit request to abandon work establishes abandonment for its identified
+   commits and task-owned staged, unstaged, or untracked changes. Preserve
+   unrelated changes, ignored user data, and anything whose ownership is uncertain.
    For housekeeping, verify completion or abandonment separately for each
    branch or task. Preserve unique commits unless the user explicitly abandoned
    them or authorized their removal. Resolve deletion paths to explicit
@@ -36,6 +38,16 @@ Clean up only resources whose owner and disposal reason are established. A merge
    scoped to verified targets. Measure and remove exact task-owned build
    folders, keeping app data. Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
+
+   When worktree removal is in scope, identify an exact inactive worktree and
+   inspect its status, ignored files, HEAD, branch, and host ownership. Preserve
+   active worktrees and user data. A clean detached worktree can still hold
+   unique commits; remove it only when HEAD is reachable from a retained ref or
+   intended base, or the user explicitly abandoned those commits. Inspect a
+   host cleanup command's effects before using it; otherwise remove only a
+   worktree that is clean or contains solely identified, explicitly abandoned
+   task changes, with no retained ignored data. Leave the current worktree in
+   place for Codex.
 
    Before deleting any branch, recheck its tip and worktree use. For merged work,
    the tip must still equal the source head verified at merge time or be reachable
@@ -52,8 +64,9 @@ Clean up only resources whose owner and disposal reason are established. A merge
    appropriate base first; otherwise leave the worktree and branch in place.
    Delete a local branch only if no worktree holds it, using an atomic
    expected-old-tip check; see [git-update-ref](https://git-scm.com/docs/git-update-ref).
+   After deletion, remove its branch-specific Git config only if the branch name
+   remains absent; retain and report the config if that name has been recreated.
    This also covers squash-merged branches after their merge-time source head is verified.
-   Leave the current worktree itself in place for Codex to manage.
 
 4. **Refresh the local default branch (`main` here).** Fetch its configured
    upstream, or the repository's explicitly established authoritative remote
