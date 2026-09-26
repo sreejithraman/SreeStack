@@ -40,6 +40,12 @@ evidence, not the verdict.
    [macOS verification](references/macos.md). Use the same observe-act-observe
    loop for other interactive products with the best available interface tooling.
 
+   Check for an existing project verification skill. If its instructions apply
+   to the current app and environment, use its launch, health, drive, evidence,
+   and cleanup steps. Check the actual instance before driving. If the guide
+   has drifted, report the mismatch and use current platform guidance to
+   continue safely. Choose workflows and judge their results here.
+
 3. **Observe, act, observe.** Start from a known state and wait for the interface
    to settle. Identify the environment and external effects before exercising a
    consequential workflow. Use disposable accounts, fixtures, and provider test
