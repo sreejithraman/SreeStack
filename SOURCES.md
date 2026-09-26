@@ -198,8 +198,9 @@ only on request.
 
 Includes focused guidance for current platform materials and Liquid Glass rather
 than keeping a separate visual-effect skill. Redistributed behavior and access
-guidance and current SDK migration and feature guidance are folded into the
-normal SwiftUI workflow; automatic invocation remains framework- and task-based.
+guidance, button sizing and hit-region checks, and current SDK migration
+and feature guidance are folded into the normal SwiftUI workflow; automatic
+invocation remains framework- and task-based.
 
 ## uikit
 
