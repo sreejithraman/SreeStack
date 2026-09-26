@@ -51,7 +51,10 @@ steps into exact proposed changes, findings, and checks.
    disabled, error, and overflow states close to the action or content they
    describe. Prevent interrupted or repeated async work from letting an older
    result overwrite the current state. Prefer platform controls and strong
-   defaults over extra options; preserve valid activation and cancellation.
+   defaults over extra options; preserve valid activation and cancellation. When
+   sizing a button, inspect its visible bounds and hit region after styling;
+   compare the hit region, not the label frame, with the platform's
+   [button guidance](https://developer.apple.com/design/human-interface-guidelines/buttons).
 6. Preserve useful accessibility semantics. Expose the control's name, value,
    state, and actions, and keep focus and announcements aligned with the task and
    reading order rather than an incidental view hierarchy. Announce visible async
