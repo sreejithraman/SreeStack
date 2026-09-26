@@ -224,7 +224,7 @@ interface tools without a dependency on the Build iOS Apps plugin. An existing
 project verification skill supplies applicable launch and drive steps;
 `manual-verify` retains workflow selection and acceptance judgment.
 
-## post-merge-cleanup
+## repo-cleanup
 
 - Local source: `~/.agents/skills/post-merge-cleanup`; upstream origin unrecorded.
 

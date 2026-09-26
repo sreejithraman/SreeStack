@@ -36,9 +36,9 @@ precedence over `yolo`.
    the draft completion rules in the references.
 
 6. **Merge with `yolo`.** Once ready, read [merge.md](references/merge.md) and
-   merge the PR. After GitHub confirms the merge, run `/post-merge-cleanup`
-   with the PR, merge commit, branch, base, worktree, and known task-owned
-   resources. Without `yolo`, stop at readiness.
+   merge the PR. After GitHub confirms the merge, run `/repo-cleanup`
+   with the PR, merge commit, source head verified at merge time, branch, base,
+   worktree, and known task-owned resources. Without `yolo`, stop at readiness.
 
 Report the PR link, current head, verification results, readiness or merge
 result, cleanup result, and anything still needed.
