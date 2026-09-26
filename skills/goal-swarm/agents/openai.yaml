@@ -1,4 +1,4 @@
 interface:
   display_name: "Goal Swarm"
-  short_description: "Split a requested goal into child goals"
-  default_prompt: "Use $goal-swarm to complete this goal with independent child goals."
+  short_description: "Run a goal solo or with bounded child goals"
+  default_prompt: "Use $goal-swarm to define a measurable goal, choose solo or parallel work, verify delivery, and update its state."

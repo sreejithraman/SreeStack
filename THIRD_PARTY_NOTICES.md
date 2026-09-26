@@ -14,6 +14,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
 | Dietrich Gebert / Ponytail | review-fix-loop/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
 | Cursor | review-fix-loop/references/thermo.md | [MIT](licenses/cursor-plugins.txt) |
+| Lauren Tan / pstack | project-verification, change-safety, code-why, handoff, goal-swarm, and orchestration adaptations | [MIT](licenses/lauren-tan-pstack.txt) |
 | Anthropic skills | ui-design art-direction guidance | [Apache-2.0](licenses/anthropics-frontend-design.txt) ([upstream](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt)) |
 | Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |

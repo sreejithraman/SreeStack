@@ -18,6 +18,10 @@ Default scope: `git diff <resolved-base> --` plus contents from
 `git ls-files --others --exclude-standard`. This includes committed, staged,
 unstaged, and untracked work. Honor a narrower scope when requested.
 Gather requirements from the user, issues, or spec; repo standards; and checks.
+For code with plausible consumers beyond the diff, such as persisted data, wire
+formats, or lifecycle behavior, use [change-safety](../change-safety/SKILL.md)
+to test the important assumptions. Include its evidence and unresolved gaps in
+the review brief, and recheck assumptions that later fixes affect.
 Record the base, head, diff, and untracked contents for each round. Every
 reviewer reads that complete scope in every round, including the integrated
 work of all authors. Keep the original base when fixes change the diff.

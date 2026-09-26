@@ -26,6 +26,8 @@ Read each skill before use. Some workflows need host tools for goals, agents,
 or browser control; others need GitHub CLI, Antigravity CLI, Tailscale, or Apple
 development tools. Available tools and invocation settings vary by host.
 This collection has no single runtime that supports every skill.
+`handoff` is manual-only: invoke it explicitly and supply the handoff note path
+when resuming in a new session. A plain resume request does not load that skill.
 `add-to-snip-snap` requires the `snipsnap` command on `PATH`; verify it with
 `command -v snipsnap`. Installing or copying only the GUI app does not expose
 the CLI automatically. A Snip Snap Homebrew cask release that declares the
@@ -111,6 +113,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — ideas for `project-verification`, `change-safety`, `code-why`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.

@@ -91,6 +91,22 @@ Local-only skills need just an origin note.
   description, promotional text, and release-note guidance. Build-ID guidance
   uses the `--build-id` flag required by the installed CLI.
 
+## change-safety
+
+- [cursor/plugins / pstack/skills/blast-radius](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/blast-radius) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Locally written, scoped to change-safety questions and subtle diffs. Preserves
+the safety-assumption and executable-proof method without pstack's mandatory
+arena, prose-cleanup, or Cursor-specific routing.
+
+## code-why
+
+- [cursor/plugins / pstack/skills/why](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/why) — `SKILL.md` and `references/epistemics.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Locally written around code-anchored historical evidence and calibrated claims.
+Searches sources proportionally without mandatory parallel investigators,
+model settings, or Cursor MCP discovery.
+
 ## codebase-design
 
 - [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/codebase-design) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
@@ -113,9 +129,16 @@ Local-only skills need just an origin note.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
-## goal-bee
+## goal-swarm
 
-- Local: `skills/goal-bee` (SreeStack).
+- Local: `skills/goal-swarm` (SreeStack).
+- [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Locally written goal lifecycle that chooses solo or parallel execution within
+an explicitly requested parent goal. It uses pstack's up-front split and
+selection rule, gives child goals to agents with independent outcomes, and
+leaves agent routing and result integration to `orchestration`. A PR finish
+line routes through `pr-prep`; pstack's cloud and model defaults are excluded.
 
 ## gemini
 
@@ -124,10 +147,6 @@ Local-only skills need just an origin note.
 ## gh-stack
 
 - [github/gh-stack / skills/gh-stack](https://github.com/github/gh-stack/tree/14fc42ed9b6c376a53b2f999f138d3bd26dac546/skills/gh-stack) — commit `14fc42ed9b6c376a53b2f999f138d3bd26dac546`.
-
-## goal-swarm
-
-- Local: `skills/goal-swarm` (SreeStack).
 
 ## grill-me
 
@@ -144,6 +163,11 @@ Local-only skills need just an origin note.
 ## handoff
 
 - [mattpocock/skills / skills/productivity/handoff](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/handoff) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [cursor/plugins / pstack session-pickup and pause-safely playbooks](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/poteto-mode/playbooks) — `session-pickup.md` and `pause-safely.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+The manual-only invocation remains in both hosts. The local skill writes an
+off-repo resume note with operational state and supports checking that note on
+pickup. It omits pstack's automatic WIP commit and transcript-specific paths.
 
 ## implement
 
@@ -161,10 +185,6 @@ only on request.
 ## ios-haptics
 
 - Local: `skills/ios-haptics` (SreeStack).
-
-## swarm-and-push
-
-- Local: `skills/swarm-and-push` (SreeStack).
 
 ## swift-testing-modernization
 
@@ -199,7 +219,9 @@ Imported criteria apply to evidence-based interface audits. Automatic
 invocation remains limited to hands-on verification where it adds confidence.
 Web checks follow the requested deployment; iOS checks follow the requested
 Simulator or device target. iOS tool routing uses available Xcode MCP, CLI, and
-interface tools without a dependency on the Build iOS Apps plugin.
+interface tools without a dependency on the Build iOS Apps plugin. An existing
+project verification skill supplies applicable launch and drive steps;
+`manual-verify` retains workflow selection and acceptance judgment.
 
 ## post-merge-cleanup
 
@@ -215,6 +237,15 @@ with `ui-design`, `animate`, `swiftui` or `uikit`, `manual-verify`, and
 `showroom`, and adds explicit rules for live side effects, unavailable target
 tooling, comparison-control verification, durable decisions, and proportional
 prototype retention and cleanup.
+
+## project-verification
+
+- [cursor/plugins / pstack verification skills](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills) — `create-verification-skill/SKILL.md` and `maintain-verification-skill/SKILL.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Locally written as one create-or-refresh skill. Uses the target project's agent
+skill location, a compact feature map, and a live self-check. Leaves one-time
+acceptance verdicts to `manual-verify` and omits automatic PR creation and
+mandatory full-feature maintenance passes.
 
 ## react-best-practices
 
@@ -317,6 +348,9 @@ Reviewer references:
 
 - Imported material stays in read-only reference briefs. The local parent skill
   supplies scope and owns dispatch, triage, fixes, and acceptance.
+- For code with plausible indirect consumers, the parent uses local
+  `change-safety` to test important assumptions and puts its evidence in the
+  same review brief. Routine diffs do not require this extra analysis.
 - Standards and Spec remain separate checks and labeled reports, with their
   upstream smell baseline, requirements checks, and 400-word limits.
 - Thermo keeps its structural review criteria within the parent's supplied scope.
@@ -421,3 +455,10 @@ Manual-only invocation: `disable-model-invocation: true` and
 ## orchestration
 
 - Local: `skills/orchestration` (SreeStack).
+- [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Locally written general delegation flow. Parallel coverage and competing
+approaches are framed before dispatch; revision-bound verification and measured
+results are checked during integration. It uses local agent routing and does
+not create goals or require pstack's cloud worker setup. `pr-prep` owns review
+when it will review the same integrated scope before publication.
