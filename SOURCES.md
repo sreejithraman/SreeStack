@@ -20,6 +20,8 @@ Local-only skills need just an origin note.
 
 - The local skill reports an unavailable `snipsnap` command explicitly before
   the shared add workflow.
+- For agent-discovered ideas, the local skill checks readily available plans and
+  saves concrete, unplanned improvements as standalone notes.
 
 ## animate
 
