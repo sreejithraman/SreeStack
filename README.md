@@ -29,7 +29,7 @@ This collection has no single runtime that supports every skill.
 `handoff` is manual-only: invoke it explicitly and supply the handoff note path
 when resuming in a new session. A plain resume request does not load that skill.
 `snip-snap` requires the `snipsnap` command on `PATH`; check `snipsnap --help`
-for the commands you need. Older installed versions may expose only `add`.
+for the commands you need.
 Installing or copying only the GUI app does not expose the CLI automatically.
 A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary does.
 

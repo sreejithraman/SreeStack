@@ -16,7 +16,7 @@ Local-only skills need just an origin note.
 
 ## snip-snap
 
-- [sreejithraman/snip-snap / .agents/skills/snip-snap](https://github.com/sreejithraman/snip-snap/tree/4ef8d3d46b2e2ac07196b39cd13c9a55b2bcf904/.agents/skills/snip-snap) — commit `4ef8d3d46b2e2ac07196b39cd13c9a55b2bcf904`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
+- [sreejithraman/snip-snap / .agents/skills/snip-snap](https://github.com/sreejithraman/snip-snap/tree/57d57c6baf2bbafeb7985fb1a48c0a25cc3ec43c/.agents/skills/snip-snap) — commit `57d57c6baf2bbafeb7985fb1a48c0a25cc3ec43c`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
 
 ## animate
 
