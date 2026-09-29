@@ -1,9 +1,9 @@
 # Merge these settings into ~/.codex/config.toml after review.
 # Keep the rest of the local config, including any other [agents] settings.
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 
 [agents]
-default_subagent_model = "gpt-6-sol"
+default_subagent_model = "gpt-6.1-sol"
 default_subagent_reasoning_effort = "medium"
 max_concurrent_threads_per_session = 12

@@ -457,6 +457,7 @@ Manual-only invocation: `disable-model-invocation: true` and
 
 Locally written general delegation flow. Parallel coverage and competing
 approaches are framed before dispatch; revision-bound verification and measured
-results are checked during integration. It uses local agent routing and does
-not create goals or require pstack's cloud worker setup. `pr-prep` owns review
+results are checked during integration. Local agent routing permits only
+`engineer`, `senior`, and `staff`, even when the host exposes other ranks.
+It does not create goals or require pstack's cloud worker setup. `pr-prep` owns review
 when it will review the same integrated scope before publication.
