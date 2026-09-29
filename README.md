@@ -46,7 +46,6 @@ settings.
 | [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Merge these shared instructions into the existing file |
 | [optional-instructions.md](codex/optional-instructions.md) | `~/.codex/AGENTS.md` | Merge only the sections you want to enable |
 | [optional.rules](codex/optional.rules) | `~/.codex/rules/default.rules` | Replace its path placeholder and merge only the rules you want to enable |
-| [junior.toml](codex/agents/junior.toml) | `~/.codex/agents/junior.toml` | Copy this rank file |
 | [engineer.toml](codex/agents/engineer.toml) | `~/.codex/agents/engineer.toml` | Copy this rank file |
 | [senior.toml](codex/agents/senior.toml) | `~/.codex/agents/senior.toml` | Copy this rank file |
 | [staff.toml](codex/agents/staff.toml) | `~/.codex/agents/staff.toml` | Copy this rank file |
@@ -58,6 +57,8 @@ merge these shared instructions into that active file, or deliberately retire
 the override before using `AGENTS.md`.
 If a destination role already exists, review its differences before replacing
 it.
+When updating an existing installation, remove the retired `junior` and
+`distinguished` role declarations and their agent files.
 No install script or whole-config symlink is needed for this first version.
 
 Orchestration and review use the

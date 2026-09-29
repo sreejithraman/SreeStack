@@ -10,8 +10,7 @@ not a separate rank.
 
 | Rank | Work |
 |---|---|
-| `junior` | Explicit, easily checked work with settled requirements |
-| `engineer` | Routine implementation using established patterns; default worker |
+| `engineer` | Explicit, easily checked work or routine implementation using established patterns; default worker |
 | `senior` | General engineering judgment; default reviewer |
 | `staff` | Substantial diagnosis, implementation requiring design judgment, or difficult unresolved reasoning such as subtle concurrency or data-loss risks |
 
@@ -23,8 +22,8 @@ Choose the likely capable rank up front; failed attempts are not a prerequisite.
 File count alone does not determine difficulty. A hard task can still have one owner.
 
 For review, start with `senior` and select another rank when the review needs
-less or more judgment. `junior` fits mechanical checks with explicit criteria;
-`engineer` fits straightforward changes using established patterns. Use `staff`
+less or more judgment. `engineer` fits mechanical checks with explicit criteria
+and straightforward changes using established patterns. Use `staff`
 for substantial design questions and difficult unresolved reasoning. Choose each
 reviewer's rank independently of the implementer; two reviewers may use
 different ranks while both cover the full diff. Reassess each round; project
