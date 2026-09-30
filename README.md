@@ -33,6 +33,18 @@ for the commands you need.
 Installing or copying only the GUI app does not expose the CLI automatically.
 A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary does.
 
+### 1Password agent credentials
+
+The [1password skill](skills/1password/SKILL.md) manages approved agent credentials
+and supplies them to login workflows and commands, with scoped approval for
+personal credentials. It requires the `op` CLI on `PATH` and keeps automatic discovery
+enabled. Linking the skill does not configure 1Password or restrict shell access.
+
+Automatic access needs a dedicated agent vault, scoped service account, runtime
+token provisioning, and an approved credential mapping. Follow the
+[setup reference](skills/1password/references/setup.md) for machine onboarding,
+project bootstrap, and a live readiness check; it also covers enforcement limits.
+
 ## Codex defaults
 
 The files under [codex/](codex/) define shared defaults. Keeping them here does
@@ -125,6 +137,7 @@ uses and adapts:
 - [Rudrank Riyam’s App Store Connect CLI skills](https://github.com/rorkai/app-store-connect-cli-skills) — usage and workflow guides for our App Store Connect skill.
 - [superagents-lab’s xcode27-skills](https://github.com/superagents-lab/xcode27-skills) — coverage input for independently written Xcode security and SwiftUI SDK 27 guidance; no upstream prose or code copied.
 - [Snip Snap](https://github.com/sreejithraman/snip-snap) — the snip-snap skill and its CLI workflow.
+- [OpenClaw](https://github.com/openclaw/openclaw/tree/main/skills/1password) — CLI authentication and secret-handling guidance adapted for our scoped 1password skill.
 
 [SOURCES.md](SOURCES.md) records upstream paths, import revisions, and current
 differences to preserve. Git records how the skills changed over time.

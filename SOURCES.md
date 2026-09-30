@@ -14,6 +14,22 @@ Keep one entry per skill and one bullet per imported source, followed by plain
 descriptions of current local differences, including invocation choices.
 Local-only skills need just an origin note.
 
+## 1password
+
+- [openclaw/openclaw / skills/1password](https://github.com/openclaw/openclaw/tree/a229456f487f713315fc799767a97990f407bea6/skills/1password) — `SKILL.md`, `references/get-started.md`, and `references/cli-examples.md`; adaptation baseline commit `a229456f487f713315fc799767a97990f407bea6`. MIT notice in `licenses/openclaw.txt`.
+
+Automatically discoverable in both hosts; triggers on task credential needs
+without an explicit 1Password request. Adds user-designated vault-scoped
+service-account access, optional automatic item management, and task-specific
+personal approval, distinguishing behavioral scope from 1Password enforcement.
+Setup, authentication, and credential delivery/storage use task-based references;
+machine administration is separate from project consumption. Replaces upstream
+secret-printing examples with process-local reads and stdin writes, and browser
+filling with capability-based delivery or user sign-in. Omits OpenClaw install
+metadata, gateway-specific IPC assumptions, and tmux/session-export workflows.
+API claims link to official documentation; README.md holds purpose and setup
+prerequisites.
+
 ## snip-snap
 
 - [sreejithraman/snip-snap / .agents/skills/snip-snap](https://github.com/sreejithraman/snip-snap/tree/0183ec7a0a6c71d725c1bf9f9e04dbd119a97e5d/.agents/skills/snip-snap) — commit `0183ec7a0a6c71d725c1bf9f9e04dbd119a97e5d`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
