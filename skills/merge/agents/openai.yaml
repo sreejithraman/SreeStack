@@ -1,0 +1,4 @@
+interface:
+  display_name: "Merge"
+  short_description: "Merge ready work, finish issues, and clean up"
+  default_prompt: "Use $merge to land this ready PR or stack, finish resolved issues, and clean up the completed work."

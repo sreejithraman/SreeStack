@@ -5,12 +5,14 @@ description: Use when the user asks to clean up finished or abandoned work, work
 
 # Repository cleanup
 
-Clean up only resources whose owner and disposal reason are established. A merged task, an explicitly abandoned task, and routine housekeeping use the same process; age or a stale-looking name alone does not make something disposable. Preserve user changes, app data, shared caches, and unrelated work.
+Clean up only resources whose owner and disposal reason are established. A merged task, an explicitly abandoned task, and routine housekeeping use the same process; age or a stale-looking name alone does not make something disposable. Preserve user changes, retained app data, shared caches, and unrelated work. Task-owned simulator/emulator installs and their disposable test data are cleanup targets by default; honor explicit retention requests.
 
 1. **Inventory.** Resolve the repository, worktrees, default and task branches,
    relevant pull requests, and candidate resources. Include review surfaces,
-   development apps, slot claims, runtime files, build folders, and local or
-   remote refs as applicable. Refresh remote refs before judging branch tips.
+   development apps, simulator/emulator installs, slot claims, runtime files,
+   build folders, and local or remote refs as applicable. Record device IDs,
+   bundle/package IDs, install ownership, and whether data is disposable.
+   Refresh remote refs before judging branch tips.
    Prefer project cleanup commands over hand-written deletion. For each candidate,
    record its exact target, owner, current tip if it is a ref, and disposal
    evidence. For a merged PR, obtain the source head verified at merge time
@@ -29,15 +31,26 @@ Clean up only resources whose owner and disposal reason are established. A merge
    them or authorized their removal. Resolve deletion paths to explicit
    locations; reject roots, home folders, workspace roots, unresolved variables,
    globs, symlinks, and shared paths without proven ownership. Ask before
-   removing user data, shared caches, release artifacts, or uncertain resources.
+   removing retained user data, shared caches, release artifacts, or uncertain resources.
+   Preserve resources still needed by an unmerged stack layer or another active task.
 
 3. **Clean eligible resources.** Stop only matching review surfaces and
    development apps; when Showroom is available, follow its skill for surfaces
    tied to this task or worktree. Inspect a repository cleanup or slot-release
    command's effects and arguments before running it; use it only when it can be
    scoped to verified targets. Measure and remove exact task-owned build
-   folders, keeping app data. Remove a shared build cache only after approval,
+   folders, keeping retained app data. Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
+
+   Uninstall task-owned simulator/emulator apps and test runners with disposable
+   data, using exact device and bundle/package IDs from install records. Recheck
+   ownership: another task may have replaced an install of the same app. Use
+   `xcrun simctl uninstall <udid> <bundle-id>` or
+   `adb -s <serial> uninstall <package-id>`; scope Android removal to the owning
+   user when needed. Uninstalling can remove app data; Android's `-k` retains it
+   ([adb docs](https://developer.android.com/tools/adb)). Confirm removal by
+   re-listing installed apps. Preserve the devices, shared runtimes, and retained
+   data; report unavailable targets and continue independent cleanup.
 
    When worktree removal is in scope, identify an exact inactive worktree and
    inspect its status, ignored files, HEAD, branch, and host ownership. Preserve
@@ -82,4 +95,4 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and recovery details such as recorded branch heads or reflogs. State partial
    cleanup plainly.
 
-An explicit cleanup request or a handoff from `pr-prep` after an authorized merge covers disposal of verified task-owned temporary resources in that scope. It does not authorize unrelated or uncertain targets.
+An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including simulator/emulator installs and disposable test data, in that scope. It does not authorize unrelated or uncertain targets.

@@ -37,11 +37,11 @@ precedence over a merge request.
    threads; report pending human approval or other blockers. For a draft, use
    the draft completion rules in the references.
 
-6. **Merge when requested.** Without a merge request, stop at readiness.
-   Otherwise, once ready, read [merge.md](references/merge.md) and merge the PR.
-   After GitHub confirms the merge, run `/repo-cleanup`
-   with the PR, merge commit, source head verified at merge time, branch, base,
-   worktree, and known task-owned resources.
+6. **Hand off when merging is requested.** Otherwise, stop at readiness. Invoke
+   [merge](../merge/SKILL.md) with the PR, verified head/base, readiness evidence,
+   related issues, and task resources, including worktrees and device installs.
+   If it returns a readiness blocker, resume the applicable prep step; report
+   blockers that require someone else's action.
 
 Report the PR link, current head, verification results, readiness or merge
-result, cleanup result, and anything still needed.
+result, issue completion and cleanup results when merging, and anything still needed.

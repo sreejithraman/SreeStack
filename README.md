@@ -26,6 +26,10 @@ Read each skill before use. Some workflows need host tools for goals, agents,
 or browser control; others need GitHub CLI, Antigravity CLI, Tailscale, or Apple
 development tools. Available tools and invocation settings vary by host.
 This collection has no single runtime that supports every skill.
+`pr-prep` brings a single PR to readiness; `merge` lands ready PRs or stacks and
+finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
+stacks and `repo-cleanup` for completed task resources, including simulator and
+emulator test installs when platform tooling is available.
 `handoff` is manual-only: invoke it explicitly and supply the handoff note path
 when resuming in a new session. A plain resume request does not load that skill.
 `snip-snap` requires the `snipsnap` command on `PATH`; check `snipsnap --help`
