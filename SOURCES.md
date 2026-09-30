@@ -225,6 +225,14 @@ project verification skill supplies applicable launch and drive steps;
 
 - Local source: `~/.agents/skills/post-merge-cleanup`; upstream origin unrecorded.
 
+Accepts merge completion handoffs from `merge`. Cleanup includes verified
+task-owned simulator/emulator installs and disposable test data while preserving
+shared installs, retained data, and resources needed by unmerged stack layers.
+
+## merge
+
+- Local: `skills/merge` (SreeStack).
+
 ## prototype
 
 - [mattpocock/skills / skills/engineering/prototype](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/prototype) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
