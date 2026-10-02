@@ -7,6 +7,7 @@ material keeps the terms listed below; the root license does not replace them.
 
 | Source | Bundled material | Notice |
 | --- | --- | --- |
+| David Collado / Koubou | koubou screenshot design workflow and references | [MIT](licenses/bitomule-koubou.txt) |
 | OpenClaw Foundation | 1password CLI authentication and secret-handling adaptation | [MIT](licenses/openclaw.txt) |
 | Sree Raman / Snip Snap | snip-snap | [MIT](licenses/sreejithraman-snip-snap.txt) |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
@@ -24,7 +25,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
 
 The files in `licenses/` copy upstream license files at the revisions in
-SOURCES.md. OpenClaw was checked on 2026-09-29;
+SOURCES.md. Koubou was checked on 2026-10-02; OpenClaw was checked on 2026-09-29;
 Anthropic skills was checked on 2026-09-12; App Store Connect
 was checked on 2026-09-08; Vercel Labs react-best-practices was checked on
 2026-09-18; the other notices were checked on 2026-09-06. Cursor’s notice comes from

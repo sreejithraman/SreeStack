@@ -494,3 +494,36 @@ results are checked during integration. Local agent routing permits only
 `engineer`, `senior`, and `staff`, even when the host exposes other ranks.
 It does not create goals or require pstack's cloud worker setup. `pr-prep` owns review
 when it will review the same integrated scope before publication.
+
+## koubou
+
+- [bitomule/Koubou / skills/koubou](https://github.com/bitomule/Koubou/tree/2d2e0034687c2a7d6f59c6186877aa3145143a7a/skills/koubou) — import baseline commit `2d2e0034687c2a7d6f59c6186877aa3145143a7a`. `SKILL.md` supplies the design workflow; the six supporting Markdown files map to `skills/koubou/references/` with their upstream names retained. MIT notice in `licenses/bitomule-koubou.txt`.
+
+Automatically discoverable in both hosts. The entrypoint condenses repeated
+setup, intake, design, and verification guidance into one workflow with
+task-based reference links. Host-specific allowed-tool and invocation metadata
+are omitted. Setup reuses project installations and favors isolated Python
+environments when needed. Capture and preview use project run paths and host
+tools. Step-by-step requests return one checked slide before expanding.
+Style intake and interview use supplied direction without mandatory
+reconfirmation. Campaign planning and QA are scoped to requested outputs,
+including one-slide trials and targeted edits. The design guide reconciles
+typographic contrast and text-length rules, makes background treatments
+subordinate to supplied direction, and omits unsupported view-rate and
+conversion claims. YAML guidance accounts for Koubou 0.20.0's generation logs
+and incomplete localized JSON inventory, and explains mixed device/brand assets without
+framing icons. Artifact license checks and release authorization remain
+explicit. The feature-list example aligns with its HTML template, and technical
+source links sit beside API guidance. Hero examples include their template's
+background variables. Measured sidecar QA applies to HTML; content-mode output
+uses visual and configured-geometry checks with the measurement gap disclosed.
+Localized asset maps are documented for both HTML and content modes. Named
+output canvases are listed separately from frame/hardware models. Other design,
+configuration, and capabilities guidance is retained, with content-mode text
+controls and linear-gradient angles corrected against the 0.20.0 implementation.
+Text examples distinguish supported fill/stroke combinations; live guidance
+accounts for external HTML assets absent from the watch set.
+Checked exports use fresh output directories and generation-error checks to
+avoid stale localized files after a masked per-language failure.
+HTML framing guidance identifies the PNG/JPEG extension condition and the
+passthrough behavior of other formats.
