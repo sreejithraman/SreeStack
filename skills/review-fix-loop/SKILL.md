@@ -48,14 +48,19 @@ the parent or native reviewers. It does not replace them or count toward the cod
 path's limit of two native reviewers.
 
 Run Gemini first, through [Gemini](../gemini/SKILL.md) and its
-[review packet flow](../gemini/references/review.md). Give it the same complete
+[review flow](../gemini/references/review.md): native agy code review for code or
+mixed changes, and packet review for documentation-only changes. Give it the same complete
 brief and review references, with contents in the packet. Start a fresh Gemini
 conversation each round. A finished Gemini review ends this step. Include its
 findings in parent triage or `/review-sweep`, labeled Gemini.
 
 When the Gemini flow reports quota, Gemini is not required for that round.
-Follow [the quota fallback](references/external-model.md): one OpenCode review
-of the same packet on GLM Flash 5.3. A finished fallback joins triage, labeled
+Run one review of the same packet through [OpenCode](../opencode/SKILL.md) and
+its [review flow](../opencode/references/review.md), on GLM Flash 5.3: native
+OpenCode review for code or mixed changes, and packet review for documentation-only changes.
+Resolve `opencode-go/glm-5.3-flash` from `opencode models --pure`; if absent,
+the fallback is not finished. Use a fresh session, run once, and stop it after
+15 minutes if it has not exited. A finished fallback joins triage, labeled
 GLM. Record a fallback that does not run or does not finish as not finished.
 That record is not a blocker, and native coverage can still complete the round.
 

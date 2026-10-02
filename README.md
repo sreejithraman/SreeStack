@@ -26,6 +26,18 @@ Read each skill before use. Some workflows need host tools for goals, agents,
 or browser control; others need GitHub CLI, Antigravity CLI, Tailscale, or Apple
 development tools. Available tools and invocation settings vary by host.
 This collection has no single runtime that supports every skill.
+The [gemini](skills/gemini/SKILL.md) and [opencode](skills/opencode/SKILL.md)
+skills provide headless second opinions, analysis, and reviews. Gemini requires
+the authenticated `agy` CLI; OpenCode requires the `opencode` CLI and access to
+the selected model's provider. Linking either skill does not install its CLI
+or configure authentication.
+Gemini's native code review also requires agy's `code-review` plugin, including
+the `code-review` and `code-review-commons` skills. Check the available
+skills with `agy --print /skills --output-format json` and plugins with
+`agy plugin list`.
+OpenCode's native code review uses its built-in `/review` command; check that
+the installed CLI supports `opencode run --command` and has no `review` command
+override. No review plugin is required.
 `pr-prep` brings a single PR to readiness; `merge` lands ready PRs or stacks and
 finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
 stacks and `repo-cleanup` for completed task resources, including simulator and

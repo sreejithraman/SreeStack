@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode"
+  short_description: "Prompt models headlessly and assess their answers"
+  default_prompt: "Use $opencode to get a headless second opinion on this task and assess the answer."

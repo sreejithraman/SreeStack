@@ -4,8 +4,10 @@
 
 - Agent role and requested model/effort: read the active settings.
 - Context: for native reviewers, explicitly pass `fork_turns: "none"` to the
-  spawn tool. For Gemini, start a fresh conversation and embed evidence and
-  reference contents using its [packet flow](../../gemini/references/review.md).
+  spawn tool. For external models, start a fresh conversation or session and
+  embed evidence and reference contents using the
+  [Gemini review flow](../../gemini/references/review.md) or
+  [OpenCode review flow](../../opencode/references/review.md).
 - Permissions: read-only; leave edits, delegation, and acceptance to the parent.
 - Emphasis: the assigned review focus; it never limits full-diff coverage.
 - Review references: absolute paths to the references selected for this emphasis.

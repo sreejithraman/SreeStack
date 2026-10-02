@@ -18,7 +18,8 @@ agy --add-dir <absolute-workspace> --sandbox --effort high --output-format json 
   agy uses the right checkout.
 - **Model:** use the configured Gemini default or pass `--model <slug>` for the
   caller's choice. For required Gemini review, resolve a Gemini model from
-  `agy models` and pass its slug explicitly; agy also offers non-Gemini models. Always use `--effort high`, the highest supported reasoning level.
+  `agy models` and pass its slug explicitly; agy also offers non-Gemini models.
+  Use `--effort high` for this workflow.
 - **Analysis or review:** add `--mode plan` and request an answer without project
   edits. `--sandbox` restricts terminal tools; it does not make files read-only.
 - **Follow-up:** pass `--conversation <id>` from the earlier result. Omit it for
