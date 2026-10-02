@@ -10,7 +10,9 @@ issues, and cleanup of task-owned temporary resources. Honor the user's limits.
 Return readiness blockers to the caller; fixes belong to `pr-prep` or the caller.
 
 1. **Scope.** Identify the repository, target PRs, landing branch, and readiness
-   evidence. For stacks, use [gh-stack](../gh-stack/SKILL.md) to resolve the exact
+   evidence. If the scoped work has no PR, invoke [pr-prep](../pr-prep/SKILL.md)
+   to prepare and publish it, carrying the merge request through its handoff.
+   For stacks, use [gh-stack](../gh-stack/SKILL.md) to resolve the exact
    merge set and command target; authorization must cover every included layer.
    Already merged PRs proceed directly to issue completion and cleanup.
 
