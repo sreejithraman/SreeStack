@@ -49,6 +49,15 @@ for the commands you need.
 Installing or copying only the GUI app does not expose the CLI automatically.
 A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary does.
 
+### Store screenshot design
+
+The [koubou skill](skills/koubou/SKILL.md) designs and iterates on App Store
+screenshots from real app captures. It includes style intake, narrative and
+copy planning, device geometry, HTML/CSS composition, and visual verification.
+Linking it makes the workflow available to agents; it does not install Koubou.
+Use a working `kou` CLI with HTML rendering support (`kou setup-html`). App
+capture follows the project's run scripts and the host's device tooling.
+
 ### 1Password agent credentials
 
 The [1password skill](skills/1password/SKILL.md) manages approved agent credentials
@@ -137,6 +146,7 @@ Report security issues through the [private reporting channel](SECURITY.md).
 Thank you to the authors and contributors who shared the skills this collection
 uses and adapts:
 
+- [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
