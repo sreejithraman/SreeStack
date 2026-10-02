@@ -157,6 +157,10 @@ line routes through `pr-prep`; pstack's cloud and model defaults are excluded.
 
 - Local: `skills/gemini` (SreeStack).
 
+## opencode
+
+- Local: `skills/opencode` (SreeStack).
+
 ## gh-stack
 
 - [github/gh-stack / skills/gh-stack](https://github.com/github/gh-stack/tree/14fc42ed9b6c376a53b2f999f138d3bd26dac546/skills/gh-stack) — commit `14fc42ed9b6c376a53b2f999f138d3bd26dac546`.
@@ -370,6 +374,11 @@ Reviewer references:
 
 - Imported material stays in read-only reference briefs. The local parent skill
   supplies scope and owns dispatch, triage, fixes, and acceptance.
+- External review uses `gemini`, and after exhausted Gemini quota, `opencode`
+  on GLM Flash 5.3. Both use native review for code or mixed scopes and packet
+  review for documentation-only scopes. Those skills own headless execution,
+  native activation and scope checks, and packet checks;
+  this skill owns fallback eligibility, one-attempt limits, and round completion.
 - For code with plausible indirect consumers, the parent uses local
   `change-safety` to test important assumptions and puts its evidence in the
   same review brief. Routine diffs do not require this extra analysis.
