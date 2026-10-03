@@ -14,6 +14,10 @@ Orchestration does not require or authorize a goal.
 
 1. Choose the work.
 
+   When implementing a spec with blocking tickets, read
+   [task graphs](references/task-graphs.md) to schedule the ready frontier and
+   integrate it on one branch.
+
    Keep tasks with the parent when a child would wait on a dependency, edit the
    same files, or save little time. Give each delegated result one owner and a
    check. Use [responsibilities](references/responsibilities.md) to clarify each

@@ -49,6 +49,11 @@ for the commands you need.
 Installing or copying only the GUI app does not expose the CLI automatically.
 A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary does.
 
+The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
+to the agent environment. Invoke it explicitly; it returns recommendations.
+Domain skills use `GLOSSARY.md` for new layouts and preserve configured or
+existing legacy `CONTEXT.md` glossary paths.
+
 ### Store screenshot design
 
 The [koubou skill](skills/koubou/SKILL.md) designs and iterates on App Store
@@ -148,6 +153,7 @@ uses and adapts:
 
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.

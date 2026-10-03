@@ -7,7 +7,7 @@ description: >
   branch layers, dependent PRs, or gh stack; or when a stack is checked out.
 metadata:
   author: github
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # gh-stack
@@ -28,6 +28,12 @@ Foundational work belongs at the bottom, code that depends on it above. For how 
 layers, read `references/stack-design.md`.
 
 ## Setup
+
+Requires Git 2.36+ and an authenticated GitHub CLI.
+
+Before relying on worktree-aware behavior, inspect `gh stack --version` and the installed
+command's `--help`, including support for `--print-path`. Older extensions may lack the shared
+catalog and owner-aware recovery described here. Upgrade only within the task's authorization.
 
 ```bash
 gh extension install github/gh-stack
@@ -59,6 +65,10 @@ Agent harnesses differ, so always pass the flags below instead of relying on tha
 - `view --short` is safe in both modes, but it is formatted for humans. Use `--json` to parse.
 - **`checkout <pr>` when a different local stack already covers those branches** cannot be forced.
   Run `gh stack unstack --local` first (this keeps the stack on GitHub), then retry.
+- **Worktrees:** local stacks share one common-directory catalog. Use `--print-path` with
+  navigation or explicit-target `checkout` to locate a foreign-owned branch without stealing its
+  checkout. Unoccupied targets are checked out here first. Check the exit status before changing
+  directories; parse only successful path-mode stdout, never status messages.
 
 ## Branch placement
 
@@ -154,19 +164,27 @@ an ancestor of the branch.
 
 **Exit 3 recovery:**
 
-- After `gh stack rebase`: resolve the files, run `git add`, then
+- After `gh stack rebase`: resolve the files and run `git add` in the worktree reported by the
+  conflict, then
   `gh stack rebase --continue`; use `gh stack rebase --abort` to restore the stack.
-- After `gh stack sync`: the stack has already been restored. Run `gh stack rebase` to recreate the
-  conflict, then resolve and continue as above.
+- After `gh stack sync`: inspect the rollback diagnostic. When restoration completed, run
+  `gh stack rebase` to recreate the conflict, then resolve and continue as above. If restoration
+  failed and recovery state remains, follow its diagnostic and recover the recorded owners
+  before starting another operation.
 
 ## Constraints
 
 - Stacks are strictly linear: one parent, at most one child. Use separate stacks for parallel work.
+- `rebase` and `sync` automatically update affected clean worktrees; they never auto-stash or
+  create/remove worktrees. Mutations serialize across the clone, and paused operations require
+  recovery in their recorded owners.
+- `modify` supports distributed stack branches, but its editor remains TUI-only. Actions run in
+  affected clean owners; unoccupied branches use the origin. Drop/fold source branches and
+  worktrees are preserved. Recovery flags may run from any worktree and use recorded native
+  operation owners; never resolve/stage in the caller's tree unless the diagnostic names it.
 - There is no non-interactive reorder or removal. Errors may suggest `gh stack modify`, but it is
   TUI-only — restructure with `unstack` then `init` instead.
 - PR titles and bodies are auto-generated. Use `gh pr edit` afterwards to change them.
-- `checkout <branch-name>` resolves against local stacks only. Use a stack or PR number to pull a
-  stack down from GitHub.
 
 ## More detail
 

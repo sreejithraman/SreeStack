@@ -23,6 +23,9 @@ explain: preconditions, side effects, atomicity, and failure modes.
 Creates the stack and checks out the **last** branch in the list, so a single `init` can lay down
 the whole chain: `gh stack init auth api frontend`.
 
+If the final existing branch is already checked out in another worktree, adoption still succeeds:
+the command reports its owner and leaves the invoking checkout unchanged.
+
 `init` processes branch arguments from bottom to top. Existing branches are adopted. If the first
 branch does not exist, it is created from the trunk; each later new branch is created from the
 branch immediately before it. There is no separate adopt mode — existence decides. `--base`
@@ -42,6 +45,9 @@ selects a non-default trunk.
   immediately after `init` — instead of creating a branch. This is deliberate: the first layer
   usually needs its content before a second layer exists.
 - `-A` and `-u` are mutually exclusive, and both require `-m`.
+- Existing branches owned by another worktree may be adopted without checkout. Commit/stage
+  shortcuts are rejected before staging or membership changes; they never commit another
+  worktree's files.
 
 ## push
 
@@ -74,7 +80,7 @@ first non-merged ancestor, then links them into a Stack on GitHub.
 ## link
 
 Creates or updates a stack on GitHub **without any local tracking state**. This is the path for
-branches managed by another tool or living in another worktree — see `troubleshooting.md`.
+branches managed by another tool. Worktrees alone do not require `link`: local tracking is shared.
 
 - Arguments are given bottom to top. Each is a branch name or a PR number; a numeric argument is
   tried as a PR number first and falls back to a branch name.
@@ -96,14 +102,18 @@ The routine command. Steps, in order:
 3. **Fast-forward the trunk.** Skipped when already current; warns when diverged.
 4. **Cascade rebase when needed.** This runs if the trunk moved, a stack branch was fast-forwarded
    from its remote, or a branch no longer contains its expected parent. Merged PRs are handled
-   automatically. On conflict, **all branches are restored** to their pre-rebase state and the
-   command exits **3**.
+   automatically. On conflict, attempts to restore the cascade's pre-rebase state and exits
+   **3**; if restoration fails, recovery state remains. Follow the reported recovery diagnostic.
 5. **Push** all active branches, atomically.
 6. **Refresh PR state** from GitHub.
 7. **Sync the stack object** — link open PRs into a stack, additively. Only when two or more PRs
    exist. `sync` never opens PRs; that is `submit`.
 8. **Prune** local branches for merged PRs, only when `--prune` is passed in a non-interactive
    environment.
+
+Affected clean worktrees are updated automatically. Dirty/busy/unavailable owners stop unsafe
+updates, and pruning skips branches occupied elsewhere. Cascade rollback does not undo prior
+fetches or completed fast-forwards; partial restoration failures retain recovery state.
 
 ## rebase
 
@@ -119,6 +129,9 @@ to rebase only part of the stack.
 - A merged PR is detected automatically and replayed with `--onto` against the correct target, so a
   squash-merged parent does not produce spurious conflicts.
 - Starting a rebase while one is in progress exits **7**.
+- Occupied branches are rebased in their clean owning worktrees; unoccupied branches use the
+  origin. Resolve/stage conflicts at the reported path. `--continue`/`--abort` may run from any
+  linked worktree and use the recorded owners. No auto-stash or worktree lifecycle management.
 
 ## view
 
@@ -136,11 +149,12 @@ Accepts a stack number, PR number, PR URL, or branch name.
 - A bare number resolves as a **stack number first**, then a PR number, then a branch name.
 - Stack numbers, PR numbers, and PR URLs fetch from GitHub, pull the branches down, and set the
   stack up locally.
-- A **branch name resolves against locally tracked stacks only** and never contacts GitHub. Use a
-  stack or PR number to pull a stack that is not tracked locally.
 - If a local stack already exists over those branches with a different composition, `checkout`
   cannot be forced past it. Run `gh stack unstack --local` first, then retry.
-- `checkout` has no flags. It relies on `remote.pushDefault` when several remotes exist.
+- `checkout` relies on `remote.pushDefault` when several remotes exist.
+- `--print-path` requires an explicit target and never prompts. It prints a foreign owner's path
+  without switching, or checks out an unoccupied target here before printing the current root.
+  Without path mode, a foreign-owned target is a nonzero error, not a successful switch.
 
 ## unstack
 
@@ -177,3 +191,22 @@ count (`gh stack up 3`). Movement clamps at the stack bounds, and merged branche
 navigating from an active branch, so `bottom` lands on the lowest *unmerged* branch.
 
 `gh stack switch` is a selection menu with no non-interactive path. Use the commands above instead.
+
+All five navigation commands support `--print-path`, as does explicit-target `checkout`. Success
+writes only an absolute raw path and newline to stdout; diagnostics go to stderr and errors leave
+stdout empty. Check the exit status before using the path:
+
+```bash
+gscd() {
+  local target
+  target=$(gh stack "$@" --print-path) || return $?
+  if [ -z "$target" ]; then
+    printf '%s\n' 'gh stack returned an empty path' >&2
+    return 1
+  fi
+  cd -- "$target"
+}
+gscd checkout auth
+```
+
+This is a Bash/Zsh function, not something gh-stack installs. Never use `eval` on path output.

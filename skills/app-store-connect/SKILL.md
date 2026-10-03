@@ -60,7 +60,7 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
 
 ## Authentication and defaults
 
-- Prefer keychain auth via `asc auth login`.
+- Prefer an existing keychain API profile; use `asc auth login` when authentication needs setup.
 - Fallback env vars: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH`, `ASC_PRIVATE_KEY`, `ASC_PRIVATE_KEY_B64`.
 - `ASC_APP_ID` can provide a default app ID.
 - When permissions are unclear, inspect exact API key role coverage with `asc web auth capabilities`.
@@ -70,6 +70,16 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
   - An Account Holder or Admin session is required; use `asc web auth login --apple-id "user@example.com"` first when needed.
   - The command saves the one-time P8 as `AuthKey_<KEY_ID>.p8` without printing its contents; choose an explicit private directory with `--output-dir`.
   - Example: `asc web api-keys create --name "CI uploads" --role APP_MANAGER --output-dir "./keys" --output json`.
+
+### Reuse authentication before requesting another code
+
+- API-key authentication (`asc auth`) and Apple Account web sessions (`asc web auth`) are separate. Inspect `asc auth status` and command capabilities before starting a web login. An API profile name is a local label, not an app-level permission boundary.
+- For web-only work, check `asc web auth status --apple-id "user@example.com" --output json` first. Reuse an authenticated cached session and verify its provider matches the intended account before mutations. Preserve trust and session state during routine preparation.
+- Give one process ownership of interactive sign-in for an Apple Account. While a code prompt is pending, continue that same process; serialize other sign-ins for that account so another login does not invalidate its challenge.
+- Match a code to the current prompt. A trusted-device notification and SMS fallback are separate verification steps. Once the CLI announces phone delivery, use the newly delivered phone code. Inspect the installed command's help for supported resend or recovery; deliberate bad-code submission is not a resend strategy.
+- On failure, distinguish code rejection from a timeout after verification or provider selection. Inspect the exact error and installed version before requesting more codes. Increasing a request timeout does not verify that an interactive-session problem is fixed.
+- After login, verify `authenticated` and the selected provider with a separate status read. Confirm the next web operation reuses the cache before reporting success. Sessions can expire later; report the verified current state.
+- Inspect `asc web auth login --help` before configuring a supported `--two-factor-code-command`. Keep credentials and codes out of logs, source, shell history, and PRs. Use only authentication mechanisms supported by the installed CLI; a password-manager passkey or browser sign-in does not establish CLI cache authentication.
 
 ## Timeouts
 

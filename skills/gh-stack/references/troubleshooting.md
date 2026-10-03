@@ -13,12 +13,18 @@
 
 ## Rebase conflicts (exit 3)
 
-`rebase` and `sync` both exit 3 on conflict. `sync` restores every branch to its pre-rebase state
-first, so a failed `sync` leaves nothing half-applied; a failed `rebase` stops mid-flight and waits.
+`rebase` and `sync` both exit 3 on conflict. A failed `rebase` stops mid-flight and waits.
+`sync` attempts to restore the cascade's pre-rebase state; this does not undo prior fetches or
+completed fast-forwards. Inspect the rollback diagnostic: if restoration failed, recovery state
+remains and must be recovered in the recorded owners before another operation starts. After
+successful restoration, run `gh stack rebase` to recreate the conflict and resolve it.
+
+Resolve and stage only in the worktree reported by the conflict. A later conflict may name a
+different owner; `--continue` and `--abort` may be invoked from any linked worktree.
 
 ```bash
 gh stack rebase
-# exit 3 — conflicted paths are listed on stderr
+# exit 3 — change to the worktree reported on stderr and resolve its conflicted files
 git add <resolved paths>
 gh stack rebase --continue     # repeat if the next branch also conflicts
 ```
@@ -43,10 +49,10 @@ gh stack sync
 gh stack view --json    # merged branch reports "isMerged": true, "state": "MERGED"
 ```
 
-No manual action is needed. If the replay conflicts, `sync` restores all branches and exits 3.
-Run `gh stack rebase` to rerun the rebase, which will stop at the conflict and allow you to resolve
-and then `--continue` until complete. Use `gh stack sync --prune` to also delete local branches for
-merged PRs.
+No manual action is needed when the replay succeeds. If it conflicts, follow
+[Rebase conflicts](#rebase-conflicts-exit-3), including the rollback diagnostic before retrying.
+Use `gh stack sync --prune` to also delete local branches for merged PRs; pruning skips branches
+occupied in another worktree.
 
 ## Local and remote stacks have diverged
 
@@ -127,8 +133,9 @@ problem entirely, since they do not infer the stack from the current branch.
 ## Driving stacks from another tool or worktree
 
 `gh stack link` creates and updates stacks purely through the API, with no local tracking state.
-Use it when branches are managed by jj, Sapling, git-town, a separate worktree, or any workflow
-where the local `.git/gh-stack` file would be wrong or absent.
+Use it when branches are managed by jj, Sapling, git-town, or another external workflow that does
+not use gh-stack's local catalog. Linked worktrees themselves are supported: they share
+`<common-dir>/gh-stack` and do not require `link`.
 
 ```bash
 gh stack link branch-a branch-b branch-c        # bottom to top
@@ -140,11 +147,29 @@ gh stack link 7 feature-d                       # append to existing stack #7
 Because `link` writes no local state, the local navigation commands (`up`, `down`, `top`, `bottom`)
 will not work on the result. Use `gh stack checkout <stack-number>` if you later want local tracking.
 
+Git 2.36+ is required. Legacy worktree catalogs are consolidated automatically only when their
+definitions agree or are disjoint; originals are preserved. On migration conflicts, reconcile the
+reported source definitions rather than choosing the newest file. Finish legacy operations in
+their original worktree first, and do not mix old and new gh-stack writers in one clone.
+
+Navigation does not take over another worktree's checkout. Use `--print-path` with an explicit
+target, check the exit status, and change directory to the quoted output. Only affected clean
+owners are updated by rebase/sync; commit or stash manually when those owners are dirty. gh-stack
+does not automatically stash or create/remove worktrees.
+
+For `git init --separate-git-dir` repositories, main invocation and existing absolute/relative
+`core.worktree` backlinks are supported, including settings in the main `config.worktree`. The
+discovery caveat is only linked invocation without a main-worktree backlink. A required unresolved
+main owner produces actionable guidance to run from the main worktree or supply the backlink;
+unaffected worktrees continue. Never navigate to an administration directory or guess its checkout.
+Existing backlinks are read without adding a private registry or changing Git configuration.
+
 ## Stack file is locked (exit 8)
 
-Another `gh stack` process holds the exclusive lock on `.git/gh-stack.lock`. The lock times out
-after about five seconds, so wait and retry. A persistent exit 8 means another process still holds
-the lock; identify and stop that process before retrying.
+Another `gh stack` process holds either the short catalog lock (`<common-dir>/gh-stack.lock`) or
+the clone-wide mutation lock (`<common-dir>/gh-stack-operation.lock`). Wait and retry; read-only
+views remain available. Do not delete lock files to bypass coordination. Paused operations are
+also guarded by shared recovery journals after their process lock has been released.
 
 ## An interrupted modify session (exit 10)
 
@@ -156,4 +181,12 @@ gh stack modify --abort
 ```
 
 Related: `submit` also detects a pending modify state, and under a TTY asks before overwriting the
-stack on GitHub with local state.
+matching stack on GitHub with local state. An unrelated stack cannot consume or clear that journal.
+
+Modify supports stacks distributed across worktrees, but agents must still not launch its TUI.
+Renames, fold-down cherry-picks, and rebases execute in the appropriate clean owners; only the
+origin switches for unoccupied branches. Drop/fold sources and their worktrees remain intact.
+Resolve and stage in the worktree reported by the conflict, then invoke `modify --continue` from
+any linked worktree. A later conflict can be in a different owner. Abort reverses owner-local
+renames, restores only operation-touched refs, and deletes only proven operation-created refs,
+never worktrees. Missing owners, externally changed refs, or save failures retain the journal.

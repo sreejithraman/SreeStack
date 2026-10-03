@@ -167,24 +167,24 @@ asc xcode archive \
   --output json
 ```
 
-If your macOS export produces a `.pkg`, use Xcode export with your `ExportOptions.plist`, then upload the package:
+If your macOS export produces a `.pkg`, verify `asc xcode export --help` supports `--pkg-path`, then export it with the helper and upload the package:
 
 ```bash
-xcodebuild -exportArchive \
-  -archivePath ".asc/artifacts/MacApp.xcarchive" \
-  -exportPath ".asc/artifacts/MacAppExport" \
-  -exportOptionsPlist "ExportOptions.plist" \
-  -allowProvisioningUpdates
+asc xcode export \
+  --archive-path ".asc/artifacts/MacApp.xcarchive" \
+  --pkg-path ".asc/artifacts/MacApp.pkg" \
+  --xcodebuild-flag=-allowProvisioningUpdates \
+  --output json
 
 asc builds upload \
   --app "APP_ID" \
-  --pkg ".asc/artifacts/MacAppExport/MacApp.pkg" \
+  --pkg ".asc/artifacts/MacApp.pkg" \
   --version "1.0.0" \
   --build-number "123" \
   --wait
 ```
 
-For `.pkg` uploads, `--version` and `--build-number` are required because they are not auto-extracted like IPA metadata.
+For `.pkg` uploads, `--version` and `--build-number` are required because they are not auto-extracted like IPA metadata. Add `--export-options "ExportOptions.plist"` when the project needs a custom export configuration. If the installed CLI lacks `--pkg-path`, use `xcodebuild -exportArchive` with the project's `ExportOptions.plist` and pass the resulting package path to `asc builds upload --pkg`.
 
 ## Raw xcodebuild fallback
 

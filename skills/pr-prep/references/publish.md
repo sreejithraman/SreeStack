@@ -35,6 +35,20 @@ The PR body should state:
 - local verification
 - stack position and adjacent PRs when applicable
 
+Use the project's domain vocabulary and lead with the concrete resulting
+behavior. When structure or flow is difficult to explain in prose, include the
+smallest useful view: pseudocode for an algorithm, a shallow file or call tree
+for ownership, a diff sketch for a changed shape, or Mermaid for interactions.
+Place it beside the claim it explains and follow the repository's PR template.
+
+For a fix, pair observed before/after evidence when available: a failing and
+passing check, command output, or screenshots for a visual change. Use
+`showroom`'s checked visual artifacts when supplied. Describe material impact
+and rollback limits, such as persisted-data changes or destructive migrations,
+when they affect review. Keep small PRs brief; evidence can be a sentence when
+that fully supports the behavior. Label unavailable before-state evidence
+instead of inventing it.
+
 Ready mode marks the PR ready for review. Draft mode preserves or sets draft state.
 
 ## Completion
