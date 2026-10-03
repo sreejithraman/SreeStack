@@ -37,3 +37,28 @@ would add confidence.
 This branch is complete when every affected semantic, keyboard, focus, status,
 input, and edge-state path passes on the real page, or its remaining evidence
 gap is explicit.
+
+## Content under constraint
+
+When real data breaks a component, use `manual-verify`'s edge-data workflow to
+reproduce it through the existing data boundary. Choose the display contract per
+field, then fix the demonstrated cause:
+
+- Keep identifying content and compared numbers, amounts, and dates readable.
+  Wrap, clamp previews, or truncate according to the task; expose the complete
+  value through a usable detail or expansion path when shortened. A hover-only
+  tooltip does not cover touch or keyboard access.
+- When a text column pushes siblings out of a flex row, inspect its automatic
+  minimum size; `min-inline-size: 0` can let it shrink. Protect fixed-size icons
+  and necessary trailing actions from unwanted shrinking. Verify the combined
+  row at its real container width. See [flex automatic minimum size](https://drafts.csswg.org/css-flexbox-1/#min-size-auto).
+- For identifiers that otherwise overflow, consider `overflow-wrap: anywhere`
+  on that content, preserving normal breaks elsewhere. Diagnose before applying
+  it globally. See [overflow wrapping](https://drafts.csswg.org/css-text-3/#overflow-wrap-property).
+- Choose explicit missing-field and media fallbacks; retain enough identity to
+  distinguish duplicate names. Format numbers, plurals, and time for the
+  supported locale. Avoid clipping tall scripts or splitting multi-code-point
+  characters when deriving initials.
+- Treat a large collection as a measured usability and performance question.
+  Choose pagination or virtualization when evidence and the interaction model
+  warrant it, then check navigation and accessibility as well as scrolling.

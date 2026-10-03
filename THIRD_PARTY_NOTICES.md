@@ -11,6 +11,7 @@ material keeps the terms listed below; the root license does not replace them.
 | OpenClaw Foundation | 1password CLI authentication and secret-handling adaptation | [MIT](licenses/openclaw.txt) |
 | Sree Raman / Snip Snap | snip-snap | [MIT](licenses/sreejithraman-snip-snap.txt) |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
+| HumanLayer / Dex Horthy | PR visual guidance credited by Matt Pocock | [MIT](licenses/humanlayer-skills.txt) |
 | Matt Pocock | Skills and Standards/Spec review references listed in SOURCES.md | [MIT](licenses/mattpocock-skills.txt) |
 | Emil Kowalski | animate; motion and gesture behavior; typography and materials; interface access/input and review guidance | [animate MIT](licenses/emilkowalski-animate.txt), [design engineering MIT](licenses/emilkowalski-design-eng.txt) |
 | Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
@@ -23,6 +24,8 @@ material keeps the terms listed below; the root license does not replace them.
 | s0xDk / s13k | ui-design skill, web references, and token asset | [MIT and scope note](licenses/s0xdk-refactoring-ui-skill.txt) |
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
 | Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
+
+HumanLayer’s notice was checked on 2026-10-03 at the revision in `SOURCES.md`.
 
 The files in `licenses/` copy upstream license files at the revisions in
 SOURCES.md. Koubou was checked on 2026-10-02; OpenClaw was checked on 2026-09-29;

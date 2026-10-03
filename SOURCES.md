@@ -39,7 +39,7 @@ prerequisites.
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — press feedback and measured rendering guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — gesture-intent guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
-- [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`.
+- [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`. Newer [skill terms](https://github.com/Jakubantalik/transitions.dev/blob/3bc58021c69725d8bf42108632ac6cf14f2b1d3c/skills/transitions-dev/LICENSE.txt) restrict republishing the collection as a competing library, template pack, or component kit. Further imports are held pending redistribution clarification; the import baseline remains unchanged.
 
 - One automatically discoverable cross-platform skill owns motion decisions,
   implementation, tuning, and checks. Its entrypoint holds the shared motion gate
@@ -90,7 +90,7 @@ prerequisites.
 
 ## app-store-connect
 
-- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9813732f640495bdb7bd1f894f5df499c76cfbcf) — `skills/`; commit `9813732f640495bdb7bd1f894f5df499c76cfbcf`, imported 2026-09-08. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
+- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9a093fa52177d1b784fcbb06f9abfef4974e7701) — `skills/`; commit `9a093fa52177d1b784fcbb06f9abfef4974e7701`, imported 2026-10-03. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
 
 - One discoverable skill: upstream `skills/asc-cli-usage/SKILL.md` supplies the
   entrypoint; the other `skills/<name>/SKILL.md` files map to local
@@ -103,6 +103,12 @@ prerequisites.
   Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
   description, promotional text, and release-note guidance. Build-ID guidance
   uses the `--build-id` flag required by the installed CLI.
+
+Authentication reuses cached profiles and web sessions, verifies providers, and
+serializes interactive challenges. Developer Portal cache recovery follows
+status/provider/error diagnosis. macOS package export checks `--pkg-path`
+support and retains raw Xcode export when unavailable.
+
 
 ## change-safety
 
@@ -122,11 +128,16 @@ model settings, or Cursor MCP discovery.
 
 ## codebase-design
 
-- [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/codebase-design) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/codebase-design) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
 
 ## diagnosing-bugs
 
-- [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/diagnosing-bugs) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/diagnosing-bugs) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 - Local adaptation: adds conditional Apple-platform references for runtime,
   performance, and memory diagnosis. They use current Apple documentation and
   local Xcode capability discovery, with Instruments as the default profiler
@@ -134,9 +145,27 @@ model settings, or Cursor MCP discovery.
   diagnosis when a runnable reproduction is unavailable without treating it as
   verification of a fix.
 
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
+Markdown import baseline is `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. The bundled HITL
+shell template remains at `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`; its upstream
+comment-only changes are omitted.
+
+
 ## domain-modeling
 
-- [mattpocock/skills / skills/engineering/domain-modeling](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/domain-modeling) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/domain-modeling](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/domain-modeling) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
+`CONTEXT-FORMAT.md` maps to `GLOSSARY-FORMAT.md`. The local
+`references/glossary-paths.md` is the shared compatibility rule for writers and
+readers; glossary reading alone does not invoke domain modeling.
+
 
 ## eli5
 
@@ -163,7 +192,13 @@ line routes through `pr-prep`; pstack's cloud and model defaults are excluded.
 
 ## gh-stack
 
-- [github/gh-stack / skills/gh-stack](https://github.com/github/gh-stack/tree/14fc42ed9b6c376a53b2f999f138d3bd26dac546/skills/gh-stack) — commit `14fc42ed9b6c376a53b2f999f138d3bd26dac546`.
+- [github/gh-stack / skills/gh-stack](https://github.com/github/gh-stack/tree/d4ab7ab47e5b3e3708a27c8c42abcdf4bc321419/skills/gh-stack) — commit `d4ab7ab47e5b3e3708a27c8c42abcdf4bc321419`.
+
+Invocation remains unchanged. Checks installed-extension capabilities before
+newer worktree behavior. Conflict staging follows the diagnostic owner, and
+sync rollback guidance preserves partial-restoration recovery state instead of
+promising unconditional rollback.
+
 
 ## grill-me
 
@@ -194,10 +229,15 @@ Uses `review-fix-loop` to review, fix, and verify before committing.
 
 ## improve-codebase-architecture
 
-- [mattpocock/skills / skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/improve-codebase-architecture) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/improve-codebase-architecture) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
 Returns findings, recommendations, and reasons in chat; creates an HTML report
 only on request.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
 
 ## ios-haptics
 
@@ -232,6 +272,8 @@ workflow; automatic invocation remains framework- and task-based.
 - Local: `skills/manual-verify` (SreeStack).
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — interface-review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
+- [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 
 Imported criteria apply to evidence-based interface audits. Automatic
 invocation remains limited to hands-on verification where it adds confidence.
@@ -240,6 +282,14 @@ Simulator or device target. iOS tool routing uses available Xcode MCP, CLI, and
 interface tools without a dependency on the Build iOS Apps plugin. An existing
 project verification skill supplies applicable launch and drive steps;
 `manual-verify` retains workflow selection and acceptance judgment.
+
+Edge-data workflow and catalog map to `references/edge-data.md`, with mobile
+assertions in `references/web.md`. Comparison controls are optional, fixtures
+are type-correct and task-scoped, existing authorization governs fixes, and
+retention is proportional. Missing schema limits are distinguished from verified
+unbounded input. Emulation and unavailable hardware checks carry explicit
+evidence limits. Greetings and attribution instructions are omitted.
+
 
 ## repo-cleanup
 
@@ -334,6 +384,8 @@ Automatic discovery stays enabled.
 - [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — art-direction calibration and critique; commit `34040c9c568585f6929bedeaad110ad08f079624`.
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — web typography, component behavior, and access guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — typography, materials, press activation and cancellation, contrast, and reduced-transparency guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
+- [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 
 The automatically discoverable skill owns cross-platform visual hierarchy,
 system decisions, and art direction plus browser component behavior and
@@ -348,6 +400,13 @@ generated-design tells, two-pass self-critique, restraint guidance, and Chanel
 editing mnemonic while removing CSS implementation and general copywriting
 material.
 
+Mobile web guidance maps to `references/mobile-web.md`; edge-data layout choices
+join `references/web-behavior-and-accessibility.md`. Uses current platform
+capabilities and documentation rather than blanket CSS resets or device labels;
+preserves zoom, selection, valid activation, and browser gesture ownership.
+Greetings and attribution instructions are omitted.
+
+
 ## research
 
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
@@ -361,6 +420,8 @@ material.
 - Local: `skills/review-fix-loop` (SreeStack).
 
 Reviewer references:
+
+- [DietrichGebert/ponytail / skills/ponytail-audit](https://github.com/DietrichGebert/ponytail/tree/c982cd411abb53323c4baa1baa3c2f020b8d0b08/skills/ponytail-audit) — explicit whole-tree deletion-evidence guidance in `references/ponytail.md`; addition baseline `c982cd411abb53323c4baa1baa3c2f020b8d0b08`. The composite brief's other material retains the baseline below.
 
 - `references/standards.md` and `references/spec.md`: [mattpocock/skills / skills/engineering/code-review](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/code-review) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 - `references/thermo.md`: [cursor/plugins / cursor-team-kit/skills/thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/tree/a29f5a8ca161b1de4ffc5484454958bebc04eaa5/cursor-team-kit/skills/thermo-nuclear-code-quality-review) — commit `a29f5a8ca161b1de4ffc5484454958bebc04eaa5`.
@@ -404,6 +465,12 @@ Reviewer references:
 ## pr-prep
 
 - Local: `skills/pr-prep` (SreeStack).
+- [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — concise PR evidence and visual selection in `references/publish.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
+
+Retains the local publication workflow and required PR facts. Visuals,
+before/after evidence, and rollback context are conditional on review value;
+the upstream fixed Summary/Evidence/Merge Danger template is omitted.
+
 
 ## review-sweep
 
@@ -411,7 +478,12 @@ Reviewer references:
 
 ## setup-matt-pocock-skills
 
-- [mattpocock/skills / skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/setup-matt-pocock-skills) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/setup-matt-pocock-skills) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
 
 ## showroom
 
@@ -419,13 +491,18 @@ Reviewer references:
 
 ## tdd
 
-- [mattpocock/skills / skills/engineering/tdd](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/tdd) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/tdd](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/tdd) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
 Automatic discovery includes feature and bug work, but not ordinary
 integration-test additions by themselves. Seams established by the spec or
 project conventions count as pre-agreed; user confirmation is reserved for
 material unresolved choices.
 The review stage uses `review-fix-loop`.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
 
 ## teach
 
@@ -437,15 +514,31 @@ The review stage uses `review-fix-loop`.
 
 ## to-spec
 
-- [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/to-spec) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Uses supplied or project-configured tracker and label information; unresolved
+required choices can be supplied directly or through the manual setup skill.
+
 
 ## to-tickets
 
-- [mattpocock/skills / skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/to-tickets) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-tickets) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Uses supplied or project-configured tracker and label information; unresolved
+required choices can be supplied directly or through the manual setup skill.
+
 
 ## triage
 
-- [mattpocock/skills / skills/engineering/triage](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/triage) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/triage](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/triage) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
+Reads supplied or configured label mappings; a missing mapping blocks only the
+mutation that requires it. Setup stays user-invoked.
+
 
 ## web-component-inspiration
 
@@ -454,11 +547,21 @@ The review stage uses `review-fix-loop`.
 
 ## wait-what
 
-- [mattpocock/skills / skills/productivity/wait-what](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/wait-what) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/productivity/wait-what](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/productivity/wait-what) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
+resolution preserves configured or existing legacy paths, keeps one glossary per
+context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+
 
 ## wayfinder
 
-- [mattpocock/skills / skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/wayfinder) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+- [mattpocock/skills / skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/wayfinder) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
+Uses supplied or configured tracker information, with the existing local-file
+fallback. Cross-skill calls are host-neutral and the prototype route remains
+UI-only.
+
 
 ## wizard
 
@@ -488,12 +591,20 @@ Manual-only invocation: `disable-model-invocation: true` and
 - Local: `skills/orchestration` (SreeStack).
 - [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
+- [mattpocock/skills / skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/implement-spec) — task-graph/frontier scheduling adapted into `references/task-graphs.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+
 Locally written general delegation flow. Parallel coverage and competing
 approaches are framed before dispatch; revision-bound verification and measured
 results are checked during integration. Local agent routing permits only
 `engineer`, `senior`, and `staff`, even when the host exposes other ranks.
 It does not create goals or require pstack's cloud worker setup. `pr-prep` owns review
 when it will review the same integrated scope before publication.
+
+The task-graph reference preserves existing integration, review, PR and cleanup
+owners. Workspaces preserve unexpected edits; dependency outcomes require
+integration and verification. Scheduling does not create a goal or assume a
+worker's last merge guarantees a fast-forward.
+
 
 ## koubou
 
@@ -527,3 +638,13 @@ Checked exports use fresh output directories and generation-error checks to
 avoid stale localized files after a masked per-language failure.
 HTML framing guidance identifies the PNG/JPEG extension condition and the
 passthrough behavior of other formats.
+
+## retro
+
+- [mattpocock/skills / skills/engineering/retro](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/retro) — `SKILL.md` and `agents/openai.yaml`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. MIT notice in `licenses/mattpocock-skills.txt`.
+
+Manual-only in both hosts, as upstream. Retains upstream categories, mechanical
+check preference, reference structure, and examples. Cross-skill wording is
+host-neutral; findings carry session evidence and remain recommendations until
+implementation is requested. Review may inspect surrounding contracts, and
+project standards inform both implementation and review.

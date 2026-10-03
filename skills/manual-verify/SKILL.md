@@ -23,6 +23,10 @@ evidence, not the verdict.
    workflows covering the main path and any material error or edge case. State
    the expected result of each workflow.
 
+   For a request to stress-test a component, try worst-case data, or diagnose
+   content-dependent failures, read [realistic edge data](references/edge-data.md).
+   Use its field inventory and fixtures to choose the required assertions.
+
    For an interface audit, identify the requested dimensions first: visual
    system, motion, behavior, or accessibility. Load only their specialists:
    `ui-design` for visual systems and web behavior or accessibility, `animate`

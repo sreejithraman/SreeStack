@@ -18,7 +18,9 @@ a confident wrong fix. Read fully, then be lazy.
 
 Account for every changed hunk and untracked file in the supplied scope. Read
 nearby code, callers, dependencies, and repo rules before claiming a cut is safe.
-Search for helpers, utilities, types, and patterns already in the repo.
+Search for helpers, utilities, types, and patterns already in the repo. Before
+recommending deletion, search the whole tree for the symbol, including tests,
+fixtures, strings, and dynamic references.
 
 ## The ladder
 

@@ -21,7 +21,10 @@ Use this guide when you need to create or renew signing assets for iOS/macOS app
      - `asc web bundle-ids capabilities enable --bundle-id "BUNDLE_RESOURCE_ID" --capability PRIVATE_CLOUD_COMPUTE --confirm`
      - This capability is not available through the public App Store Connect
      capability enum. If the cached session cannot access Developer Portal,
-       clear its scoped cache, then log in again with the same binary:
+       inspect session status, the selected provider, and the exact error first.
+       If recovery requires a fresh session, clear only that account's scoped cache,
+       then log in again with the same binary, following the entrypoint's
+       [authentication reuse rules](../../SKILL.md#reuse-authentication-before-requesting-another-code):
        - `asc web auth logout --apple-id "user@example.com"`
        - `asc web auth login --apple-id "user@example.com"`
    - For App Groups, the public API can enable `APP_GROUPS` but cannot create or
@@ -100,8 +103,8 @@ Notes:
   matching App Store Connect certificate. A multi-identity PKCS#12 also needs
   `--identity-sha256`.
 - Prefer `--password-file`; `ASC_SIGNING_SYNC_PASSWORD` is the non-file fallback.
-  `--password` and `ASC_MATCH_PASSWORD` are deprecated during 4.x and will be
-  rejected in 5.0.0.
+  `--password` was removed in 5.0.0 and is rejected. `ASC_MATCH_PASSWORD` is
+  no longer read and is ignored if set.
 - Certificate/profile-only sync remains supported but reports
   `identityPresent: false`; it is not a usable signing identity by itself.
 - `pull` reports private identities in `sensitiveFiles` and writes them mode

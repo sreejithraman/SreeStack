@@ -33,6 +33,8 @@ change and acceptance check concrete.
    - For browser semantics, component states, focus, keyboard or pointer input,
      announcements, or accessibility, read
      [web behavior and accessibility](references/web-behavior-and-accessibility.md).
+     For mobile-web viewport, safe-area, keyboard, touch, scroll, or browser-chrome
+     problems, also read [mobile browser behavior](references/mobile-web.md).
    - For SwiftUI or UIKit visual work, read
      [Apple-platform visual design](references/apple-platforms.md). Use `swiftui`
      or `uikit` for native implementation, behavior, and accessibility; those
