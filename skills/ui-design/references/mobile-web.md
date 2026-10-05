@@ -85,7 +85,7 @@ must keep metadata consistent with the selected theme. Browser UI may adjust or
 ignore the hint, and installed presentation has its own platform behavior. Check
 the actual supported mode. See [HTML theme-color](https://html.spec.whatwg.org/multipage/semantics.html#meta-theme-color).
 
-Use `manual-verify` for mobile acceptance checks. Device emulation is useful for
+Use `verify` for mobile acceptance checks. Device emulation is useful for
 layout and some input checks, but is an approximation; verify browser chrome,
 keyboard, safe areas, gestures, and touch feel on the target browser and hardware
 when available. Report which paths used emulation, a simulator, or a device and

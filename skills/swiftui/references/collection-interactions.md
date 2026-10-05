@@ -37,4 +37,4 @@ documentation. The new container and callback are unavailable on tvOS.
 
 Exercise drag and swipe gestures on each supported input surface. Verify full
 swipe behavior, cancellation, scrolling dismissal, focus, and accessibility
-actions with `manual-verify` when these interactions affect the requested flow.
+actions with `verify` when these interactions affect the requested flow.

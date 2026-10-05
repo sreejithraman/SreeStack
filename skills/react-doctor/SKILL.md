@@ -23,7 +23,7 @@ Run `npx react-doctor@latest design --verbose`. This selects design-tagged UI
 composition, typography, interaction, accessibility, and motion rules,
 including focused rules that remain opt-in during a general health scan. Treat
 the result as source-code findings. For an audit of the rendered interface and
-real interactions, use `manual-verify` with `ui-design` rather than treating a
+real interactions, use `verify` with `ui-design` rather than treating a
 clean scan as a pass.
 
 ## For runtime performance problems:

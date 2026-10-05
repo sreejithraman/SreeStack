@@ -49,7 +49,7 @@ that match the evidence you need:
   termination: read [`references/apple-memory.md`](references/apple-memory.md).
 
 These references refine the loop; they do not replace it. After the cause and
-repair are established, use `manual-verify` for the final user workflow check.
+repair are established, use `verify` for the final user workflow check.
 
 Build the right feedback loop, and the bug is 90% fixed.
 

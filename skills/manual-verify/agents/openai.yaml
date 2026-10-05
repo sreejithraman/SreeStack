@@ -1,4 +1,0 @@
-interface:
-  display_name: "Manual Verify"
-  short_description: "Test changes through real user workflows"
-  default_prompt: "Use $manual-verify to test workflows affected by these changes from the audience’s perspective."

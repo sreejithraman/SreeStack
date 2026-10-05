@@ -171,7 +171,7 @@ Settle the external model step by its own rule.
    React or Next code, run
    `npx react-doctor@latest --verbose --scope changed --base <resolved-base> --include-untracked`
    and put the report in test evidence. A dropped score is a failed check.
-   Use judgment to decide whether `/manual-verify` would add useful confidence,
+   Use judgment to decide whether `/verify` would add useful confidence,
    based on the changed behavior, risk, and existing test coverage. Invoke it
    when needed, even if review found no fixes. Fix failures and rerun affected
    checks; reassess manual verification after fixes. Keep evidence only while it

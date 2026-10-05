@@ -57,7 +57,7 @@ Run the smallest set that covers every changed scope:
   coverage would be redundant;
 - Analyze for affected C, C++, Objective-C, or Objective-C++ targets;
 - tests that compile and exercise changed low-level code;
-- `manual-verify` for affected launch, extension, IPC, plug-in, or allocation
+- `verify` for affected launch, extension, IPC, plug-in, or allocation
   workflows;
 - archive or distribution validation only when the task includes release
   configuration, signing, or distribution.

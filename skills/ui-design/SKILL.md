@@ -53,7 +53,7 @@ change and acceptance check concrete.
 6. When implementation is in scope, cover every affected state and access
    variant rather than styling or testing only the happy path.
 7. Exercise the result on the real surface at relevant sizes and through the
-   affected input and accessibility paths. Use `manual-verify` when hands-on
+   affected input and accessibility paths. Use `verify` when hands-on
    evidence would add confidence.
 
 The work is done when every selected dimension has an explicit design job,

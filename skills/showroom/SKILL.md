@@ -20,11 +20,11 @@ Use the smallest form that proves the change:
   timing, transition, or animation quality matters.
 
 Follow a format the user requests. Otherwise prefer one screenshot, and expand
-only when the behavior needs more states. Use `manual-verify` first when risk or
+only when the behavior needs more states. Use `verify` first when risk or
 scope needs broader workflow testing; Showroom presents its visual proof rather
 than choosing a second test plan.
 
-Use the same deployment or device chosen for the task or by `manual-verify`.
+Use the same deployment or device chosen for the task or its verification run.
 Reuse checked captures from that run when they show the change; do not switch
 targets just to make proof easier.
 
@@ -49,7 +49,7 @@ task boundary. Put labels outside the captured UI.
 ## Web
 
 Exercise and capture the changed state or flow at the selected target. When
-neither the task nor `manual-verify` selects a web target, use a local preview.
+neither the task nor its verification run selects a web target, use a local preview.
 Return a checked URL for access away from home.
 
 For a deployed target, confirm that its URL shows the changed UI. State any
@@ -90,7 +90,7 @@ or uncertainty and leave that service running. Do not run
 
 ## iOS
 
-Use the requested iOS target, or the one already used by `manual-verify`. When
+Use the requested iOS target, or the one already used by the verification run. When
 neither has selected a target, default to Simulator if it supports the flow;
 otherwise use a suitable physical device. Build and launch on that target when
 needed. For Simulator, use one; create one only if none is usable. Leave every

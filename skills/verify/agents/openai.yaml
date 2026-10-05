@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify"
+  short_description: "Verify workflows and maintain project recipes"
+  default_prompt: "Use $verify to test these changes through real user workflows, using and refreshing the project's verification map when one is set up."

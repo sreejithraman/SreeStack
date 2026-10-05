@@ -31,7 +31,7 @@ also in scope.
    name that evidence gap.
 
 Use `animate` for the moving feedback's timing and interruption while keeping
-the action and state contract here. Use `manual-verify` when hands-on evidence
+the action and state contract here. Use `verify` when hands-on evidence
 would add confidence.
 
 This branch is complete when every affected semantic, keyboard, focus, status,
@@ -40,7 +40,7 @@ gap is explicit.
 
 ## Content under constraint
 
-When real data breaks a component, use `manual-verify`'s edge-data workflow to
+When real data breaks a component, use `verify`'s edge-data workflow to
 reproduce it through the existing data boundary. Choose the display contract per
 field, then fix the demonstrated cause:
 

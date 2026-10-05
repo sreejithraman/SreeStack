@@ -267,21 +267,41 @@ invocation remains framework- and task-based.
 Redistributed behavior and access guidance is folded into the normal UIKit
 workflow; automatic invocation remains framework- and task-based.
 
-## manual-verify
+## verify
 
-- Local: `skills/manual-verify` (SreeStack).
+- Local: `skills/verify` (SreeStack).
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — interface-review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [cursor/plugins / pstack verification skills](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills) — `create-verification-skill/SKILL.md` and `maintain-verification-skill/SKILL.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 - [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 
-Imported criteria apply to evidence-based interface audits. Automatic
-invocation remains limited to hands-on verification where it adds confidence.
-Web checks follow the requested deployment; iOS checks follow the requested
-Simulator or device target. iOS tool routing uses available Xcode MCP, CLI, and
-interface tools without a dependency on the Build iOS Apps plugin. An existing
-project verification skill supplies applicable launch and drive steps;
-`manual-verify` retains workflow selection and acceptance judgment.
+One automatically discoverable skill owns real-workflow selection, launch,
+driving, acceptance judgments, evidence, cleanup, and project documentation.
+Ordinary checks use a temporary plan when no map exists and maintain affected
+recipes when a map is already set up. Creating a map requires a setup or reusable
+documentation request; verification can also explicitly leave existing docs alone.
+Reads the project index before selected recipes, expanding to all recipes for
+whole-app or whole-map requests. Discloses map-writing examples and interface
+audit or accessibility guidance through conditional references.
+Centralizes documentation policy and shared verification rules in the main
+procedure; map and platform references retain their task-specific guidance.
+Uses an authoritative index and feature recipes in project docs, defaulting to
+`docs/agents/verification/`, rather than generating project skills. Adapts the
+pstack feature formula to user descriptions and sub-features, entry points,
+harness driving with assertions and proof, and gotchas. Supports proportional
+targeted updates, whole-app verification, source-and-live whole-map maintenance,
+and rewriting or reorganizing maps while preserving useful human assertions.
+Existing project skills may provide facts consistent with their invocation
+policies; this skill retains procedure ownership and leaves migration explicit.
+Imported interface criteria retain full requested audit coverage. Web and iOS
+checks follow the requested deployment or Simulator/device target. iOS routing
+uses available Xcode MCP, CLI, and interface tools without a Build iOS Apps plugin
+dependency. Terminal and service checks use process or PTY driving, bounded
+completion, public protocols, and fresh persisted-output reads. Harness selection
+follows host routing and public user paths, including CLI-driven UIs. Keeps
+bounded reproduction attempts, failed-attempt evidence, authorization, isolation,
+redaction, run-owned cleanup, and separate documentation and product verdicts.
 
 Edge-data workflow and catalog map to `references/edge-data.md`, with mobile
 assertions in `references/web.md`. Comparison controls are optional, fixtures
@@ -309,19 +329,10 @@ shared installs, retained data, and resources needed by unmerged stack layers.
 
 UI prototypes for web, mobile, and desktop; no logic-prototype mode. The local
 workflow chooses enough distinct options to expose the decision, coordinates
-with `ui-design`, `animate`, `swiftui` or `uikit`, `manual-verify`, and
+with `ui-design`, `animate`, `swiftui` or `uikit`, `verify`, and
 `showroom`, and adds explicit rules for live side effects, unavailable target
 tooling, comparison-control verification, durable decisions, and proportional
 prototype retention and cleanup.
-
-## project-verification
-
-- [cursor/plugins / pstack verification skills](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills) — `create-verification-skill/SKILL.md` and `maintain-verification-skill/SKILL.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
-
-Locally written as one create-or-refresh skill. Uses the target project's agent
-skill location, a compact feature map, and a live self-check. Leaves one-time
-acceptance verdicts to `manual-verify` and omits automatic PR creation and
-mandatory full-feature maintenance passes.
 
 ## react-best-practices
 
