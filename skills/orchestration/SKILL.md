@@ -45,7 +45,7 @@ Orchestration does not require or authorize a goal.
    tested.
 
    Use `/review-fix-loop` for code changes that affect behavior and docs that
-   change agent behavior. When `/pr-prep` will review the same integrated scope
+   change agent behavior. When `/pr` will review the same integrated scope
    before publication, let it run that loop. Child acceptance does not replace
    independent review. Reuse a completed review only while its scope and
    evidence still match the final change.

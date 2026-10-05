@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR"
+  short_description: "Write PR bodies or bring a PR to readiness"
+  default_prompt: "Use $pr for the requested PR body, preparation, CI, or feedback task; report readiness when delivering a PR."

@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
 
-Use the issue tracker and triage labels supplied by the user or project configuration. If a required choice remains unknown, ask the user to supply it or run `/setup-matt-pocock-skills`.
+Use the issue tracker and triage labels supplied by the user or project configuration. If a required choice remains unknown, ask the user to supply it or run `/setup-sreestack`.
 
 ## Process
 

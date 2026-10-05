@@ -180,7 +180,7 @@ Locally written goal lifecycle that chooses solo or parallel execution within
 an explicitly requested parent goal. It uses pstack's up-front split and
 selection rule, gives child goals to agents with independent outcomes, and
 leaves agent routing and result integration to `orchestration`. A PR finish
-line routes through `pr-prep`; pstack's cloud and model defaults are excluded.
+line routes through `pr`; pstack's cloud and model defaults are excluded.
 
 ## gemini
 
@@ -200,10 +200,6 @@ sync rollback guidance preserves partial-restoration recovery state instead of
 promising unconditional rollback.
 
 
-## grill-me
-
-- [mattpocock/skills / skills/productivity/grill-me](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/grill-me) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-
 ## grill-with-docs
 
 - [mattpocock/skills / skills/engineering/grill-with-docs](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/grill-with-docs) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
@@ -220,12 +216,6 @@ promising unconditional rollback.
 The manual-only invocation remains in both hosts. The local skill writes an
 off-repo resume note with operational state and supports checking that note on
 pickup. It omits pstack's automatic WIP commit and transcript-specific paths.
-
-## implement
-
-- [mattpocock/skills / skills/engineering/implement](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/implement) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-
-Checks implementation behavior before `review-fix-loop`, which reviews and fixes accepted findings before committing.
 
 ## improve-codebase-architecture
 
@@ -322,6 +312,9 @@ shared installs, retained data, and resources needed by unmerged stack layers.
 ## merge
 
 - Local: `skills/merge` (SreeStack).
+
+PR workflow references use the local `pr` entry point.
+
 
 ## prototype
 
@@ -422,10 +415,6 @@ Greetings and attribution instructions are omitted.
 
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-## resolving-merge-conflicts
-
-- [mattpocock/skills / skills/engineering/resolving-merge-conflicts](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/resolving-merge-conflicts) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-
 ## review
 
 - Local: `skills/review` (SreeStack).
@@ -461,27 +450,55 @@ Indirect-consumer checks use `change-safety`; React or Next assessments use
   fall back to OpenCode on GLM Flash 5.3 within permitted access. External gaps
   are disclosed; required native coverage remains a completion prerequisite.
 
-## pr-prep
+## pr
 
-- Local: `skills/pr-prep` (SreeStack).
-- [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — concise PR evidence and visual selection in `references/publish.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
+- Local: `skills/pr` (SreeStack).
+- [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
-Retains the local publication workflow and required PR facts. Visuals,
-before/after evidence, and rollback context are conditional on review value;
-the upstream fixed Summary/Evidence/Merge Danger template is omitted.
+The local name and UI are `pr`. Retains automatic discovery and the full local
+readiness/publication/CI/feedback/merge handoff workflow, with a separate route
+for title/body drafting and explicitly requested remote-description edits.
+The body guide uses Summary/Evidence/Merge Danger by default, defers to project
+PR templates, and preserves local why/effect/root-cause/stack facts. It expands
+visual selection to algorithm, runtime, UI, file, interaction, diff, and complete
+block views with locally written examples. Evidence is observed and revision-
+appropriate, with unavailable before states disclosed. Reversibility, concrete
+consumers, rollout, and restoration limits replace a forced one-word blast-radius
+rating. Small PRs can use concise prose; publication refreshes the guide's facts
+against the current scope/head. Cross-skill references use the current local name.
 
 
 ## review-sweep
 
 - Local: `skills/review-sweep` (SreeStack).
 
-## setup-matt-pocock-skills
+## setup-sreestack
 
-- [mattpocock/skills / skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/setup-matt-pocock-skills) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+- [mattpocock/skills / skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/setup-matt-pocock-skills) — prerelease-main import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60` (the skill folder matches v1.3.1).
 
-Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
-resolution preserves configured or existing legacy paths, keeps one glossary per
-context, and creates new files lazily. Cross-skill calls use host-neutral wording.
+Manual-only in both hosts. The local name and UI are SreeStack Setup. One setup
+workflow owns project-specific conventions and pointers, with scoped update,
+glossary migration, optional ticket/triage configuration, and explicitly
+requested verification-map setup through `verify`. Project workflow guidance
+uses current local review, PR, stack, merge, acceptance, and delegation owners;
+host settings and installation remain separate. Existing commands and standards
+are linked rather than duplicated. Active instruction files are selected by the
+user/host or existing pointer ownership, with `AGENTS.md` for a new default.
+
+Domain defaults use `GLOSSARY.md` / `GLOSSARY-MAP.md`; established legacy/custom
+paths and one vocabulary source per context remain supported. Context boundaries,
+not package count alone, determine layout. `domain.md` is adapted to actual
+project paths. Glossary migration preserves vocabulary, local edits, custom
+locations, and ADRs; updates consumers; handles collisions; and is a no-op on
+rerun. General context documents remain outside that migration. The GitHub tracker
+seed lists external PRs through the paginated REST endpoint and its
+`author_association` field instead of an unsupported `gh pr list` JSON field,
+fetching comments separately. Other tracker conventions retain their import
+behavior; the triage mapping uses an author-neutral role
+heading. Full setup writes only the configured/requested docs, preserves project
+additions, and distinguishes documented commands from exercised readiness.
+
+PR workflow references use the local `pr` entry point.
 
 
 ## showroom
@@ -503,20 +520,14 @@ resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
 
-## teach
-
-- [mattpocock/skills / skills/productivity/teach](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/teach) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-
-## to-questionnaire
-
-- [mattpocock/skills / skills/productivity/to-questionnaire](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/to-questionnaire) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-
 ## to-spec
 
 - [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
 Uses supplied or project-configured tracker and label information; unresolved
 required choices can be supplied directly or through the manual setup skill.
+
+Setup references use the local `setup-sreestack` entry point.
 
 
 ## to-tickets
@@ -525,6 +536,8 @@ required choices can be supplied directly or through the manual setup skill.
 
 Uses supplied or project-configured tracker and label information; unresolved
 required choices can be supplied directly or through the manual setup skill.
+
+Setup references use the local `setup-sreestack` entry point.
 
 
 ## triage
@@ -539,20 +552,13 @@ Reads supplied or configured label mappings; a missing mapping blocks only the
 mutation that requires it. Setup stays user-invoked. Workflow reproduction can
 use `verify` when needed to resolve uncertainty; missing intended behavior requires clarification.
 
+Setup references use the local `setup-sreestack` entry point.
+
 
 ## web-component-inspiration
 
 - Local: `skills/web-component-inspiration` (SreeStack); explicit-only and
   web-scoped.
-
-## wait-what
-
-- [mattpocock/skills / skills/productivity/wait-what](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/productivity/wait-what) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
-
-Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
-resolution preserves configured or existing legacy paths, keeps one glossary per
-context, and creates new files lazily. Cross-skill calls use host-neutral wording.
-
 
 ## wayfinder
 
@@ -562,13 +568,6 @@ Uses supplied or configured tracker information, with the existing local-file
 fallback. Cross-skill calls are host-neutral and the prototype route remains
 UI-only.
 
-
-## wizard
-
-- [mattpocock/skills / skills/engineering/wizard](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/wizard) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-
-Manual-only invocation: `disable-model-invocation: true` and
-`allow_implicit_invocation: false`.
 
 ## writing-for-agents
 
@@ -597,7 +596,7 @@ Locally written general delegation flow. Parallel coverage and competing
 approaches are framed before dispatch; revision-bound verification and measured
 results are checked during integration. Local agent routing permits only
 `engineer`, `senior`, and `staff`, even when the host exposes other ranks.
-It does not create goals or require pstack's cloud worker setup. `pr-prep` owns review
+It does not create goals or require pstack's cloud worker setup. `pr` owns review
 when it will review the same integrated scope before publication.
 
 The task-graph reference preserves existing integration, review, PR and cleanup
