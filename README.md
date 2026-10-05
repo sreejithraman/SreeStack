@@ -127,17 +127,25 @@ new task after applying the files and check the effective settings. Existing
 tasks may retain their selections. Keep any installed links on a stable clone,
 not a temporary worktree.
 
+[Review](skills/review/SKILL.md) assesses one change without fixes or model-specific
+execution. [Review Sweep](skills/review-sweep/SKILL.md) consolidates supplied
+reviews, validates findings, and fixes accepted issues.
+[Review Fix Loop](skills/review-fix-loop/SKILL.md) coordinates independent native
+and external reviews with sweep rounds. Implementation verification precedes
+review; sweep checks affected findings and fixes, reusing valid evidence.
+
 Sample checks after installation:
 
-- Every nonempty review scope also runs the external model step in
-  review-fix-loop. Native reviewer counts below do not include that step.
-- A small behavior change uses one reviewer; substantial changes, multiple
-  behaviors, shared contracts, risky logic, or work from several agents use two.
-  Each reviewer reads the whole diff in every round.
-- A complete clean review can finish after one round. Accepted code fixes
-  trigger another full review against the original base.
-- Ordinary docs use parent review. Docs that change agent behavior use one
-  independent reviewer, with another full review after substantive fixes.
+- A standalone Review reports findings and coverage without editing or dispatch.
+- The loop requests external review through Gemini, falling back to OpenCode if
+  it cannot complete within permitted access. Native counts exclude that review.
+- A small behavior change uses one native reviewer; substantial changes,
+  shared contracts, risky logic, or several authors use two. Each reads the full scope.
+- A complete clean round can finish. Code and substantive instruction fixes
+  trigger a fresh full review against the original base; ordinary docs and
+  wording-only fixes use targeted checks.
+- Ordinary docs use parent review; agent behavior changes use one independent
+  reviewer. Unavailable native coverage blocks completion; external gaps are disclosed.
 - Independent work can use agents without creating goals unless the user asks
   for goal-backed work. A difficult cohesive task can keep one owner.
 

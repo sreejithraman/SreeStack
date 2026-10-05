@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Fix Loop"
-  short_description: "Review, fix, and verify a local diff"
-  default_prompt: "Use $review-fix-loop to review, fix, and verify the current diff until it is stable or blocked."
+  short_description: "Coordinate independent reviews and accepted fixes"
+  default_prompt: "Use $review-fix-loop to coordinate independent reviews and sweep all findings until the current change is reviewed or blocked."

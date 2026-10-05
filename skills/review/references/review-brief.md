@@ -1,16 +1,13 @@
 # Review brief
 
-## Dispatch
+Prepare the same scope and assessment criteria for every reviewer. Include this
+skill and the references needed for the changed content. Supply full contents
+for external packets; accessible absolute paths are sufficient for local
+reviewers. Keep briefs and snapshots outside the reviewed diff.
 
-- Agent role and requested model/effort: read the active settings.
-- Context: for native reviewers, explicitly pass `fork_turns: "none"` to the
-  spawn tool. For external models, start a fresh conversation or session and
-  embed evidence and reference contents using the
-  [Gemini review flow](../../gemini/references/review.md) or
-  [OpenCode review flow](../../opencode/references/review.md).
-- Permissions: read-only; leave edits, delegation, and acceptance to the parent.
-- Emphasis: the assigned review focus; it never limits full-diff coverage.
-- Review references: absolute paths to the references selected for this emphasis.
+Independent reviewers receive no earlier verdicts or author defenses. Work
+read-only, report findings, and leave edits, delegation, and acceptance to the
+caller. An assigned emphasis never limits full-scope coverage.
 
 ## Requirements and scope
 

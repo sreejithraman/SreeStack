@@ -1,201 +1,55 @@
 ---
 name: review-fix-loop
-description: Review a branch, PR, or local diff; fix accepted findings and verify before handoff or push. Use when the user asks to review project changes and before handing off code changes that affect behavior or docs that change agent behavior.
+description: Coordinate independent reviews and fix accepted findings until a change is reviewed or blocked. Use before handing off behavior changes or when asked to review and fix a branch, PR, or local diff.
 ---
 
 # Review Fix Loop
 
-The parent owns scope, dispatch, triage, fixes, and verification. Leave commits,
-pushes, PR replies, and merges to the caller.
+Run [review](../review/SKILL.md), external review, and
+[review-sweep](../review-sweep/SKILL.md) in rounds. Leave commits, pushes,
+PR replies, and merges to the caller.
 
-## Scope and review path
+1. **Prepare.** Establish scope using Review and its
+   [brief](../review/references/review-brief.md). Resolve the base once and keep
+   it across rounds. Record current head, complete diff, untracked contents,
+   requirements, and verification evidence. For external packets, include the
+   Review skill and matching reference contents. Pause edits until reviews return.
 
-Resolve the supplied base once; use the merge-base for branch comparisons.
-Otherwise use the established parent branch or repo setting; ask if ambiguous.
-Stop on an invalid base or empty scope.
+2. **Review.** For ordinary docs and wording-only instruction edits, the parent
+   performs one Review. For changes to agent procedures or configuration, use
+   one independent native reviewer. For code or mixed changes, use one for a
+   small change to one behavior; use two for substantial changes, multiple
+   behaviors, shared contracts, risky logic, or work from several agents.
+   Keep at most two unless the user asks for more. Reassess after fixes.
 
-Default scope: `git diff <resolved-base> --` plus contents from
-`git ls-files --others --exclude-standard`. This includes committed, staged,
-unstaged, and untracked work. Honor a narrower scope when requested.
-Gather requirements from the user, issues, or spec; repo standards; and checks.
-For code with plausible consumers beyond the diff, such as persisted data, wire
-formats, or lifecycle behavior, use [change-safety](../change-safety/SKILL.md)
-to test the important assumptions. Include its evidence and unresolved gaps in
-the review brief, and recheck assumptions that later fixes affect.
-Record the base, head, diff, and untracked contents for each round. Every
-reviewer reads that complete scope in every round, including the integrated
-work of all authors. Keep the original base when fixes change the diff.
+   Follow [agent routing](../orchestration/references/agent-routing.md).
+   Start fresh reviewers each round with `fork_turns: "none"`, in parallel when
+   using two. Supply the same complete brief and ask each to use Review over the
+   full scope. With two, emphasize correctness for one and code quality for the
+   other; both cover the whole change. Missing native coverage blocks completion.
 
-Prepare a complete [review brief](references/review-brief.md) for each independent
-reviewer. All reviewers get the same requirements and accepted scope changes,
-base/head, full diff and untracked contents, standards, and test evidence.
-Supply complete contents inline or through absolute paths; summaries do not
-replace them. Keep any brief files and diff snapshots outside the reviewed diff.
-Pause edits until all independent reviewers return.
-Allow inspection of nearby code. Exclude earlier reviewer verdicts and the
-author's defense from the brief and inherited context.
+   Also request one external review through [gemini](../gemini/SKILL.md).
+   If it cannot complete, try [opencode](../opencode/SKILL.md) on GLM Flash 5.3
+   once with the same evidence. These skills own execution and result checks.
+   Respect permission denials; fallback cannot bypass them. If neither completes,
+   retain any findings and report the external review gap; it does not replace
+   native coverage or count as a successful external review.
 
-Use focused parent review for ordinary docs and wording-only instruction edits.
-When docs change agent behavior, use one independent reviewer as described below.
-Use the code loop for code or mixed changes, including executable skill scripts.
-Judge the changed content, not its extension. Honor an explicit request for
-additional reviewers or rounds.
+3. **Sweep.** Give Review Sweep all reviews received, including external findings
+   and any other supplied reviews. Preserve sources and coverage gaps. Sweep
+   owns claim validation, accepted fixes, and their verification. Reuse evidence
+   only while it applies to the resulting change.
 
-## External model review
+4. **Repeat or finish.** After code or substantive instruction fixes, refresh
+   the complete snapshot and repeat against the original base. If the snapshot
+   changed during review, restart that round. Ordinary docs and wording-only
+   fixes need targeted checks through Sweep rather than another full round.
+   Finish when required native review is complete, the external attempt is
+   accounted for, findings are settled, and applicable checks pass. Code and
+   substantive instructions require a final round with no fixes. Reopen rejected
+   or deferred findings only with new evidence. Report blockers or stalled work;
+   incomplete rounds never count as clean.
 
-Send every nonempty review scope through this step, on every path below. It joins
-the parent or native reviewers. It does not replace them or count toward the code
-path's limit of two native reviewers.
-
-Run Gemini first, through [Gemini](../gemini/SKILL.md) and its
-[review flow](../gemini/references/review.md): native agy code review for code or
-mixed changes, and packet review for documentation-only changes. Give it the same complete
-brief and review references, with contents in the packet. Start a fresh Gemini
-conversation each round. A finished Gemini review ends this step. Include its
-findings in parent triage or `/review-sweep`, labeled Gemini.
-
-When the Gemini flow reports quota, Gemini is not required for that round.
-Run one review of the same packet through [OpenCode](../opencode/SKILL.md) and
-its [review flow](../opencode/references/review.md), on GLM Flash 5.3: native
-OpenCode review for code or mixed changes, and packet review for documentation-only changes.
-Resolve `opencode-go/glm-5.3-flash` from `opencode models --pure`; if absent,
-the fallback is not finished. Use a fresh session, run once, and stop it after
-15 minutes if it has not exited. A finished fallback joins triage, labeled
-GLM. Record a fallback that does not run or does not finish as not finished.
-That record is not a blocker, and native coverage can still complete the round.
-
-Quota is the only Gemini miss that settles this step without a finished review.
-Every other incomplete Gemini run stays a blocker, including auth failure,
-policy refusal, timeout after the Gemini recovery retry, host approval denial,
-denied required evidence, and partial coverage. A round is complete when Gemini
-or the fallback has finished, or the Gemini flow reported quota and the
-fallback is recorded as not finished, and every required native reviewer has
-full coverage.
-
-The paths below govern repeats. Code fixes and substantive instruction fixes
-start a fresh round for native reviewers and this step. Ordinary docs and
-wording-only instruction fixes need targeted verification after the initial
-external model review.
-
-## Focused review: ordinary docs
-
-The parent reviews the whole scope once against the requirements and repo rules.
-Check facts, conflicting instructions, missing requirements, and broken references.
-Treat style preferences as optional; enforce explicit writing requirements.
-
-Triage findings and apply accepted fixes, then check the revised text and relevant
-links, examples, and skill structure. Resolve remaining substantive issues and
-recheck the affected sections. Finish when accepted fixes are complete and relevant
-checks pass, or report concrete blockers and unfinished work.
-
-This path ends with targeted verification; edits do not start another full review
-or dispatch the code reviewers below. Report the result using the shared handoff.
-
-## Docs that change agent behavior
-
-Use one fresh, independent native review agent plus the external model review for changes to skill procedures, global
-instructions, or agent configuration. Set `fork_turns: "none"` explicitly. Follow
-[agent routing](../orchestration/references/agent-routing.md) for role selection and
-settings each round.
-
-Add realistic sample requests to the brief. Ask the reviewer to trace their effects,
-check conflicts and missing requirements, and report findings with evidence,
-coverage, and gaps. Keep it read-only and independent of earlier conclusions.
-
-The parent triages findings, fixes accepted issues, and checks relevant links,
-examples, syntax, and skill structure. After substantive fixes, restart with a fresh
-native reviewer and this step on the whole updated change against the original base. Wording-only
-fixes need targeted checks. Finish after a complete clean review and passing
-checks. Missing native coverage or an unavailable native reviewer is a blocker.
-Settle the external model step by its own rule.
-
-## Code review loop
-
-1. **Review.** Choose one reviewer for a small, clear change to one behavior.
-   Use two for substantial changes, multiple behaviors, shared contracts, risky
-   logic, or work from several agents. Keep at most two unless the user explicitly
-   requests more.
-   Reassess the choice when fixes change the scope.
-
-   Follow [agent routing](../orchestration/references/agent-routing.md) for reviewer
-   selection and settings each round.
-   Launch fresh agents each round, in parallel when using two, within available
-   slots. Set `fork_turns: "none"` explicitly for every reviewer; a new agent
-   with inherited history is not a fresh-context review. Do not resume a prior
-   reviewer for a new round.
-
-   Cover these checks in every round:
-
-   - **Correctness:** bugs, regressions, edge cases, security, data loss, and
-     test gaps; use [Spec](references/spec.md) to trace requirements from the
-     user request or supplied spec.
-   - **Code quality:** [Ponytail](references/ponytail.md) for cuts and reuse,
-     [Thermo](references/thermo.md) for structure and boundaries, and
-     [Standards](references/standards.md) for repo rules.
-
-   When the scope includes React or Next code, include
-   [react-best-practices](../react-best-practices/SKILL.md) in every reviewer's
-   references. Reviewers follow its How to Use against the diff. For the external
-   model packet, the parent follows that How to Use against the diff and puts the
-   skill file and those matching rule files in the packet.
-
-   One reviewer covers both sets. With two, assign one set to each for emphasis;
-   both still read every changed hunk and new file, trace nearby effects, and
-   may report issues outside their emphasis. Keep Spec, Standards, and
-   react-best-practices findings labeled separately even when one reviewer
-   supplies them.
-
-   Name the change's main risks in the briefs, such as access control, concurrent
-   updates, or data migration. These guide the existing reviewers' checks; they
-   do not add another reviewer automatically.
-
-   Include the references for each reviewer's assigned emphasis in its brief.
-   Require findings with locations, evidence, impact, and proposed remedies,
-   plus coverage and gaps. Leave edits, further delegation, and acceptance to
-   the parent. A complete review may find
-   no issues. Require a concrete benefit for structural changes; preferences
-   alone do not require a fix or another round.
-
-   If the code changes during review, refresh the whole scope and restart the
-   round. Missing native coverage or an unavailable native reviewer
-   is a blocker, not a clean review. Settle the external model step by its own
-   rule. Beyond that step, include extra reviews only when the user
-   explicitly requests them, and include their findings in the sweep.
-
-2. **Sweep.** Run `/review-sweep` in the parent. Keep each finding’s source,
-   including Standards versus Spec versus react-best-practices. Finish when every
-   finding has a disposition and every accepted fix is complete or blocked.
-   Preserve intended behavior and contracts within the user’s authorized scope.
-
-3. **Verify.** Run planned and fix-specific checks. When the scope includes
-   React or Next code, run
-   `npx react-doctor@latest --verbose --scope changed --base <resolved-base> --include-untracked`
-   and put the report in test evidence. A dropped score is a failed check.
-   Use judgment to decide whether `/verify` would add useful confidence,
-   based on the changed behavior, risk, and existing test coverage. Invoke it
-   when needed, even if review found no fixes. Fix failures and rerun affected
-   checks; reassess manual verification after fixes. Keep evidence only while it
-   still applies to the current code. Report any verification you consider
-   necessary but cannot run as a concrete blocker.
-
-4. **Finish or repeat.** A complete clean round with passing checks can finish,
-   including the first round. After any accepted fix or verification fix, refresh
-   the full diff and untracked contents and return to step 1 against the original base.
-   Small fixes count too; every round reviews the whole current change, not
-   just fixes or earlier findings. Reopen rejected or deferred findings only
-   with new evidence.
-
-   Finish only when the last round makes no fixes, needs no further accepted
-   fixes, has complete native coverage, has a settled external model step, and
-   passes relevant checks, including any manual verification judged necessary. Continue after
-   fixes until that condition holds. If review stops making progress, diagnose
-   the repeated issue, use a stronger reviewer when needed, or report the
-   concrete blocker. An incomplete round never counts as clean.
-
-## Handoff
-
-Report scope, review path, round count, reviewer roles and requested settings,
-external model status and coverage (Gemini, or GLM after a quota report,
-including a fallback recorded as not finished), fixes, deferrals, blockers,
-checks, any manual verification evidence,
-and remaining risks. Distinguish confirmed settings from unverified requests.
+5. **Report.** Return scope, rounds, reviewer settings, external completion or
+   gaps, findings, fixes, deferrals, checks, and blockers. Distinguish requested
+   settings from confirmed runtime settings.
