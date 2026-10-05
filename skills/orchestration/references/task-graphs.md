@@ -36,9 +36,9 @@ ticket accounted for through the project's tracker workflow.
    limit until every ticket's required outcome is accounted for.
 
 6. Review the complete integrated change through `review-fix-loop`, or let
-   `pr-prep` own that review when it will publish the same scope. If the user
+   `pr` own that review when it will publish the same scope. If the user
    requested a PR or the tracker workflow requires one, open a draft once there
-   is a reviewable commit and use `pr-prep` for readiness. Leave final issue
+   is a reviewable commit and use `pr` for readiness. Leave final issue
    completion to the applicable tracker/merge workflow; integrated work alone
    does not establish that a required PR is merged.
 

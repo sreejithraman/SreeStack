@@ -38,7 +38,7 @@ skills with `agy --print /skills --output-format json` and plugins with
 OpenCode's native code review uses its built-in `/review` command; check that
 the installed CLI supports `opencode run --command` and has no `review` command
 override. No review plugin is required.
-`pr-prep` brings a single PR to readiness; `merge` lands ready PRs or stacks and
+`pr` writes titles/bodies or brings a single PR to readiness; `merge` lands ready PRs or stacks and
 finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
 stacks and `repo-cleanup` for completed task resources, including simulator and
 emulator test installs when platform tooling is available.
@@ -53,6 +53,15 @@ The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvemen
 to the agent environment. Invoke it explicitly; it returns recommendations.
 Domain skills use `GLOSSARY.md` for new layouts and preserve configured or
 existing legacy `CONTEXT.md` glossary paths.
+
+[SreeStack setup](skills/setup-sreestack/SKILL.md) is the manual
+`setup-sreestack` entry point for project workflow conventions, glossary/ADR
+paths, and optional issue tracking and triage labels. It links the project's
+existing checks, review and PR conventions, and verification knowledge to the
+shared skills. An explicit verification-setup request uses `verify` to build
+and prove a reusable map. Invoke setup with “migrate glossary” to move existing
+domain `CONTEXT.md` / `CONTEXT-MAP.md` files to `GLOSSARY.md` / `GLOSSARY-MAP.md`
+and update their consumers without repeating other setup.
 
 ### Product verification
 

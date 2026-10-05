@@ -54,9 +54,9 @@ limit on agents or goals. Ordinary delegation outside a goal uses
    Repair or reassign gaps when useful; a child reporting completion does not
    prove the integrated parent result. Keep every required slice accounted for.
 
-5. **Deliver and verify.** For a PR finish line, use `/pr-prep` after
+5. **Deliver and verify.** For a PR finish line, use `/pr` after
    implementation. It owns review, publication, CI, feedback, and resulting
-   fixes. Use `pr-prep yolo` only when the user explicitly requested a merge.
+   fixes. Use `pr yolo` only when the user explicitly requested a merge.
    For a local code change or agent instruction change, use `/review-fix-loop`
    when its trigger applies. Run the checks named in the parent objective and
    read their output. Keep the goal active while a required result or check is

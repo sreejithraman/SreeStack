@@ -6,7 +6,9 @@ Preserve the project's configured paths. Otherwise use existing `GLOSSARY.md` /
 `GLOSSARY-MAP.md`, or legacy `CONTEXT.md` / `CONTEXT-MAP.md` when they hold the
 domain vocabulary. Follow the map's links to the relevant context. Resolve any
 competing authoritative files before writing; keep one glossary per context.
-The names below are defaults for new layouts, not instructions to rename files.
+The names below are defaults for new layouts. An explicitly requested migration
+through `setup-sreestack` renames legacy glossary files and updates these
+configured paths and their consumers together.
 
 ## Before exploring, read these
 

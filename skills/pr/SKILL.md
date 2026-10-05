@@ -1,19 +1,28 @@
 ---
-name: pr-prep
-description: Use when the user asks to prepare, publish, or merge a single PR, or handle its CI or review feedback.
+name: pr
+description: Write or revise a PR title or body, prepare or publish a single PR, handle its CI or review feedback, or merge it when requested.
 ---
 
-# PR Prep
+# PR
 
-Bring one branch or PR to readiness. By default, publish it as ready for review
-and leave merging to the caller. Honor an explicit request to keep it in draft.
-Stack management stays with the caller.
+Choose the requested outcome:
 
-An unambiguous request to merge the scoped PR, including `/pr-prep yolo` or a
+- **Title/body only:** resolve the scoped PR or branch, its immediate base, and
+  intended change. Read [PR body](references/pr-body.md), inspect that diff and
+  applicable evidence, and return the requested text or local file. Drafting alone
+  stays local; an explicitly requested remote description edit updates that PR
+  without committing, pushing, or starting the readiness loop.
+- **Prepare/publish/fix/merge:** follow the delivery workflow below. By default,
+  publish it as ready for review and leave merging to the caller. Honor an
+  explicit request to keep it in draft. Stack management stays with the caller.
+
+An unambiguous request to merge the scoped PR, including `/pr yolo` or a
 later “merge” in that PR’s context, authorizes merging once it meets the repo’s
 requirements, including after fixes made during this run. No further merge
 confirmation is needed. An explicit request to keep the PR in draft takes
 precedence over a merge request.
+
+## Delivery workflow
 
 1. **Scope.** Resolve the branch, immediate base, intended changes, existing PR,
    and whether draft or merge was requested. If more than one PR could be the
