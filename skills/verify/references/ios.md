@@ -24,10 +24,8 @@ interface tooling; check its capabilities before relying on it.
 
 ## Build and launch
 
-- Build and run the intended scheme. If the build fails, preserve the failure and
-  determine whether it comes from the product or verification environment. Report
-  it as the workflow result. Fix code only when the active task includes fixing
-  failures, then restart verification against the changed revision.
+- Build and run the intended scheme. Rerun against the changed revision after an
+  authorized code fix.
 - After launch, confirm that the expected app and screen are visible. Capture a
   screenshot and inspect the accessibility hierarchy when the available tooling
   exposes it.
@@ -63,6 +61,4 @@ hardware is unavailable, report the device-specific assertions as blocked.
 ## Evidence
 
 Record the scheme, target device model and OS version or Simulator model and
-runtime, workflow states, and relevant screenshots or logs. A successful build
-proves that the app compiled; the interaction and resulting state prove whether
-the workflow worked.
+runtime, workflow states, and relevant screenshots or logs.

@@ -7,10 +7,8 @@ it is available.
 
 ## Observe and interact
 
-- Confirm that the expected app and window are active before interacting. Inspect
-  the rendered interface and accessibility hierarchy when the tooling exposes it.
-- Target controls by accessibility role, label, or identifier when supported.
-  With rendered-state tooling, recapture after each action and report semantic or
+- Confirm that the expected app and window are active before interacting.
+- With rendered-state tooling, recapture after each action and report semantic or
   accessibility coverage as untested.
 - Exercise menus, keyboard shortcuts, focus, window resizing, sheets, popovers,
   multiple windows, and full-screen behavior when they belong to the selected
@@ -44,6 +42,4 @@ exercise the supported portion and mark only the affected assertions blocked.
 ## Evidence
 
 Record the macOS version, app build or revision, workflow states, affected and
-unaffected windows, and relevant screenshots, inspected output files, or logs. A
-successful build proves that the app compiled; the interaction and resulting
-state prove whether the workflow worked.
+unaffected windows, and relevant screenshots, inspected output files, or logs.

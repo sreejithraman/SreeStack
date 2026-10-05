@@ -55,7 +55,7 @@ steps into exact proposed changes, findings, and checks.
    updates, edge states, interruption, and repeated input relevant to the change.
    When behavior or accessibility is in scope, exercise the supported touch,
    pointer, keyboard, focus, announcement, and VoiceOver reading paths.
-   Use `manual-verify` for visual or interactive
+   Use `verify` for visual or interactive
    acceptance checks, `animate` for motion, `ios-haptics` for iOS tactile feedback,
    `ui-design` for visual hierarchy and token-system work, and `diagnosing-bugs`
    for runtime failures or performance regressions.

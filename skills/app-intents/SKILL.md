@@ -34,7 +34,7 @@ the installed SDK or current Apple documentation before adopting them.
    shared-package registration.
 5. Build every target that declares or consumes the changed types. Then follow
    [Verification](references/verification.md) and exercise each requested system
-   surface. Use `manual-verify` when hands-on interaction adds confidence.
+   surface. Use `verify` when hands-on interaction adds confidence.
 
 The work is complete when each requested action is discoverable from its target
 surface, resolves representative parameters, runs in its intended process and

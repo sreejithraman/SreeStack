@@ -54,6 +54,18 @@ to the agent environment. Invoke it explicitly; it returns recommendations.
 Domain skills use `GLOSSARY.md` for new layouts and preserve configured or
 existing legacy `CONTEXT.md` glossary paths.
 
+### Product verification
+
+[verify](skills/verify/SKILL.md) tests real user workflows using a temporary plan
+when no verification map exists. Once a map is set up, verification uses and
+maintains its affected recipes. Ask to set up verification to create reusable
+docs in `docs/agents/verification/index.md` and `features/`, or an equivalent
+established project location. Commit the map in the product repo. The shared
+skill supplies the procedure, so projects need no generated verification skill.
+You can also request map maintenance or verification without updating docs.
+Linking this skill does not install the product's browser, device, or terminal
+harness.
+
 ### Store screenshot design
 
 The [koubou skill](skills/koubou/SKILL.md) designs and iterates on App Store
@@ -158,7 +170,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — ideas for `project-verification`, `change-safety`, `code-why`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — ideas for `verify`, `change-safety`, `code-why`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.

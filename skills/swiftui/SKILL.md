@@ -64,7 +64,7 @@ steps into exact proposed changes, findings, and checks.
    repeated-input transitions. When behavior or accessibility is in scope,
    exercise the supported touch, pointer, keyboard, focus, announcement, and
    VoiceOver reading paths. Use
-   `manual-verify` for visual or interactive acceptance checks. Use `animate` for
+   `verify` for visual or interactive acceptance checks. Use `animate` for
    motion design, `ios-haptics` for iOS tactile feedback, `ui-design` for visual
    hierarchy and token-system work, and
    `diagnosing-bugs` when a failure or performance regression needs investigation.

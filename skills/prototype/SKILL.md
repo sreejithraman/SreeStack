@@ -95,7 +95,7 @@ design choice.
 ## 5. Exercise and present
 
 Run every option on the target platform and exercise the interactions that
-answer the design question. Use `manual-verify` when the judgment depends on a
+answer the design question. Use `verify` when the judgment depends on a
 real workflow. Use `showroom` to package useful visual evidence.
 
 For multiple options, exercise the switcher and confirm that its control stays

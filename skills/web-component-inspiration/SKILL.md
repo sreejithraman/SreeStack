@@ -83,7 +83,7 @@ when that reduces code, dependencies, or licensing obligations. Check the exact
 reuse terms before copying source.
 
 Exercise the changed path with the relevant keyboard, pointer, touch,
-reduced-motion, and narrow-screen conditions. Use `manual-verify` when the
+reduced-motion, and narrow-screen conditions. Use `verify` when the
 result needs hands-on workflow judgment, then use `showroom` for visual proof.
 
 ## Done
