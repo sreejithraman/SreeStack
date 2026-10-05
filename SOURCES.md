@@ -186,9 +186,15 @@ line routes through `pr`; pstack's cloud and model defaults are excluded.
 
 - Local: `skills/gemini` (SreeStack).
 
+Locally written agy workflow with prompted analysis and installed-command code
+review; invocation remains model-discoverable.
+
 ## opencode
 
 - Local: `skills/opencode` (SreeStack).
+
+Locally written OpenCode v2 session workflow with tool-free prompted analysis
+and restricted built-in code review; invocation remains model-discoverable.
 
 ## gh-stack
 
