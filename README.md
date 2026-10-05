@@ -35,9 +35,11 @@ Gemini's native code review also requires agy's `code-review` plugin, including
 the `code-review` and `code-review-commons` skills. Check the available
 skills with `agy --print /skills --output-format json` and plugins with
 `agy plugin list`.
-OpenCode's native code review uses its built-in `/review` command; check that
-the installed CLI supports `opencode run --command` and has no `review` command
-override. No review plugin is required.
+OpenCode uses the v2 server API for restricted headless sessions and its built-in
+`review` command for code review. The API contract was checked with v2.0.23;
+it requires `opencode serve`, `opencode api`, and the corresponding session APIs.
+No additional review plugin is required. Provider access and quota are separate
+from whether a model appears in the catalog.
 `pr` writes titles/bodies or brings a single PR to readiness; `merge` lands ready PRs or stacks and
 finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
 stacks and `repo-cleanup` for completed task resources, including simulator and
