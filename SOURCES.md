@@ -225,7 +225,7 @@ pickup. It omits pstack's automatic WIP commit and transcript-specific paths.
 
 - [mattpocock/skills / skills/engineering/implement](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/implement) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Uses `review-fix-loop` to review, fix, and verify before committing.
+Checks implementation behavior before `review-fix-loop`, which reviews and fixes accepted findings before committing.
 
 ## improve-codebase-architecture
 
@@ -381,8 +381,8 @@ enabled.
 Description covers diagnostics scans or fixes, static design checks, browser
 performance traces, and rule config. It omits `/doctor`, finishing a feature,
 fixing a bug, and committing React code. The changed-scope regression scan lives in
-`review-fix-loop` Verify. The skill omits the upstream "After making React code
-changes" commit gate and the `/doctor` remote playbook. The example command is
+`review`, with affected diagnostics rechecked by `review-sweep` after fixes. The skill omits the upstream
+"After making React code changes" commit gate and the `/doctor` remote playbook. The example command is
 the full verbose scan. The flag table includes `--base` and
 `--include-untracked` for partial scopes. Scan-only requests report findings
 without edits, and static design diagnostics do not stand in for a rendered UI
@@ -426,9 +426,9 @@ Greetings and attribution instructions are omitted.
 
 - [mattpocock/skills / skills/engineering/resolving-merge-conflicts](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/resolving-merge-conflicts) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-## review-fix-loop
+## review
 
-- Local: `skills/review-fix-loop` (SreeStack).
+- Local: `skills/review` (SreeStack).
 
 Reviewer references:
 
@@ -444,34 +444,22 @@ Reviewer references:
   - [ponytail-debt](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail-debt) — shortcut ceilings and upgrade triggers.
   - [ponytail-gain](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail-gain) — limits on savings claims.
 
-- Imported material stays in read-only reference briefs. The local parent skill
-  supplies scope and owns dispatch, triage, fixes, and acceptance.
-- External review uses `gemini`, and after exhausted Gemini quota, `opencode`
-  on GLM Flash 5.3. Both use native review for code or mixed scopes and packet
-  review for documentation-only scopes. Those skills own headless execution,
-  native activation and scope checks, and packet checks;
-  this skill owns fallback eligibility, one-attempt limits, and round completion.
-- For code with plausible indirect consumers, the parent uses local
-  `change-safety` to test important assumptions and puts its evidence in the
-  same review brief. Routine diffs do not require this extra analysis.
-- Standards and Spec remain separate checks and labeled reports, with their
-  upstream smell baseline, requirements checks, and 400-word limits.
-- Thermo keeps its structural review criteria within the parent's supplied scope.
-  Structural suggestions require evidence and a concrete benefit; the parent
-  decides which fixes to accept.
-- Ponytail keeps reuse, evidence for cuts, and coverage reporting within the
-  supplied diff. Persistent modes, install steps, benchmark displays, and the
-  upstream debt skill's whole-repo ledger are excluded. The brief limits savings
-  claims to observed local evidence.
-- When the scope includes React or Next code, every native reviewer and the
-  external model review get `react-best-practices` as a review reference. The
-  parent follows that skill's How to Use against the diff and puts the skill
-  file and those matching rule files in the external model packet. Native
-  reviewers follow How to Use against the
-  diff. Those findings stay labeled separately. Verify runs
-  `npx react-doctor@latest --verbose --scope changed --base <resolved-base>
-  --include-untracked` and treats a dropped score as a failed check. This does
-  not add a reviewer.
+Imported material remains in read-only assessment references. Review is
+model-agnostic and returns findings and coverage for one supplied snapshot;
+reviewer dispatch, tool execution, fixes, and repeats belong to callers.
+Standards and Spec keep separate labeled reports, their upstream review bars,
+and 400-word limits. Thermo and Ponytail apply within the supplied scope;
+structural suggestions require evidence and a concrete benefit. Ponytail omits
+persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
+Indirect-consumer checks use `change-safety`; React or Next assessments use
+`react-best-practices` and current changed-scope React Doctor diagnostics.
+
+## review-fix-loop
+
+- Local: `skills/review-fix-loop` (SreeStack). Coordinates Review, native and
+  external reviewers, and Review Sweep over a stable base. Gemini failures can
+  fall back to OpenCode on GLM Flash 5.3 within permitted access. External gaps
+  are disclosed; required native coverage remains a completion prerequisite.
 
 ## pr-prep
 
@@ -548,7 +536,8 @@ resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
 Reads supplied or configured label mappings; a missing mapping blocks only the
-mutation that requires it. Setup stays user-invoked.
+mutation that requires it. Setup stays user-invoked. Workflow reproduction can
+use `verify` when needed to resolve uncertainty; missing intended behavior requires clarification.
 
 
 ## web-component-inspiration

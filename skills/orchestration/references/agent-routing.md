@@ -43,7 +43,7 @@ completed agents before opening more when the host counts open threads.
 
 Set `fork_turns` explicitly on every spawn. Independent reviewers must use
 `fork_turns: "none"` in every round. Starting a new agent alone does not give it
-fresh context. Give it a complete [review brief](../../review-fix-loop/references/review-brief.md)
+fresh context. Give it a complete [review brief](../../review/references/review-brief.md)
 without earlier verdicts or the author's defense.
 
 For workers, use `"none"` for bounded work that a complete brief can explain.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review"
+  short_description: "Assess a change and report findings without fixes"
+  default_prompt: "Use $review to assess this change against its requirements and repo rules, reporting findings, coverage, and gaps without editing it."

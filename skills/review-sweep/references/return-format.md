@@ -28,7 +28,8 @@ Won't do:
 Include:
 
 - changed files
-- verification results
+- verification results and the snapshot they apply to
+- review coverage gaps
 - blockers
 - every parent-owned defer
 
