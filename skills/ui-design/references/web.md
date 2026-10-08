@@ -4,6 +4,11 @@ Use the product's coherent tokens first. When the system is missing or cannot
 express the required roles, establish a small set of scales and tune them
 together. The values below are starting points, not universal requirements.
 
+For implementing fluid scales, logical dimensions, and theme/color functions,
+read [CSS foundations](web-css-foundations.md). For intrinsic grids, container
+queries, content breakouts, and spacing mechanics, read [web layout](web-layout.md).
+These implement a chosen system; they do not replace the product's tokens.
+
 ## Foundations
 
 ### Spacing and sizing

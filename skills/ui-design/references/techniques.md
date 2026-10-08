@@ -219,11 +219,81 @@ to one region, or draw a simplified illustration — never shrink a full desktop
 downscale the logo.
 
 **User-uploaded content.** You can't control it, so contain it:
-- Fixed-size containers with `background-size: cover`, cropping the overflow.
-- Prevent background bleed (a user photo whose edges match your UI background) with a subtle
-  inset shadow — `box-shadow: inset 0 0 0 1px hsla(0,0%,0%,.1)` — rather than a border. Borders
-  clash with the image's own colors; nobody notices the shadow.
+- Use the media box recipe below to reserve geometry and choose the crop.
+- A subtle inner edge can keep a photo from blending into the surrounding
+  surface. Use an inset shadow on a wrapper or an inward outline on the media
+  element; tune it to the image and appearance mode.
 
 **Photos themselves.** Image quality and composition can dominate the result.
 Use representative imagery early enough to validate crops, contrast, and layout;
 placeholders hide those constraints.
+
+## Stable media boxes
+
+Reserve a thumbnail's shape before its content loads:
+
+```css
+.thumb { inline-size: 100%; block-size: auto; aspect-ratio: 16 / 9;
+  object-fit: cover; }
+.avatar { flex: none; inline-size: 3.5rem; block-size: 3.5rem;
+  border-radius: 50%; object-fit: cover;
+  outline: 1px solid var(--media-edge, rgb(0 0 0 / 0.1));
+  outline-offset: -1px; }
+```
+
+`cover` crops; use `contain` for logos or content that must remain whole and
+`object-position` to choose the focal region. `aspect-ratio` supplies preferred
+geometry when at least one dimension is automatic; two definite sizes override
+that calculation. Fixed media in a flex row needs a deliberate size and shrink
+policy. `object-fit` applies to images/video, not iframe contents; reserve an
+embed's dimensions on its element or wrapper instead. Preserve meaningful alt
+text and transparent regions. A placeholder background shows through transparent
+pixels, so add it deliberately.
+
+For a failed or delayed load that must preserve exact geometry across browsers,
+put the ratio on a wrapper and fill it with the media at 100% on both axes.
+Supply a readable failure state. Check theme-aware inner edges on dark surfaces;
+`light-dark()` requires a matching `color-scheme`. See
+[aspect ratio](https://drafts.csswg.org/css-sizing-4/#aspect-ratio) and
+[object fitting](https://drafts.csswg.org/css-images-3/#the-object-fit).
+
+## Numeric alignment and text metrics
+
+Use `font-variant-numeric: tabular-nums` on changing or compared numeric columns,
+prices, or timers when stable digit widths improve scanning. The font must
+provide tabular figures; leave prose digits proportional unless the design
+has a reason to change them. See [numeric variants](https://drafts.csswg.org/css-fonts-4/#font-variant-numeric-prop).
+
+For a single-line label whose line-box space makes optical centering difficult,
+consider scoped `text-box` trimming:
+
+```css
+.label-button { display: inline-flex; align-items: center; gap: 0.5em;
+  padding: 0.75rem 1.25rem; min-block-size: 2.75rem; }
+.label-button > .label { text-box: trim-both cap alphabetic; }
+```
+
+Apply trimming to the text-containing box, not its surrounding flex/grid layout
+box. Measure the control's resulting target height and increase padding or
+minimum size as needed. Descenders can extend into the padding. Test the real
+font, diacritics, supported scripts, fallback fonts, zoom, and wrapping. Use it
+where a single-line label remains a valid assumption; normal line boxes are
+the unsupported-feature fallback. Global trimming changes body text and control
+geometry. See [text-box trimming](https://drafts.csswg.org/css-inline-3/#text-box-trim).
+
+An icon next to text can follow its metrics:
+
+```css
+.with-icon { display: inline-flex; align-items: baseline; gap: 0.5em; }
+.with-icon > svg { flex: none; block-size: 1cap; inline-size: auto; }
+.notice { display: flex; align-items: start; gap: 0.5em; }
+.notice > svg { flex: none; inline-size: 1em; block-size: 1lh; }
+```
+
+The SVG needs a `viewBox` to preserve its drawing's ratio; account for whitespace
+inside that drawing. `cap` follows capital height and `lh` the line height.
+Preserve an icon set's intended optical sizes when metric sizing makes its
+geometry worse. For a wrapped label, align the icon to the first line rather
+than the middle of all lines. Keep icons from shrinking under text pressure,
+and verify baseline/first-line alignment at actual sizes. Decorative icons
+stay outside the accessible name. See [font-relative lengths](https://drafts.csswg.org/css-values-4/#font-relative-lengths).

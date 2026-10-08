@@ -1,6 +1,6 @@
 ---
 name: ui-design
-description: Cross-platform visual design and browser interface behavior. Use for visual hierarchy, art direction, or design systems in web, SwiftUI, or UIKit; also use for browser component states, input, and accessibility. Use swiftui or uikit for native implementation and behavior, and animate for motion.
+description: Cross-platform visual design and browser interface behavior. Use for visual hierarchy, art direction, or design systems in web, SwiftUI, or UIKit; also use for web CSS, responsive layout, browser component states, input, and accessibility. Use swiftui or uikit for native implementation and behavior, and animate for motion.
 ---
 
 # UI Design
@@ -16,10 +16,10 @@ change and acceptance check concrete.
 ## Process
 
 1. Inspect the real interface, nearby components, existing tokens, target
-   platforms, content, states, appearance modes, text scaling, input methods,
+   platforms and browser targets, CSS authoring system, content, states, appearance modes, text scaling, input methods,
    access paths, and runnable surfaces available in scope.
 2. Select the dimensions the task actually requires: visual system, art
-   direction, component behavior, or accessibility. Name the design job before
+   direction, web styling and layout, component behavior, or accessibility. Name the design job before
    choosing values or changing behavior. For visual work, identify the primary
    content and action, their competitors, the meaningful groups, and the
    semantic roles the system must support.
@@ -30,6 +30,13 @@ change and acceptance check concrete.
      [diagnosis](references/diagnose.md), then
      [web visual design](references/web.md). For new web visual-system work,
      start with the web reference.
+   - For web resets, logical properties, fluid sizing, or color/theme token
+     implementation, read [CSS foundations](references/web-css-foundations.md).
+     For containers, grids, component responsiveness, spacing, or overflow,
+     read [web layout](references/web-layout.md). Use the project's existing
+     stylesheet, utilities, or CSS-in-JS system; adapt declarations without
+     changing its authoring stack. For media boxes or text/icon alignment,
+     read the matching sections of [techniques](references/techniques.md).
    - For browser semantics, component states, focus, keyboard or pointer input,
      announcements, or accessibility, read
      [web behavior and accessibility](references/web-behavior-and-accessibility.md).
@@ -52,6 +59,10 @@ change and acceptance check concrete.
    visual direction is also selected.
 6. When implementation is in scope, cover every affected state and access
    variant rather than styling or testing only the happy path.
+   Prefer intrinsic layout and browser-native capabilities when they satisfy
+   the contract. Check feature support against the project's browser targets;
+   choose progressive enhancement or a usable fallback before relying on a new
+   feature. CSS syntax support alone does not prove the interaction works.
 7. Exercise the result on the real surface at relevant sizes and through the
    affected input and accessibility paths. Use `verify` when hands-on
    evidence would add confidence.

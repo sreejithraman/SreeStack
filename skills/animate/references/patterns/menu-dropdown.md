@@ -123,3 +123,55 @@ When the component already exposes entry and exit attributes, style those states
 ```
 
 Keep the origin at the trigger. Confirm the installed component’s attribute names.
+
+## Native popover entry and exit
+
+Use this variant when the existing component uses the Popover API. A popover
+provides showing and dismissal behavior; its contents still need the correct
+semantics. Use a real menu component for menu keyboard navigation, or ordinary
+links and buttons for an action panel.
+
+```html
+<button type="button" popovertarget="actions">Options</button>
+<div id="actions" class="motion-popover" popover>
+  <button type="button">Rename</button>
+</div>
+```
+
+```css
+.motion-popover[popover] { opacity: 0; }
+.motion-popover[popover]:popover-open { opacity: 1; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-popover[popover] {
+    translate: 0 0.5rem;
+    transition: opacity 200ms var(--ease-out, ease-out),
+                translate 200ms var(--ease-out, ease-out);
+    transition: opacity 200ms var(--ease-out, ease-out),
+                translate 200ms var(--ease-out, ease-out),
+                display 200ms allow-discrete,
+                overlay 200ms allow-discrete;
+  }
+  .motion-popover[popover]:popover-open { translate: 0 0; }
+  @starting-style {
+    .motion-popover[popover]:popover-open {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+  }
+}
+```
+
+Use the project’s popover timing and positioning. This example owns only motion;
+test the existing placement near viewport edges and with long content. If scale
+better explains the origin, use a small scale and a trigger-based transform origin.
+`@starting-style` follows the open rule. `display` and `overlay` with
+`allow-discrete` enable supported native exits without a separate closing timer.
+See [Chrome: entry and exit transitions](https://developer.chrome.com/blog/entry-exit-animations).
+
+Keep the popover mounted while an exit runs. Test light dismissal, Escape, keyboard
+activation, and quick reopen. Confirm the actual browsers’ entry and exit behavior;
+fall back to instant state changes where the enhancement is unavailable. Reduced
+motion is instant in this variant. An unsupported Popover API needs the project’s
+working component fallback, not just a motion fallback. Keep `:popover-open`
+selectors separate from native dialog open-state rules.

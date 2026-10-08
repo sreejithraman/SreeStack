@@ -21,10 +21,18 @@ and acceptance in one place.
 ## Configure the run
 
 Run from the target workspace and pass its absolute path with `--add-dir` and
-in the prompt. Use the configured Gemini default or the caller's required model;
-for required Gemini review, resolve a Gemini slug from `agy models` and pass it
-explicitly. The catalog also contains non-Gemini models and does not prove quota
-or access. Use `--effort high` for this workflow.
+in the prompt. Choose the model before resolving its CLI identifier: use the
+caller's explicitly requested Gemini model, otherwise read the configured
+`model` in `~/.gemini/antigravity-cli/settings.json`.
+
+Resolve that same model to its exact slug in `agy models`. The catalog validates
+the identifier; it does not authorize choosing a different model or tier. For
+required Gemini review, pass this resolved model explicitly with `--model`.
+The requirement to use Gemini or pass an explicit slug preserves this selection
+rule. If the requested or configured model is missing, ambiguous, or unavailable,
+report the model-selection gap instead of substituting another model. Keep saved
+settings unchanged. The catalog also contains non-Gemini models and does not
+prove quota or access. Use `--effort high` for this workflow.
 
 For analysis or review, use `--sandbox --mode plan`. When terminal tools are
 needed, check existing `enableTerminalSandbox: true` and

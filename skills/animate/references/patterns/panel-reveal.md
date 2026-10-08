@@ -78,3 +78,42 @@ Keep the reduced-motion CSS and make the final useful state available without mo
 ## JavaScript orchestration
 
 None — pure CSS. Toggle the documented HTML attributes or class names from whatever already drives state in your app.
+
+## Clip an overlapping panel
+
+For an overlapping panel of unknown height, clipping can reveal its existing box
+without resizing the layout. Use the component’s open state and hidden-state
+controller. A panel in normal flow retains its full space when clipped; use the
+[accordion](accordion.md) for a disclosure that must change layout.
+
+```css
+.clip-panel {
+  --clip-shadow-room: 3rem;
+  clip-path: inset(0 calc(-1 * var(--clip-shadow-room)) 100%);
+  visibility: hidden;
+  pointer-events: none;
+}
+.clip-panel[data-open="true"] {
+  clip-path: inset(0 calc(-1 * var(--clip-shadow-room))
+                   calc(-1 * var(--clip-shadow-room)));
+  visibility: visible;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .clip-panel {
+    transition: clip-path 250ms var(--ease-out, ease-out),
+                visibility 250ms;
+  }
+}
+```
+
+Size the negative inset for the actual shadow’s extent. Add `round` to `inset()`
+only when the clip itself needs rounded corners; the surface’s border radius is
+independent. See [MDN: inset()](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/basic-shape/inset).
+
+`visibility` stays visible during the close transition, then hides the content.
+Return focus appropriately and make closed content inert immediately; clipping
+and `pointer-events` alone do not prevent keyboard focus during visual exit.
+Reopening must remove inertness with the open state. Reduced motion toggles the
+clip and visibility immediately. Check shadow clipping, rapid reversal, and paint
+cost on target browsers; clipping does not guarantee compositor execution.

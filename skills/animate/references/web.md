@@ -9,14 +9,17 @@ Use the first tool that meets the need:
 | Need | Tool |
 | --- | --- |
 | Hover, press, color, or class-driven state | CSS transition |
-| Entry on mount without extra state, when browser targets support it | CSS `@starting-style` |
+| Entry on mount or from `display: none` | CSS `@starting-style`; discrete transitions for supported exits |
 | Fixed sequence or loop | CSS keyframes |
+| Several decorative values driven by one state | Registered CSS custom property |
+| Crossfade between documents | Cross-document view transition, when navigation qualifies |
+| Decorative feedback tied to scroll position | CSS scroll timeline, with a static baseline |
 | Programmatic playback without a library | Web Animations API |
 | Gesture, spring, layout, or interruptible value | The product's existing motion library |
 
 Apply motion to the project's existing accessible components. Preserve focus management, keyboard behavior, and state semantics; a motion recipe does not supply a complete modal, menu, or control.
 
-Extend current tokens before adding new curves or times. Add a library only when the existing stack cannot express the required behavior.
+Extend current tokens before adding new curves or times. Add a library only when the existing stack cannot express the required behavior. Check the project’s browser targets for the complete mechanism, including exit behavior; parsing a property does not prove the lifecycle works. Use a usable instant or static baseline when the enhancement is unavailable. A fallback that preserves product behavior may be needed even when decorative motion is optional.
 
 ## Motion choices
 
@@ -50,7 +53,8 @@ Extend current tokens before adding new curves or times. Add a library only when
 - For motion on a web control, use `ui-design` for the action's activation,
   cancellation, pointer, and keyboard contract. This skill owns the moving
   feedback's timing and interruption.
-- Honor `prefers-reduced-motion`. Replace large movement, zoom, parallax, and bounce with a short fade, color change, or instant state change.
+- Honor `prefers-reduced-motion`. Replace large movement, zoom, parallax, and bounce with a short fade, color change, or instant state change. For new CSS recipes, establish the useful state first and add movement inside `prefers-reduced-motion: no-preference`. Existing component-scoped reduction rules remain valid when they cover all movement and lifecycle work; avoid global near-zero-duration resets.
+- Evaluate fades as feedback too: repeated flashing, large-area fades, or reading delays can still need removal. A fade is an option, not an accessibility exemption.
 - Gate hover-only motion with `@media (hover: hover) and (pointer: fine)`.
 - Keep controls usable while decorative motion runs.
 - Test gesture work on a real touch device when possible.
@@ -72,6 +76,7 @@ Choose by the interaction and state change after motion passes the gate. Read on
 | Open a centered dialog and backdrop | [Modal open / close](patterns/modal.md) |
 | Reveal a panel inside a region | [Panel reveal](patterns/panel-reveal.md) |
 | Move between screens | [Page side-by-side](patterns/page-side-by-side.md) |
+| Crossfade between separate page documents | [Document navigation](patterns/document-navigation.md) |
 | Open an edge sheet or drawer | [Drawer or sheet](patterns/drawer.md) |
 | Expand a disclosure | [Accordion expand](patterns/accordion.md) |
 | Show or dismiss a notification | [Toast open / close](patterns/toast.md) |
@@ -120,6 +125,9 @@ Choose by the interaction and state change after motion passes the gate. Read on
 
 | Need | Guide |
 | --- | --- |
+| Crossfade a card’s elevation shadow | [Card elevation](patterns/card-elevation.md) |
+| Coordinate decorative values from one state | [Registered motion values](patterns/registered-properties.md) |
+| Show remaining overflow from scroll position | [Scroll overflow feedback](patterns/scroll-overflow-feedback.md) |
 | Lift nearby items in a row | [Avatar group hover](patterns/avatar-group-hover.md) |
 | Tilt a decorative card toward the pointer | [Card hover tilt](patterns/card-tilt.md) |
 | Turn a chevron into an arrow | [Learn more hover](patterns/learn-more-hover.md) |
