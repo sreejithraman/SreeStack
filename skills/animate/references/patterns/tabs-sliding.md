@@ -156,3 +156,62 @@ Use a decorative copy of the tab row when the active text color and background m
 ```
 
 Hide the copy from assistive technology and remove its focus targets. Keep only the original tab row interactive. The clip reveals the active text and background together.
+
+## Anchor-based current-item indicator
+
+For a navigation row, an anchor can position the decorative underline beneath the
+link with `aria-current="page"`. Use `aria-selected` instead only for a real tab
+component with the corresponding keyboard and panel behavior. This variant
+replaces measurements only when the target implements the needed anchor features;
+it does not replace the component’s selection controller.
+
+```html
+<nav class="anchor-nav" aria-label="Sections">
+  <ul>
+    <li><a href="/overview" aria-current="page">Overview</a></li>
+    <li><a href="/pricing">Pricing and billing</a></li>
+  </ul>
+</nav>
+```
+
+```css
+.anchor-nav ul { position: relative; display: flex; gap: 1rem; }
+.anchor-nav [aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+@supports (anchor-scope: --nav-current) and
+          (inset-inline-start: anchor(start)) and
+          (inline-size: anchor-size(inline)) {
+  .anchor-nav { anchor-scope: --nav-current; }
+  .anchor-nav [aria-current="page"] { anchor-name: --nav-current; }
+  .anchor-nav ul::after {
+    content: "";
+    position: absolute;
+    position-anchor: --nav-current;
+    inset-block-end: 0;
+    inset-inline-start: anchor(start);
+    inline-size: anchor-size(inline);
+    block-size: 2px;
+    background: currentColor;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .anchor-nav ul::after {
+      transition: inset-inline-start 200ms var(--ease-out, ease-out),
+                  inline-size 200ms var(--ease-out, ease-out);
+    }
+  }
+}
+```
+
+Scope the named anchor to each component so two rows do not resolve against each
+other. See [MDN: anchor-scope](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/anchor-scope)
+and [MDN: anchor-size()](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/anchor-size).
+Keep a nonmoving current-item cue even when the underline is available. Anchor
+placement and interpolation have different support: verify actual selection
+changes on target browsers, including font changes, wrapping, RTL, and multiple
+instances. A correctly placed instant underline is a useful fallback. For a
+vertical navigation, switch the animated position and size to the block axis
+and verify the logical anchor edges for the writing mode. Measure layout cost;
+CSS geometry transitions are not inherently cheaper than the existing controller.

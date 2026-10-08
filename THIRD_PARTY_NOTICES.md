@@ -22,10 +22,12 @@ material keeps the terms listed below; the root license does not replace them.
 | Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |
 | s0xDk / s13k | ui-design skill, web references, and token asset | [MIT and scope note](licenses/s0xdk-refactoring-ui-skill.txt) |
+| Vojta Holik / good-css | ui-design CSS and browser references; animate CSS pattern variants | [MIT](licenses/vojtaholik-good-css.txt) |
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
 | Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
 
 HumanLayer’s notice was checked on 2026-10-03 at the revision in `SOURCES.md`.
+Good CSS's notice was checked on 2026-10-08 at its recorded import revision.
 
 The files in `licenses/` copy upstream license files at the revisions in
 SOURCES.md. Koubou was checked on 2026-10-02; OpenClaw was checked on 2026-09-29;

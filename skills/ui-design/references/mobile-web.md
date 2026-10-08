@@ -77,6 +77,81 @@ Apple implementation stays with `swiftui` or `uikit`; motion stays with `animate
   target browser, including a container too short to scroll. Avoid blanket
   touch-event cancellation for scroll control. See [overscroll behavior](https://drafts.csswg.org/css-overscroll-1/).
 
+## Native carousels and bounded panels
+
+Use a real scroll container for a horizontal card row, preserving browser swipe,
+trackpad, and scrolling behavior:
+
+```css
+.carousel {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1.5rem;
+  padding-inline: 1.5rem;
+  overscroll-behavior-x: contain;
+}
+.carousel > * { flex: none; scroll-snap-align: start; }
+@media (prefers-reduced-motion: no-preference) {
+  .carousel { scroll-behavior: smooth; }
+}
+```
+
+Use mandatory snapping only when it preserves access to oversized cards and
+content between snap points. Match scroll padding to the desired alignment.
+This example assumes horizontal writing; adapt axes when supporting vertical
+writing. Keep the scrollbar or an equally discoverable scroll affordance. Check
+keyboard access to the scroller, card links, and offscreen focused content.
+
+Optional previous/next controls need accessible names and per-instance ownership.
+Scroll the carousel itself, not the whole page. Calculate steps from the next
+card's actual position including gaps, variable widths, and direction; the first
+card's width alone is not a reliable step. Update enabled states after scrolling,
+resizing, and collection changes, handling RTL scroll coordinates. Tear down owned
+listeners/observers with the component. CSS scroll buttons/markers can enhance
+supported browsers; retain usable access where unavailable. See
+[scroll snap](https://drafts.csswg.org/css-scroll-snap-1/) and
+[element scrolling](https://drafts.csswg.org/cssom-view/#dom-element-scrollby).
+Use `animate`'s scroll-overflow feedback guide for optional edge decoration.
+
+For a modal, chat list, or drawer with a scrolling body between steady controls:
+
+```css
+.panel { display: flex; flex-direction: column; max-block-size: 80dvh; }
+.panel > :is(header, footer) { flex: none; }
+.panel-body { flex: 1; min-block-size: 0; overflow-y: auto;
+  overscroll-behavior: contain; scrollbar-gutter: stable; }
+.panel-wrap { flex: 1; min-block-size: 0; display: flex; flex-direction: column; }
+```
+
+The panel needs a definite size or limit so its body can overflow. Include
+`.panel-wrap` only for an intermediate wrapper; each flex ancestor on the
+shrink path needs the appropriate minimum-size override. Keep those overrides
+scoped to this bounded layout. Preserve the controls' size and check a header
+or footer too large for the remaining viewport. The gutter trades some space
+on short lists for stable width. Verify empty content, long lists, keyboard
+focus, zoom, virtual keyboards, and actual mobile viewport behavior.
+See [flex minimum sizing](https://drafts.csswg.org/css-flexbox-1/#min-size-auto)
+and [overflow](https://drafts.csswg.org/css-overflow-3/).
+
+## Sticky-header targets
+
+Give in-page destinations space below sticky or fixed UI:
+
+```css
+html { scroll-padding-block-start: var(--header-offset, 5rem); }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+```
+
+Share an offset token with the header's actual geometry, or update it when a
+responsive/multiline header changes size. Put scroll padding on the scroller
+that owns the navigation; `scroll-margin-block-start` on targets can provide
+local offsets. Keep the offset independent of motion preferences. Check hash
+navigation, focus, nested scrollers, and zoom. See [scroll padding](https://drafts.csswg.org/css-scroll-snap-1/#scroll-padding).
+
 ## Browser chrome and evidence
 
 Use `theme-color` as a browser hint matching the adjacent surface where supported.

@@ -39,6 +39,7 @@ prerequisites.
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — press feedback and measured rendering guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — gesture-intent guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
+- [vojtaholik/good-css / skills/good-css](https://github.com/vojtaholik/good-css/tree/e074e76a011dbadc4f0a7fbd6c661ed79deb6371/skills/good-css) — CSS motion reference adaptation baseline `e074e76a011dbadc4f0a7fbd6c661ed79deb6371`; explanations and technical citations checked in upstream `PRACTICES.md`. MIT notice in `licenses/vojtaholik-good-css.txt`.
 - [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`. Newer [skill terms](https://github.com/Jakubantalik/transitions.dev/blob/3bc58021c69725d8bf42108632ac6cf14f2b1d3c/skills/transitions-dev/LICENSE.txt) restrict republishing the collection as a competing library, template pack, or component kit. Further imports are held pending redistribution clarification; the import baseline remains unchanged.
 
 - One automatically discoverable cross-platform skill owns motion decisions,
@@ -83,6 +84,20 @@ prerequisites.
   the separate `_root.css` copy; global token aliases are omitted.
 - Separate dev/polish skills, command and approval flows, automatic token
   replacement, and Refine-panel integration are omitted.
+- `good-css/references/motion.md` opt-in movement and timing join `references/web.md`;
+  typed values, shadow crossfades, and document transitions map to
+  `patterns/registered-properties.md`, `card-elevation.md`, and
+  `document-navigation.md`; the active indicator joins `tabs-sliding.md`.
+  `show-and-hide.md` discrete dialog/popover transitions, native details, and
+  clip reveals join `modal.md`, `menu-dropdown.md`, `accordion.md`, and
+  `panel-reveal.md`. `scroll-and-viewport.md` edge decoration maps to
+  `scroll-overflow-feedback.md`. All pattern paths are under `references/`.
+  Preserves the local motion gate, timing tokens, lifecycle, interruption, and
+  reduced-motion paths. Scope inherited opt-ins to components; retain usable
+  static states and native event ownership. Browser versions and upstream
+  measurements are omitted; target support and rendering require checks.
+  Performance guarantees, fade exemptions, and unconditional no-fallback rules
+  are replaced with contextual decisions. Existing invocation stays automatic.
 
 ## app-intents
 
@@ -390,6 +405,7 @@ Automatic discovery stays enabled.
 
 ## ui-design
 
+- [vojtaholik/good-css / skills/good-css](https://github.com/vojtaholik/good-css/tree/e074e76a011dbadc4f0a7fbd6c661ed79deb6371/skills/good-css) — web CSS reference adaptation baseline `e074e76a011dbadc4f0a7fbd6c661ed79deb6371`; explanations and technical citations checked in upstream `PRACTICES.md`. MIT notice in `licenses/vojtaholik-good-css.txt`.
 - [s0xDk/refactoring-ui-skill](https://github.com/s0xDk/refactoring-ui-skill) — imported revision: unknown; its `SKILL.md`, reference write-ups, and CSS tokens are adapted into the local entrypoint, web references, and token asset.
 - [anthropics/skills / skills/frontend-design](https://github.com/anthropics/skills/tree/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design) — art-direction calibration and critique; commit `34040c9c568585f6929bedeaad110ad08f079624`.
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — web typography, component behavior, and access guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` while the earlier local import baseline remains unknown.
@@ -415,6 +431,31 @@ join `references/web-behavior-and-accessibility.md`. Uses current platform
 capabilities and documentation rather than blanket CSS resets or device labels;
 preserves zoom, selection, valid activation, and browser gesture ownership.
 Greetings and attribution instructions are omitted.
+
+Web CSS and responsive-layout implementation are explicit discovery branches;
+automatic invocation remains enabled. Upstream `good-css/references/` maps by task:
+`foundations.md` to `references/web-css-foundations.md`; `layout.md` and
+`spacing-and-shape.md` to `references/web-layout.md`; `text-and-media.md` media
+geometry, numeric figures, label trimming, and icon metrics to
+`references/techniques.md`, and truncation to
+`references/web-behavior-and-accessibility.md`. `interaction.md` joins that
+behavior reference; `show-and-hide.md` semantics and anchor positioning also
+join it, while transition mechanics belong to `animate`. Carousel, bounded
+panels, and sticky-header offsets from `scroll-and-viewport.md` join
+`references/mobile-web.md`; root overscroll and safe areas retain its existing
+contextual guidance. Its edge decoration belongs to `animate`.
+
+Preserves product tokens, authoring stack, reset, selection, semantic contracts,
+and native ownership. Retains useful declaration sets and prerequisites while
+replacing blanket reset/color rewrites, geometry/easing prohibitions, automatic
+acceptance of unselectable card text, and no-fallback rules. The carousel's
+global script is replaced by instance-owned stepping and lifecycle requirements
+covering gaps, changing widths, RTL, and resize. Textarea wrapper animation is
+optional and requires observer/box ownership. Container/subgrid restrictions
+are axis-dependent; safe alignment is limited to positional values. Fluid-font
+ratios and upstream browser measurements are not treated as accessibility proof.
+Technical citations accompany guidance; browser-target checks replace frozen
+version tables. Global text trimming and destructive layout resets are omitted.
 
 
 ## research

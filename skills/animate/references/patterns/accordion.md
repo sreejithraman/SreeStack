@@ -136,3 +136,49 @@ When the existing component supplies content height, animate that value instead 
 ```
 
 Height animation requires layout work; keep it brief and test on the target surface.
+
+## Native disclosure with intrinsic height
+
+For a native disclosure, retain `<details>` and `<summary>` instead of adding a
+second toggle controller. This enhancement interpolates a length and `auto`
+without measuring content. Unsupported browsers keep the native instant toggle.
+
+```html
+<details class="motion-details">
+  <summary>Delivery details</summary>
+  <div class="motion-details-body">Delivery information…</div>
+</details>
+```
+
+```css
+.motion-details-body { padding-block: 0.75rem; }
+
+@supports (interpolate-size: allow-keywords) and selector(details::details-content) {
+  .motion-details { interpolate-size: allow-keywords; }
+  .motion-details::details-content {
+    height: 0;
+    overflow: clip;
+  }
+  .motion-details[open]::details-content { height: auto; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-details::details-content {
+      transition: height 250ms var(--ease-out, ease-out),
+                  content-visibility 250ms allow-discrete;
+    }
+  }
+}
+```
+
+Keep padding on the inner body so the closed content contributes no padded strip.
+The discrete `content-visibility` transition allows content to remain rendered
+through a supported close. Scope inherited `interpolate-size` to the disclosure;
+it interpolates between a length and an intrinsic keyword, not between arbitrary
+intrinsic keywords. See [MDN: interpolate-size](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/interpolate-size)
+and [MDN: ::details-content](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Selectors/::details-content).
+
+Use a shared `name` on sibling details only when the interaction should permit
+one open item. Preserve the summary marker or provide an equivalent state cue.
+Test keyboard toggling, find-in-page, rapid reversal, late-loading content, and
+closed-body focus exclusion. Height still changes layout: measure the surrounding
+page and use the native instant baseline when the target cannot animate it well.

@@ -116,3 +116,70 @@ For a dialog with entry and exit attributes, attach motion to those states. Keep
 ```
 
 Match the backdrop’s close time to the dialog when tuning exit separately.
+
+## Native dialog entry and exit
+
+For an existing native `<dialog>`, let `showModal()` and `close()` own the state.
+Apply this variant instead of the class-driven controller above. The dialog must
+have an accessible name, a dismissal control, and the product’s focus behavior;
+setting `open` alone does not create a modal interaction.
+
+```css
+dialog.motion-dialog {
+  opacity: 0;
+}
+dialog.motion-dialog[open] {
+  opacity: 1;
+}
+dialog.motion-dialog::backdrop {
+  opacity: 0;
+  background: rgb(0 0 0 / 40%);
+}
+dialog.motion-dialog[open]::backdrop {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.motion-dialog {
+    transform: scale(0.96);
+    transition: opacity 200ms var(--ease-out, ease-out),
+                transform 200ms var(--ease-out, ease-out);
+    transition: opacity 200ms var(--ease-out, ease-out),
+                transform 200ms var(--ease-out, ease-out),
+                display 200ms allow-discrete,
+                overlay 200ms allow-discrete;
+  }
+  dialog.motion-dialog[open] {
+    transform: scale(1);
+  }
+  dialog.motion-dialog::backdrop {
+    transition: opacity 200ms var(--ease-out, ease-out);
+    transition: opacity 200ms var(--ease-out, ease-out),
+                display 200ms allow-discrete,
+                overlay 200ms allow-discrete;
+  }
+  @starting-style {
+    dialog.motion-dialog[open] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    dialog.motion-dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+}
+```
+
+Map 200ms to the project’s dialog token. `@starting-style` follows the open rules
+at equal specificity. Discrete `display` transitions keep a closing box visible;
+`overlay` can defer its removal from the top layer. The first transition declaration
+retains ordinary-property behavior when the enhanced shorthand is unsupported.
+See [CSS Transitions Level 2](https://drafts.csswg.org/css-transitions-2/#defining-before-change-style)
+and [MDN: overlay](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/overlay).
+
+Entry, exit, and backdrop support can differ across target browsers. Confirm the
+native `close()`, Escape, and rapid-reopen paths; an instant close is acceptable
+when motion is optional. Keep the dialog node mounted through a supported visual
+exit. Reduced motion uses the useful open and closed states immediately. Keep
+popover selectors separate so an unsupported selector cannot invalidate the
+dialog’s open rule.
