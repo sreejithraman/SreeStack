@@ -28,8 +28,9 @@ project's existing harness when it drives that entry point.
 
 - Exercise the public protocol with the expected authentication and request data.
   Capture the method, route, non-sensitive inputs, response status, headers, and
-  body relevant to each assertion. A health endpoint proves readiness, not the
-  feature's behavior.
+  body relevant to each assertion. Inspect what a health endpoint checks; use
+  a signal that establishes the usable state required by the main launch rules.
+  Feature behavior still needs its own public-path assertions.
 - For asynchronous operations, wait for the documented observable completion
   within a bounded deadline. An accepted request does not establish completion.
 - Read persisted changes through a separate request or fresh process, or inspect

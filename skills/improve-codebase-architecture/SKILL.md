@@ -37,6 +37,11 @@ friction questions and ask it to explore organically:
 - Where do tightly-coupled modules leak across their seams?
 - Which parts of the codebase are untested, or hard to test through their current interface?
 
+Have the child also apply Codebase Design's
+[ownership and enforcement checks](../codebase-design/references/preventing-mistakes.md)
+to evidenced friction in this scope. The child returns recommendations without
+implementing them.
+
 Include the **deletion test** in the brief: would deleting a suspected shallow
 module concentrate complexity, or just move it? A "yes, concentrates" is the
 signal to investigate. Accept the child's findings against the assigned scope

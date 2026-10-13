@@ -23,6 +23,10 @@ If the redacted output is not enough to diagnose the bug, say so and ask the use
 
 Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
 
+For performance work, read
+[measurement validity](references/measurement-validity.md) before building or
+using a baseline, choosing a fix, or reporting a measured comparison.
+
 ### Ways to construct one, in roughly this order
 
 1. **Failing test** at whatever seam reaches the bug: unit, integration, e2e.
@@ -128,7 +132,8 @@ Tool preference:
 
 **Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep. Untagged logs survive; tagged logs die.
 
-**Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
+**Perf branch.** For performance regressions, establish a baseline measurement
+(timing harness, profiler, query plan), then bisect. Measure first, fix second.
 
 ## Phase 5: Fix + regression test
 
@@ -155,3 +160,9 @@ Required before declaring done:
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message, so the next debugger learns
+
+If the decisive fact took a deep investigation to uncover, propose the cheapest
+persistent signal that would have exposed it earlier: a health check, counter,
+or structured log. Name the fact it reveals and its runtime and privacy costs.
+Implement it only when it belongs to the authorized fix; otherwise report it
+as a follow-up. Keep it distinct from temporary debug instrumentation.

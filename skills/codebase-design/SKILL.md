@@ -66,6 +66,11 @@ When designing an interface, ask:
 - **The interface is the test surface.** Callers and tests cross the same seam. If you want to test *past* the interface, the module is probably the wrong shape.
 - **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a seam unless something actually varies across it.
 
+When designing or assessing ownership and enforceable interfaces, read
+[preventing recurring mistakes](references/preventing-mistakes.md). Use it to
+check whether a contributor working from a few files can follow the supported
+path without silently breaking rules elsewhere.
+
 ## Designing for testability
 
 Good interfaces make testing natural:

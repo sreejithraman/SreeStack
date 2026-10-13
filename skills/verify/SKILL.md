@@ -91,9 +91,22 @@ A project verification skill alone does not establish a documentation map.
 3. **Launch and establish known state.** Start or connect to the intended build
    and check instance identity, revision, readiness, access, and required
    connections before driving. Bound waits by observable conditions and deadlines.
+   Readiness means the selected workflow is usable: required initialization,
+   migrations, and fixtures have completed. A responsive port or database health
+   check alone may precede that state; inspect what the readiness signal proves.
+   For setup recipes or first-run behavior, prove launch from an isolated empty
+   data profile where supported, including required setup. Routine checks may
+   reuse known state without resetting user data.
+   If a substitute environment performed setup that the intended target will
+   not, list those steps as unverified until exercised on that target. Keep
+   target-dependent assertions blocked or untested as appropriate; substitute
+   proof cannot make them pass.
    Preserve failing launch commands or health observations and their causes;
    distinguish product failures from missing environment prerequisites. Recipes
    that cannot be exercised remain draft with the specific blocker.
+   Missing fixture preconditions retain the intended assertions: report an
+   environment blocker, or a failure when the product's setup should have
+   supplied them, and record the cause in the recipe's gotchas.
    Reuse launched instances for related checks; serialize drives that share
    mutable state.
 
