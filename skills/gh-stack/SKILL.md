@@ -27,6 +27,10 @@ Left is the **bottom**, right is the **top**. `auth` is based on `main` and merg
 Foundational work belongs at the bottom, code that depends on it above. For how to choose the
 layers, read `references/stack-design.md`.
 
+For PRs created or worked on in T3 Code, apply [thread registration](../pr/SKILL.md#thread-registration)'s
+thread registration rules to every scoped layer. Stack CLI operations alone
+do not register PRs with the thread.
+
 ## Setup
 
 Requires Git 2.36+ and an authenticated GitHub CLI.

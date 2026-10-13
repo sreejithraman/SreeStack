@@ -1,6 +1,7 @@
 ---
 name: web-component-inspiration
 description: Find and assess web UI component references for a feature.
+disable-model-invocation: true
 ---
 
 # Web Component Inspiration

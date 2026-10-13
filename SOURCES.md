@@ -149,6 +149,8 @@ Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
+Alternative-interface proposals use orchestration’s working selection, read-only
+ownership, and capacity-aware waves; the user-requested comparison remains conditional.
 
 ## diagnosing-bugs
 
@@ -168,6 +170,8 @@ Markdown import baseline is `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. The bund
 shell template remains at `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`; its upstream
 comment-only changes are omitted.
 
+Browser reproductions follow host routing, including T3 collaborative-preview
+selection and recovery, before standalone drivers.
 
 ## domain-modeling
 
@@ -203,7 +207,8 @@ round cap is added.
 
 ## goal-swarm
 
-- Local: `skills/goal-swarm` (SreeStack).
+- Local: `skills/goal-swarm` (SreeStack). Host goal state remains separate from
+  T3 delegated tasks and schedules.
 - [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
 Locally written goal lifecycle that chooses solo or parallel execution within
@@ -211,20 +216,6 @@ an explicitly requested parent goal. It uses pstack's up-front split and
 selection rule, gives child goals to agents with independent outcomes, and
 leaves agent routing and result integration to `orchestration`. A PR finish
 line routes through `pr`; pstack's cloud and model defaults are excluded.
-
-## gemini
-
-- Local: `skills/gemini` (SreeStack).
-
-Locally written agy workflow with prompted analysis and installed-command code
-review; invocation remains model-discoverable.
-
-## opencode
-
-- Local: `skills/opencode` (SreeStack).
-
-Locally written OpenCode v2 session workflow with tool-free prompted analysis
-and restricted built-in code review; invocation remains model-discoverable.
 
 ## gh-stack
 
@@ -235,6 +226,8 @@ newer worktree behavior. Conflict staging follows the diagnostic owner, and
 sync rollback guidance preserves partial-restoration recovery state instead of
 promising unconditional rollback.
 
+Scoped PR layers follow `pr`’s T3 thread-registration rules; CLI publication
+does not substitute for app registration.
 
 ## grill-with-docs
 
@@ -253,6 +246,9 @@ The manual-only invocation remains in both hosts. The local skill writes an
 off-repo resume note with operational state and supports checking that note on
 pickup. It omits pstack's automatic WIP commit and transcript-specific paths.
 
+T3 history supplies scoped evidence and task receipts; the portable note retains
+thread/task identity, ownership, and live-work state. Invocation stays manual-only.
+
 ## improve-codebase-architecture
 
 - [mattpocock/skills / skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/improve-codebase-architecture) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
@@ -264,6 +260,8 @@ Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
+Exploration delegates through orchestration with a bounded read-only findings
+contract and shared model defaults. Manual invocation remains unchanged.
 
 ## ios-haptics
 
@@ -322,10 +320,11 @@ Existing project skills may provide facts consistent with their invocation
 policies; this skill retains procedure ownership and leaves migration explicit.
 Imported interface criteria retain full requested audit coverage. Web and iOS
 checks follow the requested deployment or Simulator/device target. iOS routing
-uses available Xcode MCP, CLI, and interface tools without a Build iOS Apps plugin
-dependency. Terminal and service checks use process or PTY driving, bounded
+prefers T3’s Device panel and returned driver/session flags where available;
+Xcode MCP and platform CLIs supply build/log operations or host-supported fallback. Terminal and service checks use process or PTY driving, bounded
 completion, public protocols, and fresh persisted-output reads. Harness selection
-follows host routing and public user paths, including CLI-driven UIs. Keeps
+follows host routing, including T3 preview opening and actionable-error recovery,
+and public user paths, including CLI-driven UIs. Keeps
 bounded reproduction attempts, failed-attempt evidence, authorization, isolation,
 redaction, run-owned cleanup, and separate documentation and product verdicts.
 
@@ -349,7 +348,7 @@ shared installs, retained data, and resources needed by unmerged stack layers.
 
 - Local: `skills/merge` (SreeStack).
 
-PR workflow references use the local `pr` entry point.
+PR workflow references and T3 thread registration use the local `pr` entry point.
 
 
 ## prototype
@@ -477,6 +476,10 @@ version tables. Global text trimming and destructive layout resets are omitted.
 
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
+Research owns a cited primary-source note. Independent background reading uses
+orchestration’s working defaults; assigned researchers execute directly, with
+further delegation limited by their brief. Parents check evidence before acceptance.
+
 ## review
 
 - Local: `skills/review` (SreeStack).
@@ -498,6 +501,9 @@ Reviewer references:
 Imported material remains in read-only assessment references. Review is
 model-agnostic and returns findings and coverage for one supplied snapshot;
 reviewer dispatch, tool execution, fixes, and repeats belong to callers.
+Explicit assignments select criteria while retaining full-scope reading;
+standalone assessment defaults to all criteria. Later-round briefs include
+prior findings and dispositions for independent reassessment.
 Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
@@ -507,10 +513,9 @@ Indirect-consumer checks use `change-safety`; React or Next assessments use
 
 ## review-fix-loop
 
-- Local: `skills/review-fix-loop` (SreeStack). Coordinates Review, native and
-  external reviewers, and Review Sweep over a stable base. Gemini failures can
-  fall back to OpenCode on GLM Flash 5.3 within permitted access. External gaps
-  are disclosed; required native coverage remains a completion prerequisite.
+- Local: `skills/review-fix-loop` (SreeStack). T3-owned review rounds coordinate
+  primary Spec/Standards and randomly assigned Ponytail/Thermo assessments,
+  shared model policy, stable snapshots, and Review Sweep.
 
 ## pr
 
@@ -529,10 +534,14 @@ consumers, rollout, and restoration limits replace a forced one-word blast-radiu
 rating. Small PRs can use concise prose; publication refreshes the guide's facts
 against the current scope/head. Cross-skill references use the current local name.
 
+T3 PR registration is shared by all PR routes and reused by stack/merge entrypoints.
+CI waiting uses app watches and fresh state after waking; GitHub confirms merge
+completion. Drafting alone remains local.
 
 ## review-sweep
 
-- Local: `skills/review-sweep` (SreeStack).
+- Local: `skills/review-sweep` (SreeStack). Findings retain assignment/model
+  provenance; accepted fixes use orchestration's implementation selection.
 
 ## setup-sreestack
 
@@ -543,7 +552,8 @@ workflow owns project-specific conventions and pointers, with scoped update,
 glossary migration, optional ticket/triage configuration, and explicitly
 requested verification-map setup through `verify`. Project workflow guidance
 uses current local review, PR, stack, merge, acceptance, and delegation owners;
-host settings and installation remain separate. Existing commands and standards
+host settings and installation remain separate. Agent defaults link the shared
+orchestration policy rather than duplicating host rank settings. Existing commands and standards
 are linked rather than duplicated. Active instruction files are selected by the
 user/host or existing pointer ownership, with `AGENTS.md` for a new default.
 
@@ -565,7 +575,8 @@ PR workflow references use the local `pr` entry point.
 
 ## showroom
 
-- Local: `skills/showroom` (SreeStack).
+- Local: `skills/showroom` (SreeStack). Uses Verify’s host browser/device routing;
+  remote sharing is conditional, with access limits and ownership-safe teardown.
 
 ## tdd
 
@@ -619,8 +630,8 @@ Setup references use the local `setup-sreestack` entry point.
 
 ## web-component-inspiration
 
-- Local: `skills/web-component-inspiration` (SreeStack); explicit-only and
-  web-scoped.
+- Local: `skills/web-component-inspiration` (SreeStack); web-scoped and
+  explicit-only in both hosts.
 
 ## wayfinder
 
@@ -630,6 +641,10 @@ Uses supplied or configured tracker information, with the existing local-file
 fallback. Cross-skill calls are host-neutral and the prototype route remains
 UI-only.
 
+Research assignments use shared orchestration defaults and disjoint note paths
+in the parent checkout. The parent accepts findings and resolves tickets; separate
+research branches require explicitly requested, workspace-bound ordinary threads.
+Manual invocation and the one-decision-per-session rule remain unchanged.
 
 ## writing-for-agents
 
@@ -654,16 +669,23 @@ UI-only.
 
 - [mattpocock/skills / skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/implement-spec) — task-graph/frontier scheduling adapted into `references/task-graphs.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Locally written general delegation flow. Parallel coverage and competing
-approaches are framed before dispatch; revision-bound verification and measured
-results are checked during integration. Local agent routing permits only
-`engineer`, `senior`, and `staff`, even when the host exposes other ranks.
-It does not create goals or require pstack's cloud worker setup. `pr` owns review
-when it will review the same integrated scope before publication.
+Locally written T3-oriented delegation flow with one editable Markdown table
+of model defaults in the routing reference. Assignment briefs replace a generic
+agent-rank taxonomy; discovery resolves working defaults before direct work,
+and the main procedure owns the direct-work match/delegate gate.
+Live host instructions own API/transport details and routing
+owns local concurrency and bounded recovery.
+Assignment, runtime selection, and acceptance remain distinct. Native children
+are used when they support the exact selection; T3 owns cross-provider tasks
+and review rounds. Parallel coverage, competing approaches, revision-bound
+verification, and measured results are checked during integration. It does not
+create goals or require pstack's cloud worker setup. `pr` owns review when it
+will review the same integrated scope before publication.
 
 The task-graph reference preserves existing integration, review, PR and cleanup
-owners. Workspaces preserve unexpected edits; dependency outcomes require
-integration and verification. Scheduling does not create a goal or assume a
+owners. Delegated workers share the integration checkout with disjoint ownership;
+explicitly requested ordinary threads can use bound worktrees. Workspaces
+preserve unexpected edits; dependency outcomes require integration and verification. Scheduling does not create a goal or assume a
 worker's last merge guarantees a fast-forward.
 
 
@@ -709,3 +731,17 @@ check preference, reference structure, and examples. Cross-skill wording is
 host-neutral; findings carry session evidence and remain recommendations until
 implementation is requested. Review may inspect surrounding contracts, and
 project standards inform both implementation and review.
+
+T3 session sources prefer scoped app history; other hosts retain local-log
+inspection. Historical claims are checked against current artifacts.
+
+
+## T3 integration comparison
+
+[uzairansaruzi/p3-stack](https://github.com/uzairansaruzi/p3-stack/tree/09909ebb5c0125e27fad3e57d96b81e832696d69)
+— comparison revision `09909ebb5c0125e27fad3e57d96b81e832696d69`, checked
+2026-10-12. Its task briefs, app monitoring, history recall, and proof boundaries
+informed locally written orchestration, PR, handoff, retro, and verification
+integration. No upstream prose or code imported; existing skill import baselines
+and invocation choices remain unchanged. T3 API claims cite the T3 source beside
+the applicable guidance rather than treating p3-stack as an API specification.

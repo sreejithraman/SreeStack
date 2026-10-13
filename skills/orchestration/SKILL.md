@@ -1,57 +1,53 @@
 ---
 name: orchestration
-description: Decide whether to delegate and coordinate agents for implementation, research, or verification. Use when choosing workers, splitting work, or integrating their results.
+description: Resolve working-model defaults and coordinate agents in T3 Code. Use before implementation, diagnosis, research, or verification, or when assigning agents and integrating their results.
 ---
 
 # Orchestration
 
-The parent owns scope, delegation, and integration. Keep cohesive work with one
-owner; delegate when independent work can start now and adds useful speed or
-coverage. Difficulty alone calls for a stronger model, not more agents.
-Orchestration does not require or authorize a goal.
+The parent owns the outcome. Give independent, ready work to children when it
+improves speed or coverage; keep cohesive work with one owner. Use the working
+selection in [agent routing](references/agent-routing.md#model-defaults),
+including when the parent implements directly.
 
-## Steps
+Resolve that selection before doing the work. Continue directly only when this
+agent's effective model and effort match it or an explicit user override.
+Otherwise delegate the task with that selection, preserving the parent's
+configuration. Use the steps below for delegation, including a single cohesive
+task that needs the working model.
 
-1. Choose the work.
+## Assign
 
-   When implementing a spec with blocking tickets, read
-   [task graphs](references/task-graphs.md) to schedule the ready frontier and
-   integrate it on one branch.
+Resolve the required outcome and proof before splitting it. Each child owns
+one result and a checkable completion condition. Separate writable paths and
+shared resources; serialize work that would collide. For competing approaches,
+choose the comparison criteria before dispatch. For tickets with blocking
+relationships, use [task graphs](references/task-graphs.md).
 
-   Keep tasks with the parent when a child would wait on a dependency, edit the
-   same files, or save little time. Give each delegated result one owner and a
-   check. Use [responsibilities](references/responsibilities.md) to clarify each
-   assignment; they are not roles to fill on every task. For parallel work,
-   name the required slices. For competing approaches, choose the selection
-   rule before dispatch.
+Give each child a self-contained brief: requirements and accepted decisions,
+source paths and artifacts, owned output, permitted actions, shared files to
+preserve, checks, and return format. For verification or measurement, include
+exact revisions and the method. Assign further delegation explicitly when needed.
 
-2. Brief and dispatch.
+Finish assignment when every required slice has an owner, usable inputs,
+compatible ownership, and a completion check. Then follow agent routing to
+resolve the model and start ready work within the concurrency ceiling.
 
-   Follow [agent routing](references/agent-routing.md) for role, model, effort,
-   context, and reuse. Supply the result, requirements, inputs, owned paths,
-   shared files to leave alone, checks, and return format. Start ready work
-   within the configured limit. The parent can do separate work while waiting.
-   When a worker verifies or measures code, name the exact revisions and the
-   measurement method in its brief; ask the worker to record both in its result.
+## Accept
 
-3. Integrate and verify.
+Inspect each result and its evidence. Account for every required slice as
+accepted, needing repair, rejected with a reason, or blocked. A completed child
+turn, a missing slice, or a mismatched verification revision/method is not
+proof of the parent outcome. Repair through the working model selection.
 
-   Read each result and its evidence. Accept it, send related fixes to its owner,
-   finish it with the parent, reject it with a reason, or report its blocker.
-   Check every required slice and the integrated result against the original
-   requirements. A missing slice is a gap, not a pass. For verification or
-   measurement, a missing or mismatched revision or method is also a gap.
-   Reuse valid test evidence; rerun checks when integration changes what they
-   tested.
+Verify the integrated result against the original requirements. Reuse checks
+while their revision and scope remain valid; rerun those affected by integration.
+Use [review-fix-loop](../review-fix-loop/SKILL.md) for behavior and agent-procedure
+changes. When [pr](../pr/SKILL.md) will review the same complete scope before
+publication, let it own that loop once.
 
-   Use `/review-fix-loop` for code changes that affect behavior and docs that
-   change agent behavior. When `/pr` will review the same integrated scope
-   before publication, let it run that loop. Child acceptance does not replace
-   independent review. Reuse a completed review only while its scope and
-   evidence still match the final change.
-
-## Handoff
-
-Report the integrated result, child dispositions, checks, and remaining risks
-or blockers. Include requested agent settings and distinguish them from
-confirmed runtime settings.
+Finish when every required result is integrated and its checks pass, or report
+the precise remaining gap. Return child dispositions, artifacts, checks,
+requested/confirmed model settings, and blockers. Goal state, recurring work,
+and ordinary top-level threads use their explicitly requested host workflows;
+ordinary delegation creates none of them.

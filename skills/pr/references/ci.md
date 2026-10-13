@@ -12,7 +12,18 @@ Collect required checks and visible non-required checks. Compare them with the c
 
 ## Watch
 
-Prefer the GitHub connector for check summaries and `gh` for Actions run discovery, waiting, jobs, and logs. Wait for the current check set to reach terminal results. Report useful progress while checks remain queued or running.
+Read current checks and existing feedback before waiting. When waiting or
+explicitly asked to monitor in T3 Code, use `watch_pull_request` when exposed
+and end the turn; the app wakes this thread
+for completed checks, other people's comments, or conflicts. On waking, read
+fresh GitHub state and bind it to the current head before acting. A wake is
+news to assess, not proof of readiness or authority to merge. This watch does
+not establish merge completion; `merge` confirms landing through GitHub.
+See the [T3 watch contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/pullRequests/tools.ts#L290).
+
+Use the GitHub connector for check summaries and `gh` for Actions jobs and logs.
+When app watching is unavailable, use the host's supported bounded wait and
+report checks still pending when that wait ends.
 
 ## Diagnose
 

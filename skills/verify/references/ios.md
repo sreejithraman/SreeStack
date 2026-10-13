@@ -6,8 +6,16 @@ When the task leaves the target open, use Simulator if it can exercise the
 selected workflow; otherwise use a suitable device. Identify the project or
 workspace, scheme, build configuration, and either device model and OS version
 or Simulator model and runtime.
-For Simulator checks, choose the shortest available path that can observe the
-required result: Xcode's MCP tools can build, run, interact with the Simulator,
+For Simulator checks in T3 Code, use `device_list`, then `device_open` so the
+user can watch the selected device. Drive it with the exact `agent-device`
+launcher, host configuration, and session flags returned by `device_open`,
+keeping those flags on every command. Prefer current snapshot refs and use
+`device_screenshot` for visual inspection. Report an unavailable platform.
+See the [T3 device contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/device/handlers.ts#L28).
+
+Use platform tools for builds, logs, or other operations the device driver does
+not cover. Outside that device runtime, choose the shortest available path that
+can observe the required result: Xcode's MCP tools can build, run, interact with the Simulator,
 and capture screenshots; `xcodebuild` and `xcrun simctl` cover build, install,
 and launch; Simulator or computer-use tools can provide the remaining
 interaction. Check the connected tool's capabilities before relying on it.

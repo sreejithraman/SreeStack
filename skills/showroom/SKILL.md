@@ -1,6 +1,6 @@
 ---
 name: showroom
-description: "Use after changing what a user sees to exercise the changed UI and return the smallest useful visual proof: one checked screenshot, a flow contact sheet with full-size frames, or motion proof. For web, also provide a checked URL for access away from home and disclose unverified remote access."
+description: "Use after changing what a user sees to exercise the changed UI and return the smallest useful visual proof: one checked screenshot, a flow contact sheet with full-size frames, or motion proof. For web, return the checked preview or deployment URL and disclose access limits."
 ---
 
 # Showroom
@@ -48,45 +48,25 @@ task boundary. Put labels outside the captured UI.
 
 ## Web
 
-Exercise and capture the changed state or flow at the selected target. When
-neither the task nor its verification run selects a web target, use a local preview.
-Return a checked URL for access away from home.
+Exercise and capture the selected deployment or preview. When the task and its
+verification run leave the target open, use the project's local server through
+T3's collaborative preview. Follow [web verification](../verify/references/web.md)
+for host browser selection and recovery; those rules also apply when broader
+Verify coverage is unnecessary.
 
-For a deployed target, confirm that its URL shows the changed UI. State any
-login or network requirements. If the change is absent or remote access cannot
-be established, name that gap; keep proof on the selected target rather than
-switching to a local build.
+Return the checked URL and the visual proof. State login, network, or runtime
+requirements. A loopback URL or a check from this machine does not establish
+access from another device. If the user asks for access away from home, use an
+existing deployment or supported app sharing first; for tailnet sharing, read
+[web sharing](references/web-sharing.md). Disclose unverified remote-client
+access. Keep proof on the requested target and report a missing changed state
+or access gap.
 
-For a local preview:
-
-1. Start or locate the repo's existing `dev` or `start` server bound to
-   `127.0.0.1`. Record its process identity, including command and start time or
-   controlled session, whether this preview started it or reused it.
-2. Check the current Serve configuration. Choose an unused high port other
-   than 443, 8443, or 10000, then publish with Tailscale Serve:
-   `tailscale serve --bg --https=<port> http://127.0.0.1:<origin>`. Never Funnel.
-   Keep any origin process started for this preview running after the command
-   returns.
-3. Exercise and capture the changed route or state through the returned URL.
-   If no browser tool is available, check that route with `curl` or another
-   read-only request and name the remaining remote visual-proof gap.
-
-When available, check the URL from an off-home client too (on the tailnet for
-Tailscale Serve). Otherwise report remote-client access as unverified; a check
-from this Mac alone does not establish it.
-
-Return the URL and say that access requires this Mac awake and on Tailscale,
-and the user's device on the tailnet. Include the Serve mapping and the exact
-`tailscale serve --https=<port> off` command. If this preview started the origin,
-include its exact stop command or session action too; otherwise say the reused
-origin will remain running after take-down.
-
-When asked to take the preview down, compare the current Serve mapping and
-origin process identity with the recorded ones. Stop Serve if its mapping still
-belongs to this preview, even if the origin has changed. Stop the origin only
-if this preview started it and its identity still matches. Report any mismatch
-or uncertainty and leave that service running. Do not run
-`tailscale serve reset`. Do not kill by process name or port.
+Keep a preview-owned server running when the user needs to inspect it. Record
+its process identity, ownership, and exact stop action; reused services retain
+their existing owner. Stop a local origin only when this preview started it and
+its recorded identity still matches. Tailnet teardown follows
+[web sharing](references/web-sharing.md), checking mapping and origin separately.
 
 ## iOS
 
@@ -95,6 +75,9 @@ neither has selected a target, default to Simulator if it supports the flow;
 otherwise use a suitable physical device. Build and launch on that target when
 needed. For Simulator, use one; create one only if none is usable. Leave every
 other device untouched.
+
+Follow [iOS verification](../verify/references/ios.md) for host device routing
+and driving, including the T3 Device panel and returned session flags.
 
 Exercise and capture the changed state or flow in the running app, not the home
 screen. If the chosen target cannot be exercised or captured with available

@@ -1,82 +1,83 @@
 # Agent routing
 
-Read this before spawning implementation or review agents. Reading this
-reference does not authorize creating a goal.
+Use this reference to select a model and execute a delegated assignment.
+T3's injected orchestration instructions and live tool descriptions own the
+API, transport, permissions, task state, and workspace binding. Read those
+when dispatching; this reference owns SreeStack's defaults and execution policy.
 
-## Choose work and role
+## Model defaults
 
-Choose a rank by the judgment the assignment needs. Review is an assignment,
-not a separate rank.
+Edit this table to change the defaults.
 
-| Rank | Work |
-|---|---|
-| `engineer` | Explicit, easily checked work or routine implementation using established patterns; default worker |
-| `senior` | General engineering judgment; default reviewer |
-| `staff` | Substantial diagnosis, implementation requiring design judgment, or difficult unresolved reasoning such as subtle concurrency or data-loss risks |
+| Purpose | Provider | Model | Effort |
+| --- | --- | --- | --- |
+| Implementation and fixes | Codex | GPT-6.1 Sol | High |
+| Primary review | Codex | GPT-6.1 Sol | Medium |
+| Alternate review | OpenCode | GLM 5.3 Flash | Max |
+| Alternate review | Antigravity | Gemini 3.8 Flash | High |
+| Alternate review | Grok | Grok 4.7 | High |
 
-This table is the allowed rank set. Select only these ranks, even when the host
-exposes others. Map a request for another rank to the closest listed rank and
-report the substitution.
+The working selection covers code, tests, refactoring, configuration, docs,
+research, verification, and accepted fixes. Alternate rows are a review pool.
+User instructions override defaults; preserve explicit user choices when
+applying project requirements. Review Fix Loop's primary fallback is permitted
+for alternate assessments unless the user requires a specific model/diversity.
 
-Choose the likely capable rank up front; failed attempts are not a prerequisite.
-File count alone does not determine difficulty. A hard task can still have one owner.
+Resolve names and effort through `orchestrator_capabilities` to exact available
+provider-instance/model IDs and supported options. Use a caller/project choice
+to disambiguate multiple matches; otherwise report the ambiguity. Gemini's
+effort can be encoded in its model ID. Pass the complete resolved selection:
+T3 replaces supplied options rather than merging them with inherited options.
+[T3 selection semantics](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/OrchestratorMcpService.ts#L1001).
 
-For review, start with `senior` and select another rank when the review needs
-less or more judgment. `engineer` fits mechanical checks with explicit criteria
-and straightforward changes using established patterns. Use `staff`
-for substantial design questions and difficult unresolved reasoning. Choose each
-reviewer's rank independently of the implementer; two reviewers may use
-different ranks while both cover the full diff. Reassess each round; project
-difficulty alone does not justify keeping a higher rank once its reasoning
-problem is resolved.
+Direct-work ownership follows [Orchestration](../SKILL.md). Reviewers assess;
+the working selection applies accepted fixes.
 
-Every review brief must say: work read-only, report findings, and leave edits to
-the parent. Rank files allow implementation too, so this is an instruction rather
-than an enforced filesystem restriction.
+## Dispatch and track
 
-For code review, `/review-fix-loop` chooses the number of reviewers and rounds.
-Reviewers count toward the same concurrency limit as workers. Treat the configured
-limit as a ceiling; launch only agents with useful work ready now. Finish or close
-completed agents before opening more when the host counts open threads.
+Follow T3's native-versus-app-owned routing rule. A native child must support
+the exact model/options; use a generic role when custom ranks would override
+those settings. Use `delegate_task` for cross-provider or explicitly T3-owned
+work, including Review Fix Loop. The assignment brief defines obligations;
+T3's broad `role` is not a model preset.
+[T3 execution policy](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts#L7).
 
-## Choose context and reuse
+Use fresh delegated tasks for bounded assignments and independent reviews.
+Carry needed context in the brief. Delegated children share the parent checkout;
+keep writes disjoint and serialize git/index operations. Isolated worktrees
+belong to explicitly requested ordinary threads, bound by T3 before execution.
+[T3 workspace policy](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts#L14).
 
-Set `fork_turns` explicitly on every spawn. Independent reviewers must use
-`fork_turns: "none"` in every round. Starting a new agent alone does not give it
-fresh context. Give it a complete [review brief](../../review/references/review-brief.md)
-without earlier verdicts or the author's defense.
+The default local ceiling is 12 active children, reduced by host/user limits.
+Count workers and reviewers together. Start ready assignments as slots free;
+retain each task's request key, ID, selection, owned output, and state.
 
-For workers, use `"none"` for bounded work that a complete brief can explain.
-Choose a supported partial fork (a turn count) or `"all"` when prior decisions
-matter; include the needed decisions in its brief. Check the model constraints
-below before choosing inheritance.
+Prefer async dispatch. Do independent parent work, then yield for T3 delivery.
+Use status when a result is needed mid-turn and cancel obsolete tasks through
+their owning tool. A wait timeout leaves work live; confirm terminal state before
+replacement. Follow live tool discovery/recovery instructions when T3 tools
+are initially absent, and report any remaining capability gap.
 
-Reuse an existing worker for related fixes within its ownership. Supply the
-changed requirements, current files, and checks. Start a new agent when stronger
-reasoning or independent judgment is needed. Worker reuse does not apply to
-independent review rounds.
+Before overlapping a replacement with earlier writers, account for pending
+child runs and reconcile their files. Cancellation or a terminal task receipt
+alone does not establish that every later or nested writer has stopped.
 
-## Apply settings at spawn
+## Recover work
 
-When a project or user overrides a listed rank's model or effort, use a spawn
-path where those values take effect and pass both explicitly. Otherwise, use the
-custom role for the selected allowed rank when the host exposes it. If it does
-not, read that role's model and effort from its active agent file and pass both
-explicitly. For routine work without a named rank, use the effective `[agents]`
-defaults.
+Repeat an uncertain dispatch with its existing key in the same provider session
+so it resolves to the same work. A fresh execution after terminal failure,
+including a retry in the same review round, needs a new key. Reconcile retained
+IDs before replacing work after a session change or lost response.
+[T3 command identity](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/OrchestratorMcpService.ts#L1531).
 
-For Codex, custom agent values override explicit spawn values, which override
-`[agents]` defaults, which override parent settings. Resolve model and effort
-together; an omitted effort can select a model default or retain an inherited
-value. Agent files are the source of truth for role settings. If a needed role
-is missing, report that gap rather than claiming the requested model ran.
-See OpenAI's [subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents)
-for the supported fields and precedence.
+Retain partial results and the failure cause. A transient terminal failure may
+have one fresh-task retry per target per workflow. Quota, auth, or unavailable
+models need changed conditions or a permitted alternate selection. Permission
+or policy denials stop the blocked action; another model or transport does not
+authorize it. Review Fix Loop owns alternate replacement and coverage decisions.
+A failed required working/primary selection remains a blocker after its permitted
+recovery; it is not permission to choose an unlisted model.
 
-Some hosts require fresh or partial context to change the child's model or
-effort. On a host where full-history forks inherit the parent and reject
-overrides, use `fork_turns = "none"` or a supported partial fork, with a complete
-brief and explicit model and effort. Check the actual spawn result when it
-exposes those values; otherwise report the requested settings as unverified.
-
-Leave further delegation to the parent unless it explicitly assigns that work.
+Report actual completion and evidence gaps. Dispatch identity and stored thread
+options can confirm configuration, not provider execution fidelity. Acceptance
+belongs to the parent under Orchestration; a task summary alone is not a pass.

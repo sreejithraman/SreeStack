@@ -30,8 +30,9 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   automatic publication or merging from a setup request.
 - **Delegation:** link `orchestration` when the project uses parallel work or
   ticket graphs. Keep goal-backed execution explicitly requested through
-  `goal-swarm`. Agent models, ranks, and effort stay in their existing host
-  configuration, not new project defaults inferred from this setup run.
+  `goal-swarm`. Link orchestration's shared model policy for agent defaults;
+  preserve explicit project/user overrides. Do not infer new model or effort
+  preferences from this setup run or duplicate the shared policy in project docs.
 
 Include only conventions relevant to the requested project and skills available
 in its target host. When a needed tool is absent, name the prerequisite and

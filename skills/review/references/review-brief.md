@@ -1,13 +1,20 @@
 # Review brief
 
-Prepare the same scope and assessment criteria for every reviewer. Include this
-skill and the references needed for the changed content. Supply full contents
-for external packets; accessible absolute paths are sufficient for local
-reviewers. Keep briefs and snapshots outside the reviewed diff.
+Prepare the same scope, requirements, and evidence for every reviewer. Name
+each assigned set of criteria and include this skill and the needed references.
+Accessible absolute paths are sufficient for children in the shared checkout;
+supply full contents when a reviewer cannot read the source. Keep briefs and
+snapshots outside the reviewed diff.
 
-Independent reviewers receive no earlier verdicts or author defenses. Work
-read-only, report findings, and leave edits, delegation, and acceptance to the
-caller. An assigned emphasis never limits full-scope coverage.
+First-round reviewers receive no earlier verdicts or author defenses. Later
+rounds include original scope, prior findings, their evidence and dispositions,
+responses, and unresolved objections. Ask reviewers to verify those claims
+independently and assess the current complete snapshot, including regressions
+from fixes. Earlier acceptance or rejection is not proof. Work read-only;
+leave edits, commits, external actions, delegation, and acceptance to the caller.
+An assigned emphasis never limits full-scope reading. Reviewers within a round
+receive no peer findings or verdicts from that round, even when concurrency
+requires serial dispatch; earlier-round findings remain part of later briefs.
 
 ## Requirements and scope
 

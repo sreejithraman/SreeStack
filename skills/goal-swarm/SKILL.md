@@ -15,6 +15,11 @@ Within that request, assign bounded child goals when useful and honor any user
 limit on agents or goals. Ordinary delegation outside a goal uses
 `/orchestration` without creating goals.
 
+Goal-backed execution needs the host's `get_goal`, `create_goal`, and
+`update_goal` tools. T3 child tasks, ordinary threads, and recurring schedules
+do not supply that goal state. Report missing goal tools instead of claiming
+a tracked goal or silently substituting a schedule.
+
 ## Workflow
 
 1. **Frame the parent goal.** Write a short objective with a checkable result,
