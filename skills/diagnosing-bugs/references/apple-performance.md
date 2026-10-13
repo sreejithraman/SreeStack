@@ -3,13 +3,16 @@
 Use this branch after the parent skill has reduced the complaint to one
 measurable Apple-platform workload.
 
-## Define a comparable run
+Use [measurement validity](measurement-validity.md) for benchmark checks and
+verdicts; this reference adds Apple target and capture requirements.
+For a requested estimate, apply the shared ballpark rules and the target
+guidance below. Use the capture steps when tracing is needed for diagnosis or
+the requested evidence.
 
-Write down the start event, end condition, target hardware, OS, build and
-configuration, data set, cache or warm-up state, network conditions, and sample
-count. Capture a before measurement, change one cause, and repeat the same run.
-If a relevant condition changes, treat the result as a new experiment instead
-of a before/after comparison.
+## Choose the target
+
+Record the hardware, OS, and build with each capture, using the shared
+measurement procedure for workload, comparison conditions, and repetitions.
 
 Use Simulator to narrow code paths when it produces a faster loop. Make claims
 about device performance on representative hardware, including an older
@@ -19,8 +22,8 @@ centers repeated measurement, and its
 [responsiveness guidance](https://developer.apple.com/documentation/xcode/improving-app-responsiveness)
 recommends testing interaction performance on real devices.
 
-Done when the workload, environment, metric, and repetition rule are precise
-enough for another person to produce a comparable capture.
+Done when the selected target supports the intended claim or its limitations
+are explicit.
 
 ## Select the profiler from the symptom
 
@@ -54,16 +57,17 @@ hypotheses, and a baseline artifact has been saved with its run metadata.
 Restrict analysis to the measured interval. Separate app-owned work from system
 activity, verify that first-party frames are symbolicated, and identify the
 call path or wait that dominates the user-visible delay. Sampling evidence is
-directional; repeat enough runs to show that the pattern is stable.
+directional; apply the shared repeatability and verdict rules when using it to
+support a measurement claim.
 
-After the fix, repeat the same workload and report:
+Alongside the shared measurement report, include:
 
-- the user-visible metric and before/after values or distributions;
-- target, OS, build, configuration, data, cache state, and sample count;
+- the hardware, OS, and build used for the capture;
 - the first-party hotspot or blocking path that changed;
-- remaining variance and any Simulator-only limitation;
+- sampling limits and any Simulator-only limitation;
 - paths to the raw traces, after checking them for sensitive data.
 
-The branch is complete when the original performance loop is green and the
-comparable after captures support the claimed cause. A faster unrelated metric
-or a trace from different conditions is not completion evidence.
+For a repair, completion requires the original performance loop to be green,
+the shared measurement verdict to support the claimed effect, and these Apple
+target and capture requirements to hold. An inconclusive measurement cannot
+establish a speedup.

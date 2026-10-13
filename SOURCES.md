@@ -144,6 +144,7 @@ model settings, or Cursor MCP discovery.
 ## codebase-design
 
 - [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/codebase-design) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+- [cursor/plugins / pstack architecture and correction guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `architect/references/design-red-flags.md` and `correct/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
@@ -152,9 +153,17 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 Alternative-interface proposals use orchestration’s working selection, read-only
 ownership, and capacity-aware waves; the user-requested comparison remains conditional.
 
+Ownership, supported paths, private implementation, and authoritative definitions
+join `references/preventing-mistakes.md`. Recurring mistakes require actual
+examples and recommended guard proof; authorized implementation proves the
+guard against a past mistake. Legitimate adapters and
+compatibility paths remain supported; correction triggers, mandatory rule tables,
+and blanket exception policies are omitted. Design and review remain recommendations.
+
 ## diagnosing-bugs
 
 - [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/diagnosing-bugs) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+- [cursor/plugins / pstack measurement and diagnostic guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `benchmark-checklist/SKILL.md`, `principle-explain-the-number/SKILL.md`, and the diagnostic-signal addition in `principle-fix-root-causes/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Local adaptation: adds conditional Apple-platform references for runtime,
   performance, and memory diagnosis. They use current Apple documentation and
   local Xcode capability discovery, with Instruments as the default profiler
@@ -172,6 +181,13 @@ comment-only changes are omitted.
 
 Browser reproductions follow host routing, including T3 collaborative-preview
 selection and recovery, before standalone drivers.
+
+Performance claims use `references/measurement-validity.md` for completed work,
+correctness, settings, bottlenecks, plausibility, repeatability, and user relevance.
+Apple guidance shares that procedure. Run counts fit cost and noise rather than
+a fixed minimum; ballparks remain labeled estimates. Diagnostic cleanup proposes
+a cheap persistent signal with runtime/privacy costs after a deep investigation;
+implementation stays within the authorized fix and temporary probes still leave.
 
 ## domain-modeling
 
@@ -262,6 +278,8 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 
 Exploration delegates through orchestration with a bounded read-only findings
 contract and shared model defaults. Manual invocation remains unchanged.
+Exploration also uses Codebase Design's ownership and enforcement reference for
+evidenced friction, preserving recommendation-only ownership.
 
 ## ios-haptics
 
@@ -296,7 +314,8 @@ workflow; automatic invocation remains framework- and task-based.
 - Local: `skills/verify` (SreeStack).
 - [emilkowalski/skills / skills/emil-design-eng](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/emil-design-eng) — interface-review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
-- [cursor/plugins / pstack verification skills](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills) — `create-verification-skill/SKILL.md` and `maintain-verification-skill/SKILL.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack/skills/create-verification-skill](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/create-verification-skill) — `SKILL.md`; import baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack/skills/maintain-verification-skill](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/maintain-verification-skill) — `SKILL.md`; import baseline `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 - [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 
@@ -327,6 +346,12 @@ follows host routing, including T3 preview opening and actionable-error recovery
 and public user paths, including CLI-driven UIs. Keeps
 bounded reproduction attempts, failed-attempt evidence, authorization, isolation,
 redaction, run-owned cleanup, and separate documentation and product verdicts.
+
+Readiness requires usable workflow state after initialization, migrations, and
+fixtures. Setup/first-run recipes prove isolated empty-data launch; ordinary checks
+can reuse known state. Substitute environments leave target-specific setup
+unverified. Missing fixtures retain assertions with local failed/blocked verdicts,
+rather than requiring every missing precondition to be a product failure.
 
 Edge-data workflow and catalog map to `references/edge-data.md`, with mobile
 assertions in `references/web.md`. Comparison controls are optional, fixtures
@@ -520,6 +545,7 @@ Indirect-consumer checks use `change-safety`; React or Next assessments use
 ## pr
 
 - Local: `skills/pr` (SreeStack).
+- [cursor/plugins / pstack PR feedback pagination fix](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/poteto-mode/scripts/watch-pr) — pagination/completeness requirement adapted from `github.ts`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. No watcher code imported. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
 The local name and UI are `pr`. Retains automatic discovery and the full local
@@ -537,6 +563,8 @@ against the current scope/head. Cross-skill references use the current local nam
 T3 PR registration is shared by all PR routes and reused by stack/merge entrypoints.
 CI waiting uses app watches and fresh state after waking; GitHub confirms merge
 completion. Drafting alone remains local.
+Feedback collection exhausts relevant pages and treats incomplete collection as
+unproven readiness. App watching and existing forge/tool selection remain unchanged.
 
 ## review-sweep
 

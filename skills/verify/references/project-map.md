@@ -37,6 +37,11 @@ configuration for obvious commands; avoid a generic tutorial or copies of
 easy-to-discover `--help` output. Specify actual available tools and commands;
 illustrative helpers must not masquerade as installed tooling.
 
+Record the usable-readiness condition and required initialization, migrations,
+and fixtures. For setup or first-run recipes, include isolated empty-data launch
+steps and any setup still unverified on the intended target, following the main
+skill's launch rules.
+
 Add or update a concise discovery pointer in the project's established
 agent-facing instructions when appropriate. Respect local `AGENTS.md` or
 `CLAUDE.md` conventions; do not require both files or create unnecessary layers.

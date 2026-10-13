@@ -17,6 +17,12 @@ Collect:
 
 Bind the collection to the current PR head. Re-read feedback after a push because the diff and review state may have changed.
 
+Exhaust every page of the relevant feedback collections, including inline
+review threads; the first page cannot establish that no unresolved feedback
+remains. Use cursor or pagination support from the selected tool. If collection
+stops early or the tool cannot expose the remaining pages, report incomplete
+coverage and keep feedback readiness unproven until the gap is resolved.
+
 ## Decide And Fix
 
 Map each technical item into the `/review-sweep` finding schema with its GitHub id, location, claim, and source. Merge duplicate claims while retaining every source id.
