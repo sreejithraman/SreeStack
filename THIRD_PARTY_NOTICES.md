@@ -13,6 +13,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
 | HumanLayer / Dex Horthy | PR visual guidance credited by Matt Pocock | [MIT](licenses/humanlayer-skills.txt) |
 | Matt Pocock | Skills and Standards/Spec review references listed in SOURCES.md | [MIT](licenses/mattpocock-skills.txt) |
+| Jay E / RoboNuggets; technique credited to Matt Shumer | gauntlet-loop adaptation; changes recorded in SOURCES.md | [CC BY 4.0](licenses/robonuggets-gauntlet-loop.txt) ([upstream](https://github.com/robonuggets/gauntlet-loop/tree/9b1975a1b8f01981f3f1e6b667ad3aaf907178ea)) |
 | Emil Kowalski | animate; motion and gesture behavior; typography and materials; interface access/input and review guidance | [animate MIT](licenses/emilkowalski-animate.txt), [design engineering MIT](licenses/emilkowalski-design-eng.txt) |
 | Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
 | Dietrich Gebert / Ponytail | review/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
@@ -28,6 +29,7 @@ material keeps the terms listed below; the root license does not replace them.
 
 HumanLayer’s notice was checked on 2026-10-03 at the revision in `SOURCES.md`.
 Good CSS's notice was checked on 2026-10-08 at its recorded import revision.
+Gauntlet Loop's notice was checked on 2026-10-12 at its recorded import revision.
 
 The files in `licenses/` copy upstream license files at the revisions in
 SOURCES.md. Koubou was checked on 2026-10-02; OpenClaw was checked on 2026-09-29;
