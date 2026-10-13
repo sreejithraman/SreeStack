@@ -186,6 +186,21 @@ readers; glossary reading alone does not invoke domain modeling.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
+## gauntlet-loop
+
+- [robonuggets/gauntlet-loop / .claude/skills/gauntlet-loop](https://github.com/robonuggets/gauntlet-loop/tree/9b1975a1b8f01981f3f1e6b667ad3aaf907178ea/.claude/skills/gauntlet-loop) — `SKILL.md`; import baseline commit `9b1975a1b8f01981f3f1e6b667ad3aaf907178ea`. CC BY 4.0 notice in `licenses/robonuggets-gauntlet-loop.txt`.
+
+User-invoked only in Claude Code and Codex. Preserves prompt generation,
+user selection of a named/fetchable/comparable bar, separate builder and harsh
+critic, blind comparison, iteration until a win, and the offer to run the prompt.
+Consolidates repeated examples and failure guidance into one workflow. Uses
+portable iteration and subagent instructions instead of assuming `/loop` or
+`ultracode` support. Adds equivalent comparison conditions, disclosure of blind
+comparison limits, measurable acceptance and integrated-result checks, blocked
+comparison reporting, and workspace-scoped progress. Execution follows an
+explicit run request and available host capabilities; no default budget or
+round cap is added.
+
 ## goal-swarm
 
 - Local: `skills/goal-swarm` (SreeStack).

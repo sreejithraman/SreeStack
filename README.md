@@ -53,6 +53,11 @@ A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary do
 
 The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
 to the agent environment. Invoke it explicitly; it returns recommendations.
+The [gauntlet-loop skill](skills/gauntlet-loop/SKILL.md) is also user-invoked:
+use `$gauntlet-loop` in Codex or `/gauntlet-loop` in Claude Code with a goal and
+optionally a specific reference. It returns a prompt for a builder-and-critic
+loop. Writing the prompt needs no extra tools; running it needs independent
+agents and access to the reference and generated output.
 Domain skills use `GLOSSARY.md` for new layouts and preserve configured or
 existing legacy `CONTEXT.md` glossary paths.
 
@@ -184,6 +189,7 @@ uses and adapts:
 
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md). Local adaptations are recorded in [SOURCES.md](SOURCES.md#gauntlet-loop).
 - [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
