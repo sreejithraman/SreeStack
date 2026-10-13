@@ -14,21 +14,25 @@ Keep one entry per skill and one bullet per imported source, followed by plain
 descriptions of current local differences, including invocation choices.
 Local-only skills need just an origin note.
 
-## 1password
+## agent-login
 
+- Local: `skills/agent-login` (SreeStack) application login workflow and private alias-based CLI.
 - [openclaw/openclaw / skills/1password](https://github.com/openclaw/openclaw/tree/a229456f487f713315fc799767a97990f407bea6/skills/1password) — `SKILL.md`, `references/get-started.md`, and `references/cli-examples.md`; adaptation baseline commit `a229456f487f713315fc799767a97990f407bea6`. MIT notice in `licenses/openclaw.txt`.
 
-Automatically discoverable in both hosts; triggers on task credential needs
-without an explicit 1Password request. Adds user-designated vault-scoped
-service-account access, optional automatic item management, and task-specific
-personal approval, distinguishing behavioral scope from 1Password enforcement.
-Setup, authentication, and credential delivery/storage use task-based references;
-machine administration is separate from project consumption. Replaces upstream
-secret-printing examples with process-local reads and stdin writes, and browser
-filling with capability-based delivery or user sign-in. Omits OpenClaw install
-metadata, gateway-specific IPC assumptions, and tmux/session-export workflows.
-API claims link to official documentation; README.md holds purpose and setup
-prerequisites.
+One automatically discoverable skill owns application sign-in and approved
+credential use. Provider access, authentication, and setup are in
+`references/1password.md`; runtime provisioning and delivery/storage use
+separate task references. Current CLI support is 1Password and existing local
+Chromium CDP tabs. Adds user-designated vault-scoped service-account access,
+optional automatic item management, and task-specific personal approval,
+distinguishing behavioral scope from 1Password enforcement. Machine
+administration is separate from consumer tasks. Replaces upstream
+secret-printing examples with process-local reads and stdin writes. Adds shared
+private environment-file provisioning for local Codex runtimes, preserving
+unrelated agent variables, host-specific Touch ID diagnosis, and
+provisioning-source-specific runtime checks. Omits OpenClaw install metadata,
+gateway-specific IPC assumptions, and tmux/session-export workflows. API claims
+link to official documentation; README.md holds purpose and setup prerequisites.
 
 ## snip-snap
 
@@ -346,6 +350,12 @@ follows host routing, including T3 preview opening and actionable-error recovery
 and public user paths, including CLI-driven UIs. Keeps
 bounded reproduction attempts, failed-attempt evidence, authorization, isolation,
 redaction, run-owned cleanup, and separate documentation and product verdicts.
+Authenticated workflows reuse designated test accounts and standing scope,
+delegate application sign-in and command/API credential use to `agent-login`,
+check delivery in the actual host interface, and
+distinguish provider authentication, automatic login, and post-login verification.
+Provider mechanics stay in agent-login’s references; maps link the authoritative
+approved mapping and record delivery setup.
 
 Readiness requires usable workflow state after initialization, migrations, and
 fixtures. Setup/first-run recipes prove isolated empty-data launch; ordinary checks
