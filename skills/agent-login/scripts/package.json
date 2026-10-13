@@ -1,0 +1,22 @@
+{
+  "name": "@sreestack/agent-login",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "agent-login": "agent-login.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "agent-login.mjs"
+  ],
+  "scripts": {
+    "test": "node --test agent-login.test.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.64.0"
+  }
+}

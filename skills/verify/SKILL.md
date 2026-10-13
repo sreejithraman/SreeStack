@@ -75,6 +75,11 @@ A project verification skill alone does not establish a documentation map.
 2. **Prepare the recipes and interface.** Prepare temporary or maintained recipes
    according to the documentation policy above.
 
+   When selected workflows need login or authenticated commands, read
+   [authenticated verification](references/authenticated-verification.md) before
+   retrieving credentials or driving login. Reuse designated test accounts and
+   existing authorization; verify delivery through the selected host interface.
+
    Read the relevant platform reference: [web](references/web.md),
    [iOS](references/ios.md), [macOS](references/macos.md), or
    [terminal and services](references/terminal-and-service.md). Use the same

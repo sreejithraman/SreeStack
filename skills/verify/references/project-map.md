@@ -42,6 +42,12 @@ and fixtures. For setup or first-run recipes, include isolated empty-data launch
 steps and any setup still unverified on the intended target, following the main
 skill's launch rules.
 
+For authenticated workflows, shared setup links the authoritative approved
+credential mapping instead of copying account scope. Record the expected role,
+credential-provider setup path, actual secure delivery integration, and separate
+runtime-access and automatic-login readiness, with exact blockers when unproved.
+Keep values out of the map; feature recipes link this shared setup.
+
 Add or update a concise discovery pointer in the project's established
 agent-facing instructions when appropriate. Respect local `AGENTS.md` or
 `CLAUDE.md` conventions; do not require both files or create unnecessary layers.

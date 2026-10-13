@@ -6,21 +6,7 @@ are unnecessary for a field read. Consult installed `op read --help` and
 [secret reference syntax](https://www.1password.dev/cli/secret-reference-syntax)
 for field and OTP references. Retrieve approved OTPs immediately before use.
 
-For login, compare the actual scheme, host, and port with the approved origin.
-Subdomains and redirect targets need their own authorization. Use HTTPS remotely;
-HTTP is acceptable for an explicitly allowed loopback test origin.
-
-## Browser login
-
-Use a credential-aware browser integration when available for the selected access
-path, honoring its approval prompts and documented guarantees. Otherwise use an
-existing project login harness with environment injection below. Follow the host's
-browser routing rules; a missing credential feature does not justify changing
-browsers. Ordinary typing tools accept literal values, not `op://` references.
-
-Before injecting, check that the consumer submits only to approved origins and
-keeps credential payloads out of traces, screenshots, reports, and saved browser
-state. A login approval covers credential use, not subsequent site actions.
+For application UI entry, use [application login](../SKILL.md).
 
 ## Commands and test harnesses
 
@@ -33,7 +19,7 @@ TEST_LOGIN_PASSWORD='op://VAULT_ID/ITEM_ID/password' \
 op run -- env -u OP_SERVICE_ACCOUNT_TOKEN node ./scripts/verify-login.mjs
 ```
 
-Substitute approved references and the actual project runner; none is bundled.
+Substitute approved references and the actual project runner.
 The runner reads values inside its process. Remove unrelated inherited `op://`
 references before `op run`; it resolves those too. Review each reference and
 interpolation when using `--env-file`.
