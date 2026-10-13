@@ -26,6 +26,9 @@ Prefer the GitHub connector for PR discovery, creation, metadata, and updates. U
 
 Create a PR when none exists. Update the existing PR when its head branch matches. Set its base to the supplied immediate base and confirm the base after the write.
 
+Register the PR with this T3 thread as required by [thread registration](../SKILL.md#thread-registration);
+creating it through GitHub tools or a CLI does not register it.
+
 Write or refresh the title and body using [PR body](pr-body.md), the complete
 current change, and applicable verification/visual evidence. Reassess the summary
 and merge risk after fixes change the scope, and keep the body's check results

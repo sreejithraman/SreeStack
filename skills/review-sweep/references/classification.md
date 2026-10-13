@@ -10,6 +10,10 @@ Assign exactly one class to each finding:
 
 Only `Must-fix` and `Worth-fixing` are accepted findings.
 
+Structural or instruction findings need evidence of a violated contract or a
+concrete benefit under the active review bar. A prompt's tone, file-size threshold,
+or style preference alone does not establish a blocker.
+
 `Defer`, `Acknowledge`, and `Won't do` need a reason.
 
 `Defer` must include the parent decision needed.

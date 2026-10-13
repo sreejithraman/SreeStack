@@ -6,6 +6,15 @@ server; for a live site, open its URL.
 Reach the exact route or state under test. Record the URL, viewport/device mode,
 and relevant console or network evidence.
 
+In T3 Code, follow the injected collaborative-browser instructions for tool
+selection and recovery. Start with `preview_status`, then `preview_open` when
+no automation-capable preview is attached. An initially closed preview or an
+actionable error still uses that browser. Use another browser only under the
+host's fallback conditions or an explicit user request. For local servers,
+resolve the actual URL and port from the running process or app environment.
+The [T3 runtime instructions](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts)
+and live tools supply the current interaction contract.
+
 ## Observe and interact
 
 - Capture a browser snapshot or inspect the DOM and accessibility tree before

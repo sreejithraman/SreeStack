@@ -15,6 +15,7 @@ files = [ROOT / p for p in subprocess.check_output(
     ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
     cwd=ROOT, text=True,
 ).splitlines()]
+files = [path for path in files if path.is_file()]
 sources = (ROOT / "SOURCES.md").read_text()
 skills = sorted({ROOT / "skills" / p.relative_to(ROOT).parts[1]
                  for p in files if p.relative_to(ROOT).parts[0] == "skills"})
@@ -49,6 +50,17 @@ for folder in skills:
                     f"{skill.relative_to(ROOT)}: name {source_name!r} "
                     f"does not match folder {folder.name!r}"
                 )
+        agent_file = folder / "agents" / "openai.yaml"
+        try:
+            agent_settings = yaml.safe_load(agent_file.read_text()) if agent_file.is_file() else {}
+        except yaml.YAMLError as error:
+            errors.append(f"{agent_file.relative_to(ROOT)}: invalid YAML: {error}")
+            continue
+        policy = agent_settings.get("policy", {}) if isinstance(agent_settings, dict) else {}
+        claude_manual = isinstance(metadata, dict) and metadata.get("disable-model-invocation") is True
+        codex_manual = isinstance(policy, dict) and policy.get("allow_implicit_invocation") is False
+        if claude_manual != codex_manual:
+            errors.append(f"skills/{folder.name}: invocation policy differs between SKILL.md and agents/openai.yaml")
     if f"\n## {source_name}\n" not in sources:
         errors.append(
             f"skills/{folder.name}: missing SOURCES.md entry for {source_name}"
@@ -56,7 +68,7 @@ for folder in skills:
 
 markdown = MarkdownIt()
 for path in files:
-    if path.suffix.lower() != ".md" or not path.is_file():
+    if path.suffix.lower() != ".md":
         continue
     tokens = markdown.parse(path.read_text())
     targets = []

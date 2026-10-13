@@ -10,7 +10,11 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 1. Apply `writing-for-agents` for the writing style guide.
 
-2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine. If the user doesn't specify a session, default to the current one.
+2. Read the primary sources for the session the user specifies; default to the
+   current one. In T3 Code, prefer scoped `t3_thread_read` and `t3_thread_search`
+   for app history and task receipts. Use local session logs when app history is
+   unavailable or the requested session belongs to another host. Check current
+   artifacts before treating a historical statement as the present state.
 
 3. Look for candidates for improvement in these categories.
 

@@ -22,6 +22,15 @@ requirements, including after fixes made during this run. No further merge
 confirmation is needed. An explicit request to keep the PR in draft takes
 precedence over a merge request.
 
+## Thread registration
+
+For every route, register each scoped existing PR immediately with
+`link_pull_request` when T3 exposes it; register a new PR immediately after
+creation. Apply this to every layer worked on through `gh-stack`. Before
+finishing PR work, reconcile `list_thread_pull_requests` with the scoped PRs
+and link any missing ones. Report failed registration separately from
+publication. Background PR mentions are outside this scope.
+
 ## Delivery workflow
 
 1. **Scope.** Resolve the branch, immediate base, intended changes, existing PR,
@@ -37,7 +46,12 @@ precedence over a merge request.
 4. **Watch.** Read [ci.md](references/ci.md) for checks and
    [pr-feedback.md](references/pr-feedback.md) when feedback exists. Watch the
    current pushed head and triage findings through `/review-sweep`. Hold replies
-   claiming a fix and thread resolution until that fix is pushed.
+   claiming a fix and thread resolution until that fix is pushed. Assess current
+   checks and existing feedback first. When waiting is required, or the user
+   explicitly requested monitoring, accept the app watch and end the turn.
+   Resume this sequence after a wake with fresh head-bound state. Without app
+   watching, follow the reference's bounded wait; still-pending work stays
+   pending. Already settled current-head checks can proceed directly to step 5.
 
 5. **Repeat or finish.** If you make fixes, return to step 3. After publishing,
    post held replies and resolve eligible threads, then check CI and feedback

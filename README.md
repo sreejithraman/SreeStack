@@ -1,7 +1,7 @@
 # SreeStack
 
 A collection of agent skills for planning, coding, review, research, and UI work,
-with a small set of shared Codex defaults.
+with T3 Code orchestration and optional shared Codex host defaults.
 It includes original workflows and adapted skills from the projects credited below.
 Browse [skills/](skills/) and see [SOURCES.md](SOURCES.md) for upstream origins
 and local differences to preserve during updates.
@@ -22,24 +22,86 @@ Repeat the last command for other skills. If that destination already exists,
 keep it or move it aside before linking. To uninstall, remove only the symlink
 you created. Pull changes in this clone to update linked skills.
 
-Read each skill before use. Some workflows need host tools for goals, agents,
-or browser control; others need GitHub CLI, Antigravity CLI, Tailscale, or Apple
-development tools. Available tools and invocation settings vary by host.
-This collection has no single runtime that supports every skill.
-The [gemini](skills/gemini/SKILL.md) and [opencode](skills/opencode/SKILL.md)
-skills provide headless second opinions, analysis, and reviews. Gemini requires
-the authenticated `agy` CLI; OpenCode requires the `opencode` CLI and access to
-the selected model's provider. Linking either skill does not install its CLI
-or configure authentication.
-Gemini's native code review also requires agy's `code-review` plugin, including
-the `code-review` and `code-review-commons` skills. Check the available
-skills with `agy --print /skills --output-format json` and plugins with
-`agy plugin list`.
-OpenCode uses the v2 server API for restricted headless sessions and its built-in
-`review` command for code review. The API contract was checked with v2.0.23;
-it requires `opencode serve`, `opencode api`, and the corresponding session APIs.
-No additional review plugin is required. Provider access and quota are separate
-from whether a model appears in the catalog.
+Read each skill before use. Delegation and review target T3 Code's orchestration
+MCP tools and its configured provider runtimes. Other workflows may need goal
+state tools, GitHub CLI, optional Tailscale sharing, or Apple development tools. Linking skills
+does not install provider executables, authenticate accounts, or enable models.
+
+### How the skills fit together
+
+T3 supplies the live model catalog, child-task lifecycle, thread history, PR
+notifications, and collaborative browser and device controls. SreeStack supplies
+model defaults, bounded assignments, review criteria, acceptance checks, and
+handoff artifacts. Skills use those app capabilities through the host's current
+instructions rather than maintaining another API manual.
+
+| Task | Owner |
+| --- | --- |
+| Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
+| Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
+| Delegate independent work | `orchestration`; `research` owns cited investigations |
+| Prove behavior | `verify`; `showroom` presents the checked visual evidence |
+| Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
+| Publish and monitor | `pr`; `gh-stack` manages dependent layers |
+| Land and clean up | `merge`, then `repo-cleanup` |
+| Transfer context or improve the environment | Explicit `handoff` or `retro` |
+
+Use only the skills triggered by the task. A small change needs no global mode,
+mandatory design panel, or planning registry. Specialists retain their current
+invocation choices; setup, planning commands, handoff, and retrospective remain
+explicit where configured. Ordinary work creates no goals, schedules, or new
+conversations. Explicit goal-backed work uses `goal-swarm` and the host's goal tools.
+
+### T3 Code orchestration and model defaults
+
+[Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
+from T3's live catalog. Edit
+[model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
+to change implementation/review models, effort, and alternate-review pool members.
+The local concurrency ceiling is in that same reference. This is the one source
+for skill model defaults; explicit user/project requirements are resolved by
+[agent routing](skills/orchestration/references/agent-routing.md).
+
+Enable and authenticate the providers named in that table in T3 Code. Routing
+resolves their exact instance/model IDs and supported options from the live
+catalog; an ambiguous match needs an explicit selection. Gemini's high selection
+is encoded in its model ID, while other providers may expose an option. Catalog availability does
+not establish quota or successful access. T3's injected MCP tools or supported
+ACP bridge must be reachable from the agent. Provider-specific review plugins
+and standalone headless execution skills are not needed for this shared review
+procedure.
+
+[Review](skills/review/SKILL.md) assesses a snapshot without fixes.
+[Review Sweep](skills/review-sweep/SKILL.md) validates findings and implements
+accepted fixes with the working model selection.
+[Review Fix Loop](skills/review-fix-loop/SKILL.md) coordinates primary Spec +
+Standards assessment and, for a full round, randomly assigned Ponytail and
+Thermo reviews from the alternate pool. It retains the mapping through fix
+rounds, uses fresh T3 children, and reports any lost model diversity.
+
+When migrating an installed setup, remove only the links and rank presets you
+previously installed for the retired Gemini/OpenCode skills and Codex ranks;
+keep unrelated provider settings and custom agents. These repository edits do
+not update live skill folders or host configuration. Keep installed skill links
+on a stable clone rather than a temporary worktree.
+
+Sample requests and expected results:
+
+- “Implement this change”: the working policy supplies the model and options;
+  parallel children have disjoint ownership in the same checkout.
+- “Review and fix this shared-contract change”: primary, Ponytail, and Thermo
+  assessments cover the same snapshot; accepted fixes use the working model.
+- “Review this small fix”: one independent primary assessment when full-review
+  risk/contract triggers do not apply; an ordinary prose or wording-only edit
+  with no procedure change uses parent review.
+- An unavailable alternate uses the documented primary-model fallback, retaining
+  lens coverage and disclosing reduced diversity. Missing required coverage
+  cannot produce a clean result.
+- A substantive fix triggers a fresh round against the original base. A changed
+  snapshot supersedes in-flight review; successful dispatch alone is not a pass.
+- Ordinary delegation does not create goals or recurring schedules. Explicit
+  goal-backed work still needs the host's goal-state tools.
+
 `pr` writes titles/bodies or brings a single PR to readiness; `merge` lands ready PRs or stacks and
 finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
 stacks and `repo-cleanup` for completed task resources, including simulator and
@@ -103,73 +165,32 @@ token provisioning, and an approved credential mapping. Follow the
 [setup reference](skills/1password/references/setup.md) for machine onboarding,
 project bootstrap, and a live readiness check; it also covers enforcement limits.
 
-## Codex defaults
+## Optional Codex host defaults
 
-The files under [codex/](codex/) define shared defaults. Keeping them here does
-not change the live Codex config or global instructions. Keep the full personal
-config local. It can contain machine paths, trusted projects, and integration
-settings.
+The files under [codex/](codex/) provide parent-session settings and shared host
+instructions. They are separate from orchestration's delegated model policy.
+Keeping them here does not change live Codex configuration. Keep the full
+personal config local; it may contain machine paths, trusted projects, and
+integration settings.
 
 | Source | Destination | How to apply |
 |---|---|---|
-| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Merge the listed keys into the existing file and `[agents]` table |
-| [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Merge these shared instructions into the existing file |
-| [optional-instructions.md](codex/optional-instructions.md) | `~/.codex/AGENTS.md` | Merge only the sections you want to enable |
-| [optional.rules](codex/optional.rules) | `~/.codex/rules/default.rules` | Replace its path placeholder and merge only the rules you want to enable |
-| [engineer.toml](codex/agents/engineer.toml) | `~/.codex/agents/engineer.toml` | Copy this rank file |
-| [senior.toml](codex/agents/senior.toml) | `~/.codex/agents/senior.toml` | Copy this rank file |
-| [staff.toml](codex/agents/staff.toml) | `~/.codex/agents/staff.toml` | Copy this rank file |
+| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Merge parent settings and the native concurrency ceiling |
+| [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Merge these shared instructions |
+| [optional-instructions.md](codex/optional-instructions.md) | `~/.codex/AGENTS.md` | Merge only sections you want to enable |
+| [optional.rules](codex/optional.rules) | `~/.codex/rules/default.rules` | Replace its path placeholder and merge selected rules |
 
-To apply these defaults, back up the local files, merge or copy only these parts, and
-check that the TOML parses. Keep unrelated values and existing instructions.
-If `~/.codex/AGENTS.override.md` exists, Codex reads it instead of `AGENTS.md`;
-merge these shared instructions into that active file, or deliberately retire
-the override before using `AGENTS.md`.
-If a destination role already exists, review its differences before replacing
-it.
-When updating an existing installation, remove the retired `junior` and
-`distinguished` role declarations and their agent files.
-No install script or whole-config symlink is needed for this first version.
-
-Orchestration and review use the
-[routing reference](skills/orchestration/references/agent-routing.md) for role
-selection and the host's spawn rules. Model and effort values live in config
-and agent files; the skills own delegation, review coverage, and rounds.
-
-These are defaults for local tasks using the same Codex home. Project config,
-explicit model choices, and custom roles can override them. Defining roles makes
-them available; the skills request their use. Start a
-new task after applying the files and check the effective settings. Existing
-tasks may retain their selections. Keep any installed links on a stable clone,
-not a temporary worktree.
-
-[Review](skills/review/SKILL.md) assesses one change without fixes or model-specific
-execution. [Review Sweep](skills/review-sweep/SKILL.md) consolidates supplied
-reviews, validates findings, and fixes accepted issues.
-[Review Fix Loop](skills/review-fix-loop/SKILL.md) coordinates independent native
-and external reviews with sweep rounds. Implementation verification precedes
-review; sweep checks affected findings and fixes, reusing valid evidence.
-
-Sample checks after installation:
-
-- A standalone Review reports findings and coverage without editing or dispatch.
-- The loop requests external review through Gemini, falling back to OpenCode if
-  it cannot complete within permitted access. Native counts exclude that review.
-- A small behavior change uses one native reviewer; substantial changes,
-  shared contracts, risky logic, or several authors use two. Each reads the full scope.
-- A complete clean round can finish. Code and substantive instruction fixes
-  trigger a fresh full review against the original base; ordinary docs and
-  wording-only fixes use targeted checks.
-- Ordinary docs use parent review; agent behavior changes use one independent
-  reviewer. Unavailable native coverage blocks completion; external gaps are disclosed.
-- Independent work can use agents without creating goals unless the user asks
-  for goal-backed work. A difficult cohesive task can keep one owner.
+Back up local files, preserve unrelated values/instructions, and check that
+TOML parses after merging. If `~/.codex/AGENTS.override.md` exists, it takes
+precedence over `AGENTS.md`; update the active file. Native child execution
+uses explicit policy settings rather than named rank presets. Start a new task
+after changing host settings and check its effective selection; active tasks
+may retain earlier settings.
 
 Local research notes under `docs/research/` are ignored by Git. Keep maintained
-technical citations beside the guidance they support. The setup above follows
-OpenAI's [config precedence](https://learn.chatgpt.com/docs/config-file/config-basic),
-[custom agent format](https://learn.chatgpt.com/docs/agent-configuration/subagents),
-and [global instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+technical citations beside their guidance. Host setup follows OpenAI's
+[config precedence](https://learn.chatgpt.com/docs/config-file/config-basic) and
+[global instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
 ## Contribute
 
@@ -196,6 +217,7 @@ uses and adapts:
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — ideas for `verify`, `change-safety`, `code-why`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.

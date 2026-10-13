@@ -26,7 +26,10 @@ This command is _informed_ by the project's domain model and built on a shared d
 
 Read the project's domain glossary (`GLOSSARY.md`) and any ADRs in the area you're touching first.
 
-Then spawn a sub-agent to walk the codebase. Don't follow rigid heuristics; explore organically and note where you experience friction:
+Then use [orchestration](../orchestration/SKILL.md) to assign a read-only
+exploration of that scope, with paths, domain vocabulary, ADRs, and an
+evidence-backed findings report as its completion criterion. Give the child these
+friction questions and ask it to explore organically:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow**, with an interface nearly as complex as the implementation?
@@ -34,7 +37,10 @@ Then spawn a sub-agent to walk the codebase. Don't follow rigid heuristics; expl
 - Where do tightly-coupled modules leak across their seams?
 - Which parts of the codebase are untested, or hard to test through their current interface?
 
-Apply the **deletion test** to anything you suspect is shallow: would deleting it concentrate complexity, or just move it? A "yes, concentrates" is the signal you want.
+Include the **deletion test** in the brief: would deleting a suspected shallow
+module concentrate complexity, or just move it? A "yes, concentrates" is the
+signal to investigate. Accept the child's findings against the assigned scope
+and evidence before making recommendations.
 
 ### 2. Share findings and recommendations
 

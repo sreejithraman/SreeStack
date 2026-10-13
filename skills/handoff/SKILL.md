@@ -7,6 +7,12 @@ disable-model-invocation: true
 
 Transfer operational state, not a transcript summary. If the user asks for a handoff, write a document in the OS temporary directory, outside the workspace. Tailor it to the next session the user describes.
 
+For T3 work, consult the current thread's history through `t3_thread_read` or
+scoped `t3_thread_search` when needed to recover decisions and task receipts.
+Record relevant thread/task IDs, ownership, and any still-running work in the
+note. The portable note remains the handoff artifact; use app history as evidence
+rather than copying a transcript. A handoff does not launch a new conversation.
+
 Record the goal and definition of done; branch, worktree, and relevant commit or PR; what is complete and verified; what is pending or blocked; decisions that still constrain the work; exact artifact paths; and the first useful action on resume. Distinguish work saved on disk from an uncommitted or unpushed state. Include a short suggested-skills section only for skills the next agent will need. Point to specs, plans, ADRs, issues, diffs, and evidence rather than copying them. Redact secrets and personal data.
 
 If the user asks you to resume from a handoff, read its linked artifacts and reconstruct the current branch, worktree, and external state before acting. Compare completed work with pending work and name the resume point. Treat the handoff as orientation: verify inherited claims that affect the next action against current code, artifacts, or remote state. Continue the requested work without redoing completed steps whose evidence still applies.

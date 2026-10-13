@@ -12,22 +12,29 @@ ticket accounted for through the project's tracker workflow.
 
 2. Reuse or create a task-owned integration branch from the intended base.
    Record its tip. Assign independent frontier tickets to workers using the
-   normal orchestration brief, rank, context, and concurrency rules. Group
-   tightly coupled tickets under one owner. Parallel workers use separate
-   worktrees and task-owned branches based on the integration tip; preserve
-   unexpected existing edits and create a fresh workspace rather than resetting
-   someone else's work.
+   normal orchestration brief, model policy, context, and concurrency rules.
+   Group tightly coupled tickets under one owner. Delegated children share the
+   integration checkout: give parallel workers disjoint paths and serialize
+   shared files, commits, and other git/index changes. Preserve unexpected edits.
+   When isolation is necessary, keep the work serial unless the user explicitly
+   requests separate ordinary threads. For those threads, follow agent routing's
+   workspace rules and bind task-owned worktrees from the integration tip before
+   execution; do not pretend they are delegated children.
 
-3. Workers implement against the spec and applicable `tdd` seams, returning the
-   ticket, base/head revisions, changed paths, verification, and unresolved work.
-   Link durable spec, ticket, research, and commit artifacts instead of repeating
-   them in status messages. Temporary research notes must remain accessible to
-   subsequent workers while needed.
+3. Workers implement against the spec and applicable `tdd` seams. Shared-checkout
+   children return the ticket, starting/current shared HEAD, changed paths and
+   patch or content evidence, checks and the state they tested, and unresolved
+   work. Their HEAD may be unchanged despite working-tree edits; do not require
+   a child commit. Explicit separate-thread workers also return their branch's
+   base/head revisions. Link durable spec, ticket, research, and commit artifacts
+   instead of repeating them in status messages. Temporary research notes must
+   remain accessible to subsequent workers while needed.
 
-4. The integrating owner serializes merges onto the integration branch. Compare
-   each result with the current integration tip; resolve stale bases or conflicts
-   without losing another worker's changes. Verify the integrated behavior and
-   any shared boundaries affected by the merge. A worker merging a prior
+4. The integrating owner accepts shared-checkout changes and serializes any
+   commits or merges onto the integration branch. Compare each result with the
+   current integration state; resolve stale bases or conflicts without losing
+   another worker's changes. Verify integrated behavior and shared boundaries.
+   Only separate-thread branches need merging; a worker incorporating a prior
    integration tip does not guarantee a fast-forward after concurrent progress.
 
 5. Recompute the frontier after accepting each integration. Mark a dependency
