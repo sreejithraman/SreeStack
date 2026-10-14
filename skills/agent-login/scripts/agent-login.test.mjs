@@ -92,6 +92,51 @@ async function operations(f) {
   catch (error) { if (error.code === 'ENOENT') return []; throw error; }
 }
 
+test('tabs discovers existing targets without exposing credentials and leaves owner tabs usable', async t => {
+  const f = await browserFixture(t);
+  const sibling = await f.owner.newPage();
+  const username = 'fixture@example.invalid', password = 'FIXTURE_password_never_echo';
+  const origins = [f.origin, f.origin.replace('127.0.0.1', 'localhost')];
+  const tabs = [f.page, sibling];
+  const expected = [];
+  const urls = [];
+  for (const [index, page] of tabs.entries()) {
+    const url = `${origins[index]}/?username=${encodeURIComponent(username)}#${password}`;
+    await page.goto(url);
+    await page.evaluate(value => { document.title = value; }, `${username} ${password}`);
+    await page.locator('#email').fill(username);
+    await page.locator('#password').fill(password);
+    const session = await f.owner.newCDPSession(page);
+    try {
+      const { targetInfo } = await session.send('Target.getTargetInfo');
+      expected.push({ targetId: targetInfo.targetId, origin: origins[index] });
+    } finally { await session.detach(); }
+    urls.push(page.url());
+  }
+
+  const result = await run(['tabs', '--cdp', f.endpoint], f.env);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(result.stderr, '');
+  const output = JSON.parse(result.stdout);
+  const byTarget = (a, b) => a.targetId.localeCompare(b.targetId);
+  assert.deepEqual({ ...output, tabs: output.tabs.toSorted(byTarget) }, { tabs: expected.toSorted(byTarget) });
+  for (const value of [username, encodeURIComponent(username), password, f.env.OP_SERVICE_ACCOUNT_TOKEN, 'op://']) {
+    assert.ok(!(result.stdout + result.stderr).includes(value));
+  }
+  assert.deepEqual(await operations(f), []);
+  assert.equal(f.owner.pages().length, tabs.length);
+  for (const [index, page] of tabs.entries()) {
+    assert.equal(page.isClosed(), false);
+    assert.equal(page.url(), urls[index]);
+    assert.equal(await page.locator('#email').inputValue(), username);
+    assert.equal(await page.locator('#password').inputValue(), password);
+    await page.locator('#email').fill('owner@example.invalid');
+    assert.equal(await page.locator('#email').inputValue(), 'owner@example.invalid');
+    await page.goto(`${origins[index]}/owner`);
+    assert.equal(await page.locator('#password').inputValue(), '');
+  }
+});
+
 test('wrong destination, target, and missing token fail before credential reads', async t => {
   const f = await browserFixture(t);
   const args = ['fill', 'demo', '--config', f.config, '--cdp', f.endpoint, '--target', f.target];
