@@ -379,6 +379,21 @@ Accepts merge completion handoffs from `merge`. Cleanup includes verified
 task-owned simulator/emulator installs and disposable test data while preserving
 shared installs, retained data, and resources needed by unmerged stack layers.
 
+## no-comments
+
+- [cursor/plugins / pstack](https://github.com/cursor/plugins/tree/5108b719a7aa484ef1a9781f587c7bbeac793f92/pstack) — `skills/no-comments/SKILL.md` and `agents/comment-sicko.md`; import baseline `5108b719a7aa484ef1a9781f587c7bbeac793f92`, imported 2026-10-13. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Preserves manual-only invocation in both hosts, independent comment auditing,
+the keep exceptions, suppression/root-cause checks, bounded audit rerun, scoped
+repairs, and constraint encoding. Audit rules live in
+`references/comment-audit.md`; the auditor is read-only and the parent owns edits.
+T3 orchestration and local review, history, and design skills replace upstream
+agent types and slash commands. Persona, mandatory architect gate, and separate
+encoding approval are omitted; existing task authorization governs repairs.
+Unresolved constraints and suppressions remain until their evidence or repair
+is settled. Encoding must catch a violation before its comment is removed.
+Intentional negative-test assertions remain distinct from application suppressions.
+
 ## merge
 
 - Local: `skills/merge` (SreeStack).
