@@ -13,7 +13,7 @@ agents for decisions and slices that benefit from them. Keep shared recipes and
 acceptance criteria outside delegates' writable scope. Small obvious edits can
 remain direct; tool-building should earn its setup and maintenance cost.
 
-## Sequence Verifiable Units
+## Sequence work into verifiable units
 
 Order dependent work into coherent increments with a check at each boundary.
 Establish the baseline, make one meaningful change, inspect the result, then

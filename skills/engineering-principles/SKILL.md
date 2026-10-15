@@ -1,6 +1,6 @@
 ---
 name: engineering-principles
-description: Guide engineering decisions before implementation and during review. Use when choosing data models or interfaces, simplifying code, planning migrations, handling retries or shared state, evaluating evidence, or organizing substantial work.
+description: Guide engineering design and implementation decisions. Use when choosing data models or interfaces, simplifying code, planning migrations, handling retries or shared state, evaluating evidence, or organizing substantial work.
 ---
 
 # Engineering Principles
@@ -12,24 +12,24 @@ the user's scope, product requirements, and execution permissions.
 Read the sections that match the decision before acting:
 
 - **Data, types, interfaces, or product tradeoffs:**
-  [design](references/design.md). Start here before writing new stateful logic
+  [Data and interface decisions](references/design.md). Start here before writing new stateful logic
   or extending a shape that callers must coordinate.
 - **Refactoring, another layer, or code that is hard to follow:**
-  [simplicity](references/simplicity.md). Check existing consumers before a cut.
+  [Simplifying a change](references/simplicity.md). Check existing consumers before a cut.
 - **Retries, concurrent writers, or a caller migration:**
-  [state and migrations](references/state-and-migrations.md). Establish the
+  [State, retries, and migration](references/state-and-migrations.md). Establish the
   ownership and compatibility requirements before choosing locks or adapters.
 - **Repeated failed fixes, competing designs, tests, or a measured claim:**
-  [evidence](references/evidence.md). Choose a check that can distinguish the
+  [Evidence for a decision](references/evidence.md). Choose a check that can distinguish the
   alternatives and use the relevant verification or diagnosis workflow.
 - **Sweeps, delegation, long tasks, or repeated instructions:**
-  [execution](references/execution.md). Choose rerunnable tools, verifiable
+  [Executing substantial work](references/execution.md). Choose rerunnable tools, verifiable
   increments, and durable enforcement where they improve the work.
 
 A named principle selects its matching heading in those references. For a
 cross-cutting task, read each affected reference; a small decision needs only
 its relevant sections. Give delegates the applicable source paths and the
-decision or proof they own through [orchestration](../orchestration/SKILL.md).
+decision or proof they own through [Orchestration](../orchestration/SKILL.md).
 
 Explain the concrete choice and its evidence when it matters to the result.
 Keep proposed checks distinct from checks run. A principle name or a completed

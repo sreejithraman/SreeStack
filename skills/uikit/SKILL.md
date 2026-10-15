@@ -19,9 +19,9 @@ steps into exact proposed changes, findings, and checks.
    data source, deployment targets, and user-visible behavior. Identify which
    object owns the window, content, navigation, and mutable state.
 2. Read only the references needed for the task:
-   - [Shared design principles](../engineering-principles/references/design.md)
+   - [Data and interface decisions](../engineering-principles/references/design.md)
      when deciding controller responsibilities, state ownership, or interface
-     boundaries; use [state and migration principles](../engineering-principles/references/state-and-migrations.md)
+     boundaries; use [State, retries, and migration](../engineering-principles/references/state-and-migrations.md)
      for overlapping effects, lifecycle recovery, or caller migration. Keep the
      scene and controller lifecycle rules below as the UIKit implementation.
    - [Choosing SwiftUI or UIKit](../swiftui/references/framework-choice.md) when the

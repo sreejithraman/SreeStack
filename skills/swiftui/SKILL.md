@@ -19,9 +19,9 @@ steps into exact proposed changes, findings, and checks.
    design system. Trace each mutable value to its source of truth and each user
    action to the code that owns its effect.
 2. Read only the references needed for the task:
-   - [Shared design principles](../engineering-principles/references/design.md)
+   - [Data and interface decisions](../engineering-principles/references/design.md)
      when deciding state ownership, domain types, or interface boundaries; use
-     [state and recovery](../engineering-principles/references/state-and-migrations.md)
+     [State, retries, and migration](../engineering-principles/references/state-and-migrations.md)
      when effects can overlap, repeat, or outlive their view. Apply these through
      SwiftUI's state, identity, and lifecycle rules below.
    - [Choosing SwiftUI or UIKit](references/framework-choice.md) when the framework

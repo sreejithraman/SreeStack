@@ -72,9 +72,9 @@ check whether a contributor working from a few files can follow the supported
 path without silently breaking rules elsewhere.
 
 When choosing domain types, state ownership, visibility, or module responsibilities,
-read the shared [design principles](../engineering-principles/references/design.md).
-When designing the interface's test surface, read **Test Behavior Not Implementation**
-in [evidence principles](../engineering-principles/references/evidence.md).
+read the shared [Data and interface decisions](../engineering-principles/references/design.md).
+When designing the interface's test surface, read **Test Behavior, Not Implementation**
+in [Evidence for a decision](../engineering-principles/references/evidence.md).
 Use [TDD](../tdd/SKILL.md) for the test-first implementation loop.
 
 ## Relationships

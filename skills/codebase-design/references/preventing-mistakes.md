@@ -8,10 +8,10 @@ does not depend on discovering hidden ownership rules.
 
 When ownership, private implementation, or repeated definitions make a mistake
 easy to copy, read the shared
-[design principles](../../engineering-principles/references/design.md).
+[Data and interface decisions](../../engineering-principles/references/design.md).
 When replacing an operation's supported route, read **Migrate Callers Then Delete
 Legacy APIs** in
-[state and migration principles](../../engineering-principles/references/state-and-migrations.md).
+[State, retries, and migration](../../engineering-principles/references/state-and-migrations.md).
 
 Trace the nearest working example through the interface a contributor would
 actually use. Identify the concrete mistake it permits, the bypass that remains
@@ -28,7 +28,7 @@ requested task is to mine recurring mistakes or prevent a known failure class;
 it owns historical evidence, prioritization, and the repair workflow.
 
 When selecting a guard, read **Encode Lessons in Structure** in
-[execution principles](../../engineering-principles/references/execution.md).
+[Executing substantial work](../../engineering-principles/references/execution.md).
 
 ## Prove the historical guard
 

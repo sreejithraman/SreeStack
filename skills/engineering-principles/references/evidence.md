@@ -37,7 +37,7 @@ when it hides a failed invariant. Restart failures call for inspecting persisted
 state and its recovery protocol. Use [diagnosing-bugs](../../diagnosing-bugs/SKILL.md)
 for reproduction, instrumentation, repair, and regression proof.
 
-## Test Behavior Not Implementation
+## Test Behavior, Not Implementation
 
 Call the subject through its consumer-facing interface and assert an independently
 established result or observable effect. Expected values should come from the

@@ -18,10 +18,9 @@ task that needs the working model.
 
 ## Assign
 
-For engineering changes, use [engineering-principles](../engineering-principles/SKILL.md)
-to select the decision guidance before direct work or assignment. Include the
-applicable references in child briefs so design principles reach implementers,
-not only reviewers.
+For design and implementation decisions, use
+[Engineering Principles](../engineering-principles/SKILL.md) where its guidance
+helps the task. Include applicable references in implementation briefs.
 
 Resolve the required outcome and proof before splitting it. Each child owns
 one result and a checkable completion condition. Separate writable paths and

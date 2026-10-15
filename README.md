@@ -58,9 +58,10 @@ conversations. Explicit goal-backed work uses `goal-swarm` and the host's goal t
 [Engineering Principles](skills/engineering-principles/SKILL.md) is automatically
 discoverable. It gathers 24 named principles into references for data and interface
 design, simplification, state and migration, evidence, and execution. Orchestration
-and specialist workflows point to the relevant guidance before implementation
-and during review. The principles guide choices; the workflow owns its steps and
-completion criteria. For example, “Design this retryable import and explain how
+and specialist workflows point to useful guidance for design and implementation.
+Review prompts retain their wording and criteria. The principles guide choices;
+the workflow owns its steps and completion criteria. For example, “Design this
+retryable import and explain how
 it handles a crash halfway through” reaches state ownership, idempotency, and
 failure-proof guidance while the implementation workflow supplies the checks.
 “Attack the premise” selects the named principle when repeated fixes fail.

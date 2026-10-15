@@ -31,7 +31,7 @@ Keep UI automation and performance tests in XCTest. Swift Testing is intended fo
 
 Trace each old test to its replacement. Preserve what makes execution stop, what may continue after a failed check, which actor owns thread-sensitive work, and whether cases share mutable state.
 
-When changing assertions, use [Test Behavior Not Implementation](../engineering-principles/references/evidence.md#test-behavior-not-implementation)
+When changing assertions, use [Test Behavior, Not Implementation](../engineering-principles/references/evidence.md#test-behavior-not-implementation)
 to preserve the observable contract. For shared fixtures or execution-order
 dependencies, use [Separate Before Serializing Shared State](../engineering-principles/references/state-and-migrations.md#separate-before-serializing-shared-state)
 to choose isolation or an access protocol. A serialized suite prevents its descendants from running concurrently; it does not guarantee their sequence or coordinate them with unrelated tests ([parallelization rules](https://developer.apple.com/documentation/testing/parallelization)).

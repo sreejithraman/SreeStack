@@ -7,7 +7,7 @@ boundaries. Converge on that target instead of accumulating temporary compatibil
 machinery solely to preserve every private intermediate state. Temporary breakage
 belongs only inside a scoped, reversible development phase; keep delivered commits,
 PR layers, shared branches, and rollout stages coherent under their own checks.
-Use [Sequence Verifiable Units](execution.md#sequence-verifiable-units) to choose
+Use [Sequence work into verifiable units](execution.md#sequence-work-into-verifiable-units) to choose
 those boundaries and prove the complete target before declaring completion.
 
 ## Make Operations Idempotent

@@ -225,7 +225,7 @@ Upstream source names below expand to `pstack/skills/principle-<name>/SKILL.md`:
 - `references/execution.md`: `build-the-lever`, `sequence-verifiable-units`, `guard-the-context-window`, `never-block-on-the-human`, `encode-lessons-in-structure`.
 
 One automatically discoverable index routes to task-based references, preserving
-all 24 recognizable principle names. Workflows retain procedures and completion
+all 24 principle titles verbatim from their source headings. Workflows retain procedures and completion
 criteria; generic decisions have one shared home. Existing invocation choices
 stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
 actor censuses apply to actor-distribution questions. Permissions and product
@@ -615,9 +615,6 @@ Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
 persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
-Generic simplicity and root-cause criteria use `engineering-principles`. Ponytail
-retains full-scope reading, deletion evidence, shortcut limits, and reporting;
-the shared simplicity ladder preserves its current source baseline.
 Indirect-consumer checks use `change-safety`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 
@@ -802,9 +799,10 @@ owners. Delegated workers share the integration checkout with disjoint ownership
 explicitly requested ordinary threads can use bound worktrees. Workspaces
 preserve unexpected edits; dependency outcomes require integration and verification. Scheduling does not create a goal or assume a
 worker's last merge guarantees a fast-forward.
-Engineering work selects applicable `engineering-principles` references before
-direct implementation and includes them in bounded child briefs. Principles
-do not replace runtime selection, assignment, or acceptance.
+Design and implementation work selects useful `engineering-principles` references
+and includes them in implementation briefs. Review prompts retain their source
+wording and criteria. Principles do not replace runtime selection, assignment,
+or acceptance.
 
 
 ## koubou

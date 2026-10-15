@@ -10,7 +10,7 @@ should add a coherent capability rather than coordination spread across callers.
 Give each mutable fact one authoritative owner; other modules read it or request
 changes through that owner. Define refresh and invalidation for derived views.
 
-## Redesign from First Principles
+## Redesign From First Principles
 
 When a requirement changes the design, ask what shape you would choose if it
 had been present from the start. Read the affected callers, types, examples,

@@ -14,8 +14,8 @@ When exploring the codebase, read `GLOSSARY.md` (if it exists) so test names and
 ## What a good test is
 
 When choosing assertions and checking that tests detect a broken behavior, read
-**Test Behavior Not Implementation** and **Prove It Works** in
-[evidence principles](../engineering-principles/references/evidence.md).
+**Test Behavior, Not Implementation** and **Prove It Works** in
+[Evidence for a decision](../engineering-principles/references/evidence.md).
 
 See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
 

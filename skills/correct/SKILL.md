@@ -7,7 +7,7 @@ description: Investigate and prevent recurring agent mistakes in a repository. U
 
 Own recurring failure prevention: connect actual mistakes to a repair that
 prevents the same failure mechanism. Use
-[engineering-principles](../engineering-principles/SKILL.md) for design decisions
+[Engineering Principles](../engineering-principles/SKILL.md) for design decisions
 and enforcement selection, and the shared
 [guard proof](../codebase-design/references/preventing-mistakes.md) for historical
 rejection and repaired-path success.
