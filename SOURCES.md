@@ -246,7 +246,8 @@ Each reference is one principle. Upstream paths use
 | `references/migrate-callers-then-delete-legacy-apis.md` | `migrate-callers-then-delete-legacy-apis` |
 | `references/separate-before-serializing-shared-state.md` | `separate-before-serializing-shared-state` |
 
-One automatically discoverable index groups direct links by task. Each reference
+One automatically discoverable index groups direct links by task and gives each
+principle a short applicability hint adapted to its local guidance. Each reference
 filename follows its full principle title, and all 24 titles match their source
 headings verbatim. Workflows retain procedures and completion criteria; generic
 decisions have one shared home. Existing invocation choices stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
