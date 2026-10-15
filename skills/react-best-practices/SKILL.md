@@ -6,9 +6,11 @@ description: "Use for React or Next.js performance work: waterfalls, bundle size
 # React Best Practices
 
 Performance patterns for React and Next.js applications. The 70 rules are
-candidates, not a checklist or a promise of impact. Locate the bottleneck in
-the actual workload before changing code. Check the project's React, Next.js,
-compiler, and data-layer choices; compare the same workload before and after.
+candidates, not a checklist or a promise of impact. Before choosing an optimization
+or reporting a gain, use [Explain the Number](../engineering-principles/references/evidence.md#explain-the-number)
+and its measurement-validity reference to locate the bottleneck and compare the
+same workload before and after. Check the project's React, Next.js, compiler,
+and data-layer choices before selecting rules.
 
 ## When to Apply
 

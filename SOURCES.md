@@ -105,7 +105,7 @@ link to official documentation; README.md holds purpose and setup prerequisites.
 
 ## app-intents
 
-- Local: `skills/app-intents` (SreeStack).
+- Local: `skills/app-intents` (SreeStack); shares design and retry principles.
 
 ## app-store-connect
 
@@ -337,11 +337,11 @@ exploration, technical experiments, planning, and glossary/ADR handling remain l
 
 ## ios-haptics
 
-- Local: `skills/ios-haptics` (SreeStack).
+- Local: `skills/ios-haptics` (SreeStack); shares experience and evidence principles.
 
 ## swift-testing-modernization
 
-- Local: `skills/swift-testing-modernization` (SreeStack).
+- Local: `skills/swift-testing-modernization` (SreeStack); shares test-contract and state-isolation principles.
 
 ## swiftui
 
@@ -355,6 +355,9 @@ guidance, button sizing and hit-region checks, and current SDK migration
 and feature guidance are folded into the normal SwiftUI workflow; automatic
 invocation remains framework- and task-based.
 
+The entrypoint selects shared design and state/recovery principles for ownership,
+boundaries, and overlapping effects; SwiftUI implementation guidance stays local.
+
 ## uikit
 
 - Local: `skills/uikit` (SreeStack).
@@ -362,6 +365,9 @@ invocation remains framework- and task-based.
 
 Redistributed behavior and access guidance is folded into the normal UIKit
 workflow; automatic invocation remains framework- and task-based.
+
+The entrypoint selects shared design and state/migration principles for controller
+boundaries, lifecycle recovery, and caller migration; UIKit mechanics stay local.
 
 ## verify
 
@@ -480,7 +486,8 @@ bundle size, server rendering, data fetching, re-renders) rather than upstream's
 broader write/review/refactor trigger. When to Apply stays limited to
 performance work. The entrypoint retains upstream category priorities as a
 triage aid, treats actual impact as workload-dependent, requires before/after
-measurement, and checks project versions and existing architecture. How to Use
+measurement through the shared evidence principle and its measurement-validity
+reference, and checks project versions and existing architecture. How to Use
 sits above Quick Reference and selects matching prefixes from the bottleneck,
 task, or diff when the skill is a review
 reference, then opens only linked files whose ids and one-liners match. As a

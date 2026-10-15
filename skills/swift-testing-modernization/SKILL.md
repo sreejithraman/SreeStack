@@ -31,7 +31,10 @@ Keep UI automation and performance tests in XCTest. Swift Testing is intended fo
 
 Trace each old test to its replacement. Preserve what makes execution stop, what may continue after a failed check, which actor owns thread-sensitive work, and whether cases share mutable state.
 
-Prefer isolated fixtures and parallel-safe tests. Add serialization only when the selected slice still depends on shared state that cannot reasonably be removed. A serialized suite prevents its descendants from running concurrently; it does not guarantee their sequence or coordinate them with unrelated tests ([parallelization rules](https://developer.apple.com/documentation/testing/parallelization)).
+When changing assertions, use [Test Behavior Not Implementation](../engineering-principles/references/evidence.md#test-behavior-not-implementation)
+to preserve the observable contract. For shared fixtures or execution-order
+dependencies, use [Separate Before Serializing Shared State](../engineering-principles/references/state-and-migrations.md#separate-before-serializing-shared-state)
+to choose isolation or an access protocol. A serialized suite prevents its descendants from running concurrently; it does not guarantee their sequence or coordinate them with unrelated tests ([parallelization rules](https://developer.apple.com/documentation/testing/parallelization)).
 
 Keep names and comments that explain business behavior. Use display names, tags, bug links, conditions, known issues, and attachments when they improve test selection or failure diagnosis. Avoid broad cleanup outside the selected slice.
 
