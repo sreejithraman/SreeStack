@@ -161,6 +161,12 @@ Required before declaring done:
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message, so the next debugger learns
 
+If the evidence reveals a recurring failure class, pass its examples and the
+verified cause to [correct](../correct/SKILL.md). Keep this task focused on the
+active failure; broaden into historical mining or structural prevention when
+the user's scope includes it. An isolated incident supports a regression repair,
+not a claim that the class keeps recurring.
+
 If the decisive fact took a deep investigation to uncover, propose the cheapest
 persistent signal that would have exposed it earlier: a health check, counter,
 or structured log. Name the fact it reveals and its runtime and privacy costs.

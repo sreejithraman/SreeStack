@@ -6,6 +6,11 @@ disable-model-invocation: true
 
 The user has asked for a **retrospective**. You are suggesting improvements to the coding agent's **environment** to improve future runs.
 
+Keep repository-wide failure prevention with [correct](../correct/SKILL.md).
+When session evidence suggests repeated code mistakes, report the examples and
+recommend that investigation. Use it directly when the user's request includes
+investigating or repairing that class; a retrospective alone remains recommendations.
+
 ## Steps
 
 1. Apply `writing-for-agents` for the writing style guide.

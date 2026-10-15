@@ -38,6 +38,7 @@ instructions rather than maintaining another API manual.
 | Task | Owner |
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
+| Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
 | Prove behavior | `verify`; `showroom` presents the checked visual evidence |
@@ -116,6 +117,21 @@ A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary do
 
 The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
 to the agent environment. Invoke it explicitly; it returns recommendations.
+The [correct skill](skills/correct/SKILL.md) investigates repeated agent mistakes
+in a repository and connects each live failure class to a structural repair or
+enforceable guard. It supports planning and authorized implementation and stays
+automatically discoverable. For example, “Find the mistakes agents keep repeating
+in this repo and give me a prevention plan” returns cited occurrences, priorities,
+repair choices, experiment results, and a migration and verification plan.
+
+[Improve Codebase Architecture](skills/improve-codebase-architecture/SKILL.md)
+remains manual-only. Its default is interactive candidate selection. For example,
+“Use `$improve-codebase-architecture` to investigate autonomously and return a
+plan backed by runnable experiments” returns checked design recommendations and
+a migration plan. Technical experiments cover interfaces, callers, state, and
+performance; [prototype](skills/prototype/SKILL.md) owns UI experiments. Both
+planning workflows keep production implementation for the requested finish line.
+
 The [gauntlet-loop skill](skills/gauntlet-loop/SKILL.md) is also user-invoked:
 use `$gauntlet-loop` in Codex or `/gauntlet-loop` in Claude Code with a goal and
 optionally a specific reference. It returns a prompt for a builder-and-critic
@@ -295,7 +311,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `no-comments` and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `no-comments`, `correct`, and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.

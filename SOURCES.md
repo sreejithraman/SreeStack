@@ -158,11 +158,23 @@ Alternative-interface proposals use orchestration’s working selection, read-on
 ownership, and capacity-aware waves; the user-requested comparison remains conditional.
 
 Ownership, supported paths, private implementation, and authoritative definitions
-join `references/preventing-mistakes.md`. Recurring mistakes require actual
-examples and recommended guard proof; authorized implementation proves the
-guard against a past mistake. Legitimate adapters and
-compatibility paths remain supported; correction triggers, mandatory rule tables,
-and blanket exception policies are omitted. Design and review remain recommendations.
+join `references/preventing-mistakes.md`, which owns enforcement selection and
+historical guard proof. `correct` owns recurring-mistake investigation and repair;
+design and review return recommendations. Legitimate adapters and compatibility
+paths remain supported.
+
+## correct
+
+- [cursor/plugins / pstack/skills/correct](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/correct) — `SKILL.md`; adaptation baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Automatically discoverable in both hosts so related skills can reach it for
+requested failure prevention. Uses bounded history and available session records,
+counts independent occurrences, checks current exposure, and ranks live classes.
+Shared design principles and guard proof remain in `codebase-design`; technical
+experiments use the architecture reference. Planning and implementation honor
+the requested finish line and reuse existing delivery workflows. Automatic
+correction triggers, mandatory rule tables, per-class commit requirements, and
+blanket exception policies are omitted.
 
 ## diagnosing-bugs
 
@@ -192,6 +204,8 @@ Apple guidance shares that procedure. Run counts fit cost and noise rather than
 a fixed minimum; ballparks remain labeled estimates. Diagnostic cleanup proposes
 a cheap persistent signal with runtime/privacy costs after a deep investigation;
 implementation stays within the authorized fix and temporary probes still leave.
+Recurring-class evidence passes to `correct` when the user's scope includes
+broader prevention; active diagnosis keeps its reproduction and repair loop.
 
 ## domain-modeling
 
@@ -284,6 +298,11 @@ Exploration delegates through orchestration with a bounded read-only findings
 contract and shared model defaults. Manual invocation remains unchanged.
 Exploration also uses Codebase Design's ownership and enforcement reference for
 evidenced friction, preserving recommendation-only ownership.
+Interactive candidate selection remains the default. Requested autonomous
+investigations select and test candidates through disposable technical experiments
+and return migration and verification plans. The shared experiment reference
+serves `correct` too, while `prototype` retains UI ownership. Autonomous planning
+records proposed glossary and ADR changes for review instead of applying them.
 
 ## ios-haptics
 
@@ -787,6 +806,8 @@ project standards inform both implementation and review.
 
 T3 session sources prefer scoped app history; other hosts retain local-log
 inspection. Historical claims are checked against current artifacts.
+Repository-wide recurring failure prevention belongs to `correct`; retro reports
+the session evidence and routes further investigation only within the user's scope.
 
 
 ## T3 integration comparison
