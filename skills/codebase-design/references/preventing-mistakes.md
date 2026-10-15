@@ -23,13 +23,12 @@ does not depend on discovering hidden ownership rules.
 Apply these checks to concrete ownership or maintenance friction. Preserve
 legitimate variation and weigh migration cost against the observed benefit.
 
-## Turn an evidenced repeat into a guard
+## Choose enforcement and proof
 
 For design or review, return a recommendation and its required proof; leave
-implementation to its owner. When the task includes preventing a recurring
-mistake, group actual examples
-from commits, reverts, or review feedback by failure mechanism. Cite the examples
-before calling a pattern recurring; a possible mistake alone is not that proof.
+implementation to its owner. Use [correct](../../correct/SKILL.md) when the
+requested task is to mine recurring mistakes or prevent a known failure class;
+it owns historical evidence, prioritization, and the repair workflow.
 
 Choose the highest effective repair: remove the opportunity through ownership
 or interface design, encode the invariant in types, add an actionable lint or
