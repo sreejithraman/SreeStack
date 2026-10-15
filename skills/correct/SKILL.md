@@ -39,7 +39,7 @@ search. If no recurring class is supported, say so rather than inventing one.
 ## Choose and test the repair
 
 For each class worth addressing, identify the invariant and its owner. Apply
-[Encode Lessons in Structure](../engineering-principles/references/execution.md#encode-lessons-in-structure)
+[Encode Lessons in Structure](../engineering-principles/references/encode-lessons-in-structure.md)
 and explain why a higher-level repair would not help or would cost too much.
 
 Resolve technical uncertainty with focused

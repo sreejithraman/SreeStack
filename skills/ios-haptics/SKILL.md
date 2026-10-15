@@ -17,7 +17,7 @@ Inspect the affected flow, its state owner, and any existing feedback. Check
 native controls before adding feedback they may already provide. For a bug fix,
 keep the intended design unless the evidence calls for a change.
 
-Use [Experience First](../engineering-principles/references/design.md#experience-first)
+Use [Experience First](../engineering-principles/references/experience-first.md)
 when deciding whether feedback helps the interaction. Name what the user should
 learn through touch. Apply Apple's design principles
 to the proposed event:
@@ -74,7 +74,7 @@ haptic with the new event timing rather than an old animation delay.
 
 ## Verify behavior, then tune on a device
 
-Use [Prove It Works](../engineering-principles/references/evidence.md#prove-it-works)
+Use [Prove It Works](../engineering-principles/references/prove-it-works.md)
 to match each claim to its evidence. The hardware checks below establish tactile
 quality and timing in the actual interaction.
 

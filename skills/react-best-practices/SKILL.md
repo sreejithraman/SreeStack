@@ -7,7 +7,7 @@ description: "Use for React or Next.js performance work: waterfalls, bundle size
 
 Performance patterns for React and Next.js applications. The 70 rules are
 candidates, not a checklist or a promise of impact. Before choosing an optimization
-or reporting a gain, use [Explain the Number](../engineering-principles/references/evidence.md#explain-the-number)
+or reporting a gain, use [Explain the Number](../engineering-principles/references/explain-the-number.md)
 and its measurement-validity reference to locate the bottleneck and compare the
 same workload before and after. Check the project's React, Next.js, compiler,
 and data-layer choices before selecting rules.

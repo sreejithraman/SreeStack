@@ -14,10 +14,13 @@ Own structural improvement. [Correct](../correct/SKILL.md) owns mining repeated
 agent mistakes and proving their prevention. Use its findings as inputs when
 the requested architecture work addresses an evidenced failure class.
 
-Apply the shared [Data and interface decisions](../engineering-principles/references/design.md)
-before shaping a candidate, and [State, retries, and migration](../engineering-principles/references/state-and-migrations.md)
-when callers or ownership change. Codebase Design supplies the module vocabulary
-and interface techniques used below.
+Use [Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md)
+when shaping a candidate,
+[Model the Domain](../engineering-principles/references/model-the-domain.md)
+when ownership changes, and
+[Migrate Callers Then Delete Legacy APIs](../engineering-principles/references/migrate-callers-then-delete-legacy-apis.md)
+when moving callers. Codebase Design supplies the module vocabulary and interface
+techniques used below.
 
 ## Choose the finish line
 

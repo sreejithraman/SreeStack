@@ -6,12 +6,12 @@ does not depend on discovering hidden ownership rules.
 
 ## Assess the supported path
 
-When ownership, private implementation, or repeated definitions make a mistake
-easy to copy, read the shared
-[Data and interface decisions](../../engineering-principles/references/design.md).
-When replacing an operation's supported route, read **Migrate Callers Then Delete
-Legacy APIs** in
-[State, retries, and migration](../../engineering-principles/references/state-and-migrations.md).
+When ownership or repeated definitions make a mistake easy to copy, read
+[Model the Domain](../../engineering-principles/references/model-the-domain.md).
+For private implementation or interface bypasses, read
+[Boundary Discipline](../../engineering-principles/references/boundary-discipline.md).
+When replacing an operation's supported route, read
+[Migrate Callers Then Delete Legacy APIs](../../engineering-principles/references/migrate-callers-then-delete-legacy-apis.md).
 
 Trace the nearest working example through the interface a contributor would
 actually use. Identify the concrete mistake it permits, the bypass that remains
@@ -27,8 +27,8 @@ implementation to its owner. Use [correct](../../correct/SKILL.md) when the
 requested task is to mine recurring mistakes or prevent a known failure class;
 it owns historical evidence, prioritization, and the repair workflow.
 
-When selecting a guard, read **Encode Lessons in Structure** in
-[Executing substantial work](../../engineering-principles/references/execution.md).
+When selecting a guard, read
+[Encode Lessons in Structure](../../engineering-principles/references/encode-lessons-in-structure.md).
 
 ## Prove the historical guard
 

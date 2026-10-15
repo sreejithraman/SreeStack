@@ -56,8 +56,9 @@ explicit where configured. Ordinary work creates no goals, schedules, or new
 conversations. Explicit goal-backed work uses `goal-swarm` and the host's goal tools.
 
 [Engineering Principles](skills/engineering-principles/SKILL.md) is automatically
-discoverable. It gathers 24 named principles into references for data and interface
-design, simplification, state and migration, evidence, and execution. Orchestration
+discoverable. Its task-based index links to 24 reference files, one per principle,
+for data and interface design, simplification, state and migration, evidence,
+and execution. Orchestration
 and specialist workflows point to useful guidance for design and implementation.
 Review prompts retain their wording and criteria. The principles guide choices;
 the workflow owns its steps and completion criteria. For example, “Design this

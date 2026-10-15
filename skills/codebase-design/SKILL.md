@@ -71,10 +71,13 @@ When designing or assessing ownership and enforceable interfaces, read
 check whether a contributor working from a few files can follow the supported
 path without silently breaking rules elsewhere.
 
-When choosing domain types, state ownership, visibility, or module responsibilities,
-read the shared [Data and interface decisions](../engineering-principles/references/design.md).
-When designing the interface's test surface, read **Test Behavior, Not Implementation**
-in [Evidence for a decision](../engineering-principles/references/evidence.md).
+Read [Model the Domain](../engineering-principles/references/model-the-domain.md)
+when choosing state ownership or module responsibilities,
+[Type System Discipline](../engineering-principles/references/type-system-discipline.md)
+when designing domain types, and
+[Boundary Discipline](../engineering-principles/references/boundary-discipline.md)
+when setting visibility or enforcement points. For the interface's test surface,
+read [Test Behavior, Not Implementation](../engineering-principles/references/test-behavior-not-implementation.md).
 Use [TDD](../tdd/SKILL.md) for the test-first implementation loop.
 
 ## Relationships

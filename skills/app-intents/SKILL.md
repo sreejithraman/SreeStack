@@ -8,9 +8,11 @@ description: App Intents work on Apple platforms. Use when exposing app actions 
 Expose a small, stable action layer that reflects what people want to do with
 the app. Keep intents as adapters over existing domain services rather than a
 second implementation of product behavior. When designing intent inputs or
-service boundaries, read [Data and interface decisions](../engineering-principles/references/design.md).
+service boundaries, read
+[Type System Discipline](../engineering-principles/references/type-system-discipline.md)
+and [Boundary Discipline](../engineering-principles/references/boundary-discipline.md).
 For mutating actions that may be retried or interrupted, read
-[Make Operations Idempotent](../engineering-principles/references/state-and-migrations.md#make-operations-idempotent)
+[Make Operations Idempotent](../engineering-principles/references/make-operations-idempotent.md)
 and apply it at the domain service that owns the effect.
 
 Use the project's supported Xcode, Swift, and OS versions as the API boundary.

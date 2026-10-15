@@ -216,18 +216,40 @@ premise; the runnable diagnosis phases and measurement procedure remain local.
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
 
-Upstream source names below expand to `pstack/skills/principle-<name>/SKILL.md`:
+Each reference is one principle. Upstream paths use
+`pstack/skills/principle-<source-name>/SKILL.md`:
 
-- `references/design.md`: `foundational-thinking`, `redesign-from-first-principles`, `model-the-domain`, `boundary-discipline`, `type-system-discipline`, `experience-first`.
-- `references/simplicity.md`: `laziness-protocol`, `subtract-before-you-add`, `minimize-reader-load`.
-- `references/state-and-migrations.md`: `outcome-oriented-execution`, `make-operations-idempotent`, `migrate-callers-then-delete-legacy-apis`, `separate-before-serializing-shared-state`.
-- `references/evidence.md`: `attack-the-premise`, `exhaust-the-design-space`, `prove-it-works`, `fix-root-causes`, `test-behavior-not-implementation`, `explain-the-number`.
-- `references/execution.md`: `build-the-lever`, `sequence-verifiable-units`, `guard-the-context-window`, `never-block-on-the-human`, `encode-lessons-in-structure`.
+| Local reference | Upstream source name |
+| --- | --- |
+| `references/attack-the-premise.md` | `attack-the-premise` |
+| `references/exhaust-the-design-space.md` | `exhaust-the-design-space` |
+| `references/prove-it-works.md` | `prove-it-works` |
+| `references/fix-root-causes.md` | `fix-root-causes` |
+| `references/test-behavior-not-implementation.md` | `test-behavior-not-implementation` |
+| `references/explain-the-number.md` | `explain-the-number` |
+| `references/laziness-protocol.md` | `laziness-protocol` |
+| `references/subtract-before-you-add.md` | `subtract-before-you-add` |
+| `references/minimize-reader-load.md` | `minimize-reader-load` |
+| `references/build-the-lever.md` | `build-the-lever` |
+| `references/sequence-work-into-verifiable-units.md` | `sequence-verifiable-units` |
+| `references/guard-the-context-window.md` | `guard-the-context-window` |
+| `references/never-block-on-the-human.md` | `never-block-on-the-human` |
+| `references/encode-lessons-in-structure.md` | `encode-lessons-in-structure` |
+| `references/foundational-thinking.md` | `foundational-thinking` |
+| `references/redesign-from-first-principles.md` | `redesign-from-first-principles` |
+| `references/model-the-domain.md` | `model-the-domain` |
+| `references/boundary-discipline.md` | `boundary-discipline` |
+| `references/type-system-discipline.md` | `type-system-discipline` |
+| `references/experience-first.md` | `experience-first` |
+| `references/outcome-oriented-execution.md` | `outcome-oriented-execution` |
+| `references/make-operations-idempotent.md` | `make-operations-idempotent` |
+| `references/migrate-callers-then-delete-legacy-apis.md` | `migrate-callers-then-delete-legacy-apis` |
+| `references/separate-before-serializing-shared-state.md` | `separate-before-serializing-shared-state` |
 
-One automatically discoverable index routes to task-based references, preserving
-all 24 principle titles verbatim from their source headings. Workflows retain procedures and completion
-criteria; generic decisions have one shared home. Existing invocation choices
-stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
+One automatically discoverable index groups direct links by task. Each reference
+filename follows its full principle title, and all 24 titles match their source
+headings verbatim. Workflows retain procedures and completion criteria; generic
+decisions have one shared home. Existing invocation choices stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
 actor censuses apply to actor-distribution questions. Permissions and product
 choices remain with the host/user, required compatibility stays supported, and
 temporary development breakage stays behind coherent delivery checkpoints.
