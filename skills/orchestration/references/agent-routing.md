@@ -15,7 +15,6 @@ Edit this table to change the defaults.
 | Primary review | Codex | GPT-6.1 Sol | Medium |
 | Alternate review | OpenCode | GLM 5.3 Flash | Max |
 | Alternate review | Antigravity | Gemini 3.8 Flash | High |
-| Alternate review | Grok | Grok 4.7 | High |
 
 The working selection covers code, tests, refactoring, configuration, docs,
 research, verification, and accepted fixes. Alternate rows are a review pool.
