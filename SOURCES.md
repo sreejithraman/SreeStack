@@ -157,11 +157,12 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 Alternative-interface proposals use orchestration’s working selection, read-only
 ownership, and capacity-aware waves; the user-requested comparison remains conditional.
 
-Ownership, supported paths, private implementation, and authoritative definitions
-join `references/preventing-mistakes.md`, which owns enforcement selection and
-historical guard proof. `correct` owns recurring-mistake investigation and repair;
-design and review return recommendations. Legitimate adapters and compatibility
-paths remain supported.
+Deep-module vocabulary, deletion tests, seam techniques, and alternative-interface
+design stay local. Generic design, testability, and enforcement guidance use
+`engineering-principles`. `references/preventing-mistakes.md` owns contributor-path
+assessment and historical guard proof; `correct` owns recurring-mistake investigation
+and repair. Design and review return recommendations. Legitimate adapters and
+compatibility paths remain supported.
 
 ## correct
 
@@ -170,8 +171,9 @@ paths remain supported.
 Automatically discoverable in both hosts so related skills can reach it for
 requested failure prevention. Uses bounded history and available session records,
 counts independent occurrences, checks current exposure, and ranks live classes.
-Shared design principles and guard proof remain in `codebase-design`; technical
-experiments use the architecture reference. Planning and implementation honor
+Shared design and enforcement selection use `engineering-principles`; guard proof
+remains in `codebase-design`. Technical experiments use the architecture reference.
+Planning and implementation honor
 the requested finish line and reuse existing delivery workflows. Automatic
 correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
@@ -206,6 +208,33 @@ a cheap persistent signal with runtime/privacy costs after a deep investigation;
 implementation stays within the authorized fix and temporary probes still leave.
 Recurring-class evidence passes to `correct` when the user's scope includes
 broader prevention; active diagnosis keeps its reproduction and repair loop.
+Shared evidence guidance covers root-cause decisions and revisiting a failed
+premise; the runnable diagnosis phases and measurement procedure remain local.
+
+## engineering-principles
+
+- [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
+
+Upstream source names below expand to `pstack/skills/principle-<name>/SKILL.md`:
+
+- `references/design.md`: `foundational-thinking`, `redesign-from-first-principles`, `model-the-domain`, `boundary-discipline`, `type-system-discipline`, `experience-first`.
+- `references/simplicity.md`: `laziness-protocol`, `subtract-before-you-add`, `minimize-reader-load`.
+- `references/state-and-migrations.md`: `outcome-oriented-execution`, `make-operations-idempotent`, `migrate-callers-then-delete-legacy-apis`, `separate-before-serializing-shared-state`.
+- `references/evidence.md`: `attack-the-premise`, `exhaust-the-design-space`, `prove-it-works`, `fix-root-causes`, `test-behavior-not-implementation`, `explain-the-number`.
+- `references/execution.md`: `build-the-lever`, `sequence-verifiable-units`, `guard-the-context-window`, `never-block-on-the-human`, `encode-lessons-in-structure`.
+
+One automatically discoverable index routes to task-based references, preserving
+all 24 recognizable principle names. Workflows retain procedures and completion
+criteria; generic decisions have one shared home. Existing invocation choices
+stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
+actor censuses apply to actor-distribution questions. Permissions and product
+choices remain with the host/user, required compatibility stays supported, and
+temporary development breakage stays behind coherent delivery checkpoints.
+Internal trust does not remove runtime authorization or changing-state checks;
+unsafe type operations require an auditable interface. Behavior-test quality is
+judged by detected failures rather than assertion syntax. Language/platform API
+manuals, mandatory per-task principle reports, and upstream mode wrappers are omitted.
 
 ## domain-modeling
 
@@ -303,6 +332,8 @@ investigations select and test candidates through disposable technical experimen
 and return migration and verification plans. The shared experiment reference
 serves `correct` too, while `prototype` retains UI ownership. Autonomous planning
 records proposed glossary and ADR changes for review instead of applying them.
+Shared design and migration decisions use `engineering-principles`; candidate
+exploration, technical experiments, planning, and glossary/ADR handling remain local.
 
 ## ios-haptics
 
@@ -577,6 +608,9 @@ Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
 persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
+Generic simplicity and root-cause criteria use `engineering-principles`. Ponytail
+retains full-scope reading, deletion evidence, shortcut limits, and reporting;
+the shared simplicity ladder preserves its current source baseline.
 Indirect-consumer checks use `change-safety`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 
@@ -659,6 +693,8 @@ integration-test additions by themselves. Seams established by the spec or
 project conventions count as pre-agreed; user confirmation is reserved for
 material unresolved choices.
 The review stage uses `review-fix-loop`.
+Shared behavior-test guidance uses `engineering-principles`; seam selection,
+vertical red/green cycles, specialist examples, mocking, and local pitfalls stay here.
 
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
@@ -759,6 +795,9 @@ owners. Delegated workers share the integration checkout with disjoint ownership
 explicitly requested ordinary threads can use bound worktrees. Workspaces
 preserve unexpected edits; dependency outcomes require integration and verification. Scheduling does not create a goal or assume a
 worker's last merge guarantees a fast-forward.
+Engineering work selects applicable `engineering-principles` references before
+direct implementation and includes them in bounded child briefs. Principles
+do not replace runtime selection, assignment, or acceptance.
 
 
 ## koubou

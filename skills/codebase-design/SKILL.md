@@ -71,35 +71,11 @@ When designing or assessing ownership and enforceable interfaces, read
 check whether a contributor working from a few files can follow the supported
 path without silently breaking rules elsewhere.
 
-## Designing for testability
-
-Good interfaces make testing natural:
-
-1. **Accept dependencies, don't create them.**
-
-   ```typescript
-   // Testable
-   function processOrder(order, paymentGateway) {}
-
-   // Hard to test
-   function processOrder(order) {
-     const gateway = new StripeGateway();
-   }
-   ```
-
-2. **Return results, don't produce side effects.**
-
-   ```typescript
-   // Testable
-   function calculateDiscount(cart): Discount {}
-
-   // Hard to test
-   function applyDiscount(cart): void {
-     cart.total -= discount;
-   }
-   ```
-
-3. **Small surface area.** Fewer methods = fewer tests needed. Fewer params = simpler test setup.
+When choosing domain types, state ownership, visibility, or module responsibilities,
+read the shared [design principles](../engineering-principles/references/design.md).
+When designing the interface's test surface, read **Test Behavior Not Implementation**
+in [evidence principles](../engineering-principles/references/evidence.md).
+Use [TDD](../tdd/SKILL.md) for the test-first implementation loop.
 
 ## Relationships
 

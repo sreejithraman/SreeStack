@@ -38,6 +38,7 @@ instructions rather than maintaining another API manual.
 | Task | Owner |
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
+| Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
@@ -53,6 +54,16 @@ mandatory design panel, or planning registry. Specialists retain their current
 invocation choices; setup, planning commands, handoff, and retrospective remain
 explicit where configured. Ordinary work creates no goals, schedules, or new
 conversations. Explicit goal-backed work uses `goal-swarm` and the host's goal tools.
+
+[Engineering Principles](skills/engineering-principles/SKILL.md) is automatically
+discoverable. It gathers 24 named principles into references for data and interface
+design, simplification, state and migration, evidence, and execution. Orchestration
+and specialist workflows point to the relevant guidance before implementation
+and during review. The principles guide choices; the workflow owns its steps and
+completion criteria. For example, “Design this retryable import and explain how
+it handles a crash halfway through” reaches state ownership, idempotency, and
+failure-proof guidance while the implementation workflow supplies the checks.
+“Attack the premise” selects the named principle when repeated fixes fail.
 
 ### T3 Code orchestration and model defaults
 
@@ -311,7 +322,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `no-comments`, `correct`, and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.

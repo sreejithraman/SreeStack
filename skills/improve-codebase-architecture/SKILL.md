@@ -14,6 +14,11 @@ Own structural improvement. [Correct](../correct/SKILL.md) owns mining repeated
 agent mistakes and proving their prevention. Use its findings as inputs when
 the requested architecture work addresses an evidenced failure class.
 
+Apply the shared [design principles](../engineering-principles/references/design.md)
+before shaping a candidate, and [state and migration principles](../engineering-principles/references/state-and-migrations.md)
+when callers or ownership change. Codebase Design supplies the module vocabulary
+and interface techniques used below.
+
 ## Choose the finish line
 
 Default to interactive exploration: present candidates, let the user select one,

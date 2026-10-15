@@ -9,6 +9,10 @@ Resolve project, legacy, or custom glossary paths with [glossary paths](../domai
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
+Use the shared [evidence principles](../engineering-principles/references/evidence.md)
+for root-cause decisions and **Attack the Premise** when successive fixes fail
+the same check. This skill owns the runnable diagnosis and repair loop below.
+
 When exploring the codebase, read `GLOSSARY.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Redact
