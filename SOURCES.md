@@ -105,7 +105,7 @@ link to official documentation; README.md holds purpose and setup prerequisites.
 
 ## app-intents
 
-- Local: `skills/app-intents` (SreeStack).
+- Local: `skills/app-intents` (SreeStack); shares design and retry principles.
 
 ## app-store-connect
 
@@ -157,11 +157,12 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 Alternative-interface proposals use orchestration’s working selection, read-only
 ownership, and capacity-aware waves; the user-requested comparison remains conditional.
 
-Ownership, supported paths, private implementation, and authoritative definitions
-join `references/preventing-mistakes.md`, which owns enforcement selection and
-historical guard proof. `correct` owns recurring-mistake investigation and repair;
-design and review return recommendations. Legitimate adapters and compatibility
-paths remain supported.
+Deep-module vocabulary, deletion tests, seam techniques, and alternative-interface
+design stay local. Generic design, testability, and enforcement guidance use
+`engineering-principles`. `references/preventing-mistakes.md` owns contributor-path
+assessment and historical guard proof; `correct` owns recurring-mistake investigation
+and repair. Design and review return recommendations. Legitimate adapters and
+compatibility paths remain supported.
 
 ## correct
 
@@ -170,8 +171,9 @@ paths remain supported.
 Automatically discoverable in both hosts so related skills can reach it for
 requested failure prevention. Uses bounded history and available session records,
 counts independent occurrences, checks current exposure, and ranks live classes.
-Shared design principles and guard proof remain in `codebase-design`; technical
-experiments use the architecture reference. Planning and implementation honor
+Shared design and enforcement selection use `engineering-principles`; guard proof
+remains in `codebase-design`. Technical experiments use the architecture reference.
+Planning and implementation honor
 the requested finish line and reuse existing delivery workflows. Automatic
 correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
@@ -206,6 +208,56 @@ a cheap persistent signal with runtime/privacy costs after a deep investigation;
 implementation stays within the authorized fix and temporary probes still leave.
 Recurring-class evidence passes to `correct` when the user's scope includes
 broader prevention; active diagnosis keeps its reproduction and repair loop.
+Shared evidence guidance covers root-cause decisions and revisiting a failed
+premise; the runnable diagnosis phases and measurement procedure remain local.
+
+## engineering-principles
+
+- [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
+
+Each reference is one principle. Upstream paths use
+`pstack/skills/principle-<source-name>/SKILL.md`:
+
+| Local reference | Upstream source name |
+| --- | --- |
+| `references/attack-the-premise.md` | `attack-the-premise` |
+| `references/exhaust-the-design-space.md` | `exhaust-the-design-space` |
+| `references/prove-it-works.md` | `prove-it-works` |
+| `references/fix-root-causes.md` | `fix-root-causes` |
+| `references/test-behavior-not-implementation.md` | `test-behavior-not-implementation` |
+| `references/explain-the-number.md` | `explain-the-number` |
+| `references/laziness-protocol.md` | `laziness-protocol` |
+| `references/subtract-before-you-add.md` | `subtract-before-you-add` |
+| `references/minimize-reader-load.md` | `minimize-reader-load` |
+| `references/build-the-lever.md` | `build-the-lever` |
+| `references/sequence-work-into-verifiable-units.md` | `sequence-verifiable-units` |
+| `references/guard-the-context-window.md` | `guard-the-context-window` |
+| `references/never-block-on-the-human.md` | `never-block-on-the-human` |
+| `references/encode-lessons-in-structure.md` | `encode-lessons-in-structure` |
+| `references/foundational-thinking.md` | `foundational-thinking` |
+| `references/redesign-from-first-principles.md` | `redesign-from-first-principles` |
+| `references/model-the-domain.md` | `model-the-domain` |
+| `references/boundary-discipline.md` | `boundary-discipline` |
+| `references/type-system-discipline.md` | `type-system-discipline` |
+| `references/experience-first.md` | `experience-first` |
+| `references/outcome-oriented-execution.md` | `outcome-oriented-execution` |
+| `references/make-operations-idempotent.md` | `make-operations-idempotent` |
+| `references/migrate-callers-then-delete-legacy-apis.md` | `migrate-callers-then-delete-legacy-apis` |
+| `references/separate-before-serializing-shared-state.md` | `separate-before-serializing-shared-state` |
+
+One automatically discoverable index groups direct links by task and gives each
+principle a short applicability hint adapted to its local guidance. Each reference
+filename follows its full principle title, and all 24 titles match their source
+headings verbatim. Workflows retain procedures and completion criteria; generic
+decisions have one shared home. Existing invocation choices stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
+actor censuses apply to actor-distribution questions. Permissions and product
+choices remain with the host/user, required compatibility stays supported, and
+temporary development breakage stays behind coherent delivery checkpoints.
+Internal trust does not remove runtime authorization or changing-state checks;
+unsafe type operations require an auditable interface. Behavior-test quality is
+judged by detected failures rather than assertion syntax. Language/platform API
+manuals, mandatory per-task principle reports, and upstream mode wrappers are omitted.
 
 ## domain-modeling
 
@@ -303,14 +355,16 @@ investigations select and test candidates through disposable technical experimen
 and return migration and verification plans. The shared experiment reference
 serves `correct` too, while `prototype` retains UI ownership. Autonomous planning
 records proposed glossary and ADR changes for review instead of applying them.
+Shared design and migration decisions use `engineering-principles`; candidate
+exploration, technical experiments, planning, and glossary/ADR handling remain local.
 
 ## ios-haptics
 
-- Local: `skills/ios-haptics` (SreeStack).
+- Local: `skills/ios-haptics` (SreeStack); shares experience and evidence principles.
 
 ## swift-testing-modernization
 
-- Local: `skills/swift-testing-modernization` (SreeStack).
+- Local: `skills/swift-testing-modernization` (SreeStack); shares test-contract and state-isolation principles.
 
 ## swiftui
 
@@ -324,6 +378,9 @@ guidance, button sizing and hit-region checks, and current SDK migration
 and feature guidance are folded into the normal SwiftUI workflow; automatic
 invocation remains framework- and task-based.
 
+The entrypoint selects shared design and state/recovery principles for ownership,
+boundaries, and overlapping effects; SwiftUI implementation guidance stays local.
+
 ## uikit
 
 - Local: `skills/uikit` (SreeStack).
@@ -331,6 +388,9 @@ invocation remains framework- and task-based.
 
 Redistributed behavior and access guidance is folded into the normal UIKit
 workflow; automatic invocation remains framework- and task-based.
+
+The entrypoint selects shared design and state/migration principles for controller
+boundaries, lifecycle recovery, and caller migration; UIKit mechanics stay local.
 
 ## verify
 
@@ -449,7 +509,8 @@ bundle size, server rendering, data fetching, re-renders) rather than upstream's
 broader write/review/refactor trigger. When to Apply stays limited to
 performance work. The entrypoint retains upstream category priorities as a
 triage aid, treats actual impact as workload-dependent, requires before/after
-measurement, and checks project versions and existing architecture. How to Use
+measurement through the shared evidence principle and its measurement-validity
+reference, and checks project versions and existing architecture. How to Use
 sits above Quick Reference and selects matching prefixes from the bottleneck,
 task, or diff when the skill is a review
 reference, then opens only linked files whose ids and one-liners match. As a
@@ -659,6 +720,8 @@ integration-test additions by themselves. Seams established by the spec or
 project conventions count as pre-agreed; user confirmation is reserved for
 material unresolved choices.
 The review stage uses `review-fix-loop`.
+Shared behavior-test guidance uses `engineering-principles`; seam selection,
+vertical red/green cycles, specialist examples, mocking, and local pitfalls stay here.
 
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
@@ -759,6 +822,10 @@ owners. Delegated workers share the integration checkout with disjoint ownership
 explicitly requested ordinary threads can use bound worktrees. Workspaces
 preserve unexpected edits; dependency outcomes require integration and verification. Scheduling does not create a goal or assume a
 worker's last merge guarantees a fast-forward.
+Design and implementation work selects useful `engineering-principles` references
+and includes them in implementation briefs. Review prompts retain their source
+wording and criteria. Principles do not replace runtime selection, assignment,
+or acceptance.
 
 
 ## koubou

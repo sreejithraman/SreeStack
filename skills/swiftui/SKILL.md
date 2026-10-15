@@ -19,6 +19,13 @@ steps into exact proposed changes, findings, and checks.
    design system. Trace each mutable value to its source of truth and each user
    action to the code that owns its effect.
 2. Read only the references needed for the task:
+   - [Model the Domain](../engineering-principles/references/model-the-domain.md)
+     for state ownership and domain shapes;
+     [Boundary Discipline](../engineering-principles/references/boundary-discipline.md)
+     for interface boundaries; and
+     [Make Operations Idempotent](../engineering-principles/references/make-operations-idempotent.md)
+     when effects can overlap, repeat, or outlive their view. Apply these through
+     SwiftUI's state, identity, and lifecycle rules below.
    - [Choosing SwiftUI or UIKit](references/framework-choice.md) when the framework
      is not fixed or the work could introduce a framework boundary. If UIKit owns
      the affected surface, continue with `uikit` and end this workflow. For a

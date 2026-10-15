@@ -18,6 +18,10 @@ task that needs the working model.
 
 ## Assign
 
+For design and implementation decisions, use
+[Engineering Principles](../engineering-principles/SKILL.md) where its guidance
+helps the task. Include applicable references in implementation briefs.
+
 Resolve the required outcome and proof before splitting it. Each child owns
 one result and a checkable completion condition. Separate writable paths and
 shared resources; serialize work that would collide. For competing approaches,

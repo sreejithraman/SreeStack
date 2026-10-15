@@ -16,9 +16,9 @@ material keeps the terms listed below; the root license does not replace them.
 | Jay E / RoboNuggets; technique credited to Matt Shumer | gauntlet-loop adaptation; changes recorded in SOURCES.md | [CC BY 4.0](licenses/robonuggets-gauntlet-loop.txt) ([upstream](https://github.com/robonuggets/gauntlet-loop/tree/9b1975a1b8f01981f3f1e6b667ad3aaf907178ea)) |
 | Emil Kowalski | animate; motion and gesture behavior; typography and materials; interface access/input and review guidance | [animate MIT](licenses/emilkowalski-animate.txt), [design engineering MIT](licenses/emilkowalski-design-eng.txt) |
 | Jakub Antalík / transitions.dev | animate pattern references and tuning guidance | Unresolved: no license file found at the recorded revision |
-| Dietrich Gebert / Ponytail | review/references/ponytail.md | [MIT](licenses/DietrichGebert-ponytail.txt) |
+| Dietrich Gebert / Ponytail | review/references/ponytail.md and engineering-principles simplicity ladder | [MIT](licenses/DietrichGebert-ponytail.txt) |
 | Cursor | review/references/thermo.md | [MIT](licenses/cursor-plugins.txt) |
-| Lauren Tan / pstack | no-comments, correct, verify, change-safety, code-why, codebase-design, diagnosing-bugs, pr, handoff, goal-swarm, and orchestration adaptations | [MIT](licenses/lauren-tan-pstack.txt) |
+| Lauren Tan / pstack | no-comments, correct, engineering-principles, verify, change-safety, code-why, codebase-design, diagnosing-bugs, pr, handoff, goal-swarm, and orchestration adaptations | [MIT](licenses/lauren-tan-pstack.txt) |
 | Anthropic skills | ui-design art-direction guidance | [Apache-2.0](licenses/anthropics-frontend-design.txt) ([upstream](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt)) |
 | Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |

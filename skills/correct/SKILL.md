@@ -6,9 +6,11 @@ description: Investigate and prevent recurring agent mistakes in a repository. U
 # Correct
 
 Own recurring failure prevention: connect actual mistakes to a repair that
-prevents the same failure mechanism. Use [codebase-design](../codebase-design/SKILL.md)
-and its [ownership and enforcement guidance](../codebase-design/references/preventing-mistakes.md)
-for the design principles and guard proof.
+prevents the same failure mechanism. Use
+[Engineering Principles](../engineering-principles/SKILL.md) for design decisions
+and enforcement selection, and the shared
+[guard proof](../codebase-design/references/preventing-mistakes.md) for historical
+rejection and repaired-path success.
 
 ## Establish the evidence
 
@@ -36,18 +38,14 @@ search. If no recurring class is supported, say so rather than inventing one.
 
 ## Choose and test the repair
 
-For each class worth addressing, identify the invariant and its owner. Use the
-shared enforcement guidance to choose the highest effective repair and explain
-why a higher-level change would not help or would cost too much. Read existing
-lint, typecheck, test, and CI wiring before proposing another mechanism.
+For each class worth addressing, identify the invariant and its owner. Apply
+[Encode Lessons in Structure](../engineering-principles/references/encode-lessons-in-structure.md)
+and explain why a higher-level repair would not help or would cost too much.
 
 Resolve technical uncertainty with focused
 [architecture experiments](../improve-codebase-architecture/references/experiments.md).
-Use a real caller, fixture, or past failure to distinguish options. Decide
-routine technical questions from the evidence; ask only for missing product
-choices, access, or scope decisions that the repository and experiments cannot
-settle. A planning experiment stays disposable and separate from production
-implementation.
+Use the experiment evidence to decide routine technical questions within the
+requested scope.
 
 Return a prioritized plan connecting each class to:
 

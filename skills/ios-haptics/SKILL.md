@@ -17,7 +17,9 @@ Inspect the affected flow, its state owner, and any existing feedback. Check
 native controls before adding feedback they may already provide. For a bug fix,
 keep the intended design unless the evidence calls for a change.
 
-Name what the user should learn through touch. Apply Apple's design principles
+Use [Experience First](../engineering-principles/references/experience-first.md)
+when deciding whether feedback helps the interaction. Name what the user should
+learn through touch. Apply Apple's design principles
 to the proposed event:
 
 | Principle | Question to settle | Example |
@@ -71,6 +73,10 @@ still belongs there. When reduced motion changes the visual sequence, align the
 haptic with the new event timing rather than an old animation delay.
 
 ## Verify behavior, then tune on a device
+
+Use [Prove It Works](../engineering-principles/references/prove-it-works.md)
+to match each claim to its evidence. The hardware checks below establish tactile
+quality and timing in the actual interaction.
 
 Compile examples and changes for the app's supported iOS versions using the
 project's Swift concurrency settings. Check ordinary use, repeated outcomes,
