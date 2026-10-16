@@ -78,7 +78,7 @@ current operation's result. Simple state can stay simple.
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
 from T3's live catalog. Edit
 [model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
-to change implementation/review models, effort, and alternate-review pool members.
+to change implementation/review models, effort, and alternate-review priorities.
 The local concurrency ceiling is in that same reference. This is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
@@ -91,6 +91,9 @@ not establish quota or successful access. T3's injected MCP tools or supported
 ACP bridge must be reachable from the agent. Provider-specific review plugins
 and standalone headless execution skills are not needed for this shared review
 procedure.
+
+Alternate reviews prefer the free OpenCode DeepSeek and GLM routes in the table,
+then Gemini, then fresh primary-model tasks for any remaining review lenses.
 
 [Review](skills/review/SKILL.md) assesses a snapshot without fixes.
 [Review Sweep](skills/review-sweep/SKILL.md) validates findings and implements
@@ -115,9 +118,9 @@ Sample requests and expected results:
 - “Review this small fix”: one independent primary assessment when full-review
   risk/contract triggers do not apply; an ordinary prose or wording-only edit
   with no procedure change uses parent review.
-- An unavailable alternate uses the documented primary-model fallback, retaining
-  lens coverage and disclosing reduced diversity. Missing required coverage
-  cannot produce a clean result.
+- When the alternate pool cannot fill a slot, a fresh primary-model task covers
+  that lens, retaining coverage and disclosing reduced diversity. Missing required
+  coverage cannot produce a clean result.
 - A substantive fix triggers a fresh round against the original base. A changed
   snapshot supersedes in-flight review; successful dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
