@@ -27,12 +27,14 @@ Use this draw only when Prepare selected the three-assessment round. Parent
 review and a single-primary round need no alternate mapping.
 
 Resolve the alternate rows in [model defaults](../../orchestration/references/agent-routing.md#model-defaults)
-using agent routing. Record excluded targets and why. Randomly sample an
-eligible ordered pair of different models/families: first gets Ponytail,
-second gets Thermo. Different provider instances of one model are not diversity.
+using agent routing. Record excluded targets and why. Fill up to two slots in
+ascending alternate priority, randomly sampling within a tier when it has more
+eligible candidates than open slots. Select different models/families; different
+provider instances of one model are not diversity. Randomly assign the selected
+pair to Ponytail and Thermo.
 
-If no pair exists but one or more alternates are eligible, randomly choose one
-and its lens; use a fresh primary-review task for the other. If none are eligible,
+If only one alternate is eligible, randomly choose its lens; use a fresh
+primary-review task for the other. If none are eligible,
 use separate primary tasks for both lenses. This permitted fallback retains
 all three assessments and discloses lost diversity. Explicit user model/diversity
 requirements take precedence.
@@ -49,8 +51,9 @@ Recheck the snapshot before replacement; a moved snapshot needs a new round.
 Retain useful findings and the failure cause.
 
 After permitted recovery is exhausted, exclude the failed alternate for this
-loop. Randomly draw from remaining eligible members excluding its peer's model,
-preferably from a different family. If none remain, use a fresh primary task
+loop. Exclude its peer's model and prefer a different family. Draw from the
+lowest-numbered remaining eligible priority tier, randomly within that tier.
+If none remain, use a fresh primary task
 for that lens. Preserve peer results only for the unchanged snapshot. Record
 the replacement and new task IDs/keys. A failed required primary or fallback
 assessment is blocked coverage; preserve that gap rather than reducing the trio.

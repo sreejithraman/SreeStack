@@ -666,7 +666,8 @@ Indirect-consumer checks use `change-safety`; React or Next assessments use
 
 - Local: `skills/review-fix-loop` (SreeStack). T3-owned review rounds coordinate
   primary Spec/Standards and randomly assigned Ponytail/Thermo assessments,
-  shared model policy, stable snapshots, and Review Sweep.
+  priority-tier alternate selection and replacement, shared model policy,
+  stable snapshots, and Review Sweep.
 
 ## pr
 
@@ -829,7 +830,9 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 - [mattpocock/skills / skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/implement-spec) — task-graph/frontier scheduling adapted into `references/task-graphs.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
 Locally written T3-oriented delegation flow with one editable Markdown table
-of model defaults in the routing reference. Assignment briefs replace a generic
+of model defaults in the routing reference. Alternate priorities prefer exact
+free OpenCode DeepSeek and GLM routes before Gemini and primary-model fallback.
+Assignment briefs replace a generic
 agent-rank taxonomy; discovery resolves working defaults before direct work,
 and the main procedure owns the direct-work match/delegate gate.
 Live host instructions own API/transport details and routing

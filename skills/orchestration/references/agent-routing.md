@@ -9,15 +9,18 @@ when dispatching; this reference owns SreeStack's defaults and execution policy.
 
 Edit this table to change the defaults.
 
-| Purpose | Provider | Model | Effort |
-| --- | --- | --- | --- |
-| Implementation and fixes | Codex | GPT-6.1 Sol | High |
-| Primary review | Codex | GPT-6.1 Sol | Medium |
-| Alternate review | OpenCode | GLM 5.3 Flash | Max |
-| Alternate review | Antigravity | Gemini 3.8 Flash | High |
+| Purpose | Provider | Model | Effort | Alternate priority |
+| --- | --- | --- | --- | --- |
+| Implementation and fixes | Codex | GPT-6.1 Sol | High | — |
+| Primary review | Codex | GPT-6.1 Sol | Medium | — |
+| Alternate review | OpenCode | `opencode/deepseek-v4.1-flash-free` | Max | 1 |
+| Alternate review | OpenCode | `opencode/glm-5.3-flash-free` | Max | 1 |
+| Alternate review | Antigravity | Gemini 3.8 Flash | High | 2 |
 
 The working selection covers code, tests, refactoring, configuration, docs,
-research, verification, and accepted fixes. Alternate rows are a review pool.
+research, verification, and accepted fixes. Alternate rows are a review pool;
+lower priority numbers are preferred. Use the exact free OpenCode IDs above
+to distinguish them from paid routes for the same models.
 User instructions override defaults; preserve explicit user choices when
 applying project requirements. Review Fix Loop's primary fallback is permitted
 for alternate assessments unless the user requires a specific model/diversity.
