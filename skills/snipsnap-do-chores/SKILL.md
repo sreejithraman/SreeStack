@@ -9,6 +9,10 @@ verified local work and recorded completion. Chores improve implementation
 against established intent. Leave features and product decisions open,
 regardless of who saved them, including decisions discovered during work.
 
+When delivering chores as PRs, freely choose one PR, multiple independent PRs,
+or a stack for dependent changes, based on what keeps review clear. Use
+[PR](../pr/SKILL.md) for delivery and [gh-stack](../gh-stack/SKILL.md) for stacks.
+
 After verification, use Snip Snap to append dated completion notes with proof
 to the original snips, preserving existing content. Treat those notes as done
 when selecting chores; the CLI cannot set Done. Report any unsaved notes.
