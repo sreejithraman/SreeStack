@@ -16,7 +16,11 @@ also in scope.
    when focus remains elsewhere.
 5. Model loading, empty, disabled, error, overflow, cancellation, and
    interruption inside the component contract rather than relying on a
-   happy-path page shell.
+   happy-path page shell. For interacting flags, lifecycle transitions, or
+   async completion rules, use
+   [Model the Domain](../../engineering-principles/references/model-the-domain.md#stateful-behavior).
+   Enforce allowed actions in the underlying logic; disabled controls reflect
+   those rules across button, keyboard, gesture, and programmatic entry points.
 6. Start press feedback on pointer or key down, but commit only after a valid
    activation. Clear the pressed state when input cancels, leaves the allowed
    target, or becomes a drag.

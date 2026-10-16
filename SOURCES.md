@@ -210,11 +210,15 @@ Recurring-class evidence passes to `correct` when the user's scope includes
 broader prevention; active diagnosis keeps its reproduction and repair loop.
 Shared evidence guidance covers root-cause decisions and revisiting a failed
 premise; the runnable diagnosis phases and measurement procedure remain local.
+Timing and lifecycle reproductions capture starting state, event order, and
+operation identity; invalid-transition repairs use the shared domain principle.
 
 ## engineering-principles
 
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
+- [David Khourshid's state-machine guidance](https://stately.ai/blog/2021-01-20-you-dont-need-a-library-for-state-machines) and [UI-independent logic](https://stately.ai/blog/2019-11-13-no-disabling-a-button-is-not-app-logic) — conceptual input checked 2026-10-15; state-modeling guidance is independently written, with no upstream prose or code copied.
+- [Redux: Treat Reducers as State Machines](https://redux.js.org/style-guide/#treat-reducers-as-state-machines) — supporting guidance for current-state/event decisions and typed state variants, checked 2026-10-15.
 
 Each reference is one principle. Upstream paths use
 `pstack/skills/principle-<source-name>/SKILL.md`:
@@ -258,6 +262,11 @@ Internal trust does not remove runtime authorization or changing-state checks;
 unsafe type operations require an auditable interface. Behavior-test quality is
 judged by detected failures rather than assertion syntax. Language/platform API
 manuals, mandatory per-task principle reports, and upstream mode wrappers are omitted.
+The domain principle covers explicit lifecycle states, accepted events, derived
+flags, effect ownership, stale completions, and conditional statechart adoption.
+Product requirements remain the independent source for behavior checks.
+The stateful-behavior practice is self-contained, with guards and a submission
+example; external source URLs stay in this provenance record.
 
 ## domain-modeling
 
@@ -448,6 +457,8 @@ are type-correct and task-scoped, existing authorization governs fixes, and
 retention is proportional. Missing schema limits are distinguished from verified
 unbounded input. Emulation and unavailable hardware checks carry explicit
 evidence limits. Greetings and attribution instructions are omitted.
+Stateful acceptance selects relevant event sequences and proves visible outcomes
+and external effects through public entry points, beyond transition tests alone.
 
 
 ## repo-cleanup
@@ -575,6 +586,8 @@ join `references/web-behavior-and-accessibility.md`. Uses current platform
 capabilities and documentation rather than blanket CSS resets or device labels;
 preserves zoom, selection, valid activation, and browser gesture ownership.
 Greetings and attribution instructions are omitted.
+Browser behavior routes interacting state and async transitions to the shared
+domain principle; controls reflect action rules enforced in the underlying logic.
 
 Web CSS and responsive-layout implementation are explicit discovery branches;
 automatic invocation remains enabled. Upstream `good-css/references/` maps by task:
@@ -722,6 +735,9 @@ material unresolved choices.
 The review stage uses `review-fix-loop`.
 Shared behavior-test guidance uses `engineering-principles`; seam selection,
 vertical red/green cycles, specialist examples, mocking, and local pitfalls stay here.
+The event-sequence example checks duplicate submission and failure/retry through
+a public API, inspecting payloads only at the external persistence boundary.
+Cancellation and late-completion scenarios remain conditional on the contract.
 
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per

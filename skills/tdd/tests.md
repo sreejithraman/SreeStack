@@ -22,6 +22,50 @@ Characteristics:
 - Describes WHAT, not HOW
 - One logical assertion per test
 
+## Event sequences
+
+For lifecycle rules, choose sequences from the product contract using
+[Model the Domain](../engineering-principles/references/model-the-domain.md#stateful-behavior).
+Check repeated input and recovery, plus cancellation and late completion when
+supported. Build each scenario in its own red → green cycle; a longer sequence
+can be one scenario when the order is the behavior under test.
+
+This Vitest example assumes a submission's public API exposes `submit`, `retry`,
+`waitForStatus`, and `getResult`. `save` is the external persistence boundary;
+`deferred` is a test helper whose promise the test can resolve or reject.
+Use the project's actual public seam and helpers.
+
+```typescript
+test("repeated submit saves once, then a failed save can be retried", async () => {
+  const draft = { title: "Draft" };
+  const firstAttempt = deferred<{ id: string }>();
+  const save = vi.fn()
+    .mockReturnValueOnce(firstAttempt.promise)
+    .mockResolvedValueOnce({ id: "saved-1" });
+  const submission = createSubmission({ save });
+
+  submission.submit(draft);
+  submission.submit(draft);
+  expect(save.mock.calls).toEqual([[{ title: "Draft" }]]);
+
+  firstAttempt.reject(new Error("Offline"));
+  await submission.waitForStatus("failure");
+  submission.retry();
+  await submission.waitForStatus("success");
+
+  expect(submission.getResult()).toEqual({ id: "saved-1" });
+  expect(save.mock.calls).toEqual([
+    [{ title: "Draft" }],
+    [{ title: "Draft" }],
+  ]);
+});
+```
+
+The assertions check outgoing payloads at the external boundary and the public
+result. They detect duplicate writes and a missing or broken retry. Choose
+expected behavior independently of the implementation's transition table.
+Add real UI acceptance coverage when the feature has UI entry points.
+
 ## Bad Tests
 
 **Implementation-detail tests**: Coupled to internal structure.
@@ -39,7 +83,7 @@ Red flags:
 
 - Mocking internal collaborators
 - Testing private methods
-- Asserting on call counts/order
+- Asserting on internal call counts/order instead of public results or external effects
 - Test breaks when refactoring without behavior change
 - Test name describes HOW not WHAT
 - Verifying through external means instead of interface

@@ -62,6 +62,13 @@ A project verification skill alone does not establish a documentation map.
    obligations away. For docs-only requests, select the recipes being maintained
    without inventing a product diff.
 
+   For stateful flows, select relevant event sequences from the product contract:
+   repeated input while pending, failure then retry, interruption, cancellation,
+   and late completion after cancellation or replacement where supported. State
+   the expected visible result and external effect, then exercise them through
+   the affected public entry points. Passing reducer or machine tests alone
+   does not establish that the product connects these paths correctly.
+
    For component stress tests, worst-case data, or content-dependent failures,
    read [realistic edge data](references/edge-data.md) to select fixtures and
    required assertions.

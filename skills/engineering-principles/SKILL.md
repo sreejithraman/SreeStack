@@ -16,7 +16,7 @@ one principle; a named request selects that principle directly.
 
 - [Foundational Thinking](references/foundational-thinking.md): when choosing data structures, access patterns, invariants, or state ownership before writing logic.
 - [Redesign From First Principles](references/redesign-from-first-principles.md): when a new requirement calls an existing design into question.
-- [Model the Domain](references/model-the-domain.md): when stateful logic branches heavily or repeats domain rules across callers.
+- [Model the Domain](references/model-the-domain.md): when lifecycle transitions, interacting flags, async completion, or repeated domain rules make behavior hard to reason about.
 - [Boundary Discipline](references/boundary-discipline.md): when parsing external input, enforcing trust boundaries, or introducing framework adapters.
 - [Type System Discipline](references/type-system-discipline.md): when designing types, signatures, or schemas that should rule out invalid operations.
 - [Experience First](references/experience-first.md): when product, interface, or feature-scope tradeoffs compete with implementation convenience.
