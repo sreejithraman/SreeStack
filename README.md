@@ -134,6 +134,11 @@ for the commands you need.
 Installing or copying only the GUI app does not expose the CLI automatically.
 A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary does.
 
+Use [Snipsnap Do Chores](skills/snipsnap-do-chores/SKILL.md) with "snipsnap do
+chores" to tackle saved mechanical improvements through Snip Snap and Goal
+Swarm. It leaves features and product decisions open and requires the host's
+goal-state tools.
+
 The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
 to the agent environment. Invoke it explicitly; it returns recommendations.
 The [correct skill](skills/correct/SKILL.md) investigates repeated agent mistakes
