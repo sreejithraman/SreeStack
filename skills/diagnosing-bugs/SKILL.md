@@ -73,6 +73,15 @@ Treat the loop as a product. Once you have _a_ loop, **tighten** it:
 
 A 30-second flaky loop is barely better than no loop; a 2-second deterministic one is tight, a debugging superpower.
 
+### Timing and lifecycle bugs
+
+For timing or lifecycle failures, capture the starting state, ordered events,
+and active operation identity in the reproduction. Include cancellation,
+replacement, and completion timing where relevant so replay can distinguish
+an old operation from the current one. Once the failure is reproducible, use
+[Model the Domain](../engineering-principles/references/model-the-domain.md#stateful-behavior)
+when choosing a repair for invalid states or transitions.
+
 ### Non-deterministic bugs
 
 The goal is not a clean repro but a **higher reproduction rate**. Loop the trigger 100×, parallelise, add stress, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not, so keep raising the rate until it's debuggable.

@@ -67,6 +67,12 @@ it handles a crash halfway through” reaches state ownership, idempotency, and
 failure-proof guidance while the implementation workflow supplies the checks.
 “Attack the premise” selects the named principle when repeated fixes fail.
 
+For example, “Build a cancellable upload with retry” reaches explicit states,
+allowed events, and effect ownership through Model the Domain. TDD checks
+relevant event sequences at the public seam; Verify exercises the affected
+product entry points and checks that stale completion cannot replace the
+current operation's result. Simple state can stay simple.
+
 ### T3 Code orchestration and model defaults
 
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
@@ -318,6 +324,7 @@ uses and adapts:
 
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md). Local adaptations are recorded in [SOURCES.md](SOURCES.md#gauntlet-loop).
 - [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.

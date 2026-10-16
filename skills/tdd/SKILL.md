@@ -18,6 +18,8 @@ When choosing assertions and checking that tests detect a broken behavior, read
 and [Prove It Works](../engineering-principles/references/prove-it-works.md).
 
 See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
+For lifecycle or async behavior, use the [event-sequence example](tests.md#event-sequences)
+to choose scenarios through the agreed public seam.
 
 ## Seams: where tests go
 
