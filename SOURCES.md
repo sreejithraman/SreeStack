@@ -38,6 +38,14 @@ link to official documentation; README.md holds purpose and setup prerequisites.
 
 - [sreejithraman/snip-snap / .agents/skills/snip-snap](https://github.com/sreejithraman/snip-snap/tree/5c1950172f8040a59f6ce4947a13223a30b3ecca/.agents/skills/snip-snap) — commit `5c1950172f8040a59f6ce4947a13223a30b3ecca`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
 
+- Storage operations can support active work; chore selection and execution
+  live in `snipsnap-do-chores`.
+
+## snipsnap-do-chores
+
+- Local: `skills/snipsnap-do-chores` (SreeStack). Selects saved mechanical work
+  through Snip Snap and executes it with Goal Swarm.
+
 ## animate
 
 - [emilkowalski/skills](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/animate) — `skills/animate/SKILL.md` and `RECIPES.md`; reference import commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`. The original parent-skill import baseline remains unknown. MIT notice in `licenses/emilkowalski-animate.txt`.

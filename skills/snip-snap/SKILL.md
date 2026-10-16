@@ -1,6 +1,6 @@
 ---
 name: snip-snap
-description: Save future ideas and text in Snip Snap, or read, update, and delete saved snips and lists when the user asks. Use for concrete agent-discovered improvements outside current and already-planned work. Not for tasks to do now.
+description: Save future ideas and text in Snip Snap, or read, update, and delete saved snips and lists when the user asks. Use for concrete agent-discovered improvements outside current and already-planned work.
 ---
 
 # Snip Snap
