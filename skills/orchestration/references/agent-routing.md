@@ -45,10 +45,11 @@ T3's broad `role` is not a model preset.
 [T3 execution policy](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts#L7).
 
 Use fresh delegated tasks for bounded assignments and independent reviews.
-Carry needed context in the brief. Delegated children share the parent checkout;
-keep writes disjoint and serialize git/index operations. Isolated worktrees
-belong to explicitly requested ordinary threads, bound by T3 before execution.
-[T3 workspace policy](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts#L14).
+Carry needed context in the brief. Shared-checkout children need disjoint writes
+and serialized git/index operations. For a separate checkout, use the host's
+worktree-isolated delegation. Confirm its starting revision and supply relevant
+uncommitted inputs explicitly; they may not be copied. Follow live host workspace
+rules. Ordinary top-level threads require an explicit user request.
 
 The default local ceiling is 12 active children, reduced by host/user limits.
 Count workers and reviewers together. Start ready assignments as slots free;

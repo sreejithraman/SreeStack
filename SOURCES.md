@@ -162,8 +162,12 @@ Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
-Alternative-interface proposals use orchestration’s working selection, read-only
-ownership, and capacity-aware waves; the user-requested comparison remains conditional.
+Alternative-interface proposals use arena's shared brief, rubric, independent
+candidates, and cross-judge, with orchestration's working selection and bounded
+ownership. The user-requested comparison remains conditional and defaults to
+recommendations; synthesis is requested separately. Candidate counts follow the
+decision rather than a fixed panel of three, and architect can carry a selected
+design through authorized implementation.
 
 Deep-module vocabulary, deletion tests, seam techniques, and alternative-interface
 design stay local. Generic design, testability, and enforcement guidance use
@@ -262,7 +266,9 @@ One automatically discoverable index groups direct links by task and gives each
 principle a short applicability hint adapted to its local guidance. Each reference
 filename follows its full principle title, and all 24 titles match their source
 headings verbatim. Workflows retain procedures and completion criteria; generic
-decisions have one shared home. Existing invocation choices stay intact. Tools and prototype counts fit the decision's cost and uncertainty;
+decisions have one shared home. Existing invocation choices stay intact.
+Exhaust the Design Space routes independent synthesis through arena and
+consequential design-through-implementation work through architect. Tools and prototype counts fit the decision's cost and uncertainty;
 actor censuses apply to actor-distribution questions. Permissions and product
 choices remain with the host/user, required compatibility stays supported, and
 temporary development breakage stays behind coherent delivery checkpoints.
@@ -374,6 +380,48 @@ serves `correct` too, while `prototype` retains UI ownership. Autonomous plannin
 records proposed glossary and ADR changes for review instead of applying them.
 Shared design and migration decisions use `engineering-principles`; candidate
 exploration, technical experiments, planning, and glossary/ADR handling remain local.
+Selected designs can continue through architect within the requested scope,
+carrying forward checked findings and experiments.
+
+## arena
+
+- [cursor/plugins / pstack/skills/arena](https://github.com/cursor/plugins/tree/019a6a20592c10bf92869e5740368f578a9997fd/pstack/skills/arena) — `SKILL.md`; import baseline `019a6a20592c10bf92869e5740368f578a9997fd`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Retains the Frame, Fan out, Cross-judge, Pick, Graft, and Verify flow and its
+base-selection, selective-grafting, and synthesis-record guidance. Automatically
+discoverable in both hosts. Orchestration owns model defaults, host delegation,
+isolation, capacity, and bounded recovery. Candidates share the task and criteria;
+relevant uncommitted inputs are supplied explicitly to isolated candidates.
+Synthesis is the default; comparison-only requests return recommendations.
+Explicit candidate counts and requested choice gates stay intact, fewer than
+two usable candidates is incomplete, and synthesis gets its
+own evidence. UI and technical experiments, production verification, review,
+and publication use existing local owners. No Cursor model panel or tool syntax
+is required.
+
+## architect
+
+- [cursor/plugins / pstack/skills/architect](https://github.com/cursor/plugins/tree/019a6a20592c10bf92869e5740368f578a9997fd/pstack/skills/architect) — `SKILL.md`, `references/runner-prompt.md` (local `references/design-candidate.md`), and `references/rationale-template.md` (local `references/design-rationale.md`); import baseline `019a6a20592c10bf92869e5740368f578a9997fd`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Retains Ground, Sketch, Agree, Implement, and Scrap; caller usage before types;
+competing whole designs; interface-depth comparison; the implementation contract;
+and repeated-friction signals for restarting the design. Automatically
+discoverable in both hosts for consequential design work. Grounding uses local
+code, glossary, ADRs, and code-why. Codebase Design supplies vocabulary and
+ownership/enforcement checks rather than a second red-flag reference. Arena and
+orchestration own candidate synthesis and execution. Prototype and the shared
+architecture experiment reference resolve empirical questions. Design-only and
+planning requests stop at their requested artifacts; selected designs and
+current evidence carry forward without repeating settled exploration.
+Implementation continues only within scope and respects requested checkpoints.
+Review, verification, visual evidence, and publication keep their existing
+owners. Independent
+consensus is recorded without requiring artificial structural differences.
+The rationale keeps detailed sketches and evidence alongside its concise prose.
+Candidate briefs end at their assigned output; rationale selection records
+cover supplied designs as well as fresh synthesis, and distinguish checked
+claims from unproven runtime behavior. Cursor-specific models and fixed file-hop thresholds
+are omitted.
 
 ## ios-haptics
 
@@ -845,8 +893,10 @@ create goals or require pstack's cloud worker setup. `pr` owns review when it
 will review the same integrated scope before publication.
 
 The task-graph reference preserves existing integration, review, PR and cleanup
-owners. Delegated workers share the integration checkout with disjoint ownership;
-explicitly requested ordinary threads can use bound worktrees. Workspaces
+owners. Delegated workers can share the integration checkout with disjoint
+ownership or use host-managed isolated worktrees; separate ordinary threads
+remain explicit. Isolated workers receive relevant uncommitted inputs explicitly
+and report their starting revision. Workspaces
 preserve unexpected edits; dependency outcomes require integration and verification. Scheduling does not create a goal or assume a
 worker's last merge guarantees a fast-forward.
 Design and implementation work selects useful `engineering-principles` references

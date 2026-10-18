@@ -13,19 +13,19 @@ ticket accounted for through the project's tracker workflow.
 2. Reuse or create a task-owned integration branch from the intended base.
    Record its tip. Assign independent frontier tickets to workers using the
    normal orchestration brief, model policy, context, and concurrency rules.
-   Group tightly coupled tickets under one owner. Delegated children share the
-   integration checkout: give parallel workers disjoint paths and serialize
-   shared files, commits, and other git/index changes. Preserve unexpected edits.
-   When isolation is necessary, keep the work serial unless the user explicitly
-   requests separate ordinary threads. For those threads, follow agent routing's
-   workspace rules and bind task-owned worktrees from the integration tip before
-   execution; do not pretend they are delegated children.
+   Group tightly coupled tickets under one owner. Children sharing the
+   integration checkout need disjoint file ownership. Serialize shared writes,
+   commits, and other git/index changes. Preserve unexpected edits.
+   When isolation is necessary, use the host's worktree-isolated delegation
+   under agent routing's workspace rules. Confirm the integration revision and
+   provide relevant uncommitted inputs before execution. Separate ordinary
+   threads still require an explicit user request.
 
 3. Workers implement against the spec and applicable `tdd` seams. Shared-checkout
    children return the ticket, starting/current shared HEAD, changed paths and
    patch or content evidence, checks and the state they tested, and unresolved
    work. Their HEAD may be unchanged despite working-tree edits; do not require
-   a child commit. Explicit separate-thread workers also return their branch's
+   a child commit. Workers in separate checkouts also return their branch's
    base/head revisions. Link durable spec, ticket, research, and commit artifacts
    instead of repeating them in status messages. Temporary research notes must
    remain accessible to subsequent workers while needed.
@@ -34,7 +34,7 @@ ticket accounted for through the project's tracker workflow.
    commits or merges onto the integration branch. Compare each result with the
    current integration state; resolve stale bases or conflicts without losing
    another worker's changes. Verify integrated behavior and shared boundaries.
-   Only separate-thread branches need merging; a worker incorporating a prior
+   Only separate-checkout branches need merging; a worker incorporating a prior
    integration tip does not guarantee a fast-forward after concurrent progress.
 
 5. Recompute the frontier after accepting each integration. Mark a dependency
