@@ -39,6 +39,8 @@ instructions rather than maintaining another API manual.
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
+| Compare independent candidates and synthesize a result | `arena` |
+| Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
@@ -158,6 +160,23 @@ plan backed by runnable experiments” returns checked design recommendations an
 a migration plan. Technical experiments cover interfaces, callers, state, and
 performance; [prototype](skills/prototype/SKILL.md) owns UI experiments. Both
 planning workflows keep production implementation for the requested finish line.
+
+[Arena](skills/arena/SKILL.md) produces independent candidates for one task,
+compares them against a shared rubric, and returns a recommendation or one
+verified synthesis. For example, “Arena three approaches to our import pipeline;
+compare caller simplicity, retry correctness, and migration cost” returns the
+candidates, evidence, and chosen base, with any useful ideas adapted from the
+other candidates when synthesis is requested.
+
+[Architect](skills/architect/SKILL.md) carries a consequential design from
+caller usage and competing type sketches through the requested finish line.
+For example, “Architect a retryable importer and implement it; preserve existing
+callers and prove recovery after interruption” returns the design rationale,
+experiment evidence, and verified implementation. “Architect the importer,
+design only” returns the checked design. Both skills support automatic discovery
+and direct invocation. `prototype` keeps UI experiments on the target platform;
+technical experiments test behavior and caller assumptions. Existing review
+and verification skills assess the integrated result.
 
 The [gauntlet-loop skill](skills/gauntlet-loop/SKILL.md) is also user-invoked:
 use `$gauntlet-loop` in Codex or `/gauntlet-loop` in Claude Code with a goal and
@@ -332,6 +351,7 @@ uses and adapts:
 
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md). Local adaptations are recorded in [SOURCES.md](SOURCES.md#gauntlet-loop).
 - [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
@@ -339,7 +359,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.

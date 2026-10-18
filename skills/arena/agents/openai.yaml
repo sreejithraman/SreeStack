@@ -1,0 +1,3 @@
+interface:
+  display_name: "Arena"
+  short_description: "Compare candidates and verify a coherent synthesis"

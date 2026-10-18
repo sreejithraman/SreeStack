@@ -121,7 +121,8 @@ During interactive design, apply "domain-modeling" as decisions crystallize:
 
 For autonomous planning, record proposed glossary and ADR changes in the plan
 for review. When exploring alternative interfaces, use Codebase Design's
-design-it-twice parallel sub-agent pattern; check technical assumptions with
+[design-it-twice guidance](../codebase-design/DESIGN-IT-TWICE.md) to compare
+structurally distinct designs through arena; check technical assumptions with
 experiments where proposals alone cannot distinguish the options.
 
 ### 4. Return a usable plan
@@ -137,4 +138,6 @@ reasons, and confidence. A requested design or plan is complete when its
 technical uncertainties have been checked or have explicit evidence gaps and
 next checks, and the migration and proof are concrete enough to review.
 Production implementation follows only within the user's requested scope and
-uses the existing implementation, review, and verification workflows.
+uses the existing implementation, review, and verification workflows. Use
+[architect](../architect/SKILL.md) when the selected design needs to guide
+implementation; carry forward the findings and experiments already checked.

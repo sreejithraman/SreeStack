@@ -1,49 +1,48 @@
 # Design It Twice
 
-When the user wants to explore alternative interfaces for a chosen deepening candidate, use this parallel sub-agent pattern. Based on "Design It Twice" (Ousterhout): your first idea is unlikely to be the best.
+When the user wants to explore alternative interfaces for a chosen deepening
+candidate, use [arena](../arena/SKILL.md) for independent designs, comparison,
+and any requested synthesis. Your first idea is unlikely to be the best.
 
-Uses the vocabulary in [SKILL.md](SKILL.md): **module**, **interface**, **seam**, **adapter**, **leverage**.
+Uses the vocabulary in [SKILL.md](SKILL.md): **module**, **interface**,
+**seam**, **adapter**, **leverage**, **locality**. Resolve the project's glossary
+through Codebase Design before preparing the brief.
 
-## Process
+## Frame the problem space
 
-### 1. Frame the problem space
+Before dispatch, explain the problem space for the chosen candidate:
 
-Before spawning sub-agents, write a user-facing explanation of the problem space for the chosen candidate:
+- The constraints any new interface would need to satisfy.
+- The dependencies it would rely on, and which category they fall into
+  (see [DEEPENING.md](DEEPENING.md)).
+- A rough illustrative code sketch to ground the constraints, not a proposal.
 
-- The constraints any new interface would need to satisfy
-- The dependencies it would rely on, and which category they fall into (see [DEEPENING.md](DEEPENING.md))
-- A rough illustrative code sketch to ground the constraints, not a proposal, just a way to make the constraints concrete
+Show this to the user, then proceed. The user reads and thinks while the
+candidates work independently.
 
-Show this to the user, then immediately proceed to Step 2. The user reads and thinks while the sub-agents work in parallel.
+## Compare whole interfaces
 
-### 2. Spawn sub-agents
+Give arena one technical brief with the file paths, coupling, dependency
+categories, what sits behind the seam, and the project vocabulary. Require
+structurally distinct interfaces that satisfy the same caller requirements.
+Useful directions include minimizing the public surface, maximizing flexibility,
+or making the most common caller trivial. Judge each against the same criteria:
+**depth**, **locality**, and **seam placement**.
+If independent candidates converge, use arena's consensus branch and record
+the agreement and rejected alternatives rather than forcing different shapes.
 
-Assign at least three independent designs through
-[orchestration](../orchestration/SKILL.md), using its working model defaults and
-bounded briefs. Run them in waves when the available slots require it. Each
-agent owns a read-only proposal and must produce a **radically different**
-interface for the deepened module. Set the comparison criteria before dispatch
-and keep repository edits with the implementation owner.
+Each candidate supplies its interface (including invariants, ordering, and
+error modes), realistic usage, the complexity hidden behind the seam,
+dependency strategy and adapters, and tradeoffs. Use
+[architecture experiments](../improve-codebase-architecture/references/experiments.md)
+when a proposal alone cannot establish caller compatibility or behavior.
 
-Prompt each sub-agent with a separate technical brief (file paths, coupling details, dependency category from [DEEPENING.md](DEEPENING.md), what sits behind the seam). The brief is independent of the user-facing problem-space explanation in Step 1. Give each agent a different design constraint:
-
-- Agent 1: "Minimize the interface: aim for 1–3 entry points max. Maximise leverage per entry point."
-- Agent 2: "Maximise flexibility: support many use cases and extension."
-- Agent 3: "Optimise for the most common caller: make the default case trivial."
-- Agent 4 (if applicable): "Design around ports & adapters for cross-seam dependencies."
-
-Include both [SKILL.md](SKILL.md) vocabulary and GLOSSARY.md vocabulary in the brief so each sub-agent names things consistently with the architecture language and the project's domain language.
-
-Each sub-agent outputs:
-
-1. Interface (types, methods, params, plus invariants, ordering, error modes)
-2. Usage example showing how callers use it
-3. What the implementation hides behind the seam
-4. Dependency strategy and adapters (see [DEEPENING.md](DEEPENING.md))
-5. Trade-offs: where leverage is high, where it's thin
-
-### 3. Present and compare
-
-Present designs sequentially so the user can absorb each one, then compare them in prose. Contrast by **depth** (leverage at the interface), **locality** (where change concentrates), and **seam placement**.
-
-After comparing, give your own recommendation: which design you think is strongest and why. If elements from different designs would combine well, propose a hybrid. Be opinionated: the user wants a strong read, not a menu.
+For this interface exploration, select arena's comparison-only finish line:
+present the designs sequentially so the user can absorb each one, then compare
+them in prose. Give your own recommendation: which design is strongest and
+why. Propose a hybrid when its parts would
+combine well. When synthesis is requested, arena owns choosing a base,
+grafting, and checking the combined design. Preserve the user's requested
+choice or checkpoint. Production implementation follows only within scope;
+use [architect](../architect/SKILL.md) when the selected design needs to stay
+in the loop through implementation.
