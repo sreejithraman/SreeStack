@@ -675,13 +675,11 @@ version tables. Global text trimming and destructive layout resets are omitted.
 
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-Research owns a cited primary-source note. Independent background reading uses
-orchestration's working defaults; source retrieval prefers suitable direct tools
-and uses shared source preferences for bounded delegation when tools are missing.
-Research defines source evidence, provenance, modality, and access-gap requirements;
-it distinguishes tool retrieval limits from access restrictions before rerouting.
-Assigned researchers own synthesis, with further delegation limited by their brief.
-Parents check evidence before acceptance.
+Research owns a cited primary-source note and uses shared working defaults.
+YouTube retrieval uses Gemini and X posts use Grok through orchestration's
+configured selections. Assigned researchers own synthesis; their briefs permit
+needed source tasks, whose retrievers work directly. Parents check source
+evidence and access gaps before acceptance.
 
 ## review
 
@@ -882,10 +880,7 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 - [mattpocock/skills / skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/implement-spec) — task-graph/frontier scheduling adapted into `references/task-graphs.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
 Locally written T3-oriented delegation flow with one editable Markdown table
-of working, source-retrieval, and review defaults in the routing reference.
-Research owns source policy; retrieval preferences select Gemini for YouTube
-and Grok for X without claiming exclusive access. Generic assignment briefs
-carry owner-identified access prerequisites and bounded nested-delegation permissions.
+of model defaults in the routing reference, including Research's source routes.
 Alternate priorities prefer exact
 free OpenCode DeepSeek and GLM routes before Gemini and primary-model fallback.
 Assignment briefs replace a generic

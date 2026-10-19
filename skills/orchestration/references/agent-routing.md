@@ -20,14 +20,11 @@ Edit this table to change the defaults.
 | Alternate review | Antigravity | Gemini 3.8 Flash | High | 2 |
 
 The working selection covers code, tests, refactoring, configuration, docs,
-research ownership/synthesis, verification, and accepted fixes. Source retrieval
-uses [Research's policy](../../research/SKILL.md#source-routing). Source-retrieval
-rows are preferences when delegation is needed, not exclusive access claims or
-proof of tool access. For other retrieval, prefer the working selection when
-its tools suffice. If neither route is available and suitable, select another
-available agent with the required tools, honoring user overrides and the recovery
-policy below. Alternate rows are a review pool; lower priority numbers are
-preferred. Use the exact free OpenCode IDs above
+research ownership/synthesis, verification, and accepted fixes.
+[Research](../../research/SKILL.md#source-routing) uses the YouTube and X retrieval
+rows. These specify routing policy, not exclusive source access.
+Alternate rows are a review pool; lower priority numbers are preferred.
+Use the exact free OpenCode IDs above
 to distinguish them from paid routes for the same models.
 User instructions override defaults; preserve explicit user choices when
 applying project requirements. Review Fix Loop's primary fallback is permitted

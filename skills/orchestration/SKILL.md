@@ -32,11 +32,7 @@ relationships, use [task graphs](references/task-graphs.md).
 Give each child a self-contained brief: requirements and accepted decisions,
 source paths and artifacts, owned output, permitted actions, shared files to
 preserve, checks, and return format. For verification or measurement, include
-exact revisions and the method. The task owner identifies access prerequisites
-and supplies them in the brief. Assign further delegation explicitly when needed,
-with permitted scope, depth, child count, and outputs. Nested tasks consume that
-budget. Children may delegate only as their brief permits, within its remaining
-bounds, and track nested work through acceptance.
+exact revisions and the method. Assign further delegation explicitly when needed.
 
 Finish assignment when every required slice has an owner, usable inputs,
 compatible ownership, and a completion check. Then follow agent routing to

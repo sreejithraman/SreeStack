@@ -12,29 +12,18 @@ before investigating, including when working directly.
 
 When independent reading helps another owner continue useful work, use
 [orchestration](../orchestration/SKILL.md) to delegate a bounded question with
-that path. Include any permitted source delegation and its bounds in the brief.
-When dispatched as the researcher, own the investigation and synthesis;
+that path. When dispatched as the researcher, own the investigation and synthesis;
 assign additional children only when the brief permits it.
 
 ## Source routing
 
-Define the evidence needed and identify source access prerequisites. Prefer
-suitable direct retrieval. When required evidence needs tools unavailable to
-the current agent, resolve the configured source preferences in
-[agent routing](../orchestration/references/agent-routing.md#model-defaults),
-preserving user overrides. Use orchestration to dispatch bounded retrieval to
-an available agent with suitable tools. A tool fetch error alone does not
-establish a permission or policy denial; distinguish retrieval limits from
-access restrictions before using another permitted route. Follow the
-[denial and recovery policy](../orchestration/references/agent-routing.md#recover-work);
-report a gap when no permitted route can supply the evidence.
-
-Request original source content or grounded extracts/paraphrases, canonical
-URLs, relevant dates/timestamps, retrieval provenance and modality (actual
-video, captions, metadata, native source tools), and precise access gaps.
-Inspect returned evidence against the requested claims before synthesis.
-A child summary or claimed model capability alone does not prove retrieval;
-captions or metadata support only claims grounded in that modality.
+Use Gemini for YouTube retrieval and Grok for X posts, with the configured
+selections in [agent routing](../orchestration/references/agent-routing.md#model-defaults).
+Honor user overrides. Use orchestration for bounded source retrieval; when
+dispatching a researcher, permit these source tasks in its brief. Source
+retrievers work directly and return content or grounded extracts with canonical
+URLs, relevant dates/timestamps, retrieval method, and access gaps. Inspect the
+evidence before using it; a child summary alone does not prove retrieval.
 
 ## Findings and acceptance
 
