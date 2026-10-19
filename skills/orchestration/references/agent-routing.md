@@ -12,14 +12,22 @@ Edit this table to change the defaults.
 | Purpose | Provider | Model | Effort | Alternate priority |
 | --- | --- | --- | --- | --- |
 | Implementation and fixes | Codex | GPT-6.1 Sol | High | — |
+| YouTube retrieval | Antigravity | Gemini 4 Argon | High | — |
+| X retrieval | Grok | Grok 4.7 | High | — |
 | Primary review | Codex | GPT-6.1 Sol | Medium | — |
 | Alternate review | OpenCode | `opencode/deepseek-v4.1-flash-free` | Max | 1 |
 | Alternate review | OpenCode | `opencode/glm-5.3-flash-free` | Max | 1 |
 | Alternate review | Antigravity | Gemini 3.8 Flash | High | 2 |
 
 The working selection covers code, tests, refactoring, configuration, docs,
-research, verification, and accepted fixes. Alternate rows are a review pool;
-lower priority numbers are preferred. Use the exact free OpenCode IDs above
+research ownership/synthesis, verification, and accepted fixes. Source retrieval
+uses [Research's policy](../../research/SKILL.md#source-routing). Source-retrieval
+rows are preferences when delegation is needed, not exclusive access claims or
+proof of tool access. For other retrieval, prefer the working selection when
+its tools suffice. If neither route is available and suitable, select another
+available agent with the required tools, honoring user overrides and the recovery
+policy below. Alternate rows are a review pool; lower priority numbers are
+preferred. Use the exact free OpenCode IDs above
 to distinguish them from paid routes for the same models.
 User instructions override defaults; preserve explicit user choices when
 applying project requirements. Review Fix Loop's primary fallback is permitted

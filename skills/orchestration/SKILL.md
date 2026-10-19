@@ -6,9 +6,10 @@ description: Resolve working-model defaults and coordinate agents in T3 Code. Us
 # Orchestration
 
 The parent owns the outcome. Give independent, ready work to children when it
-improves speed or coverage; keep cohesive work with one owner. Use the working
+improves speed or coverage; keep cohesive work with one owner. Use the applicable
 selection in [agent routing](references/agent-routing.md#model-defaults),
-including when the parent implements directly.
+including when working directly. The working selection applies unless a
+task-specific selection or explicit user override covers the assignment.
 
 Resolve that selection before doing the work. Continue directly only when this
 agent's effective model and effort match it or an explicit user override.
@@ -31,7 +32,11 @@ relationships, use [task graphs](references/task-graphs.md).
 Give each child a self-contained brief: requirements and accepted decisions,
 source paths and artifacts, owned output, permitted actions, shared files to
 preserve, checks, and return format. For verification or measurement, include
-exact revisions and the method. Assign further delegation explicitly when needed.
+exact revisions and the method. The task owner identifies access prerequisites
+and supplies them in the brief. Assign further delegation explicitly when needed,
+with permitted scope, depth, child count, and outputs. Nested tasks consume that
+budget. Children may delegate only as their brief permits, within its remaining
+bounds, and track nested work through acceptance.
 
 Finish assignment when every required slice has an owner, usable inputs,
 compatible ownership, and a completion check. Then follow agent routing to
