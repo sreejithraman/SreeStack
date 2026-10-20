@@ -81,7 +81,8 @@ current operation's result. Simple state can stay simple.
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
 from T3's live catalog. Edit
 [model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
-to change implementation/review models, effort, and alternate-review priorities.
+to change working/research/review models, source-retrieval routes, effort, and
+alternate-review priorities.
 The local concurrency ceiling is in that same reference. This is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
@@ -114,6 +115,10 @@ on a stable clone rather than a temporary worktree.
 
 Sample requests and expected results:
 
+- “Research these official docs”: the General research selection handles reading,
+  comparison, and synthesis.
+- “Research this YouTube video and X post”: `research` routes retrieval to Gemini
+  and Grok respectively, then checks the source evidence before writing a cited note.
 - “Implement this change”: the working policy supplies the model and options;
   parallel children have disjoint ownership in the same checkout.
 - “Review and fix this shared-contract change”: primary, Ponytail, and Thermo

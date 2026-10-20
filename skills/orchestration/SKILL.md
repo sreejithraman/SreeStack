@@ -6,9 +6,10 @@ description: Resolve working-model defaults and coordinate agents in T3 Code. Us
 # Orchestration
 
 The parent owns the outcome. Give independent, ready work to children when it
-improves speed or coverage; keep cohesive work with one owner. Use the working
+improves speed or coverage; keep cohesive work with one owner. Use the applicable
 selection in [agent routing](references/agent-routing.md#model-defaults),
-including when the parent implements directly.
+including when working directly. The working selection applies unless a
+task-specific selection or explicit user override covers the assignment.
 
 Resolve that selection before doing the work. Continue directly only when this
 agent's effective model and effort match it or an explicit user override.
