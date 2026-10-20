@@ -15,7 +15,7 @@ Edit this table to change the defaults.
 | General research | Codex | GPT-6.1 Sol | Medium | — |
 | YouTube retrieval | Antigravity | Gemini 4 Argon | High | — |
 | X retrieval | Grok | Grok 4.7 | High | — |
-| Primary review | Codex | GPT-6.1 Sol | Medium | — |
+| Primary review | Codex | GPT-6.1 Sol | High | — |
 | Alternate review | OpenCode | `opencode/deepseek-v4.1-flash-free` | Max | 1 |
 | Alternate review | OpenCode | `opencode/glm-5.3-flash-free` | Max | 1 |
 | Alternate review | Antigravity | Gemini 3.8 Flash | High | 2 |

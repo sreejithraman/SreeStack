@@ -881,6 +881,7 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 
 Locally written T3-oriented delegation flow with one editable Markdown table
 of model defaults, including research and source routes, in the routing reference.
+Working and primary review defaults match.
 Alternate priorities prefer exact
 free OpenCode DeepSeek and GLM routes before Gemini and primary-model fallback.
 Assignment briefs replace a generic
