@@ -12,11 +12,11 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   directory, target, simulator, fixture, or required service. Keep platform
   instructions specific to the repo; a web harness, Apple device tool, or CLI
   being available elsewhere does not make it available here.
-- **Acceptance:** link the existing verification map and visual-evidence
-  convention, if any. `verify` owns real workflow checks; `showroom` packages
-  visual proof. An explicit verification-setup request uses Verify's map setup
-  workflow rather than a generated per-project verification skill. Leave new
-  maps to that request and report any unproven recipes as draft.
+- **Acceptance:** link the existing verification map and demonstration or access
+  conventions, if any. `verify` owns real workflow checks; `showroom` chooses
+  demonstrations and access. An explicit verification-setup request uses
+  Verify's map setup workflow rather than a generated per-project verification
+  skill. Leave new maps to that request and report any unproven recipes as draft.
 - **Review:** identify the intended review base and required project checks.
   Link existing standards. Mechanical rules belong in existing tooling;
   `CODING_STANDARDS.md` is for genuine judgement calls, created only when such
@@ -53,6 +53,8 @@ Before naming domain concepts or changing their model, read
 For ticket work, read `docs/agents/issue-tracker.md`.
 For triage label changes, read `docs/agents/triage-labels.md`.
 For acceptance checks, read `docs/agents/verification/index.md`.
+When work produces something the user can inspect or try, use `showroom`
+before handoff; use it during UI iteration when showing progress helps feedback.
 ```
 
 Use actual resolved paths and include only docs that exist and belong to the

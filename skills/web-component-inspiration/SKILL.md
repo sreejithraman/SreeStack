@@ -85,7 +85,8 @@ reuse terms before copying source.
 
 Exercise the changed path with the relevant keyboard, pointer, touch,
 reduced-motion, and narrow-screen conditions. Use `verify` when the
-result needs hands-on workflow judgment, then use `showroom` for visual proof.
+result needs hands-on workflow judgment, then use `showroom` to choose
+demonstrations and access.
 
 ## Done
 
@@ -93,5 +94,5 @@ Discovery is done when every pick has a distinct reason to exist, checked
 tradeoffs, and live demo and source links—or is clearly marked
 inspiration-only when public source is unavailable. A build is done when the
 adapted behavior works in the real interface, the relevant condition checks
-pass, useful visual proof is supplied through `showroom`, and any check that
+pass, the result is presented through `showroom`, and any check that
 could not run is named with its limit.

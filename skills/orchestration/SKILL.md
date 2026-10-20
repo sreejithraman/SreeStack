@@ -51,6 +51,10 @@ Use [review-fix-loop](../review-fix-loop/SKILL.md) for behavior and agent-proced
 changes. When [pr](../pr/SKILL.md) will review the same complete scope before
 publication, let it own that loop once.
 
+Use [showroom](../showroom/SKILL.md) before handoff when the integrated result
+is something the user can inspect or try. It chooses demonstrations and access;
+reuse applicable verification evidence.
+
 Finish when every required result is integrated and its checks pass, or report
 the precise remaining gap. Return child dispositions, artifacts, checks,
 requested/confirmed model settings, and blockers. Goal state, recurring work,

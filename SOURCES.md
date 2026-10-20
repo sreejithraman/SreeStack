@@ -414,8 +414,8 @@ architecture experiment reference resolve empirical questions. Design-only and
 planning requests stop at their requested artifacts; selected designs and
 current evidence carry forward without repeating settled exploration.
 Implementation continues only within scope and respects requested checkpoints.
-Review, verification, visual evidence, and publication keep their existing
-owners. Independent
+Review, verification, demonstrations and access, and publication keep their
+existing owners. Independent
 consensus is recorded without requiring artificial structural differences.
 The rationale keeps detailed sketches and evidence alongside its concise prose.
 Candidate briefs end at their assigned output; rationale selection records
@@ -498,6 +498,8 @@ Authenticated workflows reuse designated test accounts and standing scope,
 delegate application sign-in and command/API credential use to `agent-login`,
 check delivery in the actual host interface, and
 distinguish provider authentication, automatic login, and post-login verification.
+Routes inspectable results to `showroom` for demonstrations and access while
+retaining acceptance selection and judgments.
 Provider mechanics stay in agent-login’s references; maps link the authoritative
 approved mapping and record delivery setup.
 
@@ -557,6 +559,7 @@ with `ui-design`, `animate`, `swiftui` or `uikit`, `verify`, and
 `showroom`, and adds explicit rules for live side effects, unavailable target
 tooling, comparison-control verification, durable decisions, and proportional
 prototype retention and cleanup.
+Showroom chooses demonstrations and access for the prototype result.
 
 ## react-best-practices
 
@@ -736,6 +739,7 @@ appropriate, with unavailable before states disclosed. Reversibility, concrete
 consumers, rollout, and restoration limits replace a forced one-word blast-radius
 rating. Small PRs can use concise prose; publication refreshes the guide's facts
 against the current scope/head. Cross-skill references use the current local name.
+Evidence reuses Showroom's checked demonstrations and access links when available.
 
 T3 PR registration is shared by all PR routes and reused by stack/merge entrypoints.
 CI waiting uses app watches and fresh state after waking; GitHub confirms merge
@@ -761,6 +765,8 @@ host settings and installation remain separate. Agent defaults link the shared
 orchestration policy rather than duplicating host rank settings. Existing commands and standards
 are linked rather than duplicated. Active instruction files are selected by the
 user/host or existing pointer ownership, with `AGENTS.md` for a new default.
+Project workflow pointers call `showroom` for inspectable results and useful
+UI iteration feedback; demonstration and access procedures remain in that skill.
 
 Domain defaults use `GLOSSARY.md` / `GLOSSARY-MAP.md`; established legacy/custom
 paths and one vocabulary source per context remain supported. Context boundaries,
@@ -780,8 +786,8 @@ PR workflow references use the local `pr` entry point.
 
 ## showroom
 
-- Local: `skills/showroom` (SreeStack). Uses Verify’s host browser/device routing;
-  remote sharing is conditional, with access limits and ownership-safe teardown.
+- Local: `skills/showroom` (SreeStack). Owns demonstrations and access for
+  inspectable results, with model-selected formats and delivery paths.
 
 ## tdd
 
@@ -841,7 +847,7 @@ Setup references use the local `setup-sreestack` entry point.
 ## web-component-inspiration
 
 - Local: `skills/web-component-inspiration` (SreeStack); web-scoped and
-  explicit-only in both hosts.
+  explicit-only in both hosts, with Showroom owning demonstrations and access.
 
 ## wayfinder
 
@@ -895,6 +901,8 @@ and review rounds. Parallel coverage, competing approaches, revision-bound
 verification, and measured results are checked during integration. It does not
 create goals or require pstack's cloud worker setup. `pr` owns review when it
 will review the same integrated scope before publication.
+Integrated results the user can inspect or try route to `showroom` for
+demonstrations and access, reusing applicable verification evidence.
 
 The task-graph reference preserves existing integration, review, PR and cleanup
 owners. Delegated workers can share the integration checkout with disjoint
