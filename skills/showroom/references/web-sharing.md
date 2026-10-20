@@ -1,6 +1,6 @@
 # Share a local web preview
 
-For an explicitly requested tailnet preview, or an established project sharing workflow:
+Use this workflow when delivery selects a local target for Tailscale sharing:
 
 1. Start or locate the repo's existing `dev` or `start` server bound to
    `127.0.0.1`. Record its process identity, including command and start time or
@@ -10,9 +10,10 @@ For an explicitly requested tailnet preview, or an established project sharing w
    `tailscale serve --bg --https=<port> http://127.0.0.1:<origin>`. Never Funnel.
    Keep any origin process started for this preview running after the command
    returns.
-3. Exercise and capture the changed route or state through the returned URL.
+3. Open the returned URL and exercise the changed route or state. Capture media
+   when selected for the showing.
    If no browser tool is available, check that route with `curl` or another
-   read-only request and name the remaining remote visual-proof gap.
+   read-only request and name the remaining interaction or visual-inspection gap.
 
 When available, check the URL from an off-home client too (on the tailnet for
 Tailscale Serve). Otherwise report remote-client access as unverified; a check
