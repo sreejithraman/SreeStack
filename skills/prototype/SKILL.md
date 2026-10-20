@@ -96,7 +96,7 @@ design choice.
 
 Run every option on the target platform and exercise the interactions that
 answer the design question. Use `verify` when the judgment depends on a
-real workflow. Use `showroom` to package useful visual evidence.
+real workflow. Use `showroom` to choose demonstrations and access.
 
 For multiple options, exercise the switcher and confirm that its control stays
 clear of the interface and interactions under review.

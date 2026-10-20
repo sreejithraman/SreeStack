@@ -1,4 +1,4 @@
 interface:
   display_name: "Showroom"
-  short_description: "Show checked UI states and user flows"
-  default_prompt: "Use $showroom to show this change with the smallest useful visual proof."
+  short_description: "Demonstrate results and make them available to try"
+  default_prompt: "Use $showroom to help me experience and judge this result. Choose demonstrations and access suited to the work and available tools."

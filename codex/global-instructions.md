@@ -10,6 +10,7 @@
 ## Verification
 
 - Verify the result I’ll actually use, and be clear about anything you haven’t tested.
+- When work produces something I can inspect or try, use `showroom` before handoff. Also use it during UI iteration when showing the current result would help me give feedback.
 - Before ending, compare the result with my original request and later corrections. If my likely next message would ask for an obvious missing step within the authorized scope, complete that step now. If something remains blocked, state exactly what is unfinished and what prevents completion.
 
 ## Writing rules
