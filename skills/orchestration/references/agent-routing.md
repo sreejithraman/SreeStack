@@ -12,6 +12,7 @@ Edit this table to change the defaults.
 | Purpose | Provider | Model | Effort | Alternate priority |
 | --- | --- | --- | --- | --- |
 | Implementation and fixes | Codex | GPT-6.1 Sol | High | — |
+| General research | Codex | GPT-6.1 Sol | Medium | — |
 | YouTube retrieval | Antigravity | Gemini 4 Argon | High | — |
 | X retrieval | Grok | Grok 4.7 | High | — |
 | Primary review | Codex | GPT-6.1 Sol | Medium | — |
@@ -19,8 +20,9 @@ Edit this table to change the defaults.
 | Alternate review | OpenCode | `opencode/glm-5.3-flash-free` | Max | 1 |
 | Alternate review | Antigravity | Gemini 3.8 Flash | High | 2 |
 
-The working selection covers code, tests, refactoring, configuration, docs,
-research ownership/synthesis, verification, and accepted fixes.
+The working selection covers code, tests, refactoring, configuration,
+documentation changes, verification, and accepted fixes. The General research
+selection covers source reading, comparison, and synthesis.
 [Research](../../research/SKILL.md#source-routing) uses the YouTube and X retrieval
 rows. These specify routing policy, not exclusive source access.
 Alternate rows are a review pool; lower priority numbers are preferred.

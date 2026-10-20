@@ -6,9 +6,9 @@ description: Investigate a question against primary sources and record cited fin
 # Research
 
 Own a question and the evidence needed to answer it. Resolve the decision,
-scope, and an output path using the repo's research-note convention. Apply
-[agent routing](../orchestration/references/agent-routing.md#model-defaults)
-before investigating, including when working directly.
+scope, and an output path using the repo's research-note convention. Use
+[agent routing's General research selection](../orchestration/references/agent-routing.md#model-defaults)
+for investigation and synthesis.
 
 When independent reading helps another owner continue useful work, use
 [orchestration](../orchestration/SKILL.md) to delegate a bounded question with
