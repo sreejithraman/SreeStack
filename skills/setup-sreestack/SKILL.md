@@ -52,9 +52,10 @@ stack conventions, and available tooling. Prefer an existing contributor or
 agent doc; use `docs/agents/workflow.md` only when it needs a new home.
 
 Keep the shared workflows with their owners: `tdd` for test-driven changes,
-`verify` for real acceptance, `showroom` for visual proof, `review-fix-loop` for
-independent review and fixes, `pr` for a single PR, and `gh-stack` for stack
-management. `merge` owns requested landing and cleanup. `orchestration` owns
+`verify` for real acceptance, `showroom` for demonstrations and access,
+`review-fix-loop` for independent review and fixes, `pr` for a single PR, and
+`gh-stack` for stack management. `merge` owns requested landing and cleanup.
+`orchestration` owns
 ordinary delegation and ticket scheduling; `goal-swarm` applies only to an
 explicit goal or swarm request. Record only the routes available in the target host and
 needed by the project, using current local names.

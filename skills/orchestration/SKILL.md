@@ -6,9 +6,10 @@ description: Resolve working-model defaults and coordinate agents in T3 Code. Us
 # Orchestration
 
 The parent owns the outcome. Give independent, ready work to children when it
-improves speed or coverage; keep cohesive work with one owner. Use the working
+improves speed or coverage; keep cohesive work with one owner. Use the applicable
 selection in [agent routing](references/agent-routing.md#model-defaults),
-including when the parent implements directly.
+including when working directly. The working selection applies unless a
+task-specific selection or explicit user override covers the assignment.
 
 Resolve that selection before doing the work. Continue directly only when this
 agent's effective model and effort match it or an explicit user override.
@@ -49,6 +50,10 @@ while their revision and scope remain valid; rerun those affected by integration
 Use [review-fix-loop](../review-fix-loop/SKILL.md) for behavior and agent-procedure
 changes. When [pr](../pr/SKILL.md) will review the same complete scope before
 publication, let it own that loop once.
+
+Use [showroom](../showroom/SKILL.md) before handoff when the integrated result
+is something the user can inspect or try. It chooses demonstrations and access;
+reuse applicable verification evidence.
 
 Finish when every required result is integrated and its checks pass, or report
 the precise remaining gap. Return child dispositions, artifacts, checks,

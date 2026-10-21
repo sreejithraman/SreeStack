@@ -45,7 +45,8 @@ instructions rather than maintaining another API manual.
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
-| Prove behavior | `verify`; `showroom` presents the checked visual evidence |
+| Prove behavior | `verify` |
+| Show results and make them available to try | `showroom` chooses demonstrations and access |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
 | Publish and monitor | `pr`; `gh-stack` manages dependent layers |
@@ -108,7 +109,8 @@ current operation's result. Simple state can stay simple.
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
 from T3's live catalog. Edit
 [model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
-to change implementation/review models, effort, and alternate-review priorities.
+to change working/research/review models, source-retrieval routes, effort, and
+alternate-review priorities.
 The local concurrency ceiling is in that same reference. This is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
@@ -141,6 +143,10 @@ on a stable clone rather than a temporary worktree.
 
 Sample requests and expected results:
 
+- “Research these official docs”: the General research selection handles reading,
+  comparison, and synthesis.
+- “Research this YouTube video and X post”: `research` routes retrieval to Gemini
+  and Grok respectively, then checks the source evidence before writing a cited note.
 - “Implement this change”: the working policy supplies the model and options;
   parallel children have disjoint ownership in the same checkout.
 - “Review and fix this shared-contract change”: primary, Ponytail, and Thermo
@@ -251,6 +257,19 @@ setup. Verify checks credential access and secure delivery before login, and
 reports automatic login separately from checks performed after user sign-in.
 Linking this skill does not install the product's browser, device, or terminal
 harness.
+
+[showroom](skills/showroom/SKILL.md) helps you experience and judge results,
+including during iteration. It chooses formats based on the work and available
+tools: screenshots, collages, video, preview links, device installs, runnable
+examples, or accessible files. It can combine demonstrations with hands-on
+access and reuse current verification evidence. Website handoffs include a
+checked PR preview or Tailscale URL when available.
+
+Showroom is automatically discoverable. The shared completion instructions and
+Orchestration call it for results you can inspect or try; project setup includes
+the corresponding handoff pointer. The repository edits do not update installed
+skills or live host instructions. Apply them through your stable clone and the
+host setup below to activate those routes.
 
 ### Store screenshot design
 

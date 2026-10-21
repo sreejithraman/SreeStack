@@ -92,10 +92,10 @@ behavior, and observed output. Link existing logs/artifacts rather than dumping
 the whole run. Summarize relevant checks and their results; a passing suite alone
 may not explain the behavior the PR fixes.
 
-For visible changes, use `showroom`'s checked screenshots, contact sheets, or
-motion proof when available. Pair comparable before/after states and label
-which state each artifact shows. For nonvisual behavior, use test results,
-terminal output, API responses, or actual workflow observations.
+Use `showroom`'s checked demonstrations and access links when available. Pair
+comparable before/after views when helpful and label which state each artifact
+shows. For nonvisual behavior, use test results, terminal output, API responses,
+or actual workflow observations.
 
 Reuse evidence only while its revision, configuration, and scenario apply to
 the described change. Keep local checks distinct from CI and human approval;

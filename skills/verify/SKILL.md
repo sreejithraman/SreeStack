@@ -197,5 +197,6 @@ A project verification skill alone does not establish a documentation map.
    and untested coverage.
 
 If a step requires the user, give exact actions and location, then resume after
-they finish; continue independent checks meanwhile. After UI work, use `showroom`
-to package useful visual checkpoints while Verify keeps selection and judgments.
+they finish; continue independent checks meanwhile. Use `showroom` to demonstrate
+inspectable results and make them available to try, reusing current evidence
+while Verify keeps acceptance selection and judgments.
