@@ -186,8 +186,9 @@ counts independent occurrences, checks current exposure, and ranks live classes.
 Shared design and enforcement selection use `engineering-principles`; guard proof
 remains in `codebase-design`. Technical experiments use the architecture reference.
 Planning and implementation honor
-the requested finish line and reuse existing delivery workflows. Automatic
-correction triggers, mandatory rule tables, per-class commit requirements, and
+the requested finish line and reuse existing delivery workflows. Explicit goal
+or swarm execution routes through `goal-swarm` with optional native tracking.
+Automatic correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
 
 ## diagnosing-bugs
@@ -316,15 +317,31 @@ round cap is added.
 
 ## goal-swarm
 
-- Local: `skills/goal-swarm` (SreeStack). Host goal state remains separate from
-  T3 delegated tasks and schedules.
-- [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- Local: `skills/goal-swarm` (SreeStack). Outcome pursuit with optional native tracking.
+- [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/swarm) and [figure-it-out](https://github.com/cursor/plugins/tree/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/figure-it-out), plus [poteto-mode/playbooks/autonomous-run.md](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/poteto-mode/playbooks/autonomous-run.md) — commit `88d47514b82e7c44f00f2b2a72ff6dd12158038c`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc); independently written outcome, method, and evaluation guidance.
 
-Locally written goal lifecycle that chooses solo or parallel execution within
-an explicitly requested parent goal. It uses pstack's up-front split and
-selection rule, gives child goals to agents with independent outcomes, and
-leaves agent routing and result integration to `orchestration`. A PR finish
-line routes through `pr`; pstack's cloud and model defaults are excluded.
+Runs for an explicitly requested goal or swarm. The parent owns the finish line,
+chooses solo work or bounded workers, and retains supported progress without
+lowering hard targets or accepting regressions. Preserves pstack's partition or
+comparison choice, declared selection rule, owned outputs, self-contained briefs,
+and assessment of artifact and measurement evidence. Orchestration owns T3
+routing, task lifecycle, recovery and integration; Cursor cloud placement, model
+defaults, fixed retry counts and mandatory fan-out are excluded. Native goal
+tracking is optional, requested explicitly, and governed by the host rather than
+copied function or state rules. Prompts do not substitute for runtime wakeups;
+schedules and separate conversations retain their explicit authorization.
+
+Verify's shared acceptance guidance supports progressive brownfield discovery,
+empirical checks and qualitative judgment. Required delivery checks remain;
+existing independent review assesses decisive evidence without a separate judge
+for every experiment. No universal upfront harness, audit schema or program store
+is required. Reframe normally forms new goals from the request and context,
+with concise confirmation for precise requests and reuse of settled briefs
+through execution. Material user decisions receive concrete questions; stronger
+and cross-domain methods serve the authorized outcome without enlarging scope.
+Reframe returns to the calling owner without restarting execution. PR delivery
+routes through `pr`.
 
 ## gh-stack
 
@@ -515,6 +532,13 @@ unbounded input. Emulation and unavailable hardware checks carry explicit
 evidence limits. Greetings and attribution instructions are omitted.
 Stateful acceptance selects relevant event sequences and proves visible outcomes
 and external effects through public entry points, beyond transition tests alone.
+Shared acceptance guidance pairs outcomes with constraints and suitable
+evaluation, including qualitative judgment and research uncertainty. Brownfield
+discovery grows checks with actual risks. Evidence identity and comparison
+detail are required where claims depend on them; existing independent review
+assesses consequential evidence changes. Product assertions retain failure
+detection, method-repair requirements, and verdicts without requiring new maps
+or whole-app audits.
 
 
 ## repo-cleanup
@@ -679,6 +703,10 @@ Research owns a cited primary-source note. Independent background reading uses
 orchestration’s working defaults; assigned researchers execute directly, with
 further delegation limited by their brief. Parents check evidence before acceptance.
 
+## reframe
+
+- Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc), checked 2026-10-18; independently written brief preparation, model-discoverable for requested reframing and Goal Swarm goal formation. Scales to uncertainty, preserves authorized scope, and returns to the calling workflow; standalone reframing ends with the brief.
+
 ## review
 
 - Local: `skills/review` (SreeStack).
@@ -709,6 +737,9 @@ structural suggestions require evidence and a concrete benefit. Ponytail omits
 persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
 Indirect-consumer checks use `change-safety`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
+The shared review brief carries applicable evaluation criteria and evidence,
+including empirical comparison conditions, qualitative judgments, and changes
+to tests, fixtures, and measurement methods.
 
 ## review-fix-loop
 
@@ -755,7 +786,8 @@ workflow owns project-specific conventions and pointers, with scoped update,
 glossary migration, optional ticket/triage configuration, and explicitly
 requested verification-map setup through `verify`. Project workflow guidance
 uses current local review, PR, stack, merge, acceptance, and delegation owners;
-host settings and installation remain separate. Agent defaults link the shared
+host settings and installation remain separate. Goal or swarm execution stays
+explicitly requested, with native tracking optional. Agent defaults link the shared
 orchestration policy rather than duplicating host rank settings. Existing commands and standards
 are linked rather than duplicated. Active instruction files are selected by the
 user/host or existing pointer ownership, with `AGENTS.md` for a new default.
@@ -897,8 +929,9 @@ owners. Delegated workers can share the integration checkout with disjoint
 ownership or use host-managed isolated worktrees; separate ordinary threads
 remain explicit. Isolated workers receive relevant uncommitted inputs explicitly
 and report their starting revision. Workspaces
-preserve unexpected edits; dependency outcomes require integration and verification. Scheduling does not create a goal or assume a
-worker's last merge guarantees a fast-forward.
+preserve unexpected edits; dependency outcomes require integration and verification. Scheduling alone does not enable native goal tracking or assume a worker's
+last merge guarantees a fast-forward. Explicit goal or swarm requests route to
+`goal-swarm`.
 Design and implementation work selects useful `engineering-principles` references
 and includes them in implementation briefs. Review prompts retain their source
 wording and criteria. Principles do not replace runtime selection, assignment,

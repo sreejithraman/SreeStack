@@ -71,7 +71,7 @@ Use [orchestration](../orchestration/SKILL.md) for bounded assignments and
 [review-fix-loop](../review-fix-loop/SKILL.md) for behavior or procedure changes.
 Use [verify](../verify/SKILL.md) when the repair changes a user workflow.
 Requested stacked delivery uses [gh-stack](../gh-stack/SKILL.md); explicitly
-requested goal-backed execution uses [goal-swarm](../goal-swarm/SKILL.md).
+requested goal or swarm execution uses [goal-swarm](../goal-swarm/SKILL.md).
 The requested finish line governs PR publication and merging.
 
 Report each class as planned, prevented, partly covered, resolved already, or deferred,

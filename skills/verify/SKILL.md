@@ -1,12 +1,19 @@
 ---
 name: verify
-description: Use for real-workflow acceptance checks or interface audits across web, native, CLI, and service products, or to set up or maintain project verification documentation.
+description: Plan evaluation suited to ambitious or consequential work, verify real workflows or interfaces across platforms, and set up or maintain project verification documentation.
 ---
 
 # Verify
 
-Exercise real user workflows through the product's public entry points.
-The observed outcome establishes the verdict.
+For ambitious targets, consequential changes, or candidate selection, use
+[acceptance guidance](references/acceptance-contract.md) to identify the outcome,
+relevant constraints, and a suitable way to judge the result. Start with enough
+to act and strengthen evaluation as the work reveals risks. Qualitative work
+uses criteria and judgment; it does not require a product harness.
+
+For product workflows and interfaces, follow the procedure below. Exercise the
+product's public entry points; observed outcomes establish assertion verdicts.
+Keep checks proportional to the requested scope.
 
 ## Scope and project knowledge
 
