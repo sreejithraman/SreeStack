@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Plan evaluation suited to ambitious or consequential work, verify real workflows or interfaces across platforms, and set up or maintain project verification documentation.
+description: Plan evaluation for ambitious targets, consequential changes, or candidate selection; verify real workflows or interfaces across platforms; or set up or maintain project verification documentation.
 ---
 
 # Verify

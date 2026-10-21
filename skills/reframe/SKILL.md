@@ -16,7 +16,7 @@ Read the request, settled decisions, and relevant project evidence. Separate
 the desired result from the proposed means or artifact. Keep alternatives beyond
 authorized scope labeled as proposals. Use Verify's
 [acceptance guidance](../verify/references/acceptance-contract.md) to resolve
-material unknowns and user decisions without adding routine approval gates.
+what context can establish and ask for material user decisions.
 
 Consider the dimensions that can improve this task:
 
