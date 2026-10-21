@@ -38,6 +38,7 @@ instructions rather than maintaining another API manual.
 | Task | Owner |
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
+| Form or improve a task brief | `reframe`, requested directly or used by Goal Swarm for goal formation |
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Compare independent candidates and synthesize a result | `arena` |
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
@@ -56,7 +57,34 @@ Use only the skills triggered by the task. A small change needs no global mode,
 mandatory design panel, or planning registry. Specialists retain their current
 invocation choices; setup, planning commands, handoff, and retrospective remain
 explicit where configured. Ordinary work creates no goals, schedules, or new
-conversations. Explicit goal-backed work uses `goal-swarm` and the host's goal tools.
+conversations. Explicit goal or swarm requests use `goal-swarm`; native goal
+tracking is optional and follows the host's instructions.
+
+[Reframe](skills/reframe/SKILL.md) forms goals from the user's request and
+context as Goal Swarm's normal starting step. It scales to what is unsettled:
+a precise request may need only a concise confirmation. Goal Swarm reuses the
+settled brief through execution and revisits it when evidence or user direction
+changes. Material scope or tradeoff changes need authorization; routine framing
+adds no approval checkpoint.
+
+You can also invoke `$reframe` in Codex or `/reframe` in Claude Code directly.
+For example, “Reframe our upload errors around helping users recover, preserving
+existing upload behavior” returns a brief with methods and suitable evaluation.
+It needs the task context and relevant evidence; investigation may need the
+project's tools. Reframing alone ends with the brief. When Goal Swarm calls it,
+Reframe returns the brief to that owner, which continues execution.
+
+[Goal Swarm](skills/goal-swarm/SKILL.md) pursues a clear outcome and preserves
+required constraints, working solo or through bounded worker tasks. Evaluation
+starts with what should improve, what must hold, and how the result will be judged;
+checks grow with the risks discovered. Qualitative work uses criteria and
+judgment. It asks for unresolved preferences or tradeoffs that materially change
+the result. For example, “Use Goal Swarm to reduce search p95 to 200 ms while
+preserving results and existing resource limits” keeps a correct 300 ms result
+as progress and continues toward 200 ms. It completes at the requested finish
+line; user approval is needed when that finish line requires it. Native goal
+tracking is used when explicitly requested and supported. Unattended continuation
+needs host runtime support; a prompt alone does not supply wakeups.
 
 [Engineering Principles](skills/engineering-principles/SKILL.md) is automatically
 discoverable. Its task-based index links to 24 reference files, one per principle,
@@ -132,7 +160,8 @@ Sample requests and expected results:
 - A substantive fix triggers a fresh round against the original base. A changed
   snapshot supersedes in-flight review; successful dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
-  goal-backed work still needs the host's goal-state tools.
+  goal or swarm work can use ordinary tasks; requested native tracking follows
+  the host's available capabilities.
 
 `pr` writes titles/bodies or brings a single PR to readiness; `merge` lands ready PRs or stacks and
 finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
@@ -147,7 +176,7 @@ A Snip Snap Homebrew cask release that declares the bundled `snipsnap` binary do
 
 Use [Snipsnap Do Chores](skills/snipsnap-do-chores/SKILL.md) with "snipsnap do
 chores" to tackle saved mechanical improvements through Snip Snap and Goal
-Swarm. It leaves features and product decisions open and requires the host's
+Swarm. It leaves features and product decisions open and works without native
 goal-state tools.
 
 The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
@@ -217,6 +246,12 @@ docs in `docs/agents/verification/index.md` and `features/`, or an equivalent
 established project location. Commit the map in the product repo. The shared
 skill supplies the procedure, so projects need no generated verification skill.
 You can also request map maintenance or verification without updating docs.
+For ambitious targets, consequential changes, or candidate comparisons, Verify
+starts with the desired outcome, relevant constraints, and suitable evaluation
+in the existing brief or task plan. Checks grow with discovered risks; detailed
+comparison records are needed where a claim depends on them. Qualitative work
+uses criteria and judgment. Product repositories supply the actual harnesses
+and enforced delivery checks for runtime claims.
 Authenticated checks reuse designated test accounts and their existing access
 setup. Verify checks credential access and secure delivery before login, and
 reports automatic login separately from checks performed after user sign-in.
@@ -372,6 +407,7 @@ uses and adapts:
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
+- [Felix Rieseberg](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad](https://www.youtube.com/watch?v=RbfQayMNtJc) — outcome, depth, range, and verification ideas informing Reframe and goal execution; instructions are independently written.
 - [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md). Local adaptations are recorded in [SOURCES.md](SOURCES.md#gauntlet-loop).
 - [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.

@@ -53,5 +53,5 @@ ticket accounted for through the project's tracker workflow.
    unmerged work or active dependent task needs them. Return the integration
    branch, ticket dispositions, verification, and any PR or remaining blockers.
 
-Scheduling a spec does not create an agent goal. Use `goal-swarm` only when the
-user explicitly requests goal-backed work.
+Scheduling a spec alone does not enable native goal tracking. Use `goal-swarm`
+for an explicit goal or swarm request.

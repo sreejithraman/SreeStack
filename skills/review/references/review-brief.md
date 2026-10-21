@@ -34,6 +34,14 @@ requires serial dispatch; earlier-round findings remain part of later briefs.
 - Commands, results, and full output paths for checks run on this snapshot.
 - Failed, skipped, or unavailable checks and their reasons. Mark stale evidence
   and identify the state it tested; do not present it as current.
+- When the work uses the [acceptance guidance](../../verify/references/acceptance-contract.md),
+  include the outcome, constraints, evaluation criteria, evidence, and unresolved
+  gaps. Review the target and preserved requirements together. For empirical
+  claims, include the artifact identities, conditions, and raw results needed
+  to assess the comparison. For qualitative claims, include the criteria, judge,
+  rationale, and uncertainty. Inspect whether changes to tests, fixtures, or
+  benchmarks lost sensitivity or changed the measured work; a legitimate method
+  repair needs its rationale and comparable reruns.
 
 ## Review request
 

@@ -1,95 +1,110 @@
 ---
 name: goal-swarm
-description: Run explicitly requested goal-backed work. Decide whether to work solo or assign bounded goals to agents, verify the result, and update the goal state.
+description: Pursue an explicitly requested goal or swarm through its finish line. Work solo or coordinate bounded attempts, evaluate progress, and adapt without lowering required outcomes.
 ---
 
 # Goal Swarm
 
-Own one parent goal through its requested finish line. Choose one agent when the
-work is cohesive; use child goals when independent outcomes make parallel work
-useful. The parent owns integration and acceptance. Goal state does not expand
-the user's scope or authorize external actions.
+Own the requested outcome through its finish line. The parent chooses useful
+next actions, integrates results, and accepts the whole. A goal is the outcome
+to achieve; native goal tracking is optional. Honor the user's scope, agent
+limits, permissions, and effort budget.
 
-Create or use goals only when the user explicitly requests goal-backed work.
-Within that request, assign bounded child goals when useful and honor any user
-limit on agents or goals. Ordinary delegation outside a goal uses
-`/orchestration` without creating goals.
+Use this strategy only when the user explicitly requests Goal Swarm, a swarm,
+or sustained pursuit of a goal. Ordinary delegation uses
+[Orchestration](../orchestration/SKILL.md).
 
-Goal-backed execution needs the host's `get_goal`, `create_goal`, and
-`update_goal` tools. T3 child tasks, ordinary threads, and recurring schedules
-do not supply that goal state. Report missing goal tools instead of claiming
-a tracked goal or silently substituting a schedule.
+## Form the goal
 
-## Workflow
+Use [Reframe](../reframe/SKILL.md) to form a new goal from the user's request,
+project context, and settled decisions. Reuse a current brief that already
+establishes the goal. A precise request needs only a concise confirmation;
+uncertain framing needs the deeper pass that the task warrants.
 
-1. **Frame the parent goal.** Write a short objective with a checkable result,
-   proof, pass condition, and scope limits. Name the requested finish line: a
-   verified local result, a PR ready for review, a merged PR, or another
-   concrete outcome. Use exact commands when they exist and numbers only when
-   they measure success. Ask one short question only when an unknown changes
-   the safe result or its proof.
+Keep the resulting brief in the existing task record and use it to guide
+execution and acceptance. Reframe returns the brief here; this workflow keeps
+ownership and continues authorized work without a routine approval checkpoint.
+Ask for material user decisions under the shared acceptance guidance.
 
-2. **Check goal state.** Call `get_goal`. Resume a matching active goal. If none
-   exists, call `create_goal` with the objective, proof, and key limits. Pass a
-   token budget only when the user gave one. Leave a conflicting active goal
-   unchanged and ask whether to finish it or use another thread.
+Reuse the settled brief through attempts and resume. Revisit it when new evidence
+or user direction challenges the framing; preserve explicit requirements and
+obtain authorization for material scope or tradeoff changes. Grow evaluation as
+discovery reveals risks, using Verify's
+[acceptance guidance](../verify/references/acceptance-contract.md).
 
-3. **Choose the execution mode.** Use `/orchestration` to assess whether
-   independent work can start now and improve speed or coverage. Work solo
-   when a split would wait on dependencies, collide in shared state, or cost
-   more coordination than it saves.
+## Choose solo work or bounded workers
 
-   For parallel work, partition required outcomes into owned slices or compare
-   independent approaches. State every required slice; for a comparison,
-   declare the selection rule before dispatch. Give an agent a child goal when
-   it owns a bounded, checkable outcome. Give short exploration or review work
-   a bounded task. A comparison child can complete by evaluating its approach
-   with evidence, whether or not that approach is selected.
+Use [Orchestration](../orchestration/SKILL.md) for model selection, assignments,
+isolation, concurrency, task lifecycle, recovery, and integration. Work solo
+when the work is cohesive or splitting adds waiting and coordination.
 
-   Use `/orchestration` for agent routing, briefs, concurrency, and integration.
-   Pass each child the user's goal authorization, its objective and proof,
-   parent scope, owned files or resources, and a single-owner instruction.
-   The child uses `$goal-swarm` in its own thread and reports its goal state,
-   evidence, and artifacts. Subdivide a child goal only when the parent brief
-   explicitly permits it.
+For useful parallelism, partition required outcomes, compare independent
+approaches to the same outcome, or mix both. Before dispatch, state how results
+will be selected and which coverage is required. A race can end with one
+acceptable result only when it satisfies the whole requested brief. Use
+[Arena](../arena/SKILL.md) when candidate synthesis is the task.
 
-4. **Do and integrate the work.** Complete every safe step needed for the parent
-   objective. At the start of each later goal turn, call `get_goal` and apply
-   user changes that still fit it. Inspect each child result and its evidence.
-   Repair or reassign gaps when useful; a child reporting completion does not
-   prove the integrated parent result. Keep every required slice accounted for.
+Assign each worker through Orchestration's self-contained brief, including its
+bounded outcome and evaluation. Workers use their relevant task skills; they
+need no native goal object or separate Goal Swarm invocation. Further delegation
+requires the parent's permission. Completing a losing experiment can satisfy a worker's
+assignment without completing the parent outcome.
 
-5. **Deliver and verify.** For a PR finish line, use `/pr` after
-   implementation. It owns review, publication, CI, feedback, and resulting
-   fixes. Use `pr yolo` only when the user explicitly requested a merge.
-   For a local code change or agent instruction change, use `/review-fix-loop`
-   when its trigger applies. Run the checks named in the parent objective and
-   read their output. Keep the goal active while a required result or check is
-   missing or failing.
+## Learn, retain progress, and adapt
 
-6. **Record and report the state.** Call `update_goal` with `complete` only when
-   the finish line is reached, all required evidence and integrated checks
-   pass, and no required work remains. Use `blocked` only after the same issue
-   stops progress for three consecutive goal turns and no useful in-scope work
-   remains; a resumed blocked goal starts a fresh count. If the user asks to
-   pause, call `update_goal` with `paused`, report its returned state, and stop
-   goal work.
+Choose the next action from what prevents success and what the last attempt
+established. Explore uncertain approaches reversibly. Measure the bottleneck
+before performance changes. Reach for original inputs, stronger instruments,
+or useful methods from another field when they can resolve the remaining gap.
+Use [Architect](../architect/SKILL.md) for consequential design decisions.
 
-   Report the objective, parent and child goal states, accepted results and
-   gaps, checks and outputs, changed artifacts, delivery state, and known risks.
-   For a completed goal with a token budget, include the final token count
-   returned by `update_goal`.
+Evaluate meaningful results against the outcome and preserved constraints.
+Preliminary findings guide discovery; accepting a change needs suitable evidence.
+Inspect the artifact and decisive evidence rather than relying on a worker's
+summary. Missing coverage, failed workers, or evidence for the wrong artifact
+or method leave a gap to repair or report. A failed candidate does not remove
+its required slice from the parent goal.
 
-## Goal check
+Retain supported progress separately from unproven experiments. Reject
+regressions in required behavior even when the headline target passes. A correct
+improvement that misses a hard target is progress, not completion. Keep the
+target intact while changing approaches; stronger methods do not authorize
+new scope or tradeoffs. Repeating equivalent attempts is not progress. When
+evidence establishes a limit needing a user decision, explain the gap and ask.
 
-Before `create_goal`, the objective must answer:
+Keep enough context in the existing task record to resume: accepted results,
+remaining gaps, decisive evidence, and the next useful action. Record comparison
+conditions where claims depend on them. On resume, reconcile the latest user
+decisions, artifacts, and pending tasks before continuing, applying the acceptance
+guidance to evidence affected by changes. Delivered commits, PR layers, and
+rollout stages retain their required checks, per
+[Outcome-Oriented Execution](../engineering-principles/references/outcome-oriented-execution.md).
 
-- What will be true when the work is done?
-- What evidence will prove it?
-- What exact pass condition marks success?
-- Which scope limits and stop rules matter?
+## Deliver and report
 
-For a bug, name the reproduction and the check that must change from failing
-to passing when possible. For research, name the decision and sources needed
-to support it. For an operation, name the healthy state, check period when
-needed, and the point that requires user action.
+Evaluate the final integrated result using the agreed criteria. Use
+[Verify](../verify/SKILL.md) for real product workflows. For a PR finish line,
+[PR](../pr/SKILL.md) owns review, publication, CI, feedback, and fixes; use
+`pr yolo` only for an explicitly requested merge. For local code or agent-procedure
+changes, use [Review Fix Loop](../review-fix-loop/SKILL.md) when its trigger applies.
+Pass evaluation criteria, decisive evidence, and gaps into the existing review.
+
+Finish only when the requested outcome, relevant constraints, evaluation, and
+delivery state are satisfied. Intermediate progress or exhausted effort is not
+completion of an unmet goal. Honor a requested pause. Report what was accepted,
+what remains unfinished, evidence and artifacts, and the requested next decision.
+Account for every required worker outcome; a dropout or missing check is not a pass.
+
+## Native tracking and continued execution
+
+When the user explicitly requests native goal tracking, use it if exposed by
+the current host and follow its lifecycle and budget instructions. Keep native
+state consistent with the actual outcome. Without native tracking, pursue the
+same outcome through ordinary work and task records. If requested tracking or
+unattended continuation is unavailable, report that limitation and continue
+useful authorized work without claiming the missing capability.
+
+An instruction to persist guides an active run; wakeups and continued execution
+need runtime support. Use the host's supported continuation mechanisms within
+the request's authorization. This skill alone creates no recurring schedule
+or separate top-level conversation.

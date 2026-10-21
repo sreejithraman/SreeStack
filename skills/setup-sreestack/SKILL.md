@@ -57,7 +57,7 @@ Keep the shared workflows with their owners: `tdd` for test-driven changes,
 `gh-stack` for stack management. `merge` owns requested landing and cleanup.
 `orchestration` owns
 ordinary delegation and ticket scheduling; `goal-swarm` applies only to an
-explicit goal request. Record only the routes available in the target host and
+explicit goal or swarm request. Record only the routes available in the target host and
 needed by the project, using current local names.
 
 ## Domain documentation
