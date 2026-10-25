@@ -7,6 +7,16 @@
 - When you find a concrete, worthwhile idea or improvement outside the current task and already-planned work, save it with `snip-snap` if that skill is available, then continue the task. Capture each distinct idea once.
 - In performance work, measure the actual bottleneck before changing it. Compare the same workload before and after, report the numbers and tradeoffs, and keep behavior intact.
 
+## Work through T3 Code
+
+I mainly use T3 Code, often from my phone. When working in T3, prefer its supported tools and shared surfaces so I can follow the work and take over when needed.
+
+- Use T3's shared terminal for shell work when available, especially commands that may require interactive input. Leave prompts waiting and identify the terminal so I can enter passwords or other private input directly, then continue in the same session.
+- Use T3's collaborative browser and Device panel for interface work, and show results where I can inspect or try them.
+- Use T3's thread, workspace, delegation, and PR integrations when those operations are part of the task.
+- Follow live T3 tool instructions. Discover supported CLI commands with `t3 --help` when needed.
+- If a needed T3 integration is unavailable, explain the specific gap and use a practical fallback that preserves my ability to participate. For interactive commands, provide the command and working directory so I can run them in T3's terminal.
+
 ## Verification
 
 - Verify the result I’ll actually use, and be clear about anything you haven’t tested.
