@@ -41,6 +41,7 @@ instructions rather than maintaining another API manual.
 | Form or improve a task brief | `reframe`, requested directly or used by Goal Swarm for goal formation |
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Compare independent candidates and synthesize a result | `arena` |
+| Understand current code, historical decisions, or change risks | `how`, `why`, and `blast-radius`, respectively |
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
@@ -198,6 +199,19 @@ a migration plan. Technical experiments cover interfaces, callers, state, and
 performance; [prototype](skills/prototype/SKILL.md) owns UI experiments. Both
 planning workflows keep production implementation for the requested finish line.
 
+[How](skills/how/SKILL.md), [Why](skills/why/SKILL.md), and
+[Blast Radius](skills/blast-radius/SKILL.md) answer three different questions:
+how the system works now, what decisions produced its shape, and what a proposed
+change could break elsewhere. All three support automatic discovery and direct
+invocation. For example, “How does our import retry flow work?” returns a traced
+explanation with key code locations and gaps; historical motivation and proposed
+redesign stay with their own workflows. How needs repository access; optional
+runtime checks need the project's tools, and historical investigations may need
+access to linked records.
+
+If you linked `code-why` or `change-safety` from an earlier version, replace those
+skill symlinks with `why` and `blast-radius` after updating your clone.
+
 [Arena](skills/arena/SKILL.md) produces independent candidates for one task,
 compares them against a shared rubric, and returns a recommendation or one
 verified synthesis. For example, “Arena three approaches to our import pipeline;
@@ -259,6 +273,15 @@ setup. Verify checks credential access and secure delivery before login, and
 reports automatic login separately from checks performed after user sign-in.
 Linking this skill does not install the product's browser, device, or terminal
 harness.
+
+For example, “Model-check this retry race” uses Verify's
+[formal-verification guidance](skills/verify/references/formal-verification.md)
+to select a tool, tie the model to current code, challenge the property with a
+broken variant, and explain counterexamples. “Refresh our model after this
+refactor” checks drift from its last synchronized revision. These requests need
+the project's verifier or an installable suitable tool; unavailable proof stays
+blocked. The guidance adds no bundled model checker or statechart renderer.
+Product acceptance still exercises the real workflow.
 
 [showroom](skills/showroom/SKILL.md) helps you experience and judge results,
 including during iteration. It chooses formats based on the work and available
@@ -416,7 +439,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `change-safety`, `code-why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.

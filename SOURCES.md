@@ -137,19 +137,21 @@ status/provider/error diagnosis. macOS package export checks `--pkg-path`
 support and retains raw Xcode export when unavailable.
 
 
-## change-safety
+## blast-radius
 
 - [cursor/plugins / pstack/skills/blast-radius](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/blast-radius) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
-Locally written, scoped to change-safety questions and subtle diffs. Preserves
+Automatically discoverable in both hosts. Locally written, scoped to blast-radius
+questions and subtle diffs. Preserves
 the safety-assumption and executable-proof method without pstack's mandatory
 arena, prose-cleanup, or Cursor-specific routing.
 
-## code-why
+## why
 
 - [cursor/plugins / pstack/skills/why](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/why) — `SKILL.md` and `references/epistemics.md`; commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
-Locally written around code-anchored historical evidence and calibrated claims.
+Automatically discoverable in both hosts. Locally written around code-anchored
+historical evidence and calibrated claims. Current execution routes to `how`.
 Searches sources proportionally without mandatory parallel investigators,
 model settings, or Cursor MCP discovery.
 
@@ -229,6 +231,7 @@ operation identity; invalid-transition repairs use the shared domain principle.
 ## engineering-principles
 
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack behavior-test and idempotency refinements](https://github.com/cursor/plugins/commit/e5136d82418d2db3165ea1050d17577cd618cc05) — `pstack/skills/principle-test-behavior-not-implementation/SKILL.md` and `pstack/skills/principle-make-operations-idempotent/SKILL.md`; addition baseline `e5136d82418d2db3165ea1050d17577cd618cc05`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
 - [David Khourshid's state-machine guidance](https://stately.ai/blog/2021-01-20-you-dont-need-a-library-for-state-machines) and [UI-independent logic](https://stately.ai/blog/2019-11-13-no-disabling-a-button-is-not-app-logic) — conceptual input checked 2026-10-15; state-modeling guidance is independently written, with no upstream prose or code copied.
 - [Redux: Treat Reducers as State Machines](https://redux.js.org/style-guide/#treat-reducers-as-state-machines) — supporting guidance for current-state/event decisions and typed state variants, checked 2026-10-15.
@@ -277,6 +280,9 @@ Internal trust does not remove runtime authorization or changing-state checks;
 unsafe type operations require an auditable interface. Behavior-test quality is
 judged by detected failures rather than assertion syntax. Language/platform API
 manuals, mandatory per-task principle reports, and upstream mode wrappers are omitted.
+Behavior tests must also survive internal refactors that preserve their contract;
+external payloads remain observable behavior. Crash leftovers require reliable
+ownership and recovery evidence, preserving live work while reclaiming stale work.
 The domain principle covers explicit lifecycle states, accepted events, derived
 flags, effect ownership, stale completions, and conditional statechart adoption.
 Product requirements remain the independent source for behavior checks.
@@ -375,6 +381,20 @@ pickup. It omits pstack's automatic WIP commit and transcript-specific paths.
 T3 history supplies scoped evidence and task receipts; the portable note retains
 thread/task identity, ownership, and live-work state. Invocation stays manual-only.
 
+## how
+
+- [cursor/plugins / pstack/skills/how](https://github.com/cursor/plugins/tree/99b609a72323b70204eab407c622f436e858e112/pstack/skills/how) — `SKILL.md`, `references/explorer-prompt.md`, and `references/explainer-prompt.md`; adaptation baseline `99b609a72323b70204eab407c622f436e858e112` (pstack 0.15.32). MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Automatically discoverable in both hosts. Retains the upstream explanation goal,
+simple/complex split, exploration fields, synthesis method, output structure, and
+most supporting-prompt wording. Local orchestration owns model selection,
+delegation, and acceptance. Narrow questions use one reader; independent complex
+slices can be delegated when useful and authorized. Source revision, trace gaps,
+code-derived versus observed behavior, and evidence for historical claims are
+explicit. Current ownership stays here; proposed designs, rationale, defects,
+and change risk route to existing owners. Cursor-specific tools, model defaults,
+mandatory spawns, and restrictions on parent synthesis edits are omitted.
+
 ## improve-codebase-architecture
 
 - [mattpocock/skills / skills/engineering/improve-codebase-architecture](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/improve-codebase-architecture) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
@@ -424,7 +444,7 @@ Retains Ground, Sketch, Agree, Implement, and Scrap; caller usage before types;
 competing whole designs; interface-depth comparison; the implementation contract;
 and repeated-friction signals for restarting the design. Automatically
 discoverable in both hosts for consequential design work. Grounding uses local
-code, glossary, ADRs, and code-why. Codebase Design supplies vocabulary and
+code, glossary, ADRs, and why. Codebase Design supplies vocabulary and
 ownership/enforcement checks rather than a second red-flag reference. Arena and
 orchestration own candidate synthesis and execution. Prototype and the shared
 architecture experiment reference resolve empirical questions. Design-only and
@@ -481,11 +501,21 @@ boundaries, lifecycle recovery, and caller migration; UIKit mechanics stay local
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — contrast and reduced-transparency review criteria; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [cursor/plugins / pstack/skills/create-verification-skill](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/create-verification-skill) — `SKILL.md`; import baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [cursor/plugins / pstack/skills/maintain-verification-skill](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/maintain-verification-skill) — `SKILL.md`; import baseline `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack formal-verification workflows](https://github.com/cursor/plugins/tree/99b609a72323b70204eab407c622f436e858e112/pstack/skills) — `create-formal-verification-skill/SKILL.md` and `maintain-formal-verification-skill/SKILL.md`; adaptation baseline `99b609a72323b70204eab407c622f436e858e112` (pstack 0.15.32). Combined in `references/formal-verification.md`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 - [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 
 One automatically discoverable skill owns real-workflow selection, launch,
 driving, acceptance judgments, evidence, cleanup, and project documentation.
+Formal checks use one conditional reference for explicitly requested proofs or
+model checking and maintenance of existing checks. It retains tool selection,
+code/model correspondence, bounds, negative controls, counterexample replay,
+drift classification, and sync-revision records. Reusable recipes follow local
+documentation policy rather than generating project skills. Model sensitivity
+and real-code correspondence have distinct proof levels; a synchronized model
+can expose a code bug. Ordinary verification requires no new formal model.
+The standalone statechart scripts and mandatory statechart invocation are
+excluded; domain traces and optional diagrams need no bundled renderer.
 Ordinary checks use a temporary plan when no map exists and maintain affected
 recipes when a map is already set up. Creating a map requires a setup or reusable
 documentation request; verification can also explicitly leave existing docs alone.
@@ -747,7 +777,7 @@ Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
 persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
-Indirect-consumer checks use `change-safety`; React or Next assessments use
+Indirect-consumer checks use `blast-radius`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 The shared review brief carries applicable evaluation criteria and evidence,
 including empirical comparison conditions, qualitative judgments, and changes

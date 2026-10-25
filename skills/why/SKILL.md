@@ -1,11 +1,13 @@
 ---
-name: code-why
+name: why
 description: Investigate code history to explain a design decision's rationale, when and why a regression was introduced, or whether an old constraint still applies. Use diagnosing-bugs for an active defect.
 ---
 
-# Code Why
+# Why
 
 Answer historical intent from records, not from a plausible reading of today's code. Keep observed behavior and motivation separate.
+
+Use [how](../how/SKILL.md) for current execution and data flow.
 
 If the requested outcome is to diagnose or repair a current failure, use `diagnosing-bugs` for that work. Use this skill for a separate question about the failure's history.
 

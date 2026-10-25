@@ -63,7 +63,7 @@ next step without establishing acceptance.
 Expand coverage for the actual change and its indirect consumers. Batching may
 need ordering, filtering, and authorization checks; adding a cache may introduce
 tenant isolation and invalidation risks. Use
-[Change Safety](../../change-safety/SKILL.md) for consequential indirect effects.
+[Blast Radius](../../blast-radius/SKILL.md) for consequential indirect effects.
 Ground required expectations before accepting a change rather than deriving
 them from whatever the candidate happens to do. Existing quirks are not
 automatically requirements; explicit behavior changes are distinct from regressions.
