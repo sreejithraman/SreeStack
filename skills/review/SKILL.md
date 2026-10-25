@@ -37,7 +37,7 @@ owns reviewer selection, tools, fixes, and repeat rounds.
 
    Apply the following checks where relevant to the assigned criteria. For
    plausible indirect consumers such as persisted data, wire formats, or
-   lifecycle behavior, use [change-safety](../change-safety/SKILL.md) or its
+   lifecycle behavior, use [blast-radius](../blast-radius/SKILL.md) or its
    supplied current evidence to assess important assumptions beyond the diff.
    For React or Next code, apply
    [react-best-practices](../react-best-practices/SKILL.md) using its How to Use.

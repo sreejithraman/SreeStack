@@ -32,8 +32,11 @@ Build a real mental model of every system the new code touches. Read the
 affected callers, types, state owners, project glossary, and relevant ADRs.
 Naming a file isn't grounding. Explain how data and control move through the
 affected system and which invariants the new design must preserve. If the
-design redefines ownership or layering, also use [code-why](../code-why/SKILL.md)
+design redefines ownership or layering, also use [why](../why/SKILL.md)
 on the existing shape so the rationale becomes a constraint, not a guess.
+
+Use [how](../how/SKILL.md) when a subsystem walkthrough would establish missing
+runtime and data-flow grounding.
 
 Skip Phase A only when the work is genuinely greenfield with no surrounding
 system to integrate. Even then, name the requirements and caller constraints.

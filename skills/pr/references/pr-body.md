@@ -119,7 +119,7 @@ consumers, data, or dependent stack layers. Include evidenced consequences such
 as layout changes, client compatibility, configuration rollout, background work,
 or schema readers. Describe any ordering, deployment, or restoration requirement
 that matters to landing. Separate demonstrated impact from unresolved assumptions;
-use `change-safety` when an uncertain contract warrants that assessment.
+use `blast-radius` when an uncertain contract warrants that assessment.
 
 For a small reversible change, a short statement of rollback and scope is enough.
 For a destructive migration, explain the irreversible effect and restoration

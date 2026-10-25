@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Plan evaluation for ambitious targets, consequential changes, or candidate selection; verify real workflows or interfaces across platforms; or set up or maintain project verification documentation.
+description: Plan evaluation for ambitious targets, consequential changes, or candidate selection; verify real workflows or interfaces; model-check invariants or maintain formal checks; or set up or maintain project verification documentation.
 ---
 
 # Verify
@@ -10,6 +10,13 @@ For ambitious targets, consequential changes, or candidate selection, use
 relevant constraints, and a suitable way to judge the result. Start with enough
 to act and strengthen evaluation as the work reveals risks. Qualitative work
 uses criteria and judgment; it does not require a product harness.
+
+For an explicit request to prove an invariant, model-check event ordering, or
+set up formal checks, read [formal verification](references/formal-verification.md).
+Also use it when maintaining existing formal checks affected by the change.
+That branch owns model and proof work; the product procedure below remains
+necessary for product acceptance claims. Ordinary workflow checks need no new
+formal model.
 
 For product workflows and interfaces, follow the procedure below. Exercise the
 product's public entry points; observed outcomes establish assertion verdicts.

@@ -1,9 +1,9 @@
 ---
-name: change-safety
+name: blast-radius
 description: Assess a code change's blast radius beyond its diff. Use for subtle contract changes, migrations, or an explicit question about what else could break.
 ---
 
-# Change Safety
+# Blast Radius
 
 Find the consequential effects a symbol search could miss. Keep the investigation proportional to the changed contract and the cost of being wrong.
 

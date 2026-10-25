@@ -26,7 +26,7 @@ unavailable, report that gap instead of claiming this workflow completed.
 
 Inspect each finding against nearby code and the audit's exceptions. Reject
 scope escapes, unsupported claims, and deletions of protected comments. For
-unclear claims, inspect the live call path; use [Code Why](../code-why/SKILL.md)
+unclear claims, inspect the live call path; use [Why](../why/SKILL.md)
 when history would establish the reason. Keep unresolved constraints and report
 the missing evidence. Give a materially incomplete or invalid audit one fresh
 rerun with the failure named; a second invalid audit leaves the workflow open.
