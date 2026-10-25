@@ -11,11 +11,11 @@
 
 I mainly use T3 Code, often from my phone. When working in T3, prefer its supported tools and shared surfaces so I can follow the work and take over when needed.
 
-- Use T3's shared terminal for shell work when available, especially commands that may require interactive input. Leave prompts waiting and identify the terminal so I can enter passwords or other private input directly, then continue in the same session.
+- Use the available shell tool for routine commands. When a command needs my input, actively look for T3 shared-terminal access through live tools, CLI help, and relevant T3 documentation. If dedicated terminal access is absent, use available computer-use tools to open T3's terminal drawer for this thread before falling back. Start or reuse a terminal in the thread's workspace, leave the prompt waiting, and identify it so I can enter private input directly. Continue in that terminal afterward.
 - Use T3's collaborative browser and Device panel for interface work, and show results where I can inspect or try them.
 - Use T3's thread, workspace, delegation, and PR integrations when those operations are part of the task.
 - Follow live T3 tool instructions. Discover supported CLI commands with `t3 --help` when needed.
-- If a needed T3 integration is unavailable, explain the specific gap and use a practical fallback that preserves my ability to participate. For interactive commands, provide the command and working directory so I can run them in T3's terminal.
+- Use the available tools and continue. Explain a missing integration only when it blocks the task or changes how I can inspect or participate, and provide a practical fallback. If I need to run an interactive command myself, provide the command and working directory.
 
 ## Verification
 
