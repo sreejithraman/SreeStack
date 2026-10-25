@@ -6,7 +6,8 @@ unless the user requests committed evidence.
 ## Location and authoritative index
 
 Honor an established project documentation location with equivalent structure.
-For requested setup without an established location, start with:
+For setup without an established location, use `docs/agents/verification/index.md`.
+As recipes are added, the layout becomes:
 
 ```text
 docs/agents/verification/
@@ -27,6 +28,10 @@ The index is authoritative and links every recipe, including nested files.
 Check its links against a recursive listing of recipe files: fix orphaned files,
 dead links, and duplicate entries together. State the mapped scope and known
 unmapped surfaces so the index cannot imply whole-product completeness.
+
+An index may contain shared facts before any feature recipes exist. State that
+feature coverage is not yet documented and mark unproved details explicitly.
+Create `features/` with the first recipe; link only files that exist.
 
 Keep shared facts in the index: prerequisites, secure credential setup by name,
 useful launch and observable health checks, instance identity, fixture conventions,

@@ -12,11 +12,11 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   directory, target, simulator, fixture, or required service. Keep platform
   instructions specific to the repo; a web harness, Apple device tool, or CLI
   being available elsewhere does not make it available here.
-- **Acceptance:** link the existing verification map and demonstration or access
-  conventions, if any. `verify` owns real workflow checks; `showroom` chooses
-  demonstrations and access. An explicit verification-setup request uses
-  Verify's map setup workflow rather than a generated per-project verification
-  skill. Leave new maps to that request and report any unproven recipes as draft.
+- **Acceptance:** link the verification index established by
+  [Setup's foundation step](../SKILL.md#verification-foundation), or the existing
+  map for a scoped workflow update. Record established demonstration or access
+  conventions. `verify` owns feature recipes and real workflow checks;
+  `showroom` chooses demonstrations and access.
 - **Review:** identify the intended review base and required project checks.
   Link existing standards. Mechanical rules belong in existing tooling;
   `CODING_STANDARDS.md` is for genuine judgement calls, created only when such
