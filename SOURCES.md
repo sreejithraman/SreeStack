@@ -548,8 +548,15 @@ or whole-app audits.
 - Local source: `~/.agents/skills/post-merge-cleanup`; upstream origin unrecorded.
 
 Accepts merge completion handoffs from `merge`. Cleanup includes verified
-task-owned simulator/emulator installs and disposable test data while preserving
-shared installs, retained data, and resources needed by unmerged stack layers.
+task-owned development processes, simulator/emulator installs, disposable test
+data, and temporary devices created solely for the task. Reused devices are
+preserved and shut down only when the task booted them and no consumer remains.
+Cleanup reconstructs process, device, and install ownership from available
+session history and tool results, with logs, current state, and optional handoffs
+as supporting evidence. Discovery and cleanup rules live together in
+`references/development-resources.md`; no launch-time bookkeeping is required.
+Preserves shared installs, retained data, inspection lifetimes, and resources
+needed by unmerged stack layers.
 
 ## no-comments
 

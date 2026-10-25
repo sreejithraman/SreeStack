@@ -165,8 +165,9 @@ Sample requests and expected results:
 
 `pr` writes titles/bodies or brings a single PR to readiness; `merge` lands ready PRs or stacks and
 finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
-stacks and `repo-cleanup` for completed task resources, including simulator and
-emulator test installs when platform tooling is available.
+stacks and `repo-cleanup` for completed task resources, including Mac development
+apps, simulator/emulator test installs, and task-created temporary devices when
+platform tooling is available.
 `handoff` is manual-only: invoke it explicitly and supply the handoff note path
 when resuming in a new session. A plain resume request does not load that skill.
 `snip-snap` requires the `snipsnap` command on `PATH`; check `snipsnap --help`
