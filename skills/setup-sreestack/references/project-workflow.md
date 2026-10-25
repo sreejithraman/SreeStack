@@ -40,8 +40,9 @@ leave installation to an explicit environment-setup request.
 
 ## Instruction pointers
 
-Adapt concise, request-shaped pointers into the project's existing block, for
-example:
+Apply Setup's [existing-guidance comparison](../SKILL.md#discover-the-project)
+before adapting these concise, request-shaped pointers into the project's
+existing block. Include only pointers needed to reach relevant guidance:
 
 ```markdown
 ## SreeStack
@@ -58,6 +59,5 @@ before handoff; use it during UI iteration when showing progress helps feedback.
 ```
 
 Use actual resolved paths and include only docs that exist and belong to the
-requested scope. Preserve existing instructions that already supply these
-facts. A pointer to a verification map does not establish that its recipes have
-passed; their evidence remains with Verify.
+requested scope. A pointer to a verification map does not establish that its
+recipes have passed; their evidence remains with Verify.

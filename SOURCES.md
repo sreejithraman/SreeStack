@@ -804,6 +804,10 @@ explicitly requested, with native tracking optional. Agent defaults link the sha
 orchestration policy rather than duplicating host rank settings. Existing commands and standards
 are linked rather than duplicated. Active instruction files are selected by the
 user/host or existing pointer ownership, with `AGENTS.md` for a new default.
+Setup compares proposed guidance by meaning across inherited global/host
+instructions, project docs, and shared skills. Additions supply missing project
+facts, explicit overrides, or needed pointers while preserving existing scope
+and conditions; final checks catch paraphrased duplication and redundant reruns.
 Project workflow pointers call `showroom` for inspectable results and useful
 UI iteration feedback; demonstration and access procedures remain in that skill.
 
