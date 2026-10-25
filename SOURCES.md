@@ -810,6 +810,9 @@ facts, explicit overrides, or needed pointers while preserving existing scope
 and conditions; final checks catch paraphrased duplication and redundant reruns.
 Project workflow pointers call `showroom` for inspectable results and useful
 UI iteration feedback; demonstration and access procedures remain in that skill.
+Full setup and research-note convention updates ensure `/docs/research/` is
+ignored through the repo's `.gitignore`, reuse equivalent rules, verify ignore
+behavior, and report already tracked notes without changing their tracking.
 
 Domain defaults use `GLOSSARY.md` / `GLOSSARY-MAP.md`; established legacy/custom
 paths and one vocabulary source per context remain supported. Context boundaries,
