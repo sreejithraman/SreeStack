@@ -55,6 +55,12 @@ non-obvious launch/check requirements, acceptance evidence, review base, PR or
 stack conventions, and available tooling. Prefer an existing contributor or
 agent doc; use `docs/agents/workflow.md` only when it needs a new home.
 
+During full setup or a research-note convention update, ensure the repo's root
+`.gitignore` ignores `/docs/research/`. Reuse an equivalent existing rule; add
+the entry when missing and verify it with `git check-ignore`. Report any already
+tracked research notes separately; changing their tracking needs an explicit
+request.
+
 Keep the shared workflows with their owners: `tdd` for test-driven changes,
 `verify` for real acceptance, `showroom` for demonstrations and access,
 `review-fix-loop` for independent review and fixes, `pr` for a single PR, and
