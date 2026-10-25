@@ -1,17 +1,18 @@
 ---
 name: repo-cleanup
-description: Use when the user asks to clean up finished or abandoned work, worktrees, or other repository housekeeping.
+description: Use when the user asks to clean up finished or abandoned work, worktrees, task-owned dev apps or simulators/emulators, or other repository housekeeping.
 ---
 
 # Repository cleanup
 
-Clean up only resources whose owner and disposal reason are established. A merged task, an explicitly abandoned task, and routine housekeeping use the same process; age or a stale-looking name alone does not make something disposable. Preserve user changes, retained app data, shared caches, and unrelated work. Task-owned simulator/emulator installs and their disposable test data are cleanup targets by default; honor explicit retention requests.
+Clean up only resources whose owner and disposal reason are established. A merged task, an explicitly abandoned task, and routine housekeeping use the same process; age or a stale-looking name alone does not make something disposable. Preserve user changes, retained app data, shared caches, and unrelated work. Cleanup includes task-owned development processes, simulator/emulator installs, and temporary devices created for the task; honor explicit retention requests.
 
 1. **Inventory.** Resolve the repository, worktrees, default and task branches,
    relevant pull requests, and candidate resources. Include review surfaces,
-   development apps, simulator/emulator installs, slot claims, runtime files,
-   build folders, and local or remote refs as applicable. Record device IDs,
-   bundle/package IDs, install ownership, and whether data is disposable.
+   development apps and their servers/watchers, simulator/emulator devices and
+   installs, slot claims, runtime files, build folders, and local or remote refs
+   as applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
+   for apps, processes, simulator/emulator devices, and installs.
    Refresh remote refs before judging branch tips.
    Prefer project cleanup commands over hand-written deletion. For each candidate,
    record its exact target, owner, current tip if it is a ref, and disposal
@@ -35,22 +36,15 @@ Clean up only resources whose owner and disposal reason are established. A merge
    Preserve resources still needed by an unmerged stack layer or another active task.
 
 3. **Clean eligible resources.** Stop only matching review surfaces and
-   development apps; when Showroom is available, follow its skill for surfaces
+   development processes; when Showroom is available, follow its skill for surfaces
    tied to this task or worktree. Inspect a repository cleanup or slot-release
    command's effects and arguments before running it; use it only when it can be
-   scoped to verified targets. Measure and remove exact task-owned build
-   folders, keeping retained app data. Remove a shared build cache only after approval,
+   scoped to verified targets. For Mac development apps, supporting processes,
+   and simulator/emulator installs and devices, follow
+   [development resource cleanup](references/development-resources.md#clean-up).
+   Measure and remove exact task-owned build folders, keeping retained app data.
+   Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
-
-   Uninstall task-owned simulator/emulator apps and test runners with disposable
-   data, using exact device and bundle/package IDs from install records. Recheck
-   ownership: another task may have replaced an install of the same app. Use
-   `xcrun simctl uninstall <udid> <bundle-id>` or
-   `adb -s <serial> uninstall <package-id>`; scope Android removal to the owning
-   user when needed. Uninstalling can remove app data; Android's `-k` retains it
-   ([adb docs](https://developer.android.com/tools/adb)). Confirm removal by
-   re-listing installed apps. Preserve the devices, shared runtimes, and retained
-   data; report unavailable targets and continue independent cleanup.
 
    When worktree removal is in scope, identify an exact inactive worktree and
    inspect its status, ignored files, HEAD, branch, and host ownership. Preserve
@@ -89,10 +83,13 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and report why when it is ahead, diverged, dirty in its checkout, or lacks a
    usable remote. Do not switch another worktree to it, reset it, or force-move it.
 
-5. **Verify and report.** Recheck changed resources and refs, affected worktrees,
-   and the local default branch against its selected upstream. Report what was
-   removed, bytes freed when measured, what was retained or skipped and why,
+5. **Verify and report.** Confirm stopped processes have exited, kept devices
+   have the expected power and install state, and deleted temporary devices no
+   longer appear in the platform's device inventory. Recheck changed resources
+   and refs, affected worktrees, and the local default branch against its selected
+   upstream. Report what was removed, bytes freed when measured, what was retained
+   or skipped and why,
    and recovery details such as recorded branch heads or reflogs. State partial
    cleanup plainly.
 
-An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including simulator/emulator installs and disposable test data, in that scope. It does not authorize unrelated or uncertain targets.
+An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including development processes, simulator/emulator installs, disposable test data, and temporary devices created for the task, in that scope. It does not authorize unrelated or uncertain targets.
