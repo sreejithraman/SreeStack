@@ -18,7 +18,8 @@ Edit this table to change the defaults.
 | Primary review | Codex | GPT-6.1 Sol | High | — |
 | Alternate review | OpenCode | `opencode/deepseek-v4.1-flash-free` | Max | 1 |
 | Alternate review | OpenCode | `opencode/glm-5.3-flash-free` | Max | 1 |
-| Alternate review | Antigravity | Gemini 3.8 Flash | High | 2 |
+| Alternate review | Antigravity | Gemini 4 Argon | Medium | 2 |
+| Alternate review | Antigravity | Gemini 3.8 Flash | High | 3 |
 
 The working selection covers code, tests, refactoring, configuration,
 documentation changes, verification, and accepted fixes. The General research

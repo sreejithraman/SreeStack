@@ -117,7 +117,7 @@ for skill model defaults; explicit user/project requirements are resolved by
 
 Enable and authenticate the providers named in that table in T3 Code. Routing
 resolves their exact instance/model IDs and supported options from the live
-catalog; an ambiguous match needs an explicit selection. Gemini's high selection
+catalog; an ambiguous match needs an explicit selection. Gemini's effort selection
 is encoded in its model ID, while other providers may expose an option. Catalog availability does
 not establish quota or successful access. T3's injected MCP tools or supported
 ACP bridge must be reachable from the agent. Provider-specific review plugins
@@ -125,7 +125,8 @@ and standalone headless execution skills are not needed for this shared review
 procedure.
 
 Alternate reviews prefer the free OpenCode DeepSeek and GLM routes in the table,
-then Gemini, then fresh primary-model tasks for any remaining review lenses.
+then Gemini 4 Argon (Medium), then Gemini 3.8 Flash (High), then fresh
+primary-model tasks for any remaining review lenses.
 
 [Review](skills/review/SKILL.md) assesses a snapshot without fixes.
 [Review Sweep](skills/review-sweep/SKILL.md) validates findings and implements
