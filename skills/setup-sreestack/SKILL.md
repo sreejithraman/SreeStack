@@ -30,8 +30,9 @@ those edits, and apply an authorized plan without asking for the same approval.
 
 ## Discover the project
 
-Read the active project instructions and existing contributor/setup docs,
-`docs/agents/` or the established equivalent, remotes, build/test scripts,
+Read the inherited global and host instructions, active project instructions,
+existing contributor/setup docs, `docs/agents/` or the established equivalent,
+remotes, build/test scripts,
 platform configuration, CI checks, PR templates, and branch conventions.
 Determine which SreeStack skills and host tools are actually available; keep
 project facts separate from tools observed in this environment.
@@ -40,9 +41,12 @@ Resolve domain docs with [glossary paths](../domain-modeling/references/glossary
 including configured paths, legacy files, maps, and per-context ADRs. Inspect
 existing verification documentation before proposing new files.
 
-Identify the conventions already settled and any gaps that matter to this
-project. Use the relevant branch below; a scoped update does not restart full
-onboarding.
+Before adding guidance, compare its meaning with those instructions, project
+docs, and relevant shared skills; different wording can express the same rule.
+Add only missing project-specific facts or explicit project overrides. Keep
+existing guidance with its owner and add a concise pointer only when agents
+need one to find it. Preserve the scope and conditions of existing rules.
+Use the relevant branch below; a scoped update does not restart full onboarding.
 
 ## Project workflow
 
@@ -109,9 +113,11 @@ file. Reuse an existing SreeStack or Agent skills block, preserve unrelated
 entries, and include only pointers to docs that exist. Keep them brief and state
 when each doc should be read. Templates are seeds, not replacement files.
 
-Check that every written pointer and map link resolves, glossary consumers use
-the selected paths, and reruns do not duplicate blocks or reset established
-choices. Read the scoped diff and report changed files, resolved conventions,
+Check each added rule and pointer against the discovery comparison; remove
+redundant additions even when their wording differs. Check that every written
+pointer and map link resolves, glossary consumers use the selected paths, and
+reruns add no redundant guidance or blocks and preserve established choices.
+Read the scoped diff and report changed files, resolved conventions,
 checks, and remaining gaps. Distinguish documented commands and discovered tools
 from runtime readiness: only claim a build, workflow, or verification recipe
 works when it was actually exercised.
