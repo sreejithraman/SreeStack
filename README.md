@@ -246,20 +246,24 @@ comment deletions, scoped repairs, constraint encodings, and verification.
 
 [SreeStack setup](skills/setup-sreestack/SKILL.md) is the manual
 `setup-sreestack` entry point for project workflow conventions, glossary/ADR
-paths, and optional issue tracking and triage labels. It links the project's
-existing checks, review and PR conventions, and verification knowledge to the
-shared skills. An explicit verification-setup request uses `verify` to build
-and prove a reusable map. Invoke setup with “migrate glossary” to move existing
-domain `CONTEXT.md` / `CONTEXT-MAP.md` files to `GLOSSARY.md` / `GLOSSARY-MAP.md`
-and update their consumers without repeating other setup.
+paths, a verification foundation, and optional issue tracking and triage labels.
+Full setup creates or reuses `docs/agents/verification/index.md`, or an equivalent
+established location, records known setup facts and coverage gaps, and adds an
+agent-instruction pointer. It links the project's existing checks and review
+and PR conventions to the shared skills. Feature
+recipes and live verification use `verify` when requested. Invoke setup with
+“migrate glossary” to move existing domain `CONTEXT.md` / `CONTEXT-MAP.md` files
+to `GLOSSARY.md` / `GLOSSARY-MAP.md` and update their consumers without repeating
+other setup.
 
 ### Product verification
 
 [verify](skills/verify/SKILL.md) tests real user workflows using a temporary plan
 when no verification map exists. Once a map is set up, verification uses and
-maintains its affected recipes. Ask to set up verification to create reusable
-docs in `docs/agents/verification/index.md` and `features/`, or an equivalent
-established project location. Commit the map in the product repo. The shared
+maintains its affected recipes. Maps use `docs/agents/verification/index.md`,
+or an equivalent established location, and may start with shared facts alone.
+Ask to set up verification to add and prove feature recipes; `features/` is
+created with the first recipe. Commit the map in the product repo. The shared
 skill supplies the procedure, so projects need no generated verification skill.
 You can also request map maintenance or verification without updating docs.
 For ambitious targets, consequential changes, or candidate comparisons, Verify

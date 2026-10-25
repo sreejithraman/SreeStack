@@ -519,6 +519,8 @@ excluded; domain traces and optional diagrams need no bundled renderer.
 Ordinary checks use a temporary plan when no map exists and maintain affected
 recipes when a map is already set up. Creating a map requires a setup or reusable
 documentation request; verification can also explicitly leave existing docs alone.
+Supports indexes containing shared facts before feature recipes exist; feature
+directories are created with the first recipe.
 Reads the project index before selected recipes, expanding to all recipes for
 whole-app or whole-map requests. Discloses map-writing examples and interface
 audit or accessibility guidance through conditional references.
@@ -826,8 +828,12 @@ unproven readiness. App watching and existing forge/tool selection remain unchan
 
 Manual-only in both hosts. The local name and UI are SreeStack Setup. One setup
 workflow owns project-specific conventions and pointers, with scoped update,
-glossary migration, optional ticket/triage configuration, and explicitly
-requested verification-map setup through `verify`. Project workflow guidance
+glossary migration, optional ticket/triage configuration, and a verification
+foundation during full setup. Setup uses Verify's map format to create or reuse
+the index, records known setup facts and coverage gaps, and adds a discovery pointer;
+feature recipes and live proof use `verify` when requested. Feature directories
+are created with the first recipe. Scoped updates and glossary migration
+preserve their requested scope. Project workflow guidance
 uses current local review, PR, stack, merge, acceptance, and delegation owners;
 host settings and installation remain separate. Goal or swarm execution stays
 explicitly requested, with native tracking optional. Agent defaults link the shared
