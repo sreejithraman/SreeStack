@@ -56,7 +56,7 @@ is something the user can inspect or try. It chooses demonstrations and access;
 reuse applicable verification evidence.
 
 Finish when every required result is integrated and its checks pass, or report
-the precise remaining gap. Return child dispositions, artifacts, checks,
-requested/confirmed model settings, and blockers. Goal state, recurring work,
+the precise remaining gap. Return child task IDs and dispositions, artifacts,
+checks, requested/confirmed model settings, and blockers. Goal state, recurring work,
 and ordinary top-level threads use their explicitly requested host workflows;
 ordinary delegation creates none of them.

@@ -780,6 +780,9 @@ Reviewer references:
 
 - `references/standards.md` and `references/spec.md`: [mattpocock/skills / skills/engineering/code-review](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/code-review) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 - `references/thermo.md`: [cursor/plugins / cursor-team-kit/skills/thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/tree/a29f5a8ca161b1de4ffc5484454958bebc04eaa5/cursor-team-kit/skills/thermo-nuclear-code-quality-review) — commit `a29f5a8ca161b1de4ffc5484454958bebc04eaa5`.
+- `references/adversarial.md`: [openai/codex-plugin-cc / plugins/codex/prompts/adversarial-review.md](https://github.com/openai/codex-plugin-cc/blob/db52e28f4d9ded852ab3942cea316258ae4ef346/plugins/codex/prompts/adversarial-review.md) and [schemas/review-output.schema.json](https://github.com/openai/codex-plugin-cc/blob/db52e28f4d9ded852ab3942cea316258ae4ef346/plugins/codex/schemas/review-output.schema.json) — import baseline `db52e28f4d9ded852ab3942cea316258ae4ef346`, Apache-2.0. Preserves the prompt's wording, XML structure, review criteria, and JSON verdict contract; `references/adversarial-output.schema.json` is byte-identical to upstream. Local edits add a heading and modification comment, bind the four template placeholders to the supplied brief, link the schema, put Review's coverage metadata in the JSON summary, and retain parent settlement/read-only limits and equivalent agent-procedure tracing. License and copyright notice: `licenses/openai-codex-plugin-cc.txt` and `licenses/openai-codex-plugin-cc-NOTICE.txt`.
+- `references/opencode.md`: [anomalyco/opencode / packages/core/src/plugin/command/review.txt](https://github.com/anomalyco/opencode/blob/68bc26b7da1990ce10ffecfbc1e09eb13aa5d824/packages/core/src/plugin/command/review.txt) — v2.1.4, import baseline `68bc26b7da1990ce10ffecfbc1e09eb13aa5d824`, MIT. Preserves upstream wording and sections, including target-discovery commands and tool guidance. Local edits add a heading, bind `$ARGUMENTS` to the caller's request/target, and establish Review's resolved scope, read-only/coverage contract, parent settlement, and direct search when further delegation is not authorized. License: `licenses/anomalyco-opencode.txt`.
+- `references/gemini.md`: [gemini-cli-extensions/code-review / skills/code-review-commons/SKILL.md](https://github.com/gemini-cli-extensions/code-review/blob/dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04/skills/code-review-commons/SKILL.md) and [commands/code-review.toml](https://github.com/gemini-cli-extensions/code-review/blob/dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04/commands/code-review.toml) — v0.1.0, import baseline `dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04`, Apache-2.0. Preserves the commons body verbatim, including persona, severity guidance, changed-line restriction, and technical constraints; removes host frontmatter because this is a reference. Includes the command's output block with only its merge-ready assertion removed and the required coverage report allowed. Local integration adds a modification comment and Review's supplied scope, assigned criteria, read-only/procedure checks, coverage metadata, and parent settlement. No fixed `origin/HEAD` discovery, PR-posting command, or installed wrapper imported. License: `licenses/gemini-cli-extensions-code-review.txt`.
 - `references/ponytail.md`: combines these sources from `DietrichGebert/ponytail`
   at commit `974d940a1c5344210874150b98ff0d2c861fab6a`:
   - [ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — core language, ladder, and safety limits.
@@ -792,7 +795,11 @@ Imported material remains in read-only assessment references. Review is
 model-agnostic and returns findings and coverage for one supplied snapshot;
 reviewer dispatch, tool execution, fixes, and repeats belong to callers.
 Explicit assignments select criteria while retaining full-scope reading;
-standalone assessment defaults to all criteria. Later-round briefs include
+standalone assessment defaults to the existing correctness and code-quality
+criteria, with Adversarial used when requested or assigned. OpenCode harness
+and Gemini model reviews additionally load their checked-in provider references;
+these supplement assigned lenses under the shared review contract and require
+no native plugin or command activation. Later-round briefs include
 prior findings and dispositions for independent reassessment.
 Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
@@ -806,10 +813,14 @@ to tests, fixtures, and measurement methods.
 
 ## review-fix-loop
 
-- Local: `skills/review-fix-loop` (SreeStack). T3-owned review rounds coordinate
-  primary Spec/Standards and randomly assigned Ponytail/Thermo assessments,
-  priority-tier alternate selection and replacement, shared model policy,
-  stable snapshots, and Review Sweep.
+- Local: `skills/review-fix-loop` (SreeStack). T3-owned rounds use the required
+  model for Primary/Ponytail/Thermo and a separate Adversarial assessment on
+  substantial changes. Impact-based coverage decisions are recorded and retained
+  through fix rounds. Each independent round adds one random optional reviewer
+  from each provider pool. The loop owns provider-reference delivery, skips,
+  and stable snapshots. Generic
+  delegation and handoff use Orchestration, with tasks mapped to review
+  assignments and rounds; findings use Review Sweep.
 
 ## pr
 
@@ -1001,16 +1012,16 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 
 Locally written T3-oriented delegation flow with one editable Markdown table
 of model defaults, including research and source routes, in the routing reference.
-Working and primary review defaults match.
-Alternate priorities prefer exact
-free OpenCode DeepSeek and GLM routes before Gemini 4 Argon (Medium), Gemini 3.8
-Flash (High), and primary-model fallback.
+The table includes required-review defaults, also called the primary review
+selection by existing callers, and additional-review pools;
+Review Fix Loop owns their assignment, draw, harness, and skip policy.
 Assignment briefs replace a generic
 agent-rank taxonomy; discovery resolves working defaults before direct work,
 and the main procedure owns the direct-work match/delegate gate.
-Live host instructions own API/transport details and routing
-owns local concurrency and bounded recovery.
-Assignment, runtime selection, and acceptance remain distinct. Native children
+Live host instructions own API/transport and task lifecycle; routing owns local
+concurrency and bounded recovery, subject to caller-specific failure policy.
+Assignment, runtime selection, and acceptance remain distinct; handoffs identify
+child tasks. Native children
 are used when they support the exact selection; T3 owns cross-provider tasks
 and review rounds. Parallel coverage, competing approaches, revision-bound
 verification, and measured results are checked during integration. It does not
