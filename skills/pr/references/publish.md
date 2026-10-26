@@ -1,41 +1,30 @@
 # Publish
 
-Use these rules for the commit, push, and PR update owned by `/pr`.
+## Commit and push
 
-## Scope
+Inspect status, the complete diff, and staged files. Stage only owned paths and
+preserve unrelated work. Keep the feature branch; on the default branch, create
+`agent/<short-description>` first. Use the caller's immediate base, including
+a parent layer for stacks.
 
-- Inspect `git status`, the complete diff, and staged state before committing.
-- Preserve unrelated work and stage explicit paths when the worktree is mixed.
-- Stay on an existing feature branch. When the work sits on the repository's default branch, create `agent/<short-description>` before committing.
-- Use the immediate base supplied by the caller. A stacked PR therefore targets its parent layer rather than the repository default.
+Commit owned edits with a terse subject, run checks needed by final staging,
+and push with upstream tracking. Push existing ahead commits without an empty
+commit; reuse an already published head when nothing changed. For a caller-owned
+restack, use force-with-lease only on the named branch after review. Return a
+lease failure to the caller as changed remote state.
 
-## Commit And Push
+## Create or update the PR
 
-Choose the matching branch state:
+Prefer the GitHub connector; use `gh` for missing capabilities, current-branch
+discovery, or cross-repository heads. Reuse the PR matching the head branch,
+or create one. Confirm it targets the supplied immediate base.
 
-- **Owned local edits**: stage only the owned paths, write a terse commit subject, run any focused check made necessary by final staging, and push with upstream tracking.
-- **Committed local head ahead of remote**: push the existing commits without creating an empty commit.
-- **Local and remote heads match**: reuse the current remote head and continue to the PR watch without a new commit or push.
-- **Caller-owned restack**: after the local review passes, update only the named owned branch with force-with-lease, then confirm the remote head. Treat a lease failure as a new remote state and return it to the caller.
+Apply [thread registration](../SKILL.md#thread-registration) immediately after
+creation or push; GitHub operations alone do not link the PR in T3.
 
-After a push or reuse, resolve the remote head SHA again. That SHA replaces all earlier watch state.
+Use [PR body](pr-body.md) for the title and description. Refresh them when fixes
+change scope, evidence, or landing risk. Mark ready unless a draft was requested.
 
-## Pull Request
-
-Prefer the GitHub connector for PR discovery, creation, metadata, and updates. Use `gh` for connector gaps, current-branch discovery, cross-repository heads, or fields the connector cannot set.
-
-Create a PR when none exists. Update the existing PR when its head branch matches. Set its base to the supplied immediate base and confirm the base after the write.
-
-Register the PR with this T3 thread as required by [thread registration](../SKILL.md#thread-registration);
-creating it through GitHub tools or a CLI does not register it.
-
-Write or refresh the title and body using [PR body](pr-body.md), the complete
-current change, and applicable verification/visual evidence. Reassess the summary
-and merge risk after fixes change the scope, and keep the body's check results
-consistent with the published head.
-
-Ready mode marks the PR ready for review. Draft mode preserves or sets draft state.
-
-## Completion
-
-Publishing is complete when the intended files are committed, the remote head matches the local head, one PR targets the intended base, and its URL and head SHA are recorded.
+Confirm the remote head matches the intended local head, the base is correct,
+and one PR represents that branch. Record its URL and remote head for
+[CI and reviews](ci.md).

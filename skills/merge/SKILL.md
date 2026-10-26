@@ -16,7 +16,7 @@ Return readiness blockers to the caller; fixes belong to `pr` or the caller.
    merge set and command target; authorization must cover every included layer.
    Already merged PRs proceed directly to issue completion and cleanup.
    Register scoped PRs using [thread registration](../pr/SKILL.md#thread-registration)'s T3 linking rules,
-   including its final reconciliation, even when preparation is already complete.
+   even when preparation is already complete.
 
 2. **Check readiness.** Read current GitHub state and reuse applicable handoff
    evidence. Verify head/base commits, checks, approvals, review threads,

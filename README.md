@@ -445,6 +445,7 @@ uses and adapts:
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
+- [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.
