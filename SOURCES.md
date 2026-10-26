@@ -590,26 +590,33 @@ as supporting evidence. Discovery and cleanup rules live together in
 Preserves shared installs, retained data, inspection lifetimes, and resources
 needed by unmerged stack layers.
 
-## no-comments
+## show-dont-tell
 
 - [cursor/plugins / pstack](https://github.com/cursor/plugins/tree/5108b719a7aa484ef1a9781f587c7bbeac793f92/pstack) — `skills/no-comments/SKILL.md` and `agents/comment-sicko.md`; import baseline `5108b719a7aa484ef1a9781f587c7bbeac793f92`, imported 2026-10-13. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
-Preserves manual-only invocation in both hosts, independent comment auditing,
-the keep exceptions, suppression/root-cause checks, bounded audit rerun, scoped
-repairs, and constraint encoding. Audit rules live in
-`references/comment-audit.md`; the auditor is read-only and the parent owns edits.
-T3 orchestration and local review, history, and design skills replace upstream
-agent types and slash commands. Persona, mandatory architect gate, and separate
-encoding approval are omitted; existing task authorization governs repairs.
-Unresolved constraints and suppressions remain until their evidence or repair
-is settled. Encoding must catch a violation before its comment is removed.
-Intentional negative-test assertions remain distinct from application suppressions.
+Automatically discoverable in both hosts for code and documentation clarity
+passes and callable from PR preparation. A short guide reduces the
+need for explanation through self-documenting code, structural enforcement,
+and one authoritative home for documented rules. Uses Domain Modeling's ADR
+criteria. Documentation must supply necessary knowledge agents cannot cheaply
+and reliably obtain elsewhere; document categories have no blanket exemption.
+Legal notices remain protected. Enforcement must reject a violation before
+replacing a reminder; correctness suppressions require repair before removal. Scope and
+contracts stay intact. `references/explanation-audit.md` classifies why prose
+exists across code and docs, with focused checks for defensive justifications,
+embedded suppressions, formatting directives, and negative-test assertions.
+Delegation, review, and delivery belong to the caller.
 
 ## merge
 
 - Local: `skills/merge` (SreeStack).
 
 PR workflow references and T3 thread registration use the local `pr` entry point.
+Requires current review including Show, Don't Tell and required verification
+for each PR, including docs-only changes, routing missing or stale evidence
+through PR preparation.
+Preparation returns evidence to the original Merge caller, which rechecks
+affected layers after repairs or restacking and retains the full landing set.
 
 
 ## prototype
@@ -805,6 +812,11 @@ and remote-description edits bypass delivery; watching and feedback start at
 current GitHub state. Review Sweep verifies accepted edits; publication requires
 applicable complete-scope review evidence. Merge requests reuse delivery evidence
 and complete missing preparation before the `merge` handoff.
+Code and docs preparation invoke `show-dont-tell` before the existing review
+loop, with readiness evidence tied to the published head/base. Feedback fixes
+that change reviewed scope or invalidate checks return through preparation and review.
+Merge-owned preparation returns readiness evidence to the original caller;
+direct PR merge requests retain the normal Merge handoff.
 The body guide uses Summary/Evidence/Merge Danger by default, defers to project
 PR templates, and preserves local why/effect/root-cause/stack facts. It expands
 visual selection to algorithm, runtime, UI, file, interaction, diff, and complete
