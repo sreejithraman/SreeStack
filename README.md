@@ -47,6 +47,7 @@ instructions rather than maintaining another API manual.
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
 | Prove behavior | `verify` |
+| Run complexity, duplication, or mutation tools | `code-quality` |
 | Show results and make them available to try | `showroom` chooses demonstrations and access |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
@@ -302,6 +303,12 @@ the corresponding handoff pointer. The repository edits do not update installed
 skills or live host instructions. Apply them through your stable clone and the
 host setup below to activate those routes.
 
+### Code quality tools
+
+[Code Quality](skills/code-quality/SKILL.md) runs Crapper, Dryer, and Mutator and
+returns their reports. Invoke it with `$code-quality` in Codex or `/code-quality`
+in Claude Code. [Setup](skills/code-quality/references/setup.md) lives with the skill.
+
 ### Store screenshot design
 
 The [koubou skill](skills/koubou/SKILL.md) designs and iterates on App Store
@@ -446,6 +453,8 @@ uses and adapts:
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
+- [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.

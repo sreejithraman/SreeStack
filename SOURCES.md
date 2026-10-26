@@ -672,6 +672,18 @@ example uses pure state instead of browser storage or changing props. Trailing
 whitespace is stripped from copied rule files. Automatic discovery stays
 enabled.
 
+## code-quality
+
+Local command-runner skill for Crapper, Dryer, and Mutator; instructions are
+independently written. Tools run through `uvx` from pinned upstream Git sources;
+Mutator's environment includes Crapper as an additional dependency. Setup is
+contained in the skill's supporting references.
+Command and setup baselines checked 2026-10-26:
+
+- [unclebob/crapper](https://github.com/unclebob/crapper/tree/6fd92c4c9bcc56efb64a2f8743d5a2993bcfd42d) — `6fd92c4c9bcc56efb64a2f8743d5a2993bcfd42d`.
+- [unclebob/dryer](https://github.com/unclebob/dryer/tree/66ff6d21a42c04afcad89c78a80066176d1294b0) — `66ff6d21a42c04afcad89c78a80066176d1294b0`.
+- [unclebob/mutator](https://github.com/unclebob/mutator/tree/a5a0cb803b66e0cdb8bf471b3b08af701d424a41) — `a5a0cb803b66e0cdb8bf471b3b08af701d424a41`.
+
 ## react-doctor
 
 - [millionco/react-doctor / skills/react-doctor](https://github.com/millionco/react-doctor/tree/499a0208fca5c0422b713bdedf2b83fcc8e29d20/skills/react-doctor) — commit `499a0208fca5c0422b713bdedf2b83fcc8e29d20`.
@@ -1069,6 +1081,17 @@ inspection. Historical claims are checked against current artifacts.
 Repository-wide recurring failure prevention belongs to `correct`; retro reports
 the session evidence and routes further investigation only within the user's scope.
 
+
+## Shared global instructions
+
+- [unclebob/ub-mode / SKILL.md](https://github.com/unclebob/ub-mode/blob/57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f/SKILL.md) — conceptual input checked at revision `57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f` on 2026-10-25; no upstream prose or code copied.
+
+`codex/global-instructions.md` expresses simplicity, behavior-verification, and
+failed-assumption defaults in locally written guidance. Simplification stays
+within the requested scope; verification uses independent expectations and
+reports gaps when meaningful automation is impractical. Detailed engineering
+and testing procedures stay in their existing skills. Tool-specific gates,
+action diaries, automatic cleanup, and push-to-main instructions are omitted.
 
 ## T3 integration comparison
 
