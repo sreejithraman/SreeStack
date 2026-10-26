@@ -112,7 +112,7 @@ current operation's result. Simple state can stay simple.
 from T3's live catalog. Edit
 [model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
 to change working/research/review models, source-retrieval routes, effort, and
-alternate-review priorities.
+additional-review pools.
 The local concurrency ceiling is in that same reference. This is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
@@ -122,21 +122,19 @@ resolves their exact instance/model IDs and supported options from the live
 catalog; an ambiguous match needs an explicit selection. Gemini's effort selection
 is encoded in its model ID, while other providers may expose an option. Catalog availability does
 not establish quota or successful access. T3's injected MCP tools or supported
-ACP bridge must be reachable from the agent. Provider-specific review plugins
-and standalone headless execution skills are not needed for this shared review
-procedure.
-
-Alternate reviews prefer the free OpenCode DeepSeek and GLM routes in the table,
-then Gemini 4 Argon (Medium), then Gemini 3.8 Flash (High), then fresh
-primary-model tasks for any remaining review lenses.
+ACP bridge must be reachable from the agent. OpenCode and Gemini reviewers read
+their review references from this stack; provider plugins are not needed.
 
 [Review](skills/review/SKILL.md) assesses a snapshot without fixes.
 [Review Sweep](skills/review-sweep/SKILL.md) validates findings and implements
 accepted fixes with the working model selection.
-[Review Fix Loop](skills/review-fix-loop/SKILL.md) coordinates primary Spec +
-Standards assessment and, for a full round, randomly assigned Ponytail and
-Thermo reviews from the alternate pool. It retains the mapping through fix
-rounds, uses fresh T3 children, and reports any lost model diversity.
+[Review Fix Loop](skills/review-fix-loop/SKILL.md) owns review coverage, reviewer
+selection, harness review, optional skips, and fix rounds. It uses Orchestration's
+model table and delegation rules. Enable the OpenCode Go subscription routes
+named in that table for its OpenCode pool.
+Substantial changes also receive a required adversarial assessment that tests
+assumptions and failure paths. The loop records its coverage decision from the
+change's behavior and consequences.
 
 When migrating an installed setup, remove only the links and rank presets you
 previously installed for the retired Gemini/OpenCode skills and Codex ranks;
@@ -152,14 +150,14 @@ Sample requests and expected results:
   and Grok respectively, then checks the source evidence before writing a cited note.
 - “Implement this change”: the working policy supplies the model and options;
   parallel children have disjoint ownership in the same checkout.
-- “Review and fix this shared-contract change”: primary, Ponytail, and Thermo
-  assessments cover the same snapshot; accepted fixes use the working model.
-- “Review this small fix”: one independent primary assessment when full-review
-  risk/contract triggers do not apply; an ordinary prose or wording-only edit
-  with no procedure change uses parent review.
-- When the alternate pool cannot fill a slot, a fresh primary-model task covers
-  that lens, retaining coverage and disclosing reduced diversity. Missing required
-  coverage cannot produce a clean result.
+- “Review and fix this shared-contract change”: primary, Ponytail, Thermo, and
+  adversarial assessments and optional pool reviewers cover the same snapshot;
+  accepted fixes use the working model.
+- “Review this small fix”: one required primary assessment plus optional pool
+  reviewers when full-review risk/contract triggers do not apply. An ordinary
+  prose or wording-only edit with no procedure change uses parent review.
+- When an additional reviewer is unavailable or fails, the loop records a skip
+  and continues. Missing required coverage cannot produce a clean result.
 - A substantive fix triggers a fresh round against the original base. A changed
   snapshot supersedes in-flight review; successful dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
@@ -452,6 +450,9 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
+- [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
+- [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.
+- [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
