@@ -33,15 +33,21 @@ failures separately from publication.
 
 ## Deliver changes
 
-1. Run [review-fix-loop](../review-fix-loop/SKILL.md) against the immediate base
-   over the complete PR diff. Continue after review and verification pass.
+1. Invoke [Show, Don't Tell](../show-dont-tell/SKILL.md) on the complete PR diff
+   against the immediate base, including docs-only changes. Then run
+   [review-fix-loop](../review-fix-loop/SKILL.md) over the resulting complete diff.
+   Reuse matching preparation and review evidence. Record that review included
+   this pass and tie readiness evidence to the published head/base.
+   Continue after review and verification pass.
 2. [Publish](references/publish.md) the owned changes and record the remote head
    and base.
 3. Follow [CI and reviews](references/ci.md) through fixes, waiting, and readiness.
 
-At readiness, hand off unless merging was requested. For a merge, pass the PR,
-verified head/base, readiness evidence, related issues, and task resources to
-`merge`; it owns landing, issue completion, and cleanup.
+At readiness, hand off unless merging was requested. For preparation requested
+by Merge, return the PR, verified head/base, readiness evidence, related issues,
+and task resources to that original caller; it retains the full merge set and
+landing responsibility. For a direct PR merge request, pass the same evidence
+and resources to `merge`; it owns landing, issue completion, and cleanup.
 
 Report the PR link, current head, verification, readiness or merge result, and
 remaining blockers. Include issue and cleanup results when merging.

@@ -11,7 +11,8 @@ Return readiness blockers to the caller; fixes belong to `pr` or the caller.
 
 1. **Scope.** Identify the repository, target PRs, landing branch, and readiness
    evidence. If the scoped work has no PR, invoke [pr](../pr/SKILL.md)
-   to prepare and publish it, carrying the merge request through its handoff.
+   in preparation-only mode to prepare and publish it, then return here with
+   readiness evidence. This invocation retains the original merge request.
    For stacks, use [gh-stack](../gh-stack/SKILL.md) to resolve the exact
    merge set and command target; authorization must cover every included layer.
    Already merged PRs proceed directly to issue completion and cleanup.
@@ -23,6 +24,13 @@ Return readiness blockers to the caller; fixes belong to `pr` or the caller.
    accepted fixes, and mergeability. Stale or missing verification and unmet
    requirements block landing. So do closing links that would close unfinished
    issues; return them to the caller for correction.
+
+   For every PR, including docs-only changes, require current head/base review
+   that includes [Show, Don't Tell](../show-dont-tell/SKILL.md), plus required
+   verification. Reuse matching evidence. If missing or stale, invoke
+   [pr](../pr/SKILL.md) in preparation-only mode and return refreshed evidence
+   here. After repairs or restacking, recheck every affected layer.
+   Land the original merge set only after all its PRs meet readiness requirements.
 
 3. **Land.** Follow repository merge settings, protections, and queues. For a
    single PR, use [gh pr merge](https://cli.github.com/manual/gh_pr_merge) with

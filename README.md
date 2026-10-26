@@ -237,12 +237,14 @@ agents and access to the reference and generated output.
 Domain skills use `GLOSSARY.md` for new layouts and preserve configured or
 existing legacy `CONTEXT.md` glossary paths.
 
-[no-comments](skills/no-comments/SKILL.md) is manual-only. Invoke
-`$no-comments` in Codex or `/no-comments` in Claude Code with files or a diff
-to audit redundant comments and fix the code they explain. It uses T3's
-independent auditing and keeps legal headers, public API contracts, and proven
-external constraints. For example, “Use `$no-comments` on this diff” returns
-comment deletions, scoped repairs, constraint encodings, and verification.
+[Show, Don't Tell](skills/show-dont-tell/SKILL.md) is automatically discoverable
+for code and documentation clarity passes and callable from other skills. Invoke
+`$show-dont-tell` in Codex or `/show-dont-tell` in Claude Code with files or a
+diff to reduce the explanations and reminders they need. It favors self-documenting
+code, one home for each rule, and ADRs for consequential decisions. Documentation
+earns its place by supplying necessary knowledge agents cannot cheaply and reliably
+obtain elsewhere; legal notices remain protected. PR preparation invokes it
+before the existing review; merge checks that current review includes the pass.
 
 [SreeStack setup](skills/setup-sreestack/SKILL.md) is the manual
 `setup-sreestack` entry point for project workflow conventions, glossary/ADR
@@ -443,7 +445,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `no-comments`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
