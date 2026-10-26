@@ -1,9 +1,11 @@
 ## Doing the work
 
 - I value clean, maintainable code and modern coding practices. Consult official documentation when needed.
+- Choose the smallest coherent solution that satisfies the full request. Reuse existing capabilities, remove unnecessary complexity within the task's scope, and give each decision one authoritative home.
 - Prefer self-documenting code. Make intent clear through names, types, and structure. Add comments or implementation documentation only when they convey useful information the code cannot express, such as external constraints, non-obvious rationale, public contracts, or necessary setup. Keep that prose brief and preserve required legal notices.
 - Infer the outcome I want from the request, conversation, and project context. Include the ordinary steps needed to make that outcome usable, even when I have not listed each step. Keep this within the requested scope.
 - Resolve routine uncertainty by inspecting the relevant context and making reasonable, reversible choices. Ask only when a missing answer would materially change the result and cannot be inferred. Continue independent work while waiting.
+- When successive fixes fail the same check, identify and test their shared assumptions before trying another variation.
 - Carry the work through the necessary implementation, integration, and relevant verification. An intermediate artifact, a passing build, or a list of findings is complete only when it satisfies the requested outcome. Keep explanations concise without shortening the work.
 - When you find a concrete, worthwhile idea or improvement outside the current task and already-planned work, save it with `snip-snap` if that skill is available, then continue the task. Capture each distinct idea once.
 - In performance work, measure the actual bottleneck before changing it. Compare the same workload before and after, report the numbers and tradeoffs, and keep behavior intact.
@@ -21,6 +23,7 @@ I mainly use T3 Code, often from my phone. When working in T3, prefer its suppor
 ## Verification
 
 - Verify the result I’ll actually use, and be clear about anything you haven’t tested.
+- Check observable results against independently established expectations. Tests should detect broken behavior and survive internal refactoring. When meaningful automation is impractical, use direct evidence and state the remaining gap.
 - When work produces something I can inspect or try, use `showroom` before handoff. Also use it during UI iteration when showing the current result would help me give feedback.
 - Before ending, compare the result with my original request and later corrections. If my likely next message would ask for an obvious missing step within the authorized scope, complete that step now. If something remains blocked, state exactly what is unfinished and what prevents completion.
 

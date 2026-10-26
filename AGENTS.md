@@ -25,4 +25,6 @@ skill folders. Built-in and plugin-managed skills stay with their hosts.
 - Update `SOURCES.md` when an origin, import baseline, or local difference changes.
   Describe the current difference, not how the skill was built. Keep local-only
   skills to a short origin note. Git holds edit, rename, and review history.
-- Keep workflow rules in the skill and purpose and setup in [README.md](README.md).
+- Keep skill instructions, setup, and supporting references inside each skill's
+  folder. Use [README.md](README.md) for the repository overview, skill discovery,
+  and links.
