@@ -1,42 +1,33 @@
-# PR Feedback
+# PR feedback
 
-Use these rules when the current PR has comments, reviews, requested changes, or unresolved threads.
+## Collect and assess
 
-## Collect
+Read unresolved inline threads, review summaries, technical conversation
+comments, and approval state, with enough source and diff context to verify
+each claim. Prefer the GitHub connector for flat reads; use `gh` for thread
+state, resolution, or connector gaps.
 
-Prefer the GitHub connector for PR metadata and flat comment reads. Use `gh` for unresolved thread state, inline context, review summaries, resolution, or connector gaps.
+Read every relevant page, including inline threads. Incomplete pagination leaves
+feedback readiness unproven. Re-read after a push; older unresolved findings
+still need a disposition against the current code.
 
-Collect:
+Use the [review-sweep](../../review-sweep/SKILL.md) finding schema: GitHub ID,
+location, claim, and source. Merge duplicate claims while retaining their IDs.
+The [CI and reviews](ci.md) pass combines these with CI findings. Product and
+behavior choices remain parent-owned decisions.
 
-- unresolved inline threads
-- review-level comments
-- requested-changes summaries
-- conversation comments with technical claims
-- current approval state
-- enough diff context to verify each claim
+## Reply and resolve
 
-Bind the collection to the current PR head. Re-read feedback after a push because the diff and review state may have changed.
+For findings needing no edit, reply with the reason and evidence. Resolve
+rejected, already handled, duplicate, or noise threads. Record deliberate
+deferrals and their owner; keep threads open when author work or a user decision
+remains.
 
-Exhaust every page of the relevant feedback collections, including inline
-review threads; the first page cannot establish that no unresolved feedback
-remains. Use cursor or pagination support from the selected tool. If collection
-stops early or the tool cannot expose the remaining pages, report incomplete
-coverage and keep feedback readiness unproven until the gap is resolved.
+For accepted edits, wait until the fix is pushed and confirmed in the remote
+head. Then reply with that head and evidence before resolving. After publication,
+post held replies and re-read feedback for anything newly arrived.
 
-## Decide And Fix
-
-Map each technical item into the `/review-sweep` finding schema with its GitHub id, location, claim, and source. Merge duplicate claims while retaining every source id.
-
-Return the normalized findings to the single `/review-sweep` pass for the current watch. Keep requests for product or behavior choices as parent-owned decisions.
-
-## Reply And Resolve
-
-Reply immediately for dispositions that need no code edit. Resolve those threads when the finding is rejected with evidence, already handled, duplicate, source noise, or deliberately deferred to the parent.
-
-For an accepted finding that changes the local diff, hold the reply and resolution until the fix is pushed and the recorded remote head contains it. Then reply with the published head and evidence before resolving the thread. Keep a thread open when more author work or a user decision is required.
-
-Missing approval is a waiting-for-human state. It becomes a blocker only when the requested completion state requires that approval now.
-
-## Completion
-
-Feedback handling is complete when every collected item has a disposition, every required reply is posted against the right remote head, resolved work has no open thread, remaining threads name their owner, and the current approval state is recorded.
+Finish when every finding has a disposition, required replies are posted,
+resolved work has no open thread, remaining threads name their owner, and
+approval state is recorded. Missing approval is a human wait; it blocks only
+when the requested completion state requires it.

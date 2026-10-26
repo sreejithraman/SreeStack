@@ -1,70 +1,47 @@
 ---
 name: pr
-description: Write or revise a PR title or body, prepare or publish a single PR, handle its CI or review feedback, or merge it when requested.
+description: Draft PR text, prepare or publish a PR, fix review feedback, babysit CI and reviews, or merge when requested.
 ---
 
 # PR
 
-Choose the requested outcome:
+Resolve the target PR or branch, its immediate base, intended changes, and
+requested outcome. Exclude unrelated local work from review inputs and fixes.
 
-- **Title/body only:** resolve the scoped PR or branch, its immediate base, and
-  intended change. Read [PR body](references/pr-body.md), inspect that diff and
-  applicable evidence, and return the requested text or local file. Drafting alone
-  stays local; an explicitly requested remote description edit updates that PR
-  without committing, pushing, or starting the readiness loop.
-- **Prepare/publish/fix/merge:** follow the delivery workflow below. By default,
-  publish it as ready for review and leave merging to the caller. Honor an
-  explicit request to keep it in draft. Stack management stays with the caller.
+- **Title/body:** inspect the diff and evidence, then use [PR body](references/pr-body.md).
+  Return text locally unless asked to update the remote description. This route
+  does not commit, push, or run the delivery workflow.
+- **Watch/babysit/feedback:** start with [CI and reviews](references/ci.md).
+  For comments and threads, read [PR feedback](references/pr-feedback.md).
+  An unchanged PR needs no local review or publication.
+- **Prepare/publish:** use the delivery workflow below.
+- **Merge:** reuse applicable delivery evidence; complete missing preparation
+  below, then hand off to [merge](../merge/SKILL.md).
 
-An unambiguous request to merge the scoped PR, including `/pr yolo` or a
-later “merge” in that PR’s context, authorizes merging once it meets the repo’s
-requirements, including after fixes made during this run. No further merge
-confirmation is needed. An explicit request to keep the PR in draft takes
-precedence over a merge request.
+Publish ready for review unless the user requests a draft. Merge only when
+requested; `/pr yolo` or a later “merge” for this PR authorizes landing after
+required fixes and checks. A draft request takes precedence. Ask for the target
+if a merge request could refer to several PRs. Stack operations belong to
+[gh-stack](../gh-stack/SKILL.md).
 
 ## Thread registration
 
-For every route, register each scoped existing PR immediately with
-`link_pull_request` when T3 exposes it; register a new PR immediately after
-creation. Apply this to every layer worked on through `gh-stack`. Before
-finishing PR work, reconcile `list_thread_pull_requests` with the scoped PRs
-and link any missing ones. Report failed registration separately from
-publication. Background PR mentions are outside this scope.
+In T3, call `link_pull_request` immediately for each PR taken over, created, or
+pushed, including every stack layer. Follow live host rules for registration;
+background mentions and read-only reviews need no link. Report registration
+failures separately from publication.
 
-## Delivery workflow
+## Deliver changes
 
-1. **Scope.** Resolve the branch, immediate base, intended changes, existing PR,
-   and whether draft or merge was requested. If more than one PR could be the
-   merge target, ask which one before merging. Preserve unrelated work.
+1. Run [review-fix-loop](../review-fix-loop/SKILL.md) against the immediate base
+   over the complete PR diff. Continue after review and verification pass.
+2. [Publish](references/publish.md) the owned changes and record the remote head
+   and base.
+3. Follow [CI and reviews](references/ci.md) through fixes, waiting, and readiness.
 
-2. **Review.** Run `/review-fix-loop <immediate-base>` over the complete PR diff.
-   Continue when review and verification pass; report blockers.
+At readiness, hand off unless merging was requested. For a merge, pass the PR,
+verified head/base, readiness evidence, related issues, and task resources to
+`merge`; it owns landing, issue completion, and cleanup.
 
-3. **Publish.** Read [publish.md](references/publish.md). Commit the task’s
-   changes, push, and create or update the PR. Record the remote head and base.
-
-4. **Watch.** Read [ci.md](references/ci.md) for checks and
-   [pr-feedback.md](references/pr-feedback.md) when feedback exists. Watch the
-   current pushed head and triage findings through `/review-sweep`. Hold replies
-   claiming a fix and thread resolution until that fix is pushed. Assess current
-   checks and existing feedback first. When waiting is required, or the user
-   explicitly requested monitoring, accept the app watch and end the turn.
-   Resume this sequence after a wake with fresh head-bound state. Without app
-   watching, follow the reference's bounded wait; still-pending work stays
-   pending. Already settled current-head checks can proceed directly to step 5.
-
-5. **Repeat or finish.** If you make fixes, return to step 3. After publishing,
-   post held replies and resolve eligible threads, then check CI and feedback
-   again. Finish when the current published changes pass the needed checks and
-   have no outstanding accepted fixes. Account for missing checks and open
-   threads; report pending human approval or other blockers. For a draft, use
-   the draft completion rules in the references.
-
-6. **Hand off when merging is requested.** Otherwise, stop at readiness. Invoke
-   [merge](../merge/SKILL.md) with the PR, verified head/base, readiness evidence,
-   related issues, and task resources, including worktrees and device installs.
-   If it returns a readiness blocker, resume the applicable prep step; report
-   blockers that require someone else's action.
-
-Report the PR link, current head, verification results, readiness or merge
-result, issue completion and cleanup results when merging, and anything still needed.
+Report the PR link, current head, verification, readiness or merge result, and
+remaining blockers. Include issue and cleanup results when merging.

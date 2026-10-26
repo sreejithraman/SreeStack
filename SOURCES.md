@@ -795,16 +795,20 @@ to tests, fixtures, and measurement methods.
 ## pr
 
 - Local: `skills/pr` (SreeStack).
+- [t3dotgg/tstack / babysit-pr](https://github.com/t3dotgg/tstack/blob/7de017b3fc9d50c03cf3ecb98fb71e0ca65a78bd/skills/babysit-pr/SKILL.md) — workflow comparison informing parent-owned event watching, handoff cleanup, rate-limit recovery, and base-freshness checks. No upstream prose, scripts, or bot-specific merge gates copied.
 - [cursor/plugins / pstack PR feedback pagination fix](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/poteto-mode/scripts/watch-pr) — pagination/completeness requirement adapted from `github.ts`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. No watcher code imported. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
 The local name and UI are `pr`. Retains automatic discovery and the full local
-readiness/publication/CI/feedback/merge handoff workflow, with a separate route
-for title/body drafting and explicitly requested remote-description edits.
+readiness/publication/CI/feedback/merge handoff workflow. Title/body drafting
+and remote-description edits bypass delivery; watching and feedback start at
+current GitHub state. Review Sweep verifies accepted edits; publication requires
+applicable complete-scope review evidence. Merge requests reuse delivery evidence
+and complete missing preparation before the `merge` handoff.
 The body guide uses Summary/Evidence/Merge Danger by default, defers to project
 PR templates, and preserves local why/effect/root-cause/stack facts. It expands
 visual selection to algorithm, runtime, UI, file, interaction, diff, and complete
-block views with locally written examples. Evidence is observed and revision-
+block views with a locally written diff example. Evidence is observed and revision-
 appropriate, with unavailable before states disclosed. Reversibility, concrete
 consumers, rollout, and restoration limits replace a forced one-word blast-radius
 rating. Small PRs can use concise prose; publication refreshes the guide's facts
@@ -812,10 +816,14 @@ against the current scope/head. Cross-skill references use the current local nam
 Evidence reuses Showroom's checked demonstrations and access links when available.
 
 T3 PR registration is shared by all PR routes and reused by stack/merge entrypoints.
-CI waiting uses app watches and fresh state after waking; GitHub confirms merge
-completion. Drafting alone remains local.
+Immediate linking follows live host rules without a mandatory final PR-list read.
+CI and reviews share one assessment/wait/readiness reference. Only the owning
+parent watches; handoffs unwatch, pushes retain the watch, and wakes require
+fresh state. Unavailable watchers and exhausted rate limits remain explicit
+pending states without custom polling. GitHub confirms merge completion.
 Feedback collection exhausts relevant pages and treats incomplete collection as
-unproven readiness. App watching and existing forge/tool selection remain unchanged.
+unproven readiness. Existing forge/tool preferences and automatic invocation
+remain unchanged.
 
 ## review-sweep
 
