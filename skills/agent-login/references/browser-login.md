@@ -2,7 +2,7 @@
 
 Use `agent-login` when an approved account alias and an existing local Chromium
 CDP session are available. Installation and the private mapping format are in
-[README](../../../README.md#agent-login).
+[command setup](cli-setup.md).
 
 1. Run `agent-login list`. Match the alias, destination, purpose, and role to the
    user's approved task. A local mapping records authorization; creating a

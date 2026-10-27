@@ -74,3 +74,6 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    including unavailable context or tools. A complete review can have no findings;
    no findings with incomplete coverage is not a clean review. Leave edits,
    further delegation, and acceptance to the caller.
+   Delegated reviews also return the [coverage receipt](references/review-evidence.md#record-reads)
+   assigned in the brief. Its read evidence and source citations let the caller
+   validate coverage before accepting or retaining the assessment.

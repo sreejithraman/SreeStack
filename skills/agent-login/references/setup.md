@@ -11,7 +11,7 @@ resume here once the service account authenticates. Login testing alone does
 not authorize provider administration or reading personal credentials.
 
 Store the approved alias in the private account file described in
-[README](../../../README.md#agent-login), preserving other aliases. The current
+[command setup](cli-setup.md), preserving other aliases. The current
 format uses a confirmed 1Password service-account ID and exact `op://` field
 references. Include the actual form origin, additional authorized submission
 origins, and selectors for its empty input fields and submit control. Add only

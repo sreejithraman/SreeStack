@@ -13,6 +13,10 @@ commit; reuse an already published head when nothing changed. For a caller-owned
 restack, use force-with-lease only on the named branch after review. Return a
 lease failure to the caller as changed remote state.
 
+Before rebasing or restacking, follow [Preserve local files](preserve-local-files.md)
+for retained files affected by tracking deletions. Verify restoration after the
+operation or recovery before reporting readiness.
+
 ## Create or update the PR
 
 Prefer the GitHub connector; use `gh` for missing capabilities, current-branch

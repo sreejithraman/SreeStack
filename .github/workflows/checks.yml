@@ -19,16 +19,14 @@ jobs:
           persist-credentials: false
       - name: Install checker dependency
         run: python3 -m pip install -r scripts/requirements-checks.txt
+      - name: Test repository checks
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
       - name: Check skills and links
         run: python3 scripts/check_skills.py
       - name: Check whitespace
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            BASE_SHA=$(git hash-object -t tree /dev/null)
-          fi
-          git diff --check "$BASE_SHA" HEAD
+        run: python3 scripts/check_whitespace.py
       - name: Scan for secrets
         shell: bash
         run: |
