@@ -109,12 +109,20 @@ A project verification skill alone does not establish a documentation map.
    workflow with the best available tooling for other interactive products.
 
    Discover actual launch commands, readiness signals, prerequisites, fixtures,
-   and isolation options from the repository and environment. Reuse available
-   browser, device, CLI, HTTP, or PTY tooling; custom helpers are optional. A CLI
-   can drive a UI. Choose by the public interaction and observable evidence it
-   exposes, honoring host browser and device routing first. Internal setters and
-   test-only endpoints may prepare state or support diagnosis; they cannot prove
-   a public interaction works. Verify what dry-run or test modes actually change.
+   and isolation options from the repository and environment. Before concurrent
+   or long-running checks, identify contention across tasks and worktrees. Apply
+   [Separate Before Serializing Shared State](../engineering-principles/references/separate-before-serializing-shared-state.md):
+   choose run-owned fixtures, ports, and data profiles for independent checks;
+   coordinate access where sharing is required and preserve active owners.
+   Use existing isolation options within verification-only scope; harness changes
+   require task authorization.
+
+   Reuse available browser, device, CLI, HTTP, or PTY tooling; custom helpers are
+   optional. A CLI can drive a UI. Choose by the public interaction and observable
+   evidence it exposes, honoring host browser and device routing first. Internal
+   setters and test-only endpoints may prepare state or support diagnosis; they
+   cannot prove a public interaction works. Verify what dry-run or test modes
+   actually change.
 
 3. **Launch and establish known state.** Start or connect to the intended build
    and check instance identity, revision, readiness, access, and required
@@ -139,7 +147,7 @@ A project verification skill alone does not establish a documentation map.
    mutable state.
 
    Identify external effects and consequential actions. Prefer disposable
-   accounts, fixtures, isolated ports, data profiles, and provider test modes.
+   accounts, fixtures, and provider test modes.
    Complete irreversible or externally visible actions only within the task's
    authorization; otherwise stop at the last safe step and mark the remaining
    assertions blocked. Record credential names and secure setup paths, never
@@ -156,6 +164,10 @@ A project verification skill alone does not establish a documentation map.
    coverage from changed behavior and relevant shared dependencies. Keep concrete
    project commands and feature groups in project docs. Targeted checks support
    iteration; preserve required broader integration gates and report any not run.
+
+   When changing harness isolation within the authorized scope, prove two
+   simultaneous runs reach their own resources, then stop one and confirm the
+   other remains usable.
 
    Inspect selected tests and configuration before running them: connect required
    assertions to actual checks, confirm the intended target and fixtures, and

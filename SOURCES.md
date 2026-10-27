@@ -531,6 +531,9 @@ whole-app or whole-map requests. Discloses map-writing examples and interface
 audit or accessibility guidance through conditional references.
 Centralizes documentation policy and shared verification rules in the main
 procedure; map and platform references retain their task-specific guidance.
+Plans resource ownership before concurrent or long checks, preserving active
+owners; authorized harness isolation changes require proof of concurrent
+isolation and independent cleanup.
 Uses an authoritative index and feature recipes in project docs, defaulting to
 `docs/agents/verification/`, rather than generating project skills. Adapts the
 pstack feature formula to user descriptions and sub-features, entry points,
