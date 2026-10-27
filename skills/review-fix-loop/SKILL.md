@@ -52,6 +52,10 @@ preparation when scope, proof, and assignments are recorded.
    superseded assessments do not satisfy coverage.
    For a matching snapshot, check the reports' assigned-criteria coverage,
    including unread inputs or missing assessments.
+   Use [Review evidence](../review/references/review-evidence.md) to validate
+   task/output identity, read receipts, and source citations, then archive the
+   original report and receipt bytes before later writers run. Invalid or lost
+   required coverage needs a fresh assessment under the selected failure policy.
    Give every result and partial finding to Review Sweep with its provenance.
 3. Settle findings and check accepted fixes through Review Sweep. After code or
    substantive instruction fixes, refresh the full snapshot against the original

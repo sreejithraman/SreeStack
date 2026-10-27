@@ -178,6 +178,9 @@ an ancestor of the branch.
 
 ## Constraints
 
+- Before history-changing operations, including `rebase`, `sync`, and stack
+  restructuring, follow [Preserve local files](../pr/references/preserve-local-files.md)
+  in every affected worktree. Verify retained files after success or recovery.
 - Stacks are strictly linear: one parent, at most one child. Use separate stacks for parallel work.
 - `rebase` and `sync` automatically update affected clean worktrees; they never auto-stash or
   create/remove worktrees. Mutations serialize across the clone, and paused operations require

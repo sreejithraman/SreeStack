@@ -1,13 +1,68 @@
-"""Check required skill fields, source entries, and local Markdown targets."""
+"""Check required skill fields, source entries, and local Markdown targets.
 
+Markdown fragments support ATX/Setext headings and explicit HTML id/name
+anchors. Generated anchors use rendered inline text (including image alt text),
+lowercase Unicode letters/numbers/marks, retain underscores and hyphens, remove
+punctuation/symbols, replace spaces with hyphens, and suffix duplicates with -1,
+-2, etc. Custom anchors do not affect heading numbering. Code examples and YAML
+frontmatter do not declare anchors. Fragments on non-Markdown files are unchecked.
+GitHub's heading rules:
+https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links
+"""
+
+from html.parser import HTMLParser
 from pathlib import Path
 import re
 import subprocess
 import sys
+import unicodedata
 from urllib.parse import unquote, urlsplit
 
 from markdown_it import MarkdownIt
 import yaml
+
+
+class RenderedHTML(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text = []
+        self.anchors = set()
+
+    def handle_data(self, data):
+        self.text.append(data)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if attrs.get("id"):
+            self.anchors.add(attrs["id"])
+        if tag == "a" and attrs.get("name"):
+            self.anchors.add(attrs["name"])
+        if tag == "img":
+            self.text.append(attrs.get("alt", ""))
+
+
+def markdown_anchors(tokens, markdown):
+    html = RenderedHTML()
+    html.feed(markdown.renderer.render(tokens, markdown.options, {}))
+    headings = set()
+    for index, token in enumerate(tokens):
+        if token.type != "heading_open":
+            continue
+        heading = RenderedHTML()
+        heading.feed(markdown.renderer.renderInline(
+            tokens[index + 1].children or [], markdown.options, {},
+        ))
+        text = "".join(heading.text).lower()
+        slug = "".join(character for character in text if character in " _-"
+                       or unicodedata.category(character)[0] in "LNM").replace(" ", "-")
+        anchor = slug
+        suffix = 0
+        while anchor in headings:
+            suffix += 1
+            anchor = f"{slug}-{suffix}"
+        headings.add(anchor)
+    return headings | html.anchors
+
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
@@ -66,11 +121,23 @@ for folder in skills:
             f"skills/{folder.name}: missing SOURCES.md entry for {source_name}"
         )
 
-markdown = MarkdownIt()
+markdown = MarkdownIt().enable("strikethrough")
+documents = {}
+
+
+def document(path):
+    path = path.resolve()
+    if path not in documents:
+        text = re.sub(r"\A---\n.*?\n---(?:\n|$)", "", path.read_text(), count=1, flags=re.S)
+        tokens = markdown.parse(text)
+        documents[path] = (tokens, markdown_anchors(tokens, markdown))
+    return documents[path]
+
+
 for path in files:
     if path.suffix.lower() != ".md":
         continue
-    tokens = markdown.parse(path.read_text())
+    tokens, _ = document(path)
     targets = []
     for token in tokens:
         for child in token.children or []:
@@ -82,12 +149,17 @@ for path in files:
         if target is None:
             continue
         link = urlsplit(target)
-        if link.scheme or link.netloc or not link.path or link.path.startswith("/"):
+        if link.scheme or link.netloc or link.path.startswith("/"):
             continue
-        if not (path.parent / unquote(link.path)).exists():
+        destination = path.parent / unquote(link.path) if link.path else path
+        if not destination.exists():
             errors.append(f"{path.relative_to(ROOT)}: missing link target {target}")
+        elif link.fragment and destination.is_file() and destination.suffix.lower() == ".md":
+            _, anchors = document(destination)
+            if unquote(link.fragment) not in anchors:
+                errors.append(f"{path.relative_to(ROOT)}: missing Markdown anchor {target}")
 
 if errors:
     print("\n".join(errors), file=sys.stderr)
     sys.exit(1)
-print(f"Checked {len(skills)} skills and local Markdown targets.")
+print(f"Checked {len(skills)} skills and local Markdown paths/anchors.")

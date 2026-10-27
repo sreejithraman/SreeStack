@@ -113,7 +113,7 @@ See [focus-visible](https://drafts.csswg.org/selectors-4/#the-focus-visible-pseu
 and [forced colors](https://drafts.csswg.org/css-color-adjust-1/#forced-colors-mode).
 
 For hover capabilities, press cancellation, selection, and touch rules, use
-[mobile browser input guidance](mobile-web.md#touch-selection-and-feedback).
+[mobile browser input guidance](mobile-web.md#touch-and-mixed-input).
 CSS `:active` can supply simple visual feedback; keyboard and scripted pressed
 states still need the component's real activation contract. A color or border
 change can be sufficient. Use `animate` for moving/scaling feedback, including

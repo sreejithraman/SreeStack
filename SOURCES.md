@@ -32,7 +32,9 @@ private environment-file provisioning for local Codex runtimes, preserving
 unrelated agent variables, host-specific Touch ID diagnosis, and
 provisioning-source-specific runtime checks. Omits OpenClaw install metadata,
 gateway-specific IPC assumptions, and tmux/session-export workflows. API claims
-link to official documentation; README.md holds purpose and setup prerequisites.
+link to official documentation; installation, private account mappings, and
+development checks live in `references/cli-setup.md`. README.md provides
+discovery links.
 
 ## snip-snap
 
@@ -358,6 +360,8 @@ Invocation remains unchanged. Checks installed-extension capabilities before
 newer worktree behavior. Conflict staging follows the diagnostic owner, and
 sync rollback guidance preserves partial-restoration recovery state instead of
 promising unconditional rollback.
+History-changing operations use the shared PR preservation reference to back up
+retained local files affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s T3 thread-registration rules; CLI publication
 does not substitute for app registration.
@@ -811,6 +815,8 @@ Indirect-consumer checks use `blast-radius`; React or Next assessments use
 The shared review brief carries applicable evaluation criteria and evidence,
 including empirical comparison conditions, qualitative judgments, and changes
 to tests, fixtures, and measurement methods.
+Delegated review evidence adds task-specific output paths, supported read-range
+receipts, frozen-source citation checks, and caller-retained original artifacts.
 
 ## review-fix-loop
 
@@ -850,6 +856,9 @@ consumers, rollout, and restoration limits replace a forced one-word blast-radiu
 rating. Small PRs can use concise prose; publication refreshes the guide's facts
 against the current scope/head. Cross-skill references use the current local name.
 Evidence reuses Showroom's checked demonstrations and access links when available.
+History changes share a local preservation reference with Merge and gh-stack:
+back up current retained bytes outside affected checkouts, preserve both versions
+on conflicts, and verify hashes after success or recovery.
 
 T3 PR registration is shared by all PR routes and reused by stack/merge entrypoints.
 Immediate linking follows live host rules without a mandatory final PR-list read.

@@ -6,6 +6,11 @@ Accessible absolute paths are sufficient for children in the shared checkout;
 supply full contents when a reviewer cannot read the source. Keep briefs and
 snapshots outside the reviewed diff.
 
+For delegated assessments, use [Review evidence](review-evidence.md) to assign
+unique output paths and snapshot identity. Include its coverage receipt contract
+and the exact report/receipt paths in every brief; retain the task-to-assignment
+mapping when dispatch returns.
+
 First-round reviewers receive no earlier verdicts or author defenses. Later
 rounds include original scope, prior findings, their evidence and dispositions,
 responses, and unresolved objections. Ask reviewers to verify those claims
@@ -48,3 +53,5 @@ requires serial dispatch; earlier-round findings remain part of later briefs.
 Read the assigned references and review the full scope, inspecting nearby code
 or instructions as needed. Return findings in the references' requested format
 and report any scope you could not review.
+Return the delegated coverage receipt with the findings, including actual read
+evidence and explicit gaps. Cite only locations checked against this snapshot.

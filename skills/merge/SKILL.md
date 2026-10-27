@@ -30,6 +30,8 @@ Return readiness blockers to the caller; fixes belong to `pr` or the caller.
    verification. Reuse matching evidence. If missing or stale, invoke
    [pr](../pr/SKILL.md) in preparation-only mode and return refreshed evidence
    here. After repairs or restacking, recheck every affected layer.
+   Before local history changes, apply [Preserve local files](../pr/references/preserve-local-files.md)
+   and verify retained files after success or recovery.
    Land the original merge set only after all its PRs meet readiness requirements.
 
 3. **Land.** Follow repository merge settings, protections, and queues. For a

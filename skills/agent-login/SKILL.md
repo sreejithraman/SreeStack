@@ -7,7 +7,7 @@ description: Use when signing into applications, setting up or diagnosing agent 
 
 For onboarding an account or checking login readiness, read
 [account setup](references/setup.md). Installation and private configuration
-are in [README](../../README.md#agent-login).
+are in [command setup](references/cli-setup.md).
 
 For 1Password access setup, troubleshooting, item management, or command/API
 credentials, read the [provider reference](references/1password.md). Apply its
