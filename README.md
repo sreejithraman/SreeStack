@@ -279,6 +279,14 @@ reports automatic login separately from checks performed after user sign-in.
 Linking this skill does not install the product's browser, device, or terminal
 harness.
 
+[Mobile verification](skills/verify/references/mobile.md) covers iOS and Android
+interactive checks and repeatable regression suites. It preserves host device
+routing and existing project harnesses, and prefers Maestro for new mobile
+workflow automation when supported. Project recipes link executable flows and
+their assertions; Verify judges coverage and evidence, including checks outside
+the suite. Maestro supports iOS Simulators and Android emulators/devices;
+physical iOS and interface audits need suitable additional tooling.
+
 For example, “Model-check this retry race” uses Verify's
 [formal-verification guidance](skills/verify/references/formal-verification.md)
 to select a tool, tie the model to current code, challenge the property with a

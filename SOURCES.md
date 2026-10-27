@@ -539,10 +539,21 @@ targeted updates, whole-app verification, source-and-live whole-map maintenance,
 and rewriting or reorganizing maps while preserving useful human assertions.
 Existing project skills may provide facts consistent with their invocation
 policies; this skill retains procedure ownership and leaves migration explicit.
-Imported interface criteria retain full requested audit coverage. Web and iOS
-checks follow the requested deployment or Simulator/device target. iOS routing
-prefers T3’s Device panel and returned driver/session flags where available;
-Xcode MCP and platform CLIs supply build/log operations or host-supported fallback. Terminal and service checks use process or PTY driving, bounded
+Imported interface criteria retain full requested audit coverage. Web and mobile
+checks follow the requested deployment or Simulator/emulator/device target.
+Shared mobile guidance owns T3 Device panel routing and returned driver/session
+flags for interactive iOS/Android checks; the iOS reference supplies Apple build
+and device details. Mobile suites reuse project harnesses, preferring Maestro
+for new workflow automation on supported targets. Flows, CI configuration, and
+test prerequisites stay in product repos; maps link executable assertions and
+uncovered checks. Maestro guidance cites official platform, selector, wait, CLI,
+report, screenshot, and AI-assertion documentation. Suite execution preserves
+target identity, required-check execution, failure evidence, and isolated state;
+new harness setup checks failure detection with a disposable negative control.
+The shared procedure accepts interactive or automated evidence and requires
+assertion coverage beyond a successful command. Xcode MCP and platform CLIs
+supply build/log operations or host-supported fallback.
+Terminal and service checks use process or PTY driving, bounded
 completion, public protocols, and fresh persisted-output reads. Harness selection
 follows host routing, including T3 preview opening and actionable-error recovery,
 and public user paths, including CLI-driven UIs. Keeps

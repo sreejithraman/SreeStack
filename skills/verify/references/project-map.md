@@ -42,6 +42,15 @@ configuration for obvious commands; avoid a generic tutorial or copies of
 easy-to-discover `--help` output. Specify actual available tools and commands;
 illustrative helpers must not masquerade as installed tooling.
 
+For executable suites, shared setup links the project command, pinned tool
+version or installation source, build/install prerequisites, explicit target
+selection, fixture/reset policy, and report/artifact locations. Recipes link
+the actual test or flow files and map their checks to required workflow
+assertions. Keep executable steps in those files; describe their user-visible
+contract and remaining interactive checks in the recipe. A suite name or green
+CI badge alone does not document which assertions it covers. For mobile suites,
+use [mobile verification](mobile.md).
+
 Record the usable-readiness condition and required initialization, migrations,
 and fixtures. For setup or first-run recipes, include isolated empty-data launch
 steps and any setup still unverified on the intended target, following the main
