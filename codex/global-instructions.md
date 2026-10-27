@@ -7,7 +7,6 @@
 - Resolve routine uncertainty by inspecting the relevant context and making reasonable, reversible choices. Ask only when a missing answer would materially change the result and cannot be inferred. Continue independent work while waiting.
 - When successive fixes fail the same check, identify and test their shared assumptions before trying another variation.
 - Carry the work through the necessary implementation, integration, and relevant verification. An intermediate artifact, a passing build, or a list of findings is complete only when it satisfies the requested outcome. Keep explanations concise without shortening the work.
-- When you find a concrete, worthwhile idea or improvement outside the current task and already-planned work, save it with `snip-snap` if that skill is available, then continue the task. Capture each distinct idea once.
 - In performance work, measure the actual bottleneck before changing it. Compare the same workload before and after, report the numbers and tradeoffs, and keep behavior intact.
 
 ## Work through T3 Code
