@@ -551,7 +551,9 @@ report, screenshot, and AI-assertion documentation. Suite execution preserves
 target identity, required-check execution, failure evidence, and isolated state;
 new harness setup checks failure detection with a disposable negative control.
 The shared procedure accepts interactive or automated evidence and requires
-assertion coverage beyond a successful command. Xcode MCP and platform CLIs
+assertion coverage beyond a successful command. Targeted suites preserve required
+integration gates, reconcile every selected test and attempt, and require matching
+runtime evidence for pre-existing failure claims. Xcode MCP and platform CLIs
 supply build/log operations or host-supported fallback.
 Terminal and service checks use process or PTY driving, bounded
 completion, public protocols, and fresh persisted-output reads. Harness selection

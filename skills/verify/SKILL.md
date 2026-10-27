@@ -152,12 +152,25 @@ A project verification skill alone does not establish a documentation map.
    use coordinates only when stable targets are unavailable, derived from
    current state.
 
-   For automated workflow suites, inspect the selected tests and configuration
-   before running them: connect required assertions to actual checks, confirm the
-   intended target and fixtures, and account for filters, skipped or optional
-   checks, and retries. Run the project command and inspect assertion results
-   and retained artifacts. Exercise uncovered assertions separately. A successful
-   command alone does not establish workflow coverage or a passing verdict.
+   For automated workflow suites, discover existing targeted checks and select
+   coverage from changed behavior and relevant shared dependencies. Keep concrete
+   project commands and feature groups in project docs. Targeted checks support
+   iteration; preserve required broader integration gates and report any not run.
+
+   Inspect selected tests and configuration before running them: connect required
+   assertions to actual checks, confirm the intended target and fixtures, and
+   account for filters, optional checks, and retries. Run the project command and
+   reconcile every selected test with its assertion results and retained artifacts,
+   including actual skips, unmet preconditions, and unfinished outcomes. Count
+   duplicate test identities once for coverage while retaining every attempt's
+   outcome. Exercise uncovered assertions separately. A successful command, zero
+   tests, partial results, or a passing rerun alone cannot establish the requested
+   pass.
+
+   Call a failure pre-existing only with matching runtime baseline evidence:
+   match the relevant source artifact, including local changes, environment,
+   fixtures, and test method. Static source equality or another revision's results
+   alone do not prove baseline behavior. Retain precise limits on the comparison.
 
    If an action produces no expected change, record that outcome before retrying.
    Retry once only when observable evidence shows that the target moved or the
