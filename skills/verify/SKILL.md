@@ -102,8 +102,10 @@ A project verification skill alone does not establish a documentation map.
    existing authorization; verify delivery through the selected host interface.
 
    Read the relevant platform reference: [web](references/web.md),
-   [iOS](references/ios.md), [macOS](references/macos.md), or
-   [terminal and services](references/terminal-and-service.md). Use the same
+   [mobile apps](references/mobile.md) for iOS or Android, [macOS](references/macos.md),
+   or [terminal and services](references/terminal-and-service.md). Mobile guidance
+   covers interactive device checks and repeatable suites, with Maestro preferred
+   for new mobile workflow automation when it fits the target. Use the same
    workflow with the best available tooling for other interactive products.
 
    Discover actual launch commands, readiness signals, prerequisites, fixtures,
@@ -143,11 +145,19 @@ A project verification skill alone does not establish a documentation map.
    assertions blocked. Record credential names and secure setup paths, never
    values. Redact secrets and private data before retaining evidence.
 
-4. **Observe, act, observe.** Wait for the known starting state to settle. Inspect
-   rendered appearance and semantic representation when available. Perform one
-   meaningful interaction, then inspect its result before continuing. Prefer
-   roles, labels, and identifiers; use coordinates only when stable targets are
-   unavailable, derived from current state.
+4. **Exercise the selected workflows.** For interactive checks, wait for the known
+   starting state to settle. Inspect rendered appearance and semantic
+   representation when available. Perform one meaningful interaction, then
+   inspect its result before continuing. Prefer roles, labels, and identifiers;
+   use coordinates only when stable targets are unavailable, derived from
+   current state.
+
+   For automated workflow suites, inspect the selected tests and configuration
+   before running them: connect required assertions to actual checks, confirm the
+   intended target and fixtures, and account for filters, skipped or optional
+   checks, and retries. Run the project command and inspect assertion results
+   and retained artifacts. Exercise uncovered assertions separately. A successful
+   command alone does not establish workflow coverage or a passing verdict.
 
    If an action produces no expected change, record that outcome before retrying.
    Retry once only when observable evidence shows that the target moved or the
