@@ -36,10 +36,11 @@ link to official documentation; README.md holds purpose and setup prerequisites.
 
 ## snip-snap
 
-- [sreejithraman/snip-snap / .agents/skills/snip-snap](https://github.com/sreejithraman/snip-snap/tree/5c1950172f8040a59f6ce4947a13223a30b3ecca/.agents/skills/snip-snap) — commit `5c1950172f8040a59f6ce4947a13223a30b3ecca`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
+- [sreejithraman/snip-snap / .agents/skills/snip-snap](https://github.com/sreejithraman/snip-snap/tree/ae14ef0b89ed2806afef7332caf249ecc9ee1cc5/.agents/skills/snip-snap) — `SKILL.md` and `references/writes.md`; import baseline commit `ae14ef0b89ed2806afef7332caf249ecc9ee1cc5`. MIT notice in `licenses/sreejithraman-snip-snap.txt`.
 
-- Storage operations can support active work; chore selection and execution
-  live in `snipsnap-do-chores`.
+Both files match upstream. Automatically discoverable in both hosts. Chore
+selection and execution live in `snipsnap-do-chores`, which uses this skill's
+saved-work lifecycle.
 
 ## snipsnap-do-chores
 
