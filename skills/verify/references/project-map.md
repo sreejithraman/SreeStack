@@ -48,8 +48,8 @@ selection, fixture/reset policy, and report/artifact locations. Recipes link
 the actual test or flow files and map their checks to required workflow
 assertions. Keep executable steps in those files; describe their user-visible
 contract and remaining interactive checks in the recipe. A suite name or green
-CI badge alone does not document which assertions it covers. For mobile suites,
-use [mobile verification](mobile.md).
+CI badge alone does not document which assertions it covers. For iOS suites,
+use [iOS verification](ios.md).
 
 Record the usable-readiness condition and required initialization, migrations,
 and fixtures. For setup or first-run recipes, include isolated empty-data launch
