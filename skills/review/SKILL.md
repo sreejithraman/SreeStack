@@ -42,8 +42,8 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    - Correctness: bugs, regressions, edge cases, security, data loss, and test
      gaps. Use [Spec](references/spec.md) to trace supplied requirements.
    - Code quality: [Standards](references/standards.md),
-     [Ponytail](references/ponytail.md) for cuts and reuse, and
-     [Thermo](references/thermo.md) for structure and boundaries.
+     [Ponytail](references/ponytail.md) for cuts, reuse, and redundant defensive
+     code, and [Thermo](references/thermo.md) for structure and boundaries.
 
    Apply the following checks where relevant to the assigned criteria. For
    plausible indirect consumers such as persisted data, wire formats, or
