@@ -1,10 +1,31 @@
 # iOS Verification
 
-Use [mobile verification](mobile.md) for target selection, host device routing,
-interactive checks, and repeatable regression suites, including Maestro's
-Simulator support and physical-iOS limitation. This reference supplies Apple
-build and device details. Identify the project or workspace, scheme, and build
-configuration; select a Simulator runtime or device supporting the deployment target.
+Use this reference for iOS app workflows. Choose interactive driving for
+exploration, reproduction, and interface inspection; use project suites for
+repeatable regression checks. Combine them when the selected coverage needs both.
+Verify's main procedure owns coverage, state, verdicts, and cleanup for either path.
+
+## Target and tooling
+
+Preserve the requested OS and Simulator or physical-device target. Otherwise use
+a Simulator when it can exercise the selected workflow; choose suitable hardware
+for device-dependent assertions. Identify the project or workspace, scheme, and
+build configuration. Record the app/build revision, bundle identifier, target ID,
+model, and OS version or Simulator runtime supporting the deployment target.
+
+For interactive Simulator checks in T3 Code, use `device_list`, then `device_open`
+so the user can watch the selected device. Drive it with the exact `agent-device`
+launcher, host configuration, and session flags returned by `device_open`, keeping
+those flags on every command. Prefer current snapshot refs and use
+`device_screenshot` for visual inspection. Follow the live host device contract
+and report an unavailable platform.
+See the [T3 device contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/device/handlers.ts#L28).
+
+Run repository regression suites as project test operations. Use the host's
+device driver for interactive work and honor host restrictions on suite execution.
+Serialize suite runs and interactive work sharing a device, app data, or backend
+fixtures. Outside a host-managed device runtime, use available device tooling
+that exposes the required interaction and result.
 
 Use platform tools for builds, logs, or other operations the device driver does
 not cover. Outside that device runtime, choose the shortest available path that
@@ -22,6 +43,50 @@ For physical-device checks, choose the device as Xcode's run destination or use
 [`xcrun devicectl`](https://developer.apple.com/documentation/xcode/xcode-command-line-tool-reference)
 for available device operations. Interact through the device or connected
 interface tooling; check its capabilities before relying on it.
+
+## Choose a regression harness
+
+Reuse the project's established harness. For new iOS UI workflow tests, prefer
+XCTest with XCUIAutomation (XCUITest). For new Swift unit tests, prefer Swift
+Testing; use XCTest for performance tests. Follow the project's supported
+toolchain and keep existing test coverage useful during incremental adoption.
+See [Apple's testing guidance](https://developer.apple.com/documentation/xctest).
+
+Keep one-off checks interactive when they supply the selected evidence. Add or
+change executable tests when the active task includes implementation, harness
+repair, or reusable verification setup. Keep test files, test plans, fixtures,
+and CI configuration in the product repo.
+
+## Prepare and run native UI tests
+
+Discover the project's UI test target, scheme, test plan, wrapper command, and
+CI configuration. Select the explicit Simulator or device destination and check
+that the runner uses it. Use the project's Xcode or `xcodebuild` workflow;
+confirm toolchain-dependent options through installed help and
+[Apple's test-running guidance](https://developer.apple.com/documentation/xcode/running-tests-and-interpreting-results).
+
+Prepare the build, signing and device access where required, fixtures,
+permissions, locale, and authentication. Inspect test setup, launch arguments,
+reset hooks, and teardown so state changes fit the disposable target and the
+workflow's starting assumptions. Keep credentials in the approved runtime
+delivery path from [authenticated verification](authenticated-verification.md).
+
+Map selected test methods to required workflow assertions. Inspect test-plan
+configurations, selection filters, disabled tests, skips, expected failures, and
+retries. Reconcile the tests actually executed with the selected assertions under
+Verify's main procedure. Retain the runner's exit status and result bundle,
+including screenshots, attachments, logs, and every attempt needed for the verdict.
+
+Pair public UI actions with explicit outcome assertions. Prefer accessibility
+identifiers and meaningful labels. Wait for observable states with bounded
+deadlines; assert the result of an operation as well as readiness to interact.
+Give each standalone test a known starting state and isolated fixtures. Use the
+fresh read required by Verify for persistence assertions.
+
+When establishing a new harness, run a representative workflow against the
+actual build and target. In a disposable copy, introduce a known assertion
+mismatch and confirm that the runner fails with useful retained evidence. Keep
+this failure-detection check separate from the real product verdict.
 
 ## Build and launch
 
@@ -61,5 +126,14 @@ hardware is unavailable, report the device-specific assertions as blocked.
 
 ## Evidence
 
-Record the scheme, target device model and OS version or Simulator model and
-runtime, workflow states, and relevant screenshots or logs.
+Record the command and toolchain, scheme/test plan, build and target identity,
+fixture state, selected tests, per-assertion outcomes, and artifact locations.
+Capture the workflow states needed to support visual claims. Use
+[interface review](interface-review.md) for relevant visual, Dynamic Type,
+keyboard, focus, touch-target, and assistive-technology checks. Exercise VoiceOver
+usability and hardware-dependent behavior through suitable checks on the required
+target; accessibility identifiers supply selectors for automation.
+
+For reusable setup, follow [project maps](project-map.md): link executable tests
+to workflow assertions and document the method for exercising remaining checks.
+Keep run evidence separate from the map.

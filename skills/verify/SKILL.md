@@ -102,10 +102,10 @@ A project verification skill alone does not establish a documentation map.
    existing authorization; verify delivery through the selected host interface.
 
    Read the relevant platform reference: [web](references/web.md),
-   [mobile apps](references/mobile.md) for iOS or Android, [macOS](references/macos.md),
-   or [terminal and services](references/terminal-and-service.md). Mobile guidance
-   covers interactive device checks and repeatable suites, with Maestro preferred
-   for new mobile workflow automation when it fits the target. Use the same
+   [iOS](references/ios.md), [macOS](references/macos.md),
+   or [terminal and services](references/terminal-and-service.md). iOS guidance
+   covers interactive device checks and repeatable suites, with XCTest
+   and XCUIAutomation preferred for new iOS UI workflow tests. Use the same
    workflow with the best available tooling for other interactive products.
 
    Discover actual launch commands, readiness signals, prerequisites, fixtures,
