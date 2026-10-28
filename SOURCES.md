@@ -542,16 +542,15 @@ targeted updates, whole-app verification, source-and-live whole-map maintenance,
 and rewriting or reorganizing maps while preserving useful human assertions.
 Existing project skills may provide facts consistent with their invocation
 policies; this skill retains procedure ownership and leaves migration explicit.
-Imported interface criteria retain full requested audit coverage. Web and mobile
-checks follow the requested deployment or Simulator/emulator/device target.
-Shared mobile guidance owns T3 Device panel routing and returned driver/session
-flags for interactive iOS/Android checks; the iOS reference supplies Apple build
-and device details. Mobile suites reuse project harnesses, preferring Maestro
-for new workflow automation on supported targets. Flows, CI configuration, and
-test prerequisites stay in product repos; maps link executable assertions and
-uncovered checks. Maestro guidance cites official platform, selector, wait, CLI,
-report, screenshot, and AI-assertion documentation. Suite execution preserves
-target identity, required-check execution, failure evidence, and isolated state;
+Imported interface criteria retain full requested audit coverage. Web and iOS
+checks follow the requested deployment or Simulator/device target. The iOS
+reference owns T3 Device panel routing, returned driver/session flags, Apple
+build and device details, and native suite setup. It reuses project harnesses
+and prefers XCTest with XCUIAutomation for new iOS UI workflow tests, Swift
+Testing for new Swift unit tests, and XCTest for performance tests. Tests, CI
+configuration, and prerequisites stay in product repos; maps link executable
+assertions and uncovered checks. Suite execution preserves target identity,
+required-check execution, failure evidence, and isolated state;
 new harness setup checks failure detection with a disposable negative control.
 The shared procedure accepts interactive or automated evidence and requires
 assertion coverage beyond a successful command. Targeted suites preserve required
