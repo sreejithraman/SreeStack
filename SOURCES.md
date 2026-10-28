@@ -826,6 +826,10 @@ Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
 persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
+Ponytail also assesses redundant defensive code through traced guarantees and
+error paths, preserves changing-state checks and resource lifetimes, and judges
+helpers by semantic value rather than caller count. Its findings require the
+smallest safe cut and the behavior to preserve.
 Indirect-consumer checks use `blast-radius`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 The shared review brief carries applicable evaluation criteria and evidence,
