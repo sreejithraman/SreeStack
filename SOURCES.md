@@ -793,6 +793,7 @@ evidence and access gaps before acceptance.
 ## review
 
 - Local: `skills/review` (SreeStack).
+- [Vox / review-noise post](https://x.com/Voxyz_ai/status/2115518965443076573) — conceptual input for shared bug evidence and Review Sweep's exposure/impact policy; checked 2026-10-28. Independently written qualitative guidance preserves rare material failures and explicit contracts; no numeric threshold or upstream prose copied.
 
 Reviewer references:
 
@@ -821,6 +822,9 @@ and Gemini model reviews additionally load their checked-in provider references;
 these supplement assigned lenses under the shared review contract and require
 no native plugin or command activation. Later-round briefs include
 prior findings and dispositions for independent reassessment.
+Bug findings establish supported triggers, practical exposure, and consequences,
+distinguishing observed behavior, inference, and unknowns. Blocking findings need
+material impact or an explicit requirement or contract violation.
 Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
@@ -893,6 +897,8 @@ remain unchanged.
 
 - Local: `skills/review-sweep` (SreeStack). Findings retain assignment/model
   provenance; accepted fixes use orchestration's implementation selection.
+  Settlement weighs supported exposure and impact, preserving rare material and
+  required failures while deferring low-impact work and rejecting hypotheticals.
 
 ## setup-sreestack
 

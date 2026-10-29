@@ -67,6 +67,11 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    the implementation owner supplies initial acceptance evidence. Require a
    concrete benefit for structural changes; style preferences alone are optional.
 
+   For each bug, establish a supported triggering scenario, practical exposure,
+   and consequence from a reproduction or traced code path. Distinguish observed
+   behavior, justified inference, and unknowns. Justify blocking findings by
+   material impact or an explicit requirement or contract violation.
+
 3. **Return the review.** Give each finding a location, evidence, impact, and
    proposed remedy. Label assigned Spec, Standards, and react-best-practices
    reports separately. Include the assignment and model identity when supplied.
