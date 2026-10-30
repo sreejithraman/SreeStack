@@ -58,8 +58,22 @@ broken. Recommend fixing it once, where all callers route through.
 - Two stdlib options, same size? Take the one that’s correct on edge cases.
   Lazy means writing less code, not picking the flimsier algorithm.
 
-Treat these as candidates to prove against actual uses and requirements, not
-reasons to delete a useful boundary just because it has one caller.
+Treat these as candidates to prove against actual uses and requirements. Judge
+helpers by reuse, the complexity they hide, or a useful independent name that
+clarifies the caller. A single caller alone does not justify inlining.
+
+### Redundant defensive code
+
+Trace values to the boundary that owns their validation and through their actual
+callers. Look for repeated checks of invariants already established by a schema,
+constructor, decoder, or prior control flow. Type annotations and casts alone do
+not validate external input. Confirm that the guarantee survives intervening
+mutation, suspension, callbacks, and new input; live access may be revoked.
+
+Question silent fallbacks for impossible internal states and handlers that only
+rethrow an unchanged error. Preserve checks of changing state, recovery, cleanup,
+and error translation. When recommending a smaller handler or block, preserve
+resource lifetimes and execution order; a scope can still own a lock or defer.
 
 ## Deliberate shortcuts
 
@@ -97,6 +111,10 @@ whether a proposed cut is valid.
 
 One concise item per proven cut: location, tag, what to cut, what replaces it,
 and the code evidence that makes the replacement safe.
+
+For defensive-code cuts, cite the earlier guarantee or unchanged error path,
+explain why it still holds, and specify the smallest safe removal and behavior
+to preserve. Counts of guards, catches, or helper callers alone prove no cut.
 
 - `delete:` dead code, unused flexibility, speculative feature. Replacement: nothing.
 - `reuse:` something this repo or an installed dependency already supplies. Name it.

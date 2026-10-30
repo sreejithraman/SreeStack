@@ -42,8 +42,8 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    - Correctness: bugs, regressions, edge cases, security, data loss, and test
      gaps. Use [Spec](references/spec.md) to trace supplied requirements.
    - Code quality: [Standards](references/standards.md),
-     [Ponytail](references/ponytail.md) for cuts and reuse, and
-     [Thermo](references/thermo.md) for structure and boundaries.
+     [Ponytail](references/ponytail.md) for cuts, reuse, and redundant defensive
+     code, and [Thermo](references/thermo.md) for structure and boundaries.
 
    Apply the following checks where relevant to the assigned criteria. For
    plausible indirect consumers such as persisted data, wire formats, or
@@ -66,6 +66,16 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    still applies to this snapshot. Report material missing proof as a finding;
    the implementation owner supplies initial acceptance evidence. Require a
    concrete benefit for structural changes; style preferences alone are optional.
+
+   For structural findings, connect the supplied change to a problem it
+   introduces or worsens, with an affected caller, invariant, or concrete
+   maintenance consequence and an actionable remedy. Separate broader existing
+   debt from the fixes needed for this change.
+
+   For each bug, establish a supported triggering scenario, practical exposure,
+   and consequence from a reproduction or traced code path. Distinguish observed
+   behavior, justified inference, and unknowns. Justify blocking findings by
+   material impact or an explicit requirement or contract violation.
 
 3. **Return the review.** Give each finding a location, evidence, impact, and
    proposed remedy. Label assigned Spec, Standards, and react-best-practices

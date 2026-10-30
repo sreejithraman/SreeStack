@@ -162,6 +162,7 @@ model settings, or Cursor MCP discovery.
 
 - [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/codebase-design) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 - [cursor/plugins / pstack architecture and correction guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `architect/references/design-red-flags.md` and `correct/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [Maze / codebase indicators post](https://x.com/mazeincoding/status/2115575731585507796) — conceptual input for `references/architecture-signals.md`; checked 2026-10-29. Independently written diagnostic prompts require caller, state, or maintenance evidence and distinguish architecture exploration from review of a supplied change.
 
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
@@ -180,6 +181,14 @@ design stay local. Generic design, testability, and enforcement guidance use
 assessment and historical guard proof; `correct` owns recurring-mistake investigation
 and repair. Design and review return recommendations. Legitimate adapters and
 compatibility paths remain supported.
+
+`references/architecture-signals.md` supplies shared discovery prompts for
+structural friction, including hidden caller obligations, invalid states,
+scattered ownership, and validation. Architecture exploration and Thermo use
+the same reference. Signals need evidence; size, layout, duplication, or wrapper
+counts alone do not justify a refactor.
+The diagnostic table stands on its own. Deeper reading requires a concrete
+candidate needing further validation; agents reuse relevant guidance already read.
 
 ## correct
 
@@ -446,6 +455,9 @@ exploration, technical experiments, planning, and glossary/ADR handling remain l
 Selected designs can continue through architect within the requested scope,
 carrying forward checked findings and experiments.
 
+Exploration also uses Codebase Design's shared architecture signals, grounded in
+caller traces, state validity, and maintenance history rather than layout or size.
+
 ## arena
 
 - [cursor/plugins / pstack/skills/arena](https://github.com/cursor/plugins/tree/019a6a20592c10bf92869e5740368f578a9997fd/pstack/skills/arena) — `SKILL.md`; import baseline `019a6a20592c10bf92869e5740368f578a9997fd`. MIT notice in `licenses/lauren-tan-pstack.txt`.
@@ -552,6 +564,9 @@ whole-app or whole-map requests. Discloses map-writing examples and interface
 audit or accessibility guidance through conditional references.
 Centralizes documentation policy and shared verification rules in the main
 procedure; map and platform references retain their task-specific guidance.
+Plans resource ownership before concurrent or long checks, preserving active
+owners; authorized harness isolation changes require proof of concurrent
+isolation and independent cleanup.
 Uses an authoritative index and feature recipes in project docs, defaulting to
 `docs/agents/verification/`, rather than generating project skills. Adapts the
 pstack feature formula to user descriptions and sub-features, entry points,
@@ -560,16 +575,15 @@ targeted updates, whole-app verification, source-and-live whole-map maintenance,
 and rewriting or reorganizing maps while preserving useful human assertions.
 Existing project skills may provide facts consistent with their invocation
 policies; this skill retains procedure ownership and leaves migration explicit.
-Imported interface criteria retain full requested audit coverage. Web and mobile
-checks follow the requested deployment or Simulator/emulator/device target.
-Shared mobile guidance owns T3 Device panel routing and returned driver/session
-flags for interactive iOS/Android checks; the iOS reference supplies Apple build
-and device details. Mobile suites reuse project harnesses, preferring Maestro
-for new workflow automation on supported targets. Flows, CI configuration, and
-test prerequisites stay in product repos; maps link executable assertions and
-uncovered checks. Maestro guidance cites official platform, selector, wait, CLI,
-report, screenshot, and AI-assertion documentation. Suite execution preserves
-target identity, required-check execution, failure evidence, and isolated state;
+Imported interface criteria retain full requested audit coverage. Web and iOS
+checks follow the requested deployment or Simulator/device target. The iOS
+reference owns T3 Device panel routing, returned driver/session flags, Apple
+build and device details, and native suite setup. It reuses project harnesses
+and prefers XCTest with XCUIAutomation for new iOS UI workflow tests, Swift
+Testing for new Swift unit tests, and XCTest for performance tests. Tests, CI
+configuration, and prerequisites stay in product repos; maps link executable
+assertions and uncovered checks. Suite execution preserves target identity,
+required-check execution, failure evidence, and isolated state;
 new harness setup checks failure detection with a disposable negative control.
 The shared procedure accepts interactive or automated evidence and requires
 assertion coverage beyond a successful command. Targeted suites preserve required
@@ -812,6 +826,7 @@ evidence and access gaps before acceptance.
 ## review
 
 - Local: `skills/review` (SreeStack).
+- [Vox / review-noise post](https://x.com/Voxyz_ai/status/2115518965443076573) — conceptual input for shared bug evidence and Review Sweep's exposure/impact policy; checked 2026-10-28. Independently written qualitative guidance preserves rare material failures and explicit contracts; no numeric threshold or upstream prose copied.
 
 Reviewer references:
 
@@ -840,10 +855,23 @@ and Gemini model reviews additionally load their checked-in provider references;
 these supplement assigned lenses under the shared review contract and require
 no native plugin or command activation. Later-round briefs include
 prior findings and dispositions for independent reassessment.
+Bug findings establish supported triggers, practical exposure, and consequences,
+distinguishing observed behavior, inference, and unknowns. Blocking findings need
+material impact or an explicit requirement or contract violation.
 Standards and Spec keep separate labeled reports, their upstream review bars,
 and 400-word limits. Thermo and Ponytail apply within the supplied scope;
 structural suggestions require evidence and a concrete benefit. Ponytail omits
 persistent modes, installation, benchmark displays, and whole-repo debt ledgers.
+Ponytail also assesses redundant defensive code through traced guarantees and
+error paths, preserves changing-state checks and resource lifetimes, and judges
+helpers by semantic value rather than caller count. Its findings require the
+smallest safe cut and the behavior to preserve.
+Structural findings connect the change to introduced or worsened friction and
+separate broader existing debt. Thermo uses Codebase Design's shared architecture
+signals. Its file-size guidance prompts investigation of responsibilities and
+caller knowledge; size alone is not a finding or blocker. Structural blocking
+findings require concrete impact or regression under the shared evidence and
+settlement rules.
 Indirect-consumer checks use `blast-radius`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 The shared review brief carries applicable evaluation criteria and evidence,
@@ -908,6 +936,8 @@ remain unchanged.
 
 - Local: `skills/review-sweep` (SreeStack). Findings retain assignment/model
   provenance; accepted fixes use orchestration's implementation selection.
+  Settlement weighs supported exposure and impact, preserving rare material and
+  required failures while deferring low-impact work and rejecting hypotheticals.
 
 ## setup-sreestack
 

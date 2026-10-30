@@ -288,13 +288,12 @@ reports automatic login separately from checks performed after user sign-in.
 Linking this skill does not install the product's browser, device, or terminal
 harness.
 
-[Mobile verification](skills/verify/references/mobile.md) covers iOS and Android
-interactive checks and repeatable regression suites. It preserves host device
-routing and existing project harnesses, and prefers Maestro for new mobile
-workflow automation when supported. Project recipes link executable flows and
-their assertions; Verify judges coverage and evidence, including checks outside
-the suite. Maestro supports iOS Simulators and Android emulators/devices;
-physical iOS and interface audits need suitable additional tooling.
+[iOS verification](skills/verify/references/ios.md) covers interactive device
+checks and repeatable regression suites. It preserves host device routing and
+existing project harnesses, and prefers XCTest with XCUIAutomation for new iOS
+UI workflow tests. New Swift unit tests use Swift Testing; performance tests use
+XCTest. Project recipes link executable tests and their assertions; Verify judges
+coverage and evidence, including checks outside the suite.
 
 For example, “Model-check this retry race” uses Verify's
 [formal-verification guidance](skills/verify/references/formal-verification.md)
@@ -399,6 +398,8 @@ uses and adapts:
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
+- [Vox](https://x.com/Voxyz_ai/status/2115518965443076573) — review-noise ideas informing the shared bug-evidence and settlement rules; no upstream prose copied.
+- [Maze](https://x.com/mazeincoding/status/2115575731585507796) — architecture signals informing exploration and structural review; guidance is independently written.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.
