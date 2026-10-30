@@ -372,6 +372,15 @@ retained local files affected by tracking deletions and verify restoration.
 Scoped PR layers follow `pr`’s T3 thread-registration rules; CLI publication
 does not substitute for app registration.
 
+The entrypoint keeps common calls and first-action guards inline; installation,
+state fields, and exit-code details live with command behavior. Existing design
+and recovery references retain specialized semantics. Direct reference reads
+also gate newer worktree/catalog behavior against installed capabilities;
+missing path-mode support uses manual owner discovery rather than invented
+flags or automatic upgrades. Discovery and invocation remain unchanged.
+Numeric merge targets are checked for stack-number precedence before selecting
+the requested PR set.
+
 ## grill-with-docs
 
 - [mattpocock/skills / skills/engineering/grill-with-docs](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/grill-with-docs) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.

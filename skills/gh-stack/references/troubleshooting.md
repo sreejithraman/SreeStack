@@ -1,5 +1,11 @@
 # Troubleshooting and recovery
 
+Worktree catalog and recorded-owner recovery details require a supporting
+extension. Check the installed version/help before applying them; path-mode
+navigation requires `--print-path`. Older builds may need manual owner location
+and recovery using their supported commands. Keep legacy operations with their
+original writer; do not mix old and new writers in one clone.
+
 ## Contents
 
 - [Rebase conflicts (exit 3)](#rebase-conflicts-exit-3)
