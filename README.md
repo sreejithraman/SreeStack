@@ -39,6 +39,7 @@ instructions rather than maintaining another API manual.
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
 | Form or improve a task brief | `reframe`, requested directly or used by Goal Swarm for goal formation |
+| Write or maintain skills and agent instructions | [writing-for-agents](skills/writing-for-agents/SKILL.md) |
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Compare independent candidates and synthesize a result | `arena` |
 | Understand current code, historical decisions, or change risks | `how`, `why`, and `blast-radius`, respectively |
@@ -61,6 +62,14 @@ invocation choices; setup, planning commands, handoff, and retrospective remain
 explicit where configured. Ordinary work creates no goals, schedules, or new
 conversations. Explicit goal or swarm requests use `goal-swarm`; native goal
 tracking is optional and follows the host's instructions.
+
+[Writing for Agents](skills/writing-for-agents/SKILL.md) routes skill revisions,
+tool-guidance audits, and instruction comparisons to conditional procedures.
+For example, “Correct this skill's command example” uses a focused check;
+“Shorten this skill while preserving its behavior” establishes a baseline and
+tests the affected requests. Context-savings claims need measured trials with
+validated isolation. The evaluation guidance defines an adapter contract; it
+does not install a runner or authenticate a model provider.
 
 [Reframe](skills/reframe/SKILL.md) forms goals from the user's request and
 context as Goal Swarm's normal starting step. It scales to what is unsettled:
@@ -381,6 +390,7 @@ uses and adapts:
 
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods adapted into `writing-for-agents`.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Felix Rieseberg](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad](https://www.youtube.com/watch?v=RbfQayMNtJc) — outcome, depth, range, and verification ideas informing Reframe and goal execution; instructions are independently written.

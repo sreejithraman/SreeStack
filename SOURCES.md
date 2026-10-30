@@ -1013,8 +1013,24 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- Local adaptation: documents paired Claude Code and Codex invocation settings
-  for shared skills and writes context pointers as request-shaped triggers.
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures (MIT).
+
+Documents paired Claude Code and Codex invocation settings and writes context
+pointers as request-shaped triggers. Existing invocation choices are preserved.
+Conditional revision guidance scales checks to the change, inventories consumers
+and loaded copies, and accounts for removed knowledge. Tool guidance covers
+drift, help quality, call syntax, and usage-derived examples. Evaluation defines
+matched variants, adapter/isolation calibration, full outcome checks, and normal
+host integration; no runner or provider adapter is bundled. Scored no-skill
+trials serve attribution and removal claims; two-version comparisons use
+original/candidate trials. Focused text/metadata checks remain sufficient for
+ordinary structural preservation claims.
+
+Uses shared acceptance and review owners and configured model routing. Does not
+adopt fixed size/growth budgets, inactivity-based host removal, schema-field
+hiding, fixed safety-line counts, or automatic deletion from no-skill success.
+Bytes, measured task context, cache usage, and cost remain distinct. Scorer
+repairs require comparable reruns; failed required cases cannot be averaged away.
 
 ## xcode-security-audit
 
