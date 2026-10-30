@@ -137,68 +137,6 @@ Default to trusting the type designer. Two exceptions:
   what makes them scannable. Caps are uniform blocks, so default tracking crowds them. Add
   about `+0.05em`.
 
-## Choosing a UI typeface
-
-- A neutral sans-serif or system stack is a legitimate choice when another
-  element carries the identity:
-  `-apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue`.
-- Confirm that the family has the writing systems, symbols, styles, and weights
-  required by the product. More styles are useful only when they serve real roles.
-- Optimize for legibility: taller x-height, wider default tracking. Avoid condensed faces
-  with short x-heights for UI text.
-- Inspect the face at the actual sizes, weights, and content before committing.
-
-## Personality levers
-
-Not a vibe — four concrete levers:
-
-1. **Typeface.** Its construction, contrast, width, and historical associations
-   influence the voice.
-2. **Color.** Hue, saturation, contrast, and proportion establish mood and emphasis.
-3. **Shape.** Corner treatment and geometry can make a system feel precise,
-   utilitarian, soft, or expressive.
-4. **Language.** Vocabulary and rhythm affect character as strongly as visual choices.
-
-If the direction is unclear, study the visual world around the subject and the
-interfaces the audience already understands. Use competitors to learn conventions,
-then make the product's own position explicit.
-
-## Use grids where they help
-
-A fluid grid is the wrong tool when an element has a content-driven optimal
-size. Common cases include:
-
-- **Sidebars** often use a stable content-driven width while the main area
-  flexes and runs its own internal grid.
-- **Cards and forms** often benefit from a `max-width`, shrinking when available
-  space requires it.
-  Sizing a login card as "6 columns, then 8 columns at medium" produces the absurd result of
-  the card being *wider* on medium screens than on large ones.
-- Inside components, don't use a percentage unless you genuinely want the thing to scale.
-
-Preserve a component's useful size until content or available space gives a
-reason to change it.
-
-**Think in columns, not width.** When a component wants to stay narrow (a form field) but
-sits in a wide layout, don't stretch it to fill the space — split the supporting content
-into its own column instead (a hint or error message beside the input, not wrapped under
-it). Solves the "feels unbalanced" complaint without breaking the component's own sizing.
-
-## Break the default component shape
-
-Most components look generic because of an inherited mental picture, not a constraint.
-
-- **Dropdown** — it's just a floating box. Give it sections, multiple columns, icons,
-  descriptions under each item, a "NEW" badge.
-- **Table** — columns don't have to hold one field each. Merge a non-sortable column into a
-  related one (name over role, amount over policy type) to create hierarchy. Add avatars,
-  colored status pills.
-- **Radio group** — if the choice is central to the page, make them selectable cards showing
-  the actual differences, not a stack of circles.
-
-Constraints are powerful, but a design occasionally needs freedom from an assumption nobody
-checked.
-
 ## Working with images
 
 **Text over photos.** The problem is the image, not the text — photos have bright and dark

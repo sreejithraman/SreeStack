@@ -6,20 +6,12 @@ palette structure. Existing brand systems, perceptual color spaces, wide-gamut
 workflows, and tools that produce stable accessible tokens can be equally valid.
 Rendered contrast and recognizable semantic roles are the invariants.
 
-## Why HSL
+## HSL and HSB
 
-Hex and RGB describe colors in terms a machine cares about. HSL describes them in the terms
-your eye already uses:
-
-- **Hue** — position on the wheel, in degrees. 0° red, 120° green, 240° blue. This is what
-  makes two different colors both read as "blue".
-- **Saturation** — how vivid. 0% is grey (at which point hue is meaningless), 100% is intense.
-- **Lightness** — 0% black, 100% white, 50% the pure hue.
-
-Two shades of the same color share a hue in HSL and look unrelated in hex. Design tools
-often show HSB, while browsers accept HSL directly — don't confuse the models. In HSB,
-100% brightness is only white when saturation is 0; HSB at S100/B100 equals HSL at
-S100/L50.
+When transferring swatches from a design tool, check its color model. In HSB,
+100% brightness is white only at 0% saturation; HSB at S100/B100 corresponds to
+HSL at S100/L50. Equal HSL lightness also does not imply equal perceived
+brightness or measured contrast.
 
 ## Choose important usage colors first
 
@@ -70,6 +62,9 @@ look nothing alike in brightness, because the eye weights the channels unevenly:
 perceived brightness = sqrt(0.299·r² + 0.587·g² + 0.114·b²) / 255
 ```
 
+This is a palette-tuning heuristic, not the WCAG contrast calculation. Measure
+each actual pairing against the contrast criterion below.
+
 Across the wheel this gives three local maxima — **60° (yellow), 180° (cyan), 300° (magenta)**
 — and three minima — **0° (red), 120° (green), 240° (blue)**.
 
@@ -106,29 +101,28 @@ This example extends the same role-first reasoning to dark appearance.
 Test dark roles independently instead of assuming a mechanical inversion will
 preserve hierarchy and contrast:
 
-- **Avoid pure black when it makes surfaces harsh.** A `grey-900`-like base often
-  leaves more room for separation. Build *elevation by getting
-  lighter*, not darker. "Raised is lighter than the page" holds in both modes — what changes
-  is that shadows barely register against a dark surface, so lightness has to carry the depth
-  cue on its own. Surfaces stack upward in lightness; shadows do progressively less work.
-  But adjacent steps on a grey ramp are a *thin* cue — typically under 1.3:1 — so a raised
-  dark surface usually also needs a hairline border to read as raised at all. Don't just
-  reach for a lighter surface: pushing it further up the ramp squeezes the text sitting on
-  it, and tertiary text is the first thing to fail.
-- **Retune accents in context.** A `500` tuned to carry white text on a light page may vibrate
-  against a dark one. Shift toward the `300`/`400` end and drop saturation.
-- **Re-check contrast; don't assume it mirrors.** Light-on-dark at the same nominal ratio
-  reads heavier, so text often wants to be a shade *dimmer* than the equivalent light-mode
-  pairing, not brighter. `grey-100` on `grey-900` is usually too much; `grey-200`/`grey-300`
-  is the comfortable body color.
-- The two escape hatches below work in reverse too: on a dark colored panel, rotating hue
-  toward cyan/magenta/yellow buys contrast without washing to white.
+- **Tune surface separation.** Try a dark neutral base when pure black makes
+  the surface harsh. Lighter raised surfaces can help when shadows barely
+  register, but adjacent dark ramp steps can still provide weak separation.
+  For example, `#18181b` against `#27272a` has about 1.19:1 contrast; measure the
+  actual token pair rather than assuming the next step establishes elevation.
+  A hairline border can clarify the boundary without further lightening the
+  surface. Check the text pairings before lightening it, especially tertiary
+  text. See [contrast-ratio calculation](https://www.w3.org/TR/WCAG22/#dfn-contrast-ratio).
+- **Retune accents in context.** A `500` carrying white text on a light page may
+  dominate a dark one. Try a `300`/`400` and lower saturation, then check its role
+  and foreground pairing.
+- **Check text independently.** Compare `grey-100`, `grey-200`, or `grey-300` on
+  the actual dark surface for visual weight, then measure contrast. Token names
+  alone establish neither comfort nor conformance.
+- Try the pairing and hue adjustments below in dark appearance too; measure
+  the result rather than assuming a direction of hue rotation adds contrast.
 
 ## Hitting contrast ratios without ugly color
 
-WCAG wants 4.5:1 for normal text. The relaxed 3:1 threshold applies only to *large* text —
-defined as **18pt (24px) regular, or 14pt (≈18.66px) bold**. 18px regular text is normal text
-and needs the full 4.5:1; the book's "~18px" phrasing is looser than the spec.
+For text covered by [WCAG AA Contrast (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html),
+normal text needs 4.5:1. Large text—18pt (24px) regular, or 14pt (about 18.67px)
+bold—needs 3:1. An 18px regular label still needs 4.5:1.
 
 When a colored pairing misses its target, these two candidate moves often help.
 
@@ -147,6 +141,7 @@ For colored text on a colored background — secondary text inside a dark colore
 lightness alone drives you to near-white before you hit the ratio, and then the primary and
 secondary text look identical.
 
-Try perceived brightness instead: **rotate the text's hue toward cyan, magenta or yellow.** You
-gain contrast while keeping the text visibly colored and visibly secondary. A blue-violet panel
-with cyan-shifted body text can clear AAA and still look like part of the panel.
+Try a small hue shift toward cyan, magenta, or yellow, then measure the actual
+foreground/background pairing. Keep the text visibly colored and secondary
+only while meeting its contrast target. For a blue-violet panel, cyan-shifted
+body text is one candidate to test.

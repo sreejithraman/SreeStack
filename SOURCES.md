@@ -761,6 +761,7 @@ Automatic discovery stays enabled.
 - [emilkowalski/skills / skills/apple-design](https://github.com/emilkowalski/skills/tree/d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7/skills/apple-design) — typography, materials, press activation and cancellation, contrast, and reduced-transparency guidance; content verified against commit `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, while the earlier local import baseline remains unknown.
 - [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 - [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
+- [Emil Kowalski's mobile browser fixes](https://x.com/emilkowalski/status/2116144374170235224) — October 30, 2026 post and attached checklist; concrete input-font, tap-highlight, and selection recipes.
 
 The automatically discoverable skill owns cross-platform visual hierarchy,
 system decisions, and art direction plus browser component behavior and
@@ -770,6 +771,15 @@ reference, and SwiftUI or UIKit visual work to Apple-platform guidance grounded
 in current Apple documentation. Native structure, behavior, and accessibility
 remain with `swiftui` and `uikit`; motion remains with `animate`. Inherited
 numeric recipes are contextual fallback heuristics rather than requirements.
+The entrypoint separates inspection, diagnosis, scoped execution, and acceptance
+from task-based reference routing. Visual-only and behavior-only work preserve
+each other's contracts; advisory work returns concrete changes and checks.
+Typography and component composition live with web visual systems, content-width
+choices with layout, and identity levers with art direction. Diagnosis rows are
+hypotheses to test against the rendered surface. HSL and dark-appearance recipes
+remain contextual options with measured contrast, not fixed palette rules.
+List grouping explains combined line-height and item spacing; dark-surface
+separation includes a measured color-pair example rather than a universal ratio.
 The art-direction reference preserves Anthropic's subject-matter grounding,
 generated-design tells, two-pass self-critique, restraint guidance, and Chanel
 editing mnemonic while removing CSS implementation and general copywriting
@@ -779,6 +789,9 @@ Mobile web guidance maps to `references/mobile-web.md`; edge-data layout choices
 join `references/web-behavior-and-accessibility.md`. Uses current platform
 capabilities and documentation rather than blanket CSS resets or device labels;
 preserves zoom, selection, valid activation, and browser gesture ownership.
+The 16px input-font value is an iOS troubleshooting baseline with target-browser
+retesting; tap-highlight and selection declarations stay scoped to affected
+controls rather than global resets.
 Greetings and attribution instructions are omitted.
 Browser behavior routes interacting state and async transitions to the shared
 domain principle; controls reflect action rules enforced in the underlying logic.

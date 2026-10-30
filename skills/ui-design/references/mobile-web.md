@@ -29,7 +29,10 @@ Apple implementation stays with `swiftui` or `uikit`; motion stays with `animate
   safe-area guidance](https://webkit.org/blog/7929/designing-websites-for-iphone-x/).
 - Keep input text readable at the computed size. If focusing a field causes
   unwanted zoom, inspect font sizing and transforms on the target browser;
-  increase the field's readable size and retest while preserving user zoom.
+  on iOS, start with a computed `font-size` of at least `16px` on the affected
+  input, textarea, or select. Treat that as a troubleshooting baseline, then
+  retest focus on the target browser while preserving user zoom. See
+  [WebKit's focus-zoom calculation](https://github.com/WebKit/WebKit/blob/1e6d82806f2f01d95ab83c8b2ffb64efa32d0ada/Source/WebKit/UIProcess/API/ios/WKWebViewIOS.mm#L1824).
   Choose `type`, `inputmode`, capitalization, correction, and `enterkeyhint` for
   the field's meaning. A numeric keyboard hint does not validate input or make a
   code a numeric quantity. See [HTML input modalities](https://html.spec.whatwg.org/multipage/interaction.html#input-modalities:-the-inputmode-attribute).
@@ -50,11 +53,16 @@ Apple implementation stays with `swiftui` or `uikit`; motion stays with `animate
   demonstrated need. It does not repair slow application work. See [Pointer
   Events touch-action](https://www.w3.org/TR/pointerevents/#the-touch-action-css-property).
 - Preserve browser tap feedback unless a verified replacement covers that
-  control. Scope any vendor tap-highlight override to the affected controls.
-  Scope selection suppression to control labels or drag handles that need it;
-  leave names, addresses, identifiers, error messages, and body content copyable.
+  control. Use `-webkit-tap-highlight-color: transparent` only on those controls
+  when removing the native flash; verify the replacement on touch input. See
+  [Safari tap highlights](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/AdjustingtheTextSize/AdjustingtheTextSize.html#//apple_ref/doc/uid/TP40006510-SW5).
+- Scope `user-select: none` to control labels or drag handles that need selection
+  suppression, adding `-webkit-user-select: none` where target Safari versions
+  require it. Leave names, addresses, identifiers, error messages, and body
+  content copyable.
   Preserve useful link and image long-press actions unless the component's
-  explicit interaction contract calls for replacing them.
+  explicit interaction contract calls for replacing them. See
+  [content selection](https://www.w3.org/TR/css-ui-4/#propdef-user-select).
 
 ## Scroll and gesture ownership
 
