@@ -973,6 +973,10 @@ The event-sequence example checks duplicate submission and failure/retry through
 a public API, inspecting payloads only at the external persistence boundary.
 Cancellation and late-completion scenarios remain conditional on the contract.
 
+The UI summary describes red/green development, matching the rule that
+refactoring belongs to review. Requests phrased as red-green-refactor remain
+part of automatic discovery.
+
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
