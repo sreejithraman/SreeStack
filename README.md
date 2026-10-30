@@ -46,6 +46,7 @@ instructions rather than maintaining another API manual.
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
+| Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
 | Prove behavior | `verify` |
 | Run complexity, duplication, or mutation tools | `code-quality` |
@@ -55,6 +56,12 @@ instructions rather than maintaining another API manual.
 | Publish and monitor | `pr`; `gh-stack` manages dependent layers |
 | Land and clean up | `merge`, then `repo-cleanup` |
 | Transfer context or improve the environment | Explicit `handoff` or `retro` |
+
+[SEO](skills/seo/SKILL.md) is automatically discoverable for website search work.
+For example, “Find why our public product pages aren't indexed and fix it”
+returns a diagnosis, supported fixes, and verification of deployed responses
+when the changes are live. Search Console access improves the evidence but is
+not required for repository and public-response checks.
 
 Use only the skills triggered by the task. A small change needs no global mode,
 mandatory design panel, or planning registry. Specialists retain their current
@@ -387,6 +394,7 @@ Report security issues through the [private reporting channel](SECURITY.md).
 Thank you to the authors and contributors who shared the skills this collection
 uses and adapts:
 
+- [Suraj Sharma](https://x.com/suraj_sharma14/status/2116062550416871512) and [Rakesh Patel](https://x.com/rakeshpatelco/status/2116065801279291422) — website SEO coverage and deployed crawl verification ideas; instructions are independently written.
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
 - [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods adapted into `writing-for-agents`.
