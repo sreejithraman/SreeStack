@@ -14,6 +14,13 @@ Keep one entry per skill and one bullet per imported source, followed by plain
 descriptions of current local differences, including invocation choices.
 Local-only skills need just an origin note.
 
+## seo
+
+- Local: `skills/seo` (SreeStack), automatically discoverable website SEO diagnosis,
+  implementation, and deployed verification. Conceptual input from [Suraj Sharma](https://x.com/suraj_sharma14/status/2116062550416871512)
+  and [Rakesh Patel](https://x.com/rakeshpatelco/status/2116065801279291422), checked
+  2026-10-30; independently written with technical citations to official documentation.
+
 ## agent-login
 
 - Local: `skills/agent-login` (SreeStack) application login workflow and private alias-based CLI.
