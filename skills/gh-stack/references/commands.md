@@ -6,6 +6,7 @@ explain: preconditions, side effects, atomicity, and failure modes.
 ## Contents
 
 - [init](#init)
+- [Setup](#setup)
 - [add](#add)
 - [push](#push)
 - [submit](#submit)
@@ -17,6 +18,25 @@ explain: preconditions, side effects, atomicity, and failure modes.
 - [unstack](#unstack)
 - [merge](#merge)
 - [Navigation](#navigation)
+- [Exit codes](#exit-codes)
+
+## Setup
+
+Requires Git 2.36+ and an authenticated GitHub CLI. Install/configure within the
+task's scope when needed:
+
+```bash
+gh extension install github/gh-stack
+git config rerere.enabled true
+git config remote.pushDefault origin  # select the actual remote when several exist
+```
+
+Worktree/catalog/owner-aware paragraphs below describe newer extension behavior.
+Verify installed version and command capabilities before relying on it. In
+particular, path-mode navigation requires `--print-path` in that command's help.
+Older extensions may lack shared catalogs and recorded-owner recovery; use the
+existing owner and supported operations rather than assuming those semantics.
+Upgrade only within the task's authorization.
 
 ## init
 
@@ -44,7 +64,8 @@ selects a non-default trunk.
 - **`add -Am` commits in place when the current branch has no commits yet** — for example
   immediately after `init` — instead of creating a branch. This is deliberate: the first layer
   usually needs its content before a second layer exists.
-- `-A` and `-u` are mutually exclusive, and both require `-m`.
+- In automation, use only one of `-A` or `-u` with an explicit `-m` to keep
+  the commit message non-interactive.
 - Existing branches owned by another worktree may be adopted without checkout. Commit/stage
   shortcuts are rejected before staging or membership changes; they never commit another
   worktree's files.
@@ -135,7 +156,19 @@ to rebase only part of the stack.
 
 ## view
 
-- `--json` writes the machine-readable payload to stdout. Its schema is in `SKILL.md`.
+- `--json` writes the machine-readable payload to stdout; status messages go to
+  stderr. Its fields are:
+
+  ```text
+  trunk           string
+  currentBranch   string
+  branches[]      name, head, base, isCurrent, isMerged, isQueued, needsRebase
+  branches[].pr   number, url, state ("OPEN" | "MERGED" | "QUEUED"); absent without a PR
+  ```
+
+  `base` is the saved SHA of the parent last known to be included, which can be
+  older than that parent's current tip. `needsRebase` means the current parent
+  tip is no longer an ancestor of the branch.
 - Bare `view` opens a full-screen TUI when stdout is a TTY, and prints static text when piped.
 - `--short` prints a compact one-line-per-branch summary and never opens the TUI, but it is
   formatted for humans; parse `--json` instead.
@@ -172,6 +205,8 @@ Removes the stack **grouping** only. It never deletes pull requests or branches.
 
 - Scope with an argument: pass a PR number to merge that PR and every unmerged PR below it in the
   stack, or pass a stack number to merge every unmerged PR in that stack.
+- A bare number resolves as a stack number first, then a PR number. Confirm the
+  intended set before merging when those identifiers overlap.
 - **All-or-nothing.** If any PR in that exact merge set cannot be merged, none are, and the reason
   is reported.
 - The method comes from `--squash`, `--rebase`, `--merge`, or `--merge-method <method>`. Without
@@ -210,3 +245,19 @@ gscd checkout auth
 ```
 
 This is a Bash/Zsh function, not something gh-stack installs. Never use `eval` on path output.
+
+## Exit codes
+
+| Code | Meaning | Recovery |
+| --- | --- | --- |
+| 0 | Success, or a non-interactive divergence abort | Check resulting state; `Sync aborted` means synchronization did not complete |
+| 1 | Generic error | Read stderr |
+| 2 | Not in a stack | `init`, or explicit-target `checkout` |
+| 3 | Rebase conflict | Follow [conflict recovery](troubleshooting.md#rebase-conflicts-exit-3); distinguish paused rebase from sync rollback |
+| 4 | GitHub API failure | Check `gh auth status`, then retry appropriately |
+| 5 | Invalid arguments | Check installed command help |
+| 6 | Several stacks contain this branch | Select a non-shared branch |
+| 7 | Rebase already in progress | Continue/abort the recorded operation |
+| 8 | Stack/operation locked | Wait for the owner; do not remove locks to bypass coordination |
+| 9 | Stacked PRs unavailable | Report the repository capability limit |
+| 10 | Modify recovery required | Follow [modify recovery](troubleshooting.md#an-interrupted-modify-session-exit-10) |

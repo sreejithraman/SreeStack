@@ -240,6 +240,12 @@ premise; the runnable diagnosis phases and measurement procedure remain local.
 Timing and lifecycle reproductions capture starting state, event order, and
 operation identity; invalid-transition repairs use the shared domain principle.
 
+The entrypoint consolidates repeated feedback-loop and cleanup guidance while
+retaining all six diagnosis phases and their gates. Sensitive artifacts pass
+through redaction before inspection output enters the conversation, including
+initial reads. Conditional references, the HITL script, and invocation remain
+unchanged.
+
 ## engineering-principles
 
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
@@ -313,6 +319,12 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 `references/glossary-paths.md` is the shared compatibility rule for writers and
 readers; glossary reading alone does not invoke domain modeling.
 
+The entrypoint keeps term resolution and immediate recording together; layout
+examples live in the glossary format. Path precedence lives only in the shared
+path reference, and the three ADR criteria live in the entrypoint at the stable
+`offer-adrs-sparingly` anchor. ADR formatting preserves system/context placement
+and sequential numbering. Discovery and invocation settings remain unchanged.
+
 
 ## eli5
 
@@ -374,6 +386,15 @@ retained local files affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s T3 thread-registration rules; CLI publication
 does not substitute for app registration.
+
+The entrypoint keeps common calls and first-action guards inline; installation,
+state fields, and exit-code details live with command behavior. Existing design
+and recovery references retain specialized semantics. Direct reference reads
+also gate newer worktree/catalog behavior against installed capabilities;
+missing path-mode support uses manual owner discovery rather than invented
+flags or automatic upgrades. Discovery and invocation remain unchanged.
+Numeric merge targets are checked for stack-number precedence before selecting
+the requested PR set.
 
 ## grill-with-docs
 
@@ -982,6 +1003,10 @@ The event-sequence example checks duplicate submission and failure/retry through
 a public API, inspecting payloads only at the external persistence boundary.
 Cancellation and late-completion scenarios remain conditional on the contract.
 
+The UI summary describes red/green development, matching the rule that
+refactoring belongs to review. Requests phrased as red-green-refactor remain
+part of automatic discovery.
+
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
@@ -1043,8 +1068,24 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- Local adaptation: documents paired Claude Code and Codex invocation settings
-  for shared skills and writes context pointers as request-shaped triggers.
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures (MIT).
+
+Documents paired Claude Code and Codex invocation settings and writes context
+pointers as request-shaped triggers. Existing invocation choices are preserved.
+Conditional revision guidance scales checks to the change, inventories consumers
+and loaded copies, and accounts for removed knowledge. Tool guidance covers
+drift, help quality, call syntax, and usage-derived examples. Evaluation defines
+matched variants, adapter/isolation calibration, full outcome checks, and normal
+host integration; no runner or provider adapter is bundled. Scored no-skill
+trials serve attribution and removal claims; two-version comparisons use
+original/candidate trials. Focused text/metadata checks remain sufficient for
+ordinary structural preservation claims.
+
+Uses shared acceptance and review owners and configured model routing. Does not
+adopt fixed size/growth budgets, inactivity-based host removal, schema-field
+hiding, fixed safety-line counts, or automatic deletion from no-skill success.
+Bytes, measured task context, cache usage, and cost remain distinct. Scorer
+repairs require comparable reruns; failed required cases cannot be averaged away.
 
 ## xcode-security-audit
 

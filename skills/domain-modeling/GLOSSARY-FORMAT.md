@@ -54,10 +54,4 @@ _Avoid_: Client, buyer, account
 - **Ordering ↔ Billing**: Shared types for `CustomerId` and `Money`
 ```
 
-The skill infers which structure applies:
-
-- If `GLOSSARY-MAP.md` exists, read it to find contexts
-- If only a root `GLOSSARY.md` exists, single context
-- If neither exists, create a root `GLOSSARY.md` lazily when the first term is resolved
-
 When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.
