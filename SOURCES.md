@@ -231,6 +231,12 @@ premise; the runnable diagnosis phases and measurement procedure remain local.
 Timing and lifecycle reproductions capture starting state, event order, and
 operation identity; invalid-transition repairs use the shared domain principle.
 
+The entrypoint consolidates repeated feedback-loop and cleanup guidance while
+retaining all six diagnosis phases and their gates. Sensitive artifacts pass
+through redaction before inspection output enters the conversation, including
+initial reads. Conditional references, the HITL script, and invocation remain
+unchanged.
+
 ## engineering-principles
 
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
