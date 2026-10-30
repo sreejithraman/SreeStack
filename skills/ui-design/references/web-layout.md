@@ -5,6 +5,25 @@ or overflow in scope. Start with real content and the product's tokens. Prefer
 intrinsic adaptation when it expresses the design; use container or viewport
 queries for actual changes of composition. Keep semantic reading order intact.
 
+## Choose widths by content
+
+Use a fluid grid for relationships that should scale. Give content-bounded
+components useful widths until available space requires them to shrink:
+
+- **Sidebars** often use a stable content-driven width while the main area
+  flexes and runs its own internal grid.
+- **Cards and forms** often benefit from a `max-width`, shrinking when available
+  space requires it. Check that changing column spans does not make a form wider
+  on a medium surface than a large one without a content reason.
+- Use percentages inside a component when that relationship should scale.
+
+Preserve a component's useful size until content or available space gives a
+reason to change it.
+
+When a narrow field sits in a wide layout, try a separate column for supporting
+content, such as a hint or error, instead of stretching the field. Preserve its
+semantic association and reading order when the columns collapse.
+
 ## Content widths and breakouts
 
 A named content grid lets CMS blocks choose reading width, breakout width,

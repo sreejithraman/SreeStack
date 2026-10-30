@@ -24,9 +24,6 @@ may need intermediate values; a marketing surface may need larger ones. Use
 tokens for repeated spacing, sizing, border widths, and opacity rather than
 inventing values component by component.
 
-Keep more space around a group than within it. This relationship matters more
-than any particular scale.
-
 ### Typography
 
 A practical UI type scale might begin with:
@@ -40,11 +37,14 @@ component should follow its own text size, and pixels where a fixed rendering
 value is intentional. Test computed results, nesting, zoom, and user text
 settings instead of enforcing a single unit everywhere.
 
-Choose typefaces that cover the product's writing systems, symbols, styles, and
-needed weights. Use enough weights to make roles clear without creating nearly
-indistinguishable steps. Light weights often lose legibility at small sizes;
-de-emphasize with role, color, size, or placement when that communicates the
-hierarchy better.
+Choose a typeface that covers the product's writing systems, symbols, styles,
+and needed weights. A neutral sans-serif or system stack can fit when another
+element carries the identity: `-apple-system, Segoe UI, Roboto, Noto Sans,
+Ubuntu, Cantarell, Helvetica Neue`. Inspect the actual face, fallback, sizes,
+and content for legibility; x-height, width, and tracking affect small UI text.
+Use enough weights to distinguish roles. Light weights or condensed faces with
+short x-heights can lose legibility at small sizes; use role, color, size, or
+placement when that communicates hierarchy better.
 
 When a variable face supports an optical-size axis, consider
 `font-optical-sizing: auto` and verify it at the actual rendered sizes. Keep the
@@ -75,7 +75,8 @@ On a colored surface, a neutral gray foreground can read muddy and detached.
 Start from the surface hue, then tune saturation and lightness until the role is
 clear and the rendered pairing meets its contrast target.
 
-Use [systems](systems.md) when building or repairing a palette from scratch.
+Use the [optional HSL workflow](systems.md) when building or repairing a numbered
+ramp in that color model.
 
 ### Shape, borders, and depth
 
@@ -99,45 +100,16 @@ surface and lift a legitimately dragged item above its siblings. Treat that as
 supporting feedback, not the only state cue, and use `animate` for timing and
 interruption.
 
-## Working method
-
-1. Start with a real feature and representative content. Let the shell emerge
-   from what the product must do.
-2. Resolve layout and hierarchy before decorative detail. A grayscale pass can
-   expose dependence on color, but it is a diagnostic technique rather than a
-   required phase.
-3. Explore in disposable sketches or prototypes, then move to the real surface
-   once the direction is decided.
-4. Build the smallest useful version. Add capability and visual detail when the
-   product can support them.
-5. Compare a candidate token with its neighboring values. If the distinction is
-   not visible or meaningful, reuse a neighbor.
-6. Begin with enough whitespace to see the groups, then tighten deliberately for
-   the product's density.
-7. Start at the narrowest relevant surface and test wider compositions. That
-   may be a compact component, a mobile viewport, a desktop tool, or an embedded
-   panel; it is not always a 400-pixel canvas.
-
 ## Hierarchy and composition
 
-Build primary, secondary, and tertiary roles with position, spacing, weight,
-color, and size together. When the primary element still does not stand out,
-soften its competitors before amplifying it again.
+When the primary element still does not stand out, soften its competitors
+before amplifying it again. A grayscale pass can expose dependence on color;
+use it as a diagnostic technique when the hierarchy is unclear.
 
 Use as many text-color roles as the content hierarchy and contrast requirements
 need, and no more. Name the roles by meaning. Every text/surface pairing must
 meet the applicable contrast criterion; a tertiary role is not permission to
 make normal text unreadable.
-
-Style actions by task importance:
-
-- Primary actions receive the strongest treatment.
-- Secondary actions remain clearly available without competing.
-- Tertiary actions can use quiet or link-like treatment.
-
-Destructive is a semantic role, not automatically the strongest visual action.
-It can become primary inside a confirmation step where deletion is the actual
-decision.
 
 Treat semantic markup and visual weight as separate, coordinated choices. Keep
 the correct heading and landmark structure even when a section title is visually
@@ -145,6 +117,22 @@ quiet.
 
 Put controls near what they affect. Let familiar placement and behavior carry
 the interaction unless the product has evidence for a different pattern.
+
+## Component composition
+
+When a standard composition hides the content's relationships, consider these
+alternatives while preserving semantics and the interaction contract:
+
+- **Dropdown:** sections, columns, icons, item descriptions, or a status badge
+  can expose meaningful groups or differences.
+- **Table:** merge a non-sortable field into a related column, such as name over
+  role or amount over policy type. Use avatars or status pills when they help
+  identify the record.
+- **Radio group:** selectable cards can show the actual differences when that
+  choice is central to the page.
+
+Use the [browser behavior contract](web-behavior-and-accessibility.md) for custom
+controls. Add structure only when it improves the actual task.
 
 ## Invariants to verify
 

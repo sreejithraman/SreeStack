@@ -33,6 +33,21 @@ system only as the interface demands. For implementation, continue with
 [web visual design](web.md) or
 [Apple-platform visual design](apple-platforms.md), whichever owns the surface.
 
+## Express the identity
+
+Make the direction concrete through:
+
+1. **Typeface.** Its construction, contrast, width, and historical associations
+   influence the voice.
+2. **Color.** Hue, saturation, contrast, and proportion establish mood and emphasis.
+3. **Shape.** Corner treatment and geometry can make a system feel precise,
+   utilitarian, soft, or expressive.
+4. **Language.** Vocabulary and rhythm affect character as strongly as visual choices.
+
+If the direction is unclear, study the visual world around the subject and the
+interfaces the audience already understands. Use competitors to learn conventions,
+then make the product's own position explicit.
+
 ## Detect the generic answer
 
 Common generated-design tells are useful warnings because they expose decisions

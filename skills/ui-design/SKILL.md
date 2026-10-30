@@ -1,100 +1,101 @@
 ---
 name: ui-design
-description: Cross-platform visual design and browser interface behavior. Use for visual hierarchy, art direction, or design systems in web, SwiftUI, or UIKit; also use for web CSS, responsive layout, browser component states, input, and accessibility. Use swiftui or uikit for native implementation and behavior, and animate for motion.
+description: Use for visual hierarchy, art direction, or design systems on web, SwiftUI, or UIKit; and for web CSS, responsive layout, browser component behavior, input, or accessibility.
 ---
 
 # UI Design
 
-Turn an interface brief, usability problem, or vague dissatisfaction into a
-coherent design. Preserve the product's established language and interaction
-contract where they work; change only the dimensions the request puts in scope.
+Own visual design across web, SwiftUI, and UIKit, plus browser styling and
+behavior. Use `swiftui` or `uikit` for native implementation, state, lifecycle,
+and accessibility; use `animate` for moving feedback and transitions. The
+platform owner keeps the action and state contract.
+Change only the jobs the request puts in scope.
 
 For an authorized build or fix, implement and verify the change. For a plan,
 review, or advisory task, leave the product unchanged and make each proposed
 change and acceptance check concrete.
 
-## Process
+## Work the request
 
-1. Inspect the real interface, nearby components, existing tokens, target
-   platforms and browser targets, CSS authoring system, content, states, appearance modes, text scaling, input methods,
-   access paths, and runnable surfaces available in scope.
-2. Select the dimensions the task actually requires: visual system, art
-   direction, web styling and layout, component behavior, or accessibility. Name the design job before
-   choosing values or changing behavior. For visual work, identify the primary
-   content and action, their competitors, the meaningful groups, and the
-   semantic roles the system must support.
-3. Read only the guidance for those dimensions:
-   - For a new identity or a substantial change in visual direction, read
-     [art direction](references/art-direction.md) first.
-   - For an existing web interface that looks wrong, read
-     [diagnosis](references/diagnose.md), then
-     [web visual design](references/web.md). For new web visual-system work,
-     start with the web reference.
-   - For web resets, logical properties, fluid sizing, or color/theme token
-     implementation, read [CSS foundations](references/web-css-foundations.md).
-     For containers, grids, component responsiveness, spacing, or overflow,
-     read [web layout](references/web-layout.md). Use the project's existing
-     stylesheet, utilities, or CSS-in-JS system; adapt declarations without
-     changing its authoring stack. For media boxes or text/icon alignment,
-     read the matching sections of [techniques](references/techniques.md).
-   - For browser semantics, component states, focus, keyboard or pointer input,
-     announcements, or accessibility, read
-     [web behavior and accessibility](references/web-behavior-and-accessibility.md).
-     For mobile-web viewport, safe-area, keyboard, touch, scroll, or browser-chrome
-     problems, also read [mobile browser behavior](references/mobile-web.md).
-   - For SwiftUI or UIKit visual work, read
-     [Apple-platform visual design](references/apple-platforms.md). Use `swiftui`
-     or `uikit` for native implementation, behavior, and accessibility; those
-     skills own framework structure, state, and lifecycle.
-   - Use `animate` when feedback moves or transitions. The relevant platform
-     skill still owns the action and state contract.
-4. For visual work, establish hierarchy through position, grouping, spacing,
-   weight, color, and size. Extend the system with the fewest new values needed
-   to express real semantic roles across affected components and states. When
-   only visual dimensions are selected, keep interaction and access contracts
-   unchanged.
-5. For web behavior or accessibility work, preserve the component's semantic,
-   activation, focus, input, status, and state contracts across the paths in
-   scope. Keep visual changes limited to what those contracts require unless
-   visual direction is also selected.
-6. When implementation is in scope, cover every affected state and access
-   variant rather than styling or testing only the happy path.
-   Prefer intrinsic layout and browser-native capabilities when they satisfy
-   the contract. Check feature support against the project's browser targets;
-   choose progressive enhancement or a usable fallback before relying on a new
-   feature. CSS syntax support alone does not prove the interaction works.
-7. Exercise the result on the real surface at relevant sizes and through the
-   affected input and accessibility paths. Use `verify` when hands-on
-   evidence would add confidence.
+1. **Inspect.** Examine the available interface and nearby components with
+   representative content. Identify existing tokens, patterns, and the authoring
+   system. Check the target platforms and versions, available runnable surface,
+   and affected states, sizes, appearance modes, text scaling, inputs, and access paths.
+   Finish with the affected components and supported variants identified.
+2. **Diagnose.** Select the job: visual hierarchy or identity, CSS/layout,
+   browser behavior, accessibility, or a combination. For visual work, identify
+   the primary content and action, competing emphasis, groups, and semantic
+   roles. For behavior work, identify the expected activation, focus, input,
+   status, and state contract. Finish with an observable problem or design
+   intent and the contracts the change must preserve.
+3. **Choose guidance.** Follow each applicable branch below; read the sections
+   that address the job. An identity change starts with art direction, then the
+   platform guidance. A local CSS or behavior fix starts at its matching branch.
+   Finish with the proposed change tied to the diagnosed cause or design intent.
+4. **Build or propose.** Use the product's tokens, components, and authoring
+   stack. For visual work, resolve hierarchy and layout before decorative detail;
+   compare values with their neighbors and test the narrowest relevant surface
+   before wider compositions. Sketch or prototype when a direction needs trying.
+   Prefer intrinsic layout and native capabilities when they meet the contract.
+   Check feature support against the actual targets and provide a usable fallback
+   where needed. Cover every affected component, state, and access variant.
+   For advisory work, make those changes and checks concrete without editing
+   the product.
+5. **Check.** For implementation, exercise the changed surface at the affected
+   sizes and through its input and accessibility paths. Syntax support or a
+   screenshot alone does not establish an interaction works. Use `verify` for
+   hands-on acceptance. For advisory work, trace each proposal through the
+   representative components and state the checks implementation must pass.
 
-The work is done when every selected dimension has an explicit design job,
-affected components and states use one coherent system and contract, and the
-result fits both the brief and its surrounding product. Name any browser,
-device, appearance, input, or accessibility evidence that remains unchecked.
+## Read by task
 
-## Shared principles
+Combine branches when the request crosses them. Keep visual direction stable
+for behavior-only work, and interaction/access contracts stable for visual-only
+work.
+
+| Task | Guidance |
+| --- | --- |
+| New identity or substantial visual redirection | [Art direction](references/art-direction.md), then the web or Apple branch |
+| Existing web interface looks wrong | [Diagnosis](references/diagnose.md), then the relevant [web visual system](references/web.md) sections |
+| Web type, spacing, color roles, shape, hierarchy, or starter tokens | [Web visual systems](references/web.md) |
+| Build or repair a numbered HSL web color ramp | [Palette workflow](references/systems.md); keep another working color model when it fits |
+| Web reset, logical properties, fluid scales, or theme/color implementation | [CSS foundations](references/web-css-foundations.md) |
+| Web content widths, grids, containers, responsive layout, spacing, or overflow | [Web layout](references/web-layout.md) |
+| Browser semantics, states, focus, input, announcements, or accessibility | [Web behavior and accessibility](references/web-behavior-and-accessibility.md) |
+| Web viewport, safe areas, virtual keyboard, touch, scrolling, browser chrome, carousel, or bounded panel | [Mobile browser behavior](references/mobile-web.md), plus the behavior contract when input or state changes |
+| Web shadows, text alignment, image contrast/cropping, or media geometry | Matching [visual techniques](references/techniques.md) sections |
+| SwiftUI or UIKit visual design | [Apple-platform visual design](references/apple-platforms.md), with the framework owner |
+
+## Visual decisions
+
+Use position, grouping, spacing, weight, color, and size together to establish
+hierarchy. Preserve the product's established language where it serves the job.
 
 - Prefer semantic roles such as surface, primary text, secondary text, action,
   warning, and separator over raw values at call sites.
 - Keep more space around a group than within it. Ambiguous spacing obscures the
   information architecture.
-- Style actions by importance in the current task. Destructive does not
-  automatically mean primary.
+- Give the primary action the strongest treatment, keep secondary actions
+  clearly available, and use quiet or link-like treatment for tertiary actions.
+  Destructive actions become primary only when they are the current decision,
+  such as in a deletion confirmation.
 - Use color consistently and pair it with text, shape, iconography, or another
   cue when it communicates state.
 - Use depth, borders, materials, and overlap to explain structure. Each cue
   needs a job.
-- Treat scales and token counts as tools, not quotas. Add a value when the
-  existing system cannot express a real role clearly.
+- Extend scales only when an existing value cannot express a real role clearly.
+  Scales and token counts are tools, not quotas.
 - Prefer standard platform components and existing product patterns before
   custom work. Customize deliberately when identity, hierarchy, or behavior
   requires it.
 
 ## Handoff
 
-Show the implemented result or concrete proposal. State the selected design
-dimensions, diagnosed job, roles or contracts changed, and states and access
-paths checked.
+Deliver the implemented result or concrete proposal and state the diagnosed
+job, roles or contracts changed, and checks performed. Completion requires every
+affected component and variant to be accounted for, a coherent system that fits
+the brief and surrounding product, and explicit remaining evidence gaps by
+browser, device, appearance, input, or accessibility path.
 
 For a plan, account for every component in scope with a concrete change or an
 explicit reason it remains unchanged.

@@ -23,8 +23,8 @@ references/web-behavior-and-accessibility.md
                                 browser semantics, states, input, and access
 references/mobile-web.md         viewports, touch, scrolling, and bounded panels
 references/apple-platforms.md   native typography, color, layout, and checks
-references/systems.md           building and tuning color ramps
-references/techniques.md        depth, typography, grids, and images
+references/systems.md           optional HSL ramps and contrast adjustments
+references/techniques.md        depth, text alignment, and image geometry
 assets/tokens.css               optional web starter tokens
 ```
 
