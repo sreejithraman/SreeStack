@@ -304,6 +304,12 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 `references/glossary-paths.md` is the shared compatibility rule for writers and
 readers; glossary reading alone does not invoke domain modeling.
 
+The entrypoint keeps term resolution and immediate recording together; layout
+examples live in the glossary format. Path precedence lives only in the shared
+path reference, and the three ADR criteria live in the entrypoint at the stable
+`offer-adrs-sparingly` anchor. ADR formatting preserves system/context placement
+and sequential numbering. Discovery and invocation settings remain unchanged.
+
 
 ## eli5
 
