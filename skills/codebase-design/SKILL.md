@@ -71,6 +71,11 @@ When designing or assessing ownership and enforceable interfaces, read
 check whether a contributor working from a few files can follow the supported
 path without silently breaking rules elsewhere.
 
+When investigating structural friction or reviewing a structural change, use
+[architecture signals](references/architecture-signals.md) to trace caller
+obligations, state validity, ownership, and scattered changes before recommending
+a redesign.
+
 Read [Model the Domain](../engineering-principles/references/model-the-domain.md)
 when choosing state ownership or module responsibilities,
 [Type System Discipline](../engineering-principles/references/type-system-discipline.md)
