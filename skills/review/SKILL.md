@@ -67,6 +67,11 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    the implementation owner supplies initial acceptance evidence. Require a
    concrete benefit for structural changes; style preferences alone are optional.
 
+   For structural findings, connect the supplied change to a problem it
+   introduces or worsens, with an affected caller, invariant, or concrete
+   maintenance consequence and an actionable remedy. Separate broader existing
+   debt from the fixes needed for this change.
+
    For each bug, establish a supported triggering scenario, practical exposure,
    and consequence from a reproduction or traced code path. Distinguish observed
    behavior, justified inference, and unknowns. Justify blocking findings by

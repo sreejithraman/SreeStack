@@ -389,6 +389,7 @@ uses and adapts:
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
 - [Dietrich Gebert’s Ponytail](https://github.com/DietrichGebert/ponytail) — simplicity and code review rules.
 - [Vox](https://x.com/Voxyz_ai/status/2115518965443076573) — review-noise ideas informing the shared bug-evidence and settlement rules; no upstream prose copied.
+- [Maze](https://x.com/mazeincoding/status/2115575731585507796) — architecture signals informing exploration and structural review; guidance is independently written.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.

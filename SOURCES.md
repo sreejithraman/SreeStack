@@ -162,6 +162,7 @@ model settings, or Cursor MCP discovery.
 
 - [mattpocock/skills / skills/engineering/codebase-design](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/codebase-design) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 - [cursor/plugins / pstack architecture and correction guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `architect/references/design-red-flags.md` and `correct/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [Maze / codebase indicators post](https://x.com/mazeincoding/status/2115575731585507796) — conceptual input for `references/architecture-signals.md`; checked 2026-10-29. Independently written diagnostic prompts require caller, state, or maintenance evidence and distinguish architecture exploration from review of a supplied change.
 
 Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
@@ -180,6 +181,14 @@ design stay local. Generic design, testability, and enforcement guidance use
 assessment and historical guard proof; `correct` owns recurring-mistake investigation
 and repair. Design and review return recommendations. Legitimate adapters and
 compatibility paths remain supported.
+
+`references/architecture-signals.md` supplies shared discovery prompts for
+structural friction, including hidden caller obligations, invalid states,
+scattered ownership, and validation. Architecture exploration and Thermo use
+the same reference. Signals need evidence; size, layout, duplication, or wrapper
+counts alone do not justify a refactor.
+The diagnostic table stands on its own. Deeper reading requires a concrete
+candidate needing further validation; agents reuse relevant guidance already read.
 
 ## correct
 
@@ -424,6 +433,9 @@ Shared design and migration decisions use `engineering-principles`; candidate
 exploration, technical experiments, planning, and glossary/ADR handling remain local.
 Selected designs can continue through architect within the requested scope,
 carrying forward checked findings and experiments.
+
+Exploration also uses Codebase Design's shared architecture signals, grounded in
+caller traces, state validity, and maintenance history rather than layout or size.
 
 ## arena
 
@@ -833,6 +845,12 @@ Ponytail also assesses redundant defensive code through traced guarantees and
 error paths, preserves changing-state checks and resource lifetimes, and judges
 helpers by semantic value rather than caller count. Its findings require the
 smallest safe cut and the behavior to preserve.
+Structural findings connect the change to introduced or worsened friction and
+separate broader existing debt. Thermo uses Codebase Design's shared architecture
+signals. Its file-size guidance prompts investigation of responsibilities and
+caller knowledge; size alone is not a finding or blocker. Structural blocking
+findings require concrete impact or regression under the shared evidence and
+settlement rules.
 Indirect-consumer checks use `blast-radius`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 The shared review brief carries applicable evaluation criteria and evidence,

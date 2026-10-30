@@ -9,6 +9,12 @@ locations, evidence, proposed remedies, and coverage gaps. The restructuring and
 approval language below guides recommendations; the parent owns edits, triage,
 and final approval. Leave further delegation to the parent.
 
+Use Codebase Design's
+[architecture signals](../../codebase-design/references/architecture-signals.md)
+to investigate caller obligations, invalid states, scattered ownership, and
+other structural friction in the supplied change. The shared reference supplies
+the diagnostic prompts; the criteria below guide this assessment's emphasis.
+
 ## Core Prompt
 
 Start from this baseline:
@@ -30,11 +36,10 @@ Apply the baseline prompt above, plus these explicit review rules:
    - Assume there is often a "code judo" move available: a re-organization that uses the existing architecture more effectively and makes the change dramatically simpler and more elegant.
    - If you see a path to delete complexity rather than rearrange it, push hard for that path.
 
-1. **Do not let a PR push a file from under 1k lines to over 1k lines without a very strong reason.**
-   - Treat this as a strong code-quality smell by default.
-   - Prefer extracting helpers, subcomponents, modules, or local abstractions instead of letting a file sprawl past 1000 lines.
-   - If the diff crosses that threshold, explicitly ask whether the code should be decomposed first.
-   - Only waive this if there is a compelling structural reason and the resulting file is still clearly organized.
+1. **Investigate growing responsibilities.**
+   - Use substantial file growth, including crossing 1000 lines, as a prompt to inspect cohesion and caller knowledge.
+   - Recommend decomposition when separating independently changing responsibilities reduces complexity or improves locality.
+   - A large, cohesive implementation behind a small interface may already be the better design. File length alone does not justify a finding or a split.
 
 2. **Do not allow random spaghetti growth in existing code.**
    - Be highly suspicious of new ad-hoc conditionals, scattered special cases, or one-off branches inserted into unrelated flows.
@@ -77,7 +82,7 @@ For every meaningful change, ask:
 - Did the diff add branching complexity where a better abstraction should exist?
 - Did a previously cohesive module become more coupled, more stateful, or harder to scan?
 - Is this logic living in the right file and layer?
-- Did this change enlarge a file or component past a healthy size boundary?
+- Did this change combine independently changing responsibilities or make callers learn unrelated details?
 - Are there repeated conditionals that signal a missing model or missing helper?
 - Is the implementation direct and legible, or does it rely on special cases and incidental control flow?
 - Is this abstraction actually earning its keep, or is it just a wrapper?
@@ -91,7 +96,7 @@ Escalate findings when you see:
 
 - A complicated implementation where a cleaner reframing could delete whole categories of complexity.
 - Refactors that move code around but fail to reduce the number of concepts a reader must hold in their head.
-- A file crossing 1000 lines due to the PR, especially if the new code could be split out.
+- File growth that combines unrelated responsibilities or scatters knowledge across callers.
 - New conditionals bolted onto unrelated code paths.
 - One-off booleans, nullable modes, or flags that complicate existing control flow.
 - Feature-specific logic leaking into general-purpose modules.
@@ -116,7 +121,7 @@ When you identify a code-quality problem, prefer suggestions like:
 - Change the ownership boundary so the feature becomes a natural extension of an existing abstraction.
 - Turn special-case logic into a simpler default flow with fewer exceptions.
 - Extract a helper or pure function.
-- Split a large file into smaller focused modules.
+- Separate independently changing responsibilities when that improves cohesion and locality.
 - Move feature-specific logic behind a dedicated abstraction.
 - Replace condition chains with a typed model or explicit dispatcher.
 - Separate orchestration from business logic.
@@ -140,7 +145,7 @@ If the implementation missed an opportunity for a dramatic simplification, say t
 
 Good phrases:
 
-- `this pushes the file past 1k lines. can we decompose this first?`
+- `this adds retry policy to the serializer, so changing retry timing now requires understanding encoding. can the retry owner keep that policy?`
 - `this adds another special-case branch into an already busy flow. can we move this behind its own abstraction?`
 - `this works, but it makes the surrounding code more spaghetti. let's keep the behavior and restructure the implementation.`
 - `this feels like feature logic leaking into a shared path. can we isolate it?`
@@ -158,7 +163,7 @@ Prioritize findings in this order:
 2. Missed opportunities for dramatic simplification / code-judo restructuring
 3. Spaghetti / branching complexity increases
 4. Boundary / abstraction / type-contract problems that make the code harder to reason about
-5. File-size and decomposition concerns
+5. Cohesion and decomposition concerns
 6. Modularity and abstraction issues
 7. Legibility and maintainability concerns
 
@@ -172,20 +177,28 @@ The bar for approval is:
 
 - no clear structural regression
 - no obvious missed opportunity to make the implementation dramatically simpler when such a path is visible
-- no unjustified file-size explosion
+- no file growth that causes a concrete cohesion or ownership regression
 - no obvious spaghetti-growth from special-case branching
 - no obviously hacky or magical abstraction that makes the code harder to reason about
 - no unnecessary wrapper/cast/optionality churn obscuring the real design
 - no clear architecture-boundary leak or avoidable canonical-helper duplication
 - no missed opportunity for an obvious decomposition that would materially improve maintainability
 
-Treat these as presumptive blockers unless the author can justify them clearly:
+Support blocking findings with material impact, an explicit contract violation,
+or a concrete structural regression under Review's evidence bar. Return the
+evidence needed for Review Sweep's
+[classification](../../review-sweep/references/classification.md); a signal or
+a plausible alternative alone is insufficient.
 
-- the PR preserves a lot of incidental complexity when there is a plausible code-judo move that would delete it
-- the PR pushes a file from below 1000 lines to above 1000 lines
+Investigate these candidates and establish the benefit before recommending a fix:
+
+- the PR adds incidental complexity when a supported restructuring would remove it
+- the PR combines unrelated responsibilities and makes a module harder to change
 - the PR adds ad-hoc branching that makes an existing flow more tangled
 - the PR solves a local problem by scattering feature checks across shared code
 - the PR adds an unnecessary abstraction, wrapper, or cast-heavy contract that makes the design more indirect
 - the PR duplicates an existing helper or puts logic in the wrong layer when there is a clear canonical home
 
-If those conditions are not met, leave explicit, actionable feedback and push for a cleaner decomposition.
+For supported findings, leave explicit, actionable feedback tied to the changed
+behavior or maintenance consequence. Preserve legitimate adapters and contracts
+when recommending a simpler design.

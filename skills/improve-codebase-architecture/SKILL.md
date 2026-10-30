@@ -62,8 +62,10 @@ friction questions and ask it to explore organically:
 
 Have the child also apply Codebase Design's
 [ownership and enforcement checks](../codebase-design/references/preventing-mistakes.md)
-to evidenced friction in this scope. The child returns recommendations without
-implementing them.
+and [architecture signals](../codebase-design/references/architecture-signals.md)
+to evidenced friction in this scope. Use caller traces, constructible states,
+and maintenance history to distinguish worthwhile candidates from layout or
+size preferences. The child returns recommendations without implementing them.
 
 Include the **deletion test** in the brief: would deleting a suspected shallow
 module concentrate complexity, or just move it? A "yes, concentrates" is the
