@@ -17,7 +17,7 @@ including react-best-practices and React Doctor evidence.
 
 ## Select reviewers
 
-Map the required assessments chosen in Prepare to the required-review row in
+Map each required assessment chosen in Prepare to its named review row in
 [model defaults](../../orchestration/references/agent-routing.md#model-defaults).
 For every independent review round, add one general reviewer from each named
 additional-review pool. These supplement required assessments. Parent-only

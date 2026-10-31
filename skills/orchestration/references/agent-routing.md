@@ -15,14 +15,17 @@ Edit this table to change the defaults.
 | General research | Codex | GPT-6.1 Sol | Medium | — |
 | YouTube retrieval | Antigravity | Gemini 4 Argon | High | — |
 | X retrieval | Grok | Grok 4.7 | High | — |
-| Required review | Codex | GPT-6.1 Sol | High | — |
+| Primary review | Codex | GPT-6.1 Sol | High | — |
+| Ponytail review | Codex | GPT-6.1 Sol | High | — |
+| Thermo review | Codex | GPT-6.1 Terra | Max | — |
+| Adversarial review | Codex | GPT-6.1 Terra | Max | — |
 | Additional review | OpenCode | `opencode-go/deepseek-v4.1-flash` | Max | OpenCode Go |
 | Additional review | OpenCode | `opencode-go/glm-5.3-flash` | Max | OpenCode Go |
 | Additional review | Antigravity | Gemini 4 Argon | High | Gemini |
 | Additional review | Antigravity | Gemini 3.8 Flash | High | Gemini |
 
-The required-review row is also the primary review selection used by
-cross-judges and single-reviewer audits.
+The primary-review row also supplies the selection used by cross-judges and
+single-reviewer audits.
 
 The working selection covers code, tests, refactoring, configuration,
 documentation changes, verification, and accepted fixes. The General research
