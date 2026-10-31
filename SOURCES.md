@@ -902,8 +902,8 @@ receipts, frozen-source citation checks, and caller-retained original artifacts.
 
 ## review-fix-loop
 
-- Local: `skills/review-fix-loop` (SreeStack). T3-owned rounds use the required
-  model for Primary/Ponytail/Thermo and a separate Adversarial assessment on
+- Local: `skills/review-fix-loop` (SreeStack). T3-owned rounds map required
+  assessments to their named model defaults, with Adversarial added on
   substantial changes. Impact-based coverage decisions are recorded and retained
   through fix rounds. Each independent round adds one random optional reviewer
   from each provider pool. The loop owns provider-reference delivery, skips,
@@ -1126,9 +1126,11 @@ repairs require comparable reruns; failed required cases cannot be averaged away
 
 Locally written T3-oriented delegation flow with one editable Markdown table
 of model defaults, including research and source routes, in the routing reference.
-The table includes required-review defaults, also called the primary review
-selection by existing callers, and additional-review pools;
-Review Fix Loop owns their assignment, draw, harness, and skip policy.
+The table gives each required review role its own default: Primary and Ponytail
+use Sol High; Thermo and Adversarial use Terra Max. It also includes
+additional-review pools. Primary covers cross-judges and
+single-reviewer audits. Review Fix Loop owns review assignment, draw, harness,
+and skip policy.
 Assignment briefs replace a generic
 agent-rank taxonomy; discovery resolves working defaults before direct work,
 and the main procedure owns the direct-work match/delegate gate.
