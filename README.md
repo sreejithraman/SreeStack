@@ -174,8 +174,10 @@ Sample requests and expected results:
   prose or wording-only edit with no procedure change uses parent review.
 - When an additional reviewer is unavailable or fails, the loop records a skip
   and continues. Missing required coverage cannot produce a clean result.
-- A substantive fix triggers a fresh round against the original base. A changed
-  snapshot supersedes in-flight review; successful dispatch alone is not a pass.
+- A substantive fix gets a fresh pass through the selected angles, bounded to
+  changes, affected behavior, prior findings, and relevant proof. Retain earlier
+  coverage only where it still applies. Keep the original base for context.
+  A changed snapshot supersedes in-flight review; dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
   goal or swarm work can use ordinary tasks; requested native tracking follows
   the host's available capabilities.
