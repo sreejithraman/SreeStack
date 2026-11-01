@@ -7,9 +7,9 @@ supply full contents when a reviewer cannot read the source. Keep briefs and
 snapshots outside the reviewed diff.
 
 For delegated assessments, use [Review evidence](review-evidence.md) to assign
-unique output paths, source exclusions, and snapshot identity. Include its
-coverage receipt contract and the exact report/receipt paths in every brief;
-retain the task-to-assignment mapping when dispatch returns.
+workflow/pass identity, unique output paths, source exclusions, and snapshot
+identity. Include its coverage receipt contract and the exact report/receipt
+paths in every brief; retain the task-to-assignment mapping when dispatch returns.
 
 For example, keep one pass's common inputs in
 `.artifacts/review-inputs/pass-02/`, reviewer outputs in
@@ -21,7 +21,9 @@ are examples; the read boundary comes from Review evidence, not the directory na
 
 First-round reviewers receive no earlier verdicts or author defenses. Later
 rounds include original scope, prior findings, their evidence and dispositions,
-responses, and unresolved objections. Ask reviewers to verify those claims
+stable issue IDs and first-seen passes, responses, and unresolved objections.
+Mark supplied known issues as prior inputs rather than new discoveries.
+Ask reviewers to verify those claims
 against the updated work and assess the complete assigned scope, including
 regressions from fixes. Earlier acceptance or rejection is not proof. Work
 read-only; leave edits, commits, external actions, delegation, and acceptance

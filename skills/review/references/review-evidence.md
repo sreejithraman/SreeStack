@@ -5,11 +5,21 @@ coverage claim alone does not prove that the assigned source was read.
 
 ## Assign outputs
 
+Assign the review loop a stable `workflow_id` and integer `pass`, starting at 1.
+A pass binds one frozen scope and snapshot. Use the next pass when assigning
+assessment of changed inputs; retries on the same inputs keep the pass and
+receive a new assignment key.
+Keep the workflow ID when fixes, PR preparation, or integration reuse its coverage.
+A separate loop gets a new ID and links any reused earlier evidence. Keep task
+counters separate; they do not determine the pass number.
+
 Give each assessment a unique assignment key and output directory, including
-retries and later rounds. Record its criteria, base/head, snapshot identity,
-required inputs, and exact report and coverage paths in the brief. Bind the
-returned task ID to that assignment. A snapshot identity must cover the diff
-and complete untracked inputs, not just HEAD.
+retries and later rounds. Record workflow/pass, criteria, configured provider,
+model and options, base/head, snapshot identity, required inputs, and exact report
+and coverage paths in the existing brief. Bind the returned task ID to that
+assignment. Retain its outcome and completion time from host records when
+available; mark unavailable metadata unknown. A snapshot identity must cover the
+diff and complete untracked inputs, not just HEAD.
 
 Designate generated review input, output, and archive paths before collecting
 source. Exclude those exact paths from source discovery, snapshot identity,
@@ -38,8 +48,9 @@ unless the runtime enforces them; directory placement is not filesystem isolatio
 
 ## Record reads
 
-Return a coverage receipt alongside the findings. Include the assignment key,
-snapshot identity, references read, and a table with one row per reviewed input:
+Return a coverage receipt alongside the findings. Include workflow/pass, the
+assignment key, snapshot identity, references read, and a table with one row per
+reviewed input:
 
 | Input | Snapshot file/hash | Lines read | Read evidence | Gaps |
 | --- | --- | --- | --- | --- |
@@ -58,8 +69,9 @@ coverage unproven.
 
 Before accepting a result:
 
-1. Match its task, assignment, criteria, snapshot, and exact output paths to the
-   brief. Missing files, another task's output, or unexpected writes leave a gap.
+1. Match its task, workflow/pass, assignment, criteria, snapshot, and exact output
+   paths to the brief. Missing files, another task's output, or unexpected writes
+   leave a gap.
 2. Check the receipt against required inputs and criteria. Verify cited files,
    line ranges, symbols, and quoted snippets against the frozen source, including
    citations supporting a clean verdict. A nonexistent symbol, mismatched quote,
