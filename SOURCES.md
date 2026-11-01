@@ -127,7 +127,7 @@ saved-work lifecycle.
 
 ## app-store-connect
 
-- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9a093fa52177d1b784fcbb06f9abfef4974e7701) — `skills/`; commit `9a093fa52177d1b784fcbb06f9abfef4974e7701`, imported 2026-10-03. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
+- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/7de1ef7cc831f62d205dfa589063f3831f66391b) — `skills/`; commit `7de1ef7cc831f62d205dfa589063f3831f66391b`, imported 2026-11-01. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
 
 - One discoverable skill: upstream `skills/asc-cli-usage/SKILL.md` supplies the
   entrypoint; the other `skills/<name>/SKILL.md` files map to local
@@ -135,7 +135,13 @@ saved-work lifecycle.
   and omit skill frontmatter. The skill omits upstream scripts and app settings.
 - Guide selection by task, checks against the installed CLI, and IDs and release
   rules from the project. API key creation requires a setup request. Apple Ads
-  detail lives in its guide only.
+  detail lives in its guide only. In-app events and Asset Library media are
+  discoverable through this entrypoint; cross-guide handoffs use local links.
+- First-version and multi-item event recovery use release assembly. Review
+  monitoring preserves exact target IDs and re-reads them after latest-version
+  waits. Task routing covers read-only pricing and schedule inspection.
+- IAP lookups reflect CLI 6.3.0 multi-territory filters, automatic price-filter
+  pagination, and territory includes for candidate and equalized price points.
 - Screenshot cleanup uses working copies; associative-array examples require
   Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
   description, promotional text, and release-note guidance. Build-ID guidance
@@ -335,6 +341,16 @@ path reference, and the three ADR criteria live in the entrypoint at the stable
 `offer-adrs-sparingly` anchor. ADR formatting preserves system/context placement
 and sequential numbering. Discovery and invocation settings remain unchanged.
 
+
+## explain
+
+- Local: `skills/explain` (SreeStack). Conceptual input from Cursor pstack's
+  [bro](https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md),
+  [teach](https://github.com/cursor/plugins/blob/main/pstack/skills/teach/SKILL.md),
+  and [in-your-own-words](https://github.com/cursor/plugins/blob/main/pstack/skills/in-your-own-words/SKILL.md),
+  checked 2026-11-01. Independently written, user-invoked only in both hosts. Technical
+  explanations using "explain it to a PM or junior engineer" as the instruction.
+  Adds brief teaching guidance. No upstream prose copied.
 
 ## eli5
 
@@ -911,8 +927,13 @@ Indirect-consumer checks use `blast-radius`; React or Next assessments use
 The shared review brief carries applicable evaluation criteria and evidence,
 including empirical comparison conditions, qualitative judgments, and changes
 to tests, fixtures, and measurement methods.
-Delegated review evidence adds task-specific output paths, supported read-range
-receipts, frozen-source citation checks, and caller-retained original artifacts.
+Delegated review evidence adds explicit workflow/pass identities, configured
+model metadata, task-specific output paths, supported read-range receipts,
+frozen-source citation checks, and caller-retained original artifacts.
+Common inputs are separate from same-round peer outputs; briefs state the
+cooperative peer-read boundary and exposure uses the existing failure policy.
+Source snapshots exclude designated generated review artifacts while retaining
+other nonignored untracked source.
 
 ## review-fix-loop
 
@@ -923,7 +944,8 @@ receipts, frozen-source citation checks, and caller-retained original artifacts.
   from each provider pool. The loop owns provider-reference delivery, skips,
   and stable snapshots. Generic
   delegation and handoff use Orchestration, with tasks mapped to review
-  assignments and rounds; findings use Review Sweep.
+  assignments and workflow/pass identities; findings use Review Sweep with
+  stable issue IDs and per-issue repair/check evidence.
 
 ## pr
 
@@ -968,8 +990,10 @@ remain unchanged.
 
 ## review-sweep
 
-- Local: `skills/review-sweep` (SreeStack). Findings retain assignment/model
-  provenance; accepted fixes use orchestration's implementation selection.
+- Local: `skills/review-sweep` (SreeStack). Canonical issues retain workflow/pass,
+  source-report relationships, and assignment/model provenance. Acceptance,
+  applied repairs, and snapshot-specific checks remain separate; accepted fixes
+  use orchestration's implementation selection.
   Settlement weighs supported exposure and impact, preserving rare material and
   required failures while deferring low-impact work and rejecting hypotheticals.
 

@@ -9,14 +9,15 @@ Turn supplied findings into verified decisions and fixes. The caller owns input
 fetching, commits, publication, remote replies/resolution, and later review rounds.
 
 1. **Account for input.** Normalize every item with the
-   [finding schema](references/finding-schema.md). Preserve each source and ID,
-   including model/assignment provenance. Merge duplicates without losing their
-   sources; separate source noise and incomplete-review coverage gaps.
+   [finding schema](references/finding-schema.md). Preserve workflow/pass and
+   model/assignment provenance. Keep one stable issue ID per underlying cause
+   and retain each report's source ID and relationship to that issue. Separate
+   source noise and incomplete-review coverage gaps.
 2. **Verify each claim.** Inspect the actual location, owner, consumers, contracts,
    requirements, and relevant checks. Use [verify](../verify/SKILL.md) when a real
    workflow resolves a dispute. Finish when every claim has evidence and a state:
    true, pre-existing, handled, contradicted, duplicate, or unjustified churn.
-3. **Decide.** Apply [classification](references/classification.md) once per item.
+3. **Decide.** Apply [classification](references/classification.md) once per issue.
    Only Must-fix and Worth-fixing are accepted. Record reasons for rejection,
    acknowledgment, or deferral, including the parent decision a deferral needs.
 4. **Repair and check.** Use the working selection from
@@ -24,7 +25,9 @@ fetching, commits, publication, remote replies/resolution, and later review roun
    Preserve intended behavior within the authorized scope; a changed product
    decision belongs to the parent. Run checks affected by accepted fixes,
    including relevant React Doctor diagnostics. Reuse proof while it remains
-   valid. Missing implementation acceptance proof is itself a finding to resolve.
+   valid. Record each accepted issue's repair state and snapshot separately from
+   the check result, its snapshot, and what it proves. Missing implementation
+   acceptance proof is itself a finding to resolve.
 
 Finish when every input has a disposition and each accepted fix passes its
 checks, or report the precise blocker. Reopen settled findings only with new

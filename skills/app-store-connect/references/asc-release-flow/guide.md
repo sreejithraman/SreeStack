@@ -30,7 +30,7 @@ Switch guides within the current task, preserving resolved targets, authorizatio
 | Prepare metadata and attach an existing build without submitting | `asc release stage` |
 | Submit an already prepared version | `asc review submit` |
 | Upload an IPA or build locally, then optionally submit | `asc publish appstore` |
-| Submit the app version with IAP, subscription, or Game Center version items | lower-level `asc review` submission commands |
+| Submit the app version with digital goods, Game Center items, in-app events, or Asset Library media | lower-level `asc review` submission commands |
 
 Do not mix lanes after one has already created a review submission. Inspect the existing submission first and continue through the matching lower-level commands.
 
@@ -52,7 +52,7 @@ asc validate --app "APP_ID" --version "1.2.3" --platform IOS --strict --output t
 
 Digital goods are a hard gate. If the release includes IAPs or subscriptions, stop and run the relevant product checks in [asc-submission-health](../asc-submission-health/guide.md). Resume this flow only after those checks have no blocking issues and the intended product versions are prepared.
 
-For Game Center items, complete only [Prepare every item](references/multi-item-submissions.md#prepare-every-item), then return to this flow. Do not assemble or submit the multi-item review submission during readiness.
+For releases with Game Center items, in-app events, or Asset Library media, complete only [Prepare every item](references/multi-item-submissions.md#prepare-every-item), then return to this flow. Do not assemble or submit the multi-item review submission during readiness.
 
 If app validation reports a Game Center item blocker, stop and use that preparation section. If the only blocker is an unattached build in the staging lane, continue to the staging section. For every other blocker, pause dependent release actions and use [asc-submission-health](../asc-submission-health/guide.md); resume after authorized repairs pass validation.
 
@@ -67,7 +67,7 @@ asc release stage \
   --app "APP_ID" \
   --version "1.2.3" \
   --build-id "BUILD_ID" \
-  --metadata-dir "./metadata/version/1.2.3" \
+  --metadata-dir "./metadata" \
   --dry-run \
   --output table
 ```
@@ -79,11 +79,11 @@ asc release stage \
   --app "APP_ID" \
   --version "1.2.3" \
   --build-id "BUILD_ID" \
-  --metadata-dir "./metadata/version/1.2.3" \
+  --metadata-dir "./metadata" \
   --confirm
 ```
 
-Use `--copy-metadata-from "1.2.2"` instead of `--metadata-dir` when carrying localization metadata forward. Add `--strict-validate` when warnings should fail the stage.
+`--metadata-dir` takes the canonical metadata root that contains `app-info/` and `version/<version>/`, the same layout as `asc metadata push --dir`. Use `--copy-metadata-from "1.2.2"` instead of `--metadata-dir` when carrying localization metadata forward. Add `--strict-validate` when warnings should fail the stage.
 
 If the metadata plan contains deletes, the dry run and confirmed run both require `--allow-deletes`. Review those deletes first; the flag also disables fallback to an existing locale when that locale is absent locally.
 
@@ -100,7 +100,7 @@ asc review submit --app "APP_ID" --version "1.2.3" --build-id "BUILD_ID" --dry-r
 asc review submit --app "APP_ID" --version "1.2.3" --build-id "BUILD_ID" --confirm
 ```
 
-Use `--version-id "VERSION_ID"` instead of `--version` when the exact version ID is known. `--build-id` is always required and must identify the intended build.
+Use `--version-id "VERSION_ID"` instead of `--version` when the exact version ID is known. Select the build with `--build-id`, or with `--build-number "45"` to skip the build-ID lookup; it matches only builds of that app, version string, and platform. Right after an upload, prefer `--build-number` over `--latest`, which can still pick the previous upload. Add `--wait` to wait for processing before attaching.
 
 ## Upload or build, then publish
 
@@ -136,7 +136,7 @@ Omit `--submit` when the user wants upload and attachment only.
 
 ## Submit multiple review items
 
-Read [references/multi-item-submissions.md](references/multi-item-submissions.md) when the app version must ship with versioned IAP, subscription, subscription-group, or Game Center items. Add only items the user has resolved and inspected.
+Read [references/multi-item-submissions.md](references/multi-item-submissions.md) when the app version must ship with versioned digital goods, Game Center items, in-app events, or Asset Library media. Add only items the user has resolved and inspected.
 
 ## Handoff after submission
 

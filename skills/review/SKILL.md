@@ -12,6 +12,8 @@ owns reviewer selection, tools, fixes, and repeat rounds.
    standalone request, resolve the supplied base using the merge-base for branch
    comparisons, otherwise use the established parent branch or repo setting;
    ask if ambiguous. Stop on an invalid base or empty scope.
+   Apply [review artifact exclusions](references/review-evidence.md#assign-outputs)
+   before discovering source, building its snapshot, or rechecking it.
    Default scope is `git diff <resolved-base> --` plus complete nonignored
    untracked files from `git ls-files --others --exclude-standard`, including
    committed, staged, and unstaged work. Honor a requested narrower scope.
