@@ -373,8 +373,9 @@ uses explicit policy settings rather than named rank presets. Start a new task
 after changing host settings and check its effective selection; active tasks
 may retain earlier settings.
 
-Local research notes under `docs/research/` are ignored by Git. Keep maintained
-technical citations beside their guidance. Host setup follows OpenAI's
+Use [research](skills/research/SKILL.md) for cited investigations and session
+notes. Keep maintained technical citations beside their guidance. Host setup
+follows OpenAI's
 [config precedence](https://learn.chatgpt.com/docs/config-file/config-basic) and
 [global instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
