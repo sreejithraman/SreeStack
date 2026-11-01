@@ -127,7 +127,7 @@ saved-work lifecycle.
 
 ## app-store-connect
 
-- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9a093fa52177d1b784fcbb06f9abfef4974e7701) — `skills/`; commit `9a093fa52177d1b784fcbb06f9abfef4974e7701`, imported 2026-10-03. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
+- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/7de1ef7cc831f62d205dfa589063f3831f66391b) — `skills/`; commit `7de1ef7cc831f62d205dfa589063f3831f66391b`, imported 2026-11-01. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
 
 - One discoverable skill: upstream `skills/asc-cli-usage/SKILL.md` supplies the
   entrypoint; the other `skills/<name>/SKILL.md` files map to local
@@ -135,7 +135,13 @@ saved-work lifecycle.
   and omit skill frontmatter. The skill omits upstream scripts and app settings.
 - Guide selection by task, checks against the installed CLI, and IDs and release
   rules from the project. API key creation requires a setup request. Apple Ads
-  detail lives in its guide only.
+  detail lives in its guide only. In-app events and Asset Library media are
+  discoverable through this entrypoint; cross-guide handoffs use local links.
+- First-version and multi-item event recovery use release assembly. Review
+  monitoring preserves exact target IDs and re-reads them after latest-version
+  waits. Task routing covers read-only pricing and schedule inspection.
+- IAP lookups reflect CLI 6.3.0 multi-territory filters, automatic price-filter
+  pagination, and territory includes for candidate and equalized price points.
 - Screenshot cleanup uses working copies; associative-array examples require
   Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
   description, promotional text, and release-note guidance. Build-ID guidance

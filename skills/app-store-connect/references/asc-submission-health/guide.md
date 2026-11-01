@@ -47,7 +47,8 @@ Collect direct evidence when the report points at the build or version:
 
 ```bash
 asc builds info --build-id "BUILD_ID" --output table
-asc versions view --version-id "VERSION_ID" --include-build --include-submission --output table
+# The attached build and submission are in .data.relationships and .included
+asc versions view --version-id "VERSION_ID" --include build,appStoreVersionSubmission --output json
 ```
 
 For digital goods, run only the relevant product validator:
@@ -106,6 +107,28 @@ Use the release dashboard for surrounding build and review signals:
 ```bash
 asc status --app "APP_ID" --include builds,appstore,submission,review --output table
 ```
+
+For target-specific monitoring, retain the original `VERSION_ID` or `SUBMISSION_ID` and repeat the exact-ID reads above. The dashboard waiter below is an optional signal about the latest version on the selected platform; it reselects that version on every poll. Exit 0 means the version on its final snapshot is approved, 1 means rejected, and 7 means still pending at the timeout. Replace `IOS` with the resolved platform:
+
+```bash
+asc status --app "APP_ID" --platform IOS --until review-done --timeout 2h --output json
+```
+
+After the waiter returns, re-read the original target by its retained ID and report only that target's observed state:
+
+```bash
+asc submit status --version-id "VERSION_ID" --output json
+```
+
+Use the exact submission read below when monitoring `SUBMISSION_ID`. If the dashboard's final version identity changed or cannot be verified, treat the wait as retargeted. Its exit status does not establish the original target's outcome; continue exact-ID monitoring when that target is still pending.
+
+For a resolved submission, including standalone event/library review, inspect the retained `SUBMISSION_ID` and its intended item/resource states:
+
+```bash
+asc review submissions-get --id "SUBMISSION_ID" --include items --output json
+```
+
+Status JSON lists suggested follow-ups in `summary.nextCommands`, each marked with whether it mutates App Store Connect. Treat mutating suggestions as proposals that still need the user's authorization.
 
 Use history to distinguish a current stall from earlier rejected or completed submissions:
 

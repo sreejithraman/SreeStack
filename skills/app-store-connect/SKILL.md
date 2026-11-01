@@ -1,6 +1,6 @@
 ---
 name: app-store-connect
-description: Use when asked to check App Store Connect builds, investigate TestFlight crashes or feedback, distribute betas, prepare or submit a release, fix App Review blockers, update store listings or pricing, manage Apple Ads, or run asc commands. Also use for signing, export, or notarization as part of app distribution. Excludes local Simulator debugging.
+description: Use when asked to check App Store Connect builds, investigate TestFlight crashes or feedback, distribute betas, prepare or submit a release, fix App Review blockers, update store listings, inspect or change pricing and schedules, manage in-app events, store assets, or Apple Ads, or run asc commands. Also use for signing, export, or notarization as part of app distribution. Excludes local Simulator debugging.
 ---
 
 # App Store Connect usage
@@ -30,11 +30,25 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
   - `asc capabilities --status web-session --output table`
   - `asc capabilities --status not-public-api --output markdown`
 
+### Native commands and related records
+
+Use native commands for reads and writes; find them with `asc search "TASK"` or `--help`. Use `asc api <METHOD> <PATH>` only when no native command covers the task; its writes require `--confirm`. Keep authentication inside the CLI rather than constructing `curl` requests with `asc auth token`.
+
+Where a native read supports `--include`, fetch related records in one call and inspect the JSON `included` array:
+
+- `asc versions view --version-id "VERSION_ID" --include build,appStoreVersionSubmission --output json`
+- `asc builds info --build-id "BUILD_ID" --include buildBetaDetail,betaAppReviewSubmission,betaGroups --output json`
+- `asc iap view --id "IAP_ID" --include inAppPurchaseLocalizations,appStoreReviewScreenshot --output json`
+- `asc review submissions-get --id "SUBMISSION_ID" --include items,appStoreVersionForReview --output json`
+
+Native single-resource and child-list reads include `asc localizations view`, `asc testflight groups builds list`, and `asc pricing availability territory-availabilities`; check their leaf help for selectors.
+
 ## Canonical verbs (current asc)
 
 - Prefer `view` over legacy `get` aliases for read-only commands in docs and automation.
   - `asc apps view --id "APP_ID"`
-  - `asc versions view --version-id "VERSION_ID"`
+  - `asc versions view --version-id "VERSION_ID" --include build`
+  - Without `--include`, `asc versions view` returns a deprecated summary. Prefer `--include build` and `--include appStoreVersionSubmission` over the legacy `--include-build` and `--include-submission` flags.
   - `asc pricing availability view --app "APP_ID"`
 - Prefer `edit` for update-only availability surfaces and other canonical edit flows.
   - `asc pricing availability edit --app "APP_ID" --territory "USA,GBR" --available true`
@@ -51,18 +65,22 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
 - Prefer explicit flags in automation; some newer commands can prompt for missing fields when run interactively.
 - Destructive operations require `--confirm`.
 - Use `--paginate` when the user wants all pages.
+- Put command-specific flags after the leaf subcommand; parent groups reject misplaced flags.
+- Treat `--next` URLs as opaque continuations. Keep new filters, sorting, and page-size flags off continuation requests; follow leaf help for required selectors.
 
 ## Output formats
 
 - Output defaults are TTY-aware: `table` in interactive terminals, `json` when piped or non-interactive.
 - Use `--output table` or `--output markdown` only for human-readable output.
 - `--pretty` is only valid with JSON output.
+- Check the exit status as well as stdout. Failed batches can emit partial receipts; inspect completed actions and resource IDs before retrying mutations.
 
 ## Authentication and defaults
 
 - Prefer an existing keychain API profile; use `asc auth login` when authentication needs setup.
 - Fallback env vars: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH`, `ASC_PRIVATE_KEY`, `ASC_PRIVATE_KEY_B64`.
 - `ASC_APP_ID` can provide a default app ID.
+- App Store Server API reads live under `asc storekit` and use separate In-App Purchase keys registered with `asc storekit auth login`, rather than `asc auth` profiles.
 - When permissions are unclear, inspect exact API key role coverage with `asc web auth capabilities`.
   - This lives under the web-session auth surface.
   - It can resolve the current local auth by default, or inspect a specific key with `--key-id`.
@@ -80,6 +98,8 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
 - On failure, distinguish code rejection from a timeout after verification or provider selection. Inspect the exact error and installed version before requesting more codes. Increasing a request timeout does not verify that an interactive-session problem is fixed.
 - After login, verify `authenticated` and the selected provider with a separate status read. Confirm the next web operation reuses the cache before reporting success. Sessions can expire later; report the verified current state.
 - Inspect `asc web auth login --help` before configuring a supported `--two-factor-code-command`. Keep credentials and codes out of logs, source, shell history, and PRs. Use only authentication mechanisms supported by the installed CLI; a password-manager passkey or browser sign-in does not establish CLI cache authentication.
+- A fresh non-interactive web sign-in requires `--two-factor-code-command` or `ASC_WEB_2FA_CODE_COMMAND`; cached-session reuse does not require a fresh sign-in.
+- Select a public team ID with `--public-provider-id`; `--provider-id` takes Apple's numeric provider ID. API profile names are separate local labels.
 
 ## Timeouts
 
@@ -95,10 +115,13 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
 | Distribute TestFlight builds and manage testers | [asc-testflight-orchestration](references/asc-testflight-orchestration/guide.md) |
 | Read TestFlight crashes and feedback | [asc-crash-triage](references/asc-crash-triage/guide.md) |
 | Archive or export with Xcode | [asc-xcode-build](references/asc-xcode-build/guide.md) |
+| Compile or package a prepared iOS xtool project on Linux | [Portable iOS builds](references/asc-xcode-build/references/portable-ios.md) |
 | Set up certificates, profiles, and signing | [asc-signing-setup](references/asc-signing-setup/guide.md) |
 | Diagnose review blockers, rejection, or stuck submissions | [asc-submission-health](references/asc-submission-health/guide.md) |
 | Stage, publish, or submit a release | [asc-release-flow](references/asc-release-flow/guide.md) |
-| Sync store metadata | [asc-metadata-sync](references/asc-metadata-sync/guide.md) |
+| Sync store metadata, App Clip headers, or preview assets | [asc-metadata-sync](references/asc-metadata-sync/guide.md) |
+| Upload reusable Asset Library media or assign localized placements | [Asset Library](references/asc-metadata-sync/references/asset-library.md) |
+| Create, localize, or submit in-app events | [In-app events](references/asc-in-app-events/guide.md) |
 | Translate store metadata | [asc-localize-metadata](references/asc-localize-metadata/guide.md) |
 | Write What’s New release notes | [asc-whats-new-writer](references/asc-whats-new-writer/guide.md) |
 | Capture, frame, and upload screenshots | [asc-shots-pipeline](references/asc-shots-pipeline/guide.md) |
@@ -106,7 +129,7 @@ CLI reference: [App-Store-Connect-CLI](https://github.com/rorkai/App-Store-Conne
 | Audit App Store search optimization | [asc-aso-audit](references/asc-aso-audit/guide.md) |
 | Fetch analytics reports | [asc-analytics-reports](references/asc-analytics-reports/guide.md) |
 | Localize subscriptions and in-app purchases | [asc-subscription-localization](references/asc-subscription-localization/guide.md) |
-| Set prices by purchasing power | [asc-ppp-pricing](references/asc-ppp-pricing/guide.md) |
+| Inspect subscription/IAP prices and schedules, or set PPP prices | [asc-ppp-pricing](references/asc-ppp-pricing/guide.md) |
 | Sync a RevenueCat product catalog | [asc-revenuecat-catalog-sync](references/asc-revenuecat-catalog-sync/guide.md) |
 | Distribute ad hoc builds | [asc-ad-hoc-distribution](references/asc-ad-hoc-distribution/guide.md) |
 | Notarize macOS apps | [asc-notarization](references/asc-notarization/guide.md) |

@@ -82,7 +82,7 @@ Use `--age-rating-override-v2` when an override is required. The older `--age-ra
 Inspect the version and its attached resources:
 
 ```bash
-asc versions view --version-id "VERSION_ID" --include-build --include-submission --output table
+asc versions view --version-id "VERSION_ID" --include build,appStoreVersionSubmission --output json
 asc localizations list --version "VERSION_ID" --output table
 ```
 
@@ -184,7 +184,7 @@ asc review details-create \
   --contact-first-name "Dev" \
   --contact-last-name "Support" \
   --contact-email "dev@example.com" \
-  --contact-phone "+1 555 0100" \
+  --contact-phone "+1 408 555 0100" \
   --notes "Explain the reviewer access path here."
 ```
 

@@ -4,6 +4,9 @@ Use this guide when you need to build an app from source and prepare it for App 
 
 ## Preconditions
 
+For a prepared xtool package on Linux, use [portable iOS builds](references/portable-ios.md)
+instead of the Xcode commands below. That workflow has a narrower project and signing contract.
+
 - Xcode and command line tools are installed.
 - Signing identity and provisioning profiles are available, or automatic signing is enabled.
 - App Store Connect auth is configured when upload or build lookup is needed.
