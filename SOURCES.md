@@ -834,6 +834,11 @@ version tables. Global text trimming and destructive layout resets are omitted.
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
 Research owns a cited primary-source note and uses shared research defaults.
+Notes default to host-provided session scratch storage outside the repo, with
+a unique writable OS temp directory as fallback. Project output follows an
+explicit request or a task's maintained-document requirement. Handoffs and
+compaction summaries retain absolute note paths; continued work rereads and
+updates the note, keeping it available for the session and dependent workers.
 YouTube retrieval uses Gemini and X posts use Grok through orchestration's
 configured selections. Assigned researchers own synthesis; their briefs permit
 needed source tasks, whose retrievers work directly. Parents check source
@@ -983,9 +988,8 @@ facts, explicit overrides, or needed pointers while preserving existing scope
 and conditions; final checks catch paraphrased duplication and redundant reruns.
 Project workflow pointers call `showroom` for inspectable results and useful
 UI iteration feedback; demonstration and access procedures remain in that skill.
-Full setup and research-note convention updates ensure `/docs/research/` is
-ignored through the repo's `.gitignore`, reuse equivalent rules, verify ignore
-behavior, and report already tracked notes without changing their tracking.
+Research owns session-note storage; setup leaves research directories and
+ignore rules to explicit project requirements.
 
 Domain defaults use `GLOSSARY.md` / `GLOSSARY-MAP.md`; established legacy/custom
 paths and one vocabulary source per context remain supported. Context boundaries,

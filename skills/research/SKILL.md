@@ -5,10 +5,21 @@ description: Investigate a question against primary sources and record cited fin
 
 # Research
 
-Own a question and the evidence needed to answer it. Resolve the decision,
-scope, and an output path using the repo's research-note convention. Use
-[agent routing's General research selection](../orchestration/references/agent-routing.md#model-defaults)
+Own a question and the evidence needed to answer it. Resolve the decision and
+scope. Use [agent routing's General research selection](../orchestration/references/agent-routing.md#model-defaults)
 for investigation and synthesis.
+
+## Note storage
+
+Choose the note path before delegating. Use the host-provided session scratch
+directory outside the repo when available; otherwise create a unique directory
+under a writable OS temp directory. Save in the project only when explicitly
+requested or when the task requires maintained documentation, honoring its
+destination.
+
+Record the note's absolute path in task handoffs and compaction summaries.
+Reuse and update the same note as findings change; reread it after compaction
+or resume. Keep it available while the session or dependent workers need it.
 
 When independent reading helps another owner continue useful work, use
 [orchestration](../orchestration/SKILL.md) to delegate a bounded question with
