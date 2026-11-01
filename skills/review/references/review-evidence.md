@@ -11,6 +11,13 @@ required inputs, and exact report and coverage paths in the brief. Bind the
 returned task ID to that assignment. A snapshot identity must cover the diff
 and complete untracked inputs, not just HEAD.
 
+Designate generated review input, output, and archive paths before collecting
+source. Exclude those exact paths from source discovery, snapshot identity,
+source searches, and rechecks, including tracked and untracked enumeration when
+they are inside the worktree. Keep all other nonignored untracked source in
+scope. Common inputs remain readable as named evidence, subject to the peer-read
+boundary below; they are not part of the reviewed source set.
+
 Keep source access read-only and permit report writes only to those exact paths.
 Use runtime write restrictions when supported. With cooperative write limits,
 check the source and other assessments' artifacts before accepting completion;

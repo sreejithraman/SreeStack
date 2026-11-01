@@ -906,6 +906,8 @@ Delegated review evidence adds task-specific output paths, supported read-range
 receipts, frozen-source citation checks, and caller-retained original artifacts.
 Common inputs are separate from same-round peer outputs; briefs state the
 cooperative peer-read boundary and exposure uses the existing failure policy.
+Source snapshots exclude designated generated review artifacts while retaining
+other nonignored untracked source.
 
 ## review-fix-loop
 

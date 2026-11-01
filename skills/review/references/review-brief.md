@@ -7,9 +7,9 @@ supply full contents when a reviewer cannot read the source. Keep briefs and
 snapshots outside the reviewed diff.
 
 For delegated assessments, use [Review evidence](review-evidence.md) to assign
-unique output paths and snapshot identity. Include its coverage receipt contract
-and the exact report/receipt paths in every brief; retain the task-to-assignment
-mapping when dispatch returns.
+unique output paths, source exclusions, and snapshot identity. Include its
+coverage receipt contract and the exact report/receipt paths in every brief;
+retain the task-to-assignment mapping when dispatch returns.
 
 For example, keep one pass's common inputs in
 `.artifacts/review-inputs/pass-02/`, reviewer outputs in
@@ -42,8 +42,10 @@ requires serial dispatch; earlier-round findings remain part of later briefs.
   that snapshot (including untracked inputs), affected behavior and dependencies,
   relevant checks, and retained coverage with reasons it still applies. The
   original diff remains context; mark the complete scope assigned for this pass.
-- Nonignored untracked files: output of `git ls-files --others --exclude-standard`
-  and the complete contents of each file, or an explicit statement that none exist.
+- Source exclusions: exact generated review input, output, and archive paths.
+  Apply Review evidence's boundary throughout discovery, snapshotting, and rechecks.
+- Nonignored untracked source: output of `git ls-files --others --exclude-standard`
+  with those path exclusions, and each file's complete contents, or none.
 - Relevant repo standards and related instructions: absolute paths.
 - Main risks and realistic sample requests, especially for agent instructions.
 
