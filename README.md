@@ -43,6 +43,7 @@ instructions rather than maintaining another API manual.
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Compare independent candidates and synthesize a result | `arena` |
 | Understand current code, historical decisions, or change risks | `how`, `why`, and `blast-radius`, respectively |
+| Explain simply, including for a PM or junior engineer | [explain](skills/explain/SKILL.md) |
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
@@ -415,7 +416,7 @@ uses and adapts:
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
