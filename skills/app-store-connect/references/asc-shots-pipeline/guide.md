@@ -2,6 +2,15 @@
 
 Use this guide for agent-driven screenshot workflows where the app is built and launched with Xcode CLI tools, UI is driven with AXe, and screenshots are uploaded with `asc`.
 
+Before device work, follow
+[Simulator Lifecycle](../../../simulator-lifecycle/SKILL.md) and the host's
+interactive-device contract. The raw device examples below apply only to an
+authorized unmanaged target. For disposable captures, use the granted device,
+device set and run-owned build outputs, and its supported build/install/driver
+route. Verify screenshot automation can target that lease; otherwise report the
+unsupported step. Replace the settings example's `booted` selector with the exact
+device ID. Preserve screenshot exports before releasing the lease.
+
 ## Current scope
 - Implemented now: build/run, AXe plan capture, frame composition, and upload.
 - Device discovery is built-in via `asc screenshots list-frame-devices`.
@@ -198,6 +207,12 @@ Do not use `xcrun simctl launch ... -e AppleLanguages` for localization.
 
 For this pipeline, use simulator-wide locale defaults per UDID. This works with
 `asc screenshots capture`, which relaunches the app internally.
+
+For disposable captures, lease a compatible device for each locale in turn and
+release it after exporting that locale's evidence; use independent leases when
+parallel capture is supported. Apply locale changes through the supported driver
+or manager. The static mapping below is only for explicitly designated unmanaged
+inspection devices whose retained data permits the changes, not pool provisioning.
 
 ```bash
 # Map each locale to a dedicated simulator UDID.

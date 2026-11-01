@@ -12,6 +12,14 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   directory, target, simulator, fixture, or required service. Keep platform
   instructions specific to the repo; a web harness, Apple device tool, or CLI
   being available elsewhere does not make it available here.
+- **Simulator runs:** when the project uses iOS simulators or Android emulators,
+  link [Simulator Lifecycle](../../simulator-lifecycle/SKILL.md). Record the
+  supported worker/host route, compatible test destination and device set, normal
+  runner's lease/teardown integration, per-run outputs and retained inspection
+  targets. Keep SimLock's rules in `simlock instructions`; project docs contain
+  project facts. Environment adoption uses its
+  [setup checks](../../simulator-lifecycle/references/setup.md) when requested;
+  ordinary project setup records missing integration without claiming it works.
 - **Acceptance:** link the verification index established by
   [Setup's foundation step](../SKILL.md#verification-foundation), or the existing
   map for a scoped workflow update. Record established demonstration or access

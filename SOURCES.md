@@ -140,6 +140,9 @@ saved-work lifecycle.
   Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
   description, promotional text, and release-note guidance. Build-ID guidance
   uses the `--build-id` flag required by the installed CLI.
+- Screenshot device operations route through `simulator-lifecycle` and the host
+  driver contract. Raw examples are limited to authorized unmanaged targets;
+  disposable multi-locale work uses manager leases rather than hand-created devices.
 
 Authentication reuses cached profiles and web sessions, verifies providers, and
 serializes interactive challenges. Developer Portal cache recovery follows
@@ -597,6 +600,9 @@ assertion coverage beyond a successful command. Targeted suites preserve require
 integration gates, reconcile every selected test and attempt, and require matching
 runtime evidence for pre-existing failure claims. Xcode MCP and platform CLIs
 supply build/log operations or host-supported fallback.
+Simulator/emulator preparation routes through `simulator-lifecycle`, retaining
+T3's panel and pinned driver contract. Native suites use the granted destination
+and device set, independent leases for concurrent runs, and clone accounting.
 Terminal and service checks use process or PTY driving, bounded
 completion, public protocols, and fresh persisted-output reads. Harness selection
 follows host routing, including T3 preview opening and actionable-error recovery,
@@ -646,7 +652,10 @@ preserved and shut down only when the task booted them and no consumer remains.
 Cleanup reconstructs process, device, and install ownership from available
 session history and tool results, with logs, current state, and optional handoffs
 as supporting evidence. Discovery and cleanup rules live together in
-`references/development-resources.md`; no launch-time bookkeeping is required.
+`references/development-resources.md`. SimLock resources route through
+`simulator-lifecycle`: release the acquiring lease and leave device reclamation
+to its manager. Run receipts support recovery and host-output cleanup; legacy
+ownership can still be reconstructed without launch-time bookkeeping.
 Preserves shared installs, retained data, inspection lifetimes, and resources
 needed by unmerged stack layers.
 
@@ -988,6 +997,9 @@ facts, explicit overrides, or needed pointers while preserving existing scope
 and conditions; final checks catch paraphrased duplication and redundant reruns.
 Project workflow pointers call `showroom` for inspectable results and useful
 UI iteration feedback; demonstration and access procedures remain in that skill.
+Simulator projects record their runner/host integration and retained targets
+through `simulator-lifecycle`; ordinary setup does not claim environment adoption
+or native proof from a documentation pointer.
 Research owns session-note storage; setup leaves research directories and
 ignore rules to explicit project requirements.
 
@@ -1011,6 +1023,19 @@ PR workflow references use the local `pr` entry point.
 
 - Local: `skills/showroom` (SreeStack). Owns demonstrations and access for
   inspectable results, with model-selected formats and delivery paths.
+
+## simulator-lifecycle
+
+- [callstackincubator/simlock](https://github.com/callstackincubator/simlock) — generated skill from published `simlock@0.4.0`, `dist/instructions/skill.js` (`src/instructions/skill.ts` upstream); package git revision unrecorded. MIT notice in `licenses/callstackincubator-simlock.txt`.
+
+Preserves the upstream setup and installed-instructions steps. Local name is
+`simulator-lifecycle`; automatic discovery covers simulators/emulators rather
+than test phones. Adds host-routing, retained-target and shared-requester ownership
+gates plus fresh lease-identity requirements, and links local
+run/handoff, runner-integration and adoption references, including bounded iOS
+agent-device helper preparation and bridge capability checks. Runtime lease rules stay
+with `simlock instructions`. Technical citations use checked upstream source
+documents rather than inaccessible deployed documentation routes.
 
 ## tdd
 
