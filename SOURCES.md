@@ -908,8 +908,9 @@ Indirect-consumer checks use `blast-radius`; React or Next assessments use
 The shared review brief carries applicable evaluation criteria and evidence,
 including empirical comparison conditions, qualitative judgments, and changes
 to tests, fixtures, and measurement methods.
-Delegated review evidence adds task-specific output paths, supported read-range
-receipts, frozen-source citation checks, and caller-retained original artifacts.
+Delegated review evidence adds explicit workflow/pass identities, configured
+model metadata, task-specific output paths, supported read-range receipts,
+frozen-source citation checks, and caller-retained original artifacts.
 Common inputs are separate from same-round peer outputs; briefs state the
 cooperative peer-read boundary and exposure uses the existing failure policy.
 Source snapshots exclude designated generated review artifacts while retaining
@@ -924,7 +925,8 @@ other nonignored untracked source.
   from each provider pool. The loop owns provider-reference delivery, skips,
   and stable snapshots. Generic
   delegation and handoff use Orchestration, with tasks mapped to review
-  assignments and rounds; findings use Review Sweep.
+  assignments and workflow/pass identities; findings use Review Sweep with
+  stable issue IDs and per-issue repair/check evidence.
 
 ## pr
 
@@ -969,8 +971,10 @@ remain unchanged.
 
 ## review-sweep
 
-- Local: `skills/review-sweep` (SreeStack). Findings retain assignment/model
-  provenance; accepted fixes use orchestration's implementation selection.
+- Local: `skills/review-sweep` (SreeStack). Canonical issues retain workflow/pass,
+  source-report relationships, and assignment/model provenance. Acceptance,
+  applied repairs, and snapshot-specific checks remain separate; accepted fixes
+  use orchestration's implementation selection.
   Settlement weighs supported exposure and impact, preserving rare material and
   required failures while deferring low-impact work and rejecting hypotheticals.
 

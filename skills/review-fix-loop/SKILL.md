@@ -15,7 +15,8 @@ The caller owns commits, publication, replies, and merging.
 
 Resolve the original base once using Review. Gather the complete snapshot,
 requirements, and verification evidence with the canonical
-[review brief](../review/references/review-brief.md).
+[review brief](../review/references/review-brief.md). Establish its workflow/pass
+identity before dispatch and retain it with the findings through fix passes.
 
 Choose coverage in this order, honoring explicit user requests:
 
@@ -57,8 +58,9 @@ preparation when scope, proof, and assignments are recorded.
    original report and receipt bytes before later writers run. Invalid or lost
    required coverage needs a fresh assessment under the selected failure policy.
    Give every result and partial finding to Review Sweep with its provenance.
-3. Settle findings and check accepted fixes through Review Sweep. After code or
-   substantive instruction fixes, start a fresh pass with the same selected
+3. Settle findings and check accepted fixes through Review Sweep, carrying
+   canonical issue IDs and their per-issue repair/check evidence forward. After
+   code or substantive instruction fixes, start a fresh pass with the same selected
    assessment angles, subject to the existing optional-skip policy. Bound its
    scope to all changes since the last completed pass, affected behavior and
    dependencies, prior findings and dispositions, and relevant verification.
@@ -76,7 +78,7 @@ the final code/substantive-instruction pass needs no fixes. Missing required
 coverage blocks completion. Reopen a settled finding only with new evidence;
 report stalled disputes rather than repeating equivalent rounds.
 
-In the Orchestration handoff, map child tasks to review assignments, criteria,
-models, and rounds. Include the reviewed base/snapshot, findings/dispositions,
-coverage/diversity gaps, skipped additional reviews and reasons, and provider
-references used or unavailable.
+In the Orchestration handoff, map child tasks to workflow/pass, review assignments,
+criteria, and configured models. Include the reviewed base/snapshot,
+findings/dispositions, coverage/diversity gaps, skipped additional reviews and
+reasons, and provider references used or unavailable.
