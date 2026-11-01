@@ -1,0 +1,108 @@
+# Run and handoff conventions
+
+Use SimLock for disposable agent devices across projects. SimLock owns allocation,
+leases, wiping and reuse; project runners own build processes and host output.
+Keep user inspection devices and valuable app data outside the disposable pool.
+
+## Choose the route before acquiring
+
+Read the host's live device contract and the project's test command. Identify
+whether the requested target is disposable or a retained inspection device.
+Preserve an explicitly requested device and its data.
+
+The entrypoint's installed-version rules govern disposable work. If SimLock
+is unavailable, continue independent build or code work and report the missing
+prerequisite. Environment setup and adoption checks use
+[setup and rollout](setup.md).
+
+In T3, use its Device panel and returned driver for interactive work. Confirm
+that the host's documented SimLock integration acquires and drives the same
+underlying lease. A regular `device_open` session alone does not establish a
+SimLock lease. If that integration is unavailable, report interactive disposable
+verification blocked; do not combine an unrelated CLI lease with a panel session
+or substitute another driver. Project test suites may use their supported
+SimLock route independently of interactive panel support.
+
+Outside a host-owned device route, choose one of SimLock's supported allocation
+interfaces for the run: its CLI, MCP, or agent-device bridge. With the bridge,
+`agent-device open` acquires and `close` releases; do not acquire a second CLI
+lease for it. Give each concurrent agent/run the distinct identity or session
+required by the chosen interface. Check the identity actually reported rather
+than assuming subagents have independent identities.
+
+A shared requester or session does not establish run ownership. On
+`REQUESTER_ALREADY_LEASED`, reconcile the live lease/device with this run's
+recorded acquisition before reusing, renewing or releasing it. Apply the same
+guard to queued requests, cancellation and late grants. Leave a sibling's or
+uncertain resource untouched; use a supported isolated requester/session or
+report the route blocked. Upstream advice to use or release a held lease applies
+only after this run's ownership is established.
+
+See [agent connection](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/getting-started/connect-your-agent.mdx)
+and [agent-device integration](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/using-devices/agent-device.mdx).
+
+## Run and record
+
+Use a compatible model/runtime from the catalog and keep the exact granted
+device ID, host, device set and lease identity through build, install and test.
+Prefer reusable devices within the configured capacity. SimLock handles device
+creation and resetting.
+
+For iOS work through agent-device, prepare its XCTest helper after acquiring
+the lease and before app commands. Discover the installed driver's
+`help prepare`; where supported, run `prepare ios-runner --platform ios` through
+the host-pinned driver with a bounded startup timeout, such as `--timeout 300000`.
+Cold helper builds can exceed an ordinary app-launch deadline. Keep the lease
+renewed during preparation, record its result, and stop app work if it fails.
+
+Keep requester/run identity separate from lease identity. Prefer manager-generated
+lease IDs; if choosing one, mint a fresh, never-reused ID for every new acquisition,
+including across retries and restarts. Reconcile an uncertain operation before
+starting another acquisition; do not recycle an ended lease ID.
+
+Use the project's normal runner with acquisition and teardown around the whole
+device-dependent run. Follow [project runner integration](project-runners.md)
+when adding or repairing that command. Keep the lease renewed during builds,
+test waits and inspection, including time with no agent-device commands. Stop
+device-dependent work on lease loss; a cached UDID does not authorize another
+operation. Report a hung command with its identity, deadline and logs. Leave
+shared Simulator, CoreSimulator and adb services running.
+
+Keep one run receipt beside the project's existing run evidence. Record the
+project/worktree and task/run owner, chosen interface/session, lease ID and
+deadline, host and exact device ID, runtime/model/device set, installed bundle IDs
+and build revisions or hashes, spawned process identities, and exact temporary
+output paths. Update it as effects happen, including failed installs and partial
+setup. This is evidence for recovery, not a second device ownership registry.
+Keep tokens and connection secrets out of the receipt.
+
+## Finish or retain
+
+On success, failure or cancellation, stop and await the run's device consumers
+before releasing its lease through the acquiring interface. Preserve other
+sessions and services. Export required evidence before release: SimLock wipes
+apps, files and settings. Release acknowledgement ends the lease; it does not
+prove the background wipe finished. Check status/events for reuse readiness,
+quarantine or cleanup failure before declaring teardown complete.
+
+Remove only the runner's disposable host outputs after its writers have exited
+and current path ownership and retention still match. Use
+[development resource cleanup](../../repo-cleanup/references/development-resources.md#clean-up)
+only for this run's ownership-checked process and host resource disposal; routine
+teardown does not invoke repository housekeeping. An old receipt, expired lease
+or missing renewal never
+authorizes an agent to erase, delete, shut down or uninstall from a device.
+Leave device recovery to SimLock; diagnose uncertain state rather than replaying
+cleanup against a device ID that may now belong to another run.
+
+For a user inspection handoff, use [Showroom](../../showroom/SKILL.md). A pooled
+device is a temporary viewing surface only while its lease is renewed. For data
+that must survive lease loss, use an explicitly designated inspection device
+outside the pool, or export a supported durable artifact before release. Record
+what is kept, why, for whom, its location, who maintains any live lease, and a
+review date. A retention note cannot suspend SimLock's expiry or wipe policy.
+
+SimLock intentionally wipes disposable devices after release or expiry; it is
+not a guarantee that arbitrary external consumers have stopped. Work requiring
+preservation after a missed renewal belongs outside that pool.
+See [lease lifecycle](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/using-devices/lease-lifecycle.mdx).

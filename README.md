@@ -50,6 +50,7 @@ instructions rather than maintaining another API manual.
 | Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
 | Prove behavior | `verify` |
+| Share disposable simulators across agents and projects | [simulator-lifecycle](skills/simulator-lifecycle/SKILL.md), using SimLock |
 | Run complexity, duplication, or mutation tools | `code-quality` |
 | Show results and make them available to try | `showroom` chooses demonstrations and access |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
@@ -327,6 +328,22 @@ the corresponding handoff pointer. The repository edits do not update installed
 skills or live host instructions. Apply them through your stable clone and the
 host setup below to activate those routes.
 
+### Shared simulators
+
+[Simulator Lifecycle](skills/simulator-lifecycle/SKILL.md) routes disposable
+agent devices through [SimLock](https://incubator.callstack.com/simlock/).
+It reads the installed tool's rules instead of maintaining another lease system.
+Verify uses that route for tests; Showroom records inspection lifetimes; Repo
+Cleanup releases managed leases and handles proven task-owned host outputs.
+
+Use its [setup and rollout guide](skills/simulator-lifecycle/references/setup.md)
+to configure a bounded reusable pool and prove concurrent isolation, failure
+cleanup and retained-device protection. Project adoption wires the normal test
+command to [acquisition and teardown](skills/simulator-lifecycle/references/project-runners.md).
+Linking the skill alone does not install SimLock or integrate project runners.
+T3 interactive work requires its supported route to the same SimLock lease.
+Retained app data stays outside the disposable pool; expiry can wipe pooled data.
+
 ### Code quality tools
 
 [Code Quality](skills/code-quality/SKILL.md) runs Crapper, Dryer, and Mutator and
@@ -421,6 +438,7 @@ uses and adapts:
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.
+- [Callstack’s SimLock](https://github.com/callstackincubator/simlock) — adapted skill entrypoint in `simulator-lifecycle`; runtime instructions stay with the installed tool. [MIT notice](licenses/callstackincubator-simlock.txt).
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.
