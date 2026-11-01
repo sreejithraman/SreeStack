@@ -904,6 +904,8 @@ including empirical comparison conditions, qualitative judgments, and changes
 to tests, fixtures, and measurement methods.
 Delegated review evidence adds task-specific output paths, supported read-range
 receipts, frozen-source citation checks, and caller-retained original artifacts.
+Common inputs are separate from same-round peer outputs; briefs state the
+cooperative peer-read boundary and exposure uses the existing failure policy.
 
 ## review-fix-loop
 

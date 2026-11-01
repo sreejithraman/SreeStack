@@ -11,12 +11,21 @@ unique output paths and snapshot identity. Include its coverage receipt contract
 and the exact report/receipt paths in every brief; retain the task-to-assignment
 mapping when dispatch returns.
 
+For example, keep one pass's common inputs in
+`.artifacts/review-inputs/pass-02/`, reviewer outputs in
+`.artifacts/review-outputs/pass-02/<assignment>/`, and caller-retained originals
+in `.artifacts/review-archives/pass-02/`. Name individual input files and the
+reviewer's own report and receipt as absolute paths in the actual brief. Copy
+needed earlier-round findings and evidence into the common inputs. These names
+are examples; the read boundary comes from Review evidence, not the directory names.
+
 First-round reviewers receive no earlier verdicts or author defenses. Later
 rounds include original scope, prior findings, their evidence and dispositions,
 responses, and unresolved objections. Ask reviewers to verify those claims
-independently and assess the current complete snapshot, including regressions
-from fixes. Earlier acceptance or rejection is not proof. Work read-only;
-leave edits, commits, external actions, delegation, and acceptance to the caller.
+against the updated work and assess the complete assigned scope, including
+regressions from fixes. Earlier acceptance or rejection is not proof. Work
+read-only; leave edits, commits, external actions, delegation, and acceptance
+to the caller.
 An assigned emphasis never limits full-scope reading. Reviewers within a round
 receive no peer findings or verdicts from that round, even when concurrency
 requires serial dispatch; earlier-round findings remain part of later briefs.
@@ -29,6 +38,10 @@ requires serial dispatch; earlier-round findings remain part of later briefs.
 - Original resolved base SHA and current HEAD SHA.
 - Current complete `git diff <base> --` artifact, covering committed, staged,
   and unstaged changes.
+- For a follow-up pass: the prior reviewed snapshot identity, all changes since
+  that snapshot (including untracked inputs), affected behavior and dependencies,
+  relevant checks, and retained coverage with reasons it still applies. The
+  original diff remains context; mark the complete scope assigned for this pass.
 - Nonignored untracked files: output of `git ls-files --others --exclude-standard`
   and the complete contents of each file, or an explicit statement that none exist.
 - Relevant repo standards and related instructions: absolute paths.

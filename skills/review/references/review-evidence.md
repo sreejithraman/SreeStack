@@ -17,6 +17,18 @@ check the source and other assessments' artifacts before accepting completion;
 report that limit rather than claiming filesystem isolation. A task may not
 repair another assessment's report or fill its coverage gaps.
 
+Give reviewers exact common input paths and their own output paths. Keep
+same-round peer outputs outside the common input directory and exclude those
+outputs and their archives from source and evidence searches. State in every brief:
+reviewers must not read same-round peer reports, coverage receipts, summaries,
+or task conversations, including completion archives. Earlier-round findings,
+evidence, and dispositions remain inputs for independent reassessment.
+
+If a reviewer receives same-round peer content, stop that assessment and disclose
+the exposure. It cannot count as independent; apply the failure policy below.
+Other valid assessments remain valid. These are cooperative read restrictions
+unless the runtime enforces them; directory placement is not filesystem isolation.
+
 ## Record reads
 
 Return a coverage receipt alongside the findings. Include the assignment key,
