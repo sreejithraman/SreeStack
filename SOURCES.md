@@ -1273,6 +1273,16 @@ avoid stale localized files after a masked per-language failure.
 HTML framing guidance identifies the PNG/JPEG extension condition and the
 passthrough behavior of other formats.
 
+## stageshow
+
+- [benjitaylor/skills / stageshow](https://github.com/benjitaylor/skills/tree/802057409787133703c56001080169e347305572/stageshow) — complete `stageshow/` folder; import baseline commit `802057409787133703c56001080169e347305572`. MIT notice in `licenses/benjitaylor-stageshow.txt`; bundled asset terms remain in `skills/stageshow/NOTICE.md` and its linked notices.
+
+Imported unchanged, including instructions, references, React kit, examples,
+playground, scripts, dependency lockfile, and license notices. Automatically
+discoverable in both hosts, as upstream. Root `.gitattributes` preserves the
+upstream Discover SVG's CRLF and teaching reference's final blank line during
+whitespace checks without changing their bytes.
+
 ## retro
 
 - [mattpocock/skills / skills/engineering/retro](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/retro) — `SKILL.md` and `agents/openai.yaml`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. MIT notice in `licenses/mattpocock-skills.txt`.

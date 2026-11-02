@@ -8,6 +8,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Source | Bundled material | Notice |
 | --- | --- | --- |
 | David Collado / Koubou | koubou screenshot design workflow and references | [MIT](licenses/bitomule-koubou.txt) |
+| Benji Taylor / Stageshow | stageshow skill, React kit, examples, playground, and scripts | [MIT](licenses/benjitaylor-stageshow.txt); [asset notices and terms](skills/stageshow/NOTICE.md) |
 | OpenClaw Foundation | 1password CLI authentication and secret-handling adaptation | [MIT](licenses/openclaw.txt) |
 | Sree Raman / Snip Snap | snip-snap | [MIT](licenses/sreejithraman-snip-snap.txt) |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
@@ -31,6 +32,9 @@ material keeps the terms listed below; the root license does not replace them.
 | Vojta Holik / good-css | ui-design CSS and browser references; animate CSS pattern variants | [MIT](licenses/vojtaholik-good-css.txt) |
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
 | Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
+
+Copies of Stageshow's kit or examples must include its MIT notice and retain
+applicable asset notices and terms listed in `skills/stageshow/NOTICE.md`.
 
 HumanLayer’s notice was checked on 2026-10-03 at the revision in `SOURCES.md`.
 Good CSS's notice was checked on 2026-10-08 at its recorded import revision.
