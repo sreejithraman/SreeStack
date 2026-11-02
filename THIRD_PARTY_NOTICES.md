@@ -33,6 +33,9 @@ material keeps the terms listed below; the root license does not replace them.
 | Million Software | react-doctor | [Modified MIT](licenses/millionco-react-doctor.txt) |
 | Vercel Labs | react-best-practices | Unresolved: upstream repo README and skill frontmatter claim MIT; no license file found at the recorded revision |
 
+Copies of Stageshow's kit or examples must include its MIT notice and retain
+applicable asset notices and terms listed in `skills/stageshow/NOTICE.md`.
+
 HumanLayer’s notice was checked on 2026-10-03 at the revision in `SOURCES.md`.
 Good CSS's notice was checked on 2026-10-08 at its recorded import revision.
 Gauntlet Loop's notice was checked on 2026-10-12 at its recorded import revision.

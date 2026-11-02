@@ -367,6 +367,9 @@ The [stageshow skill](skills/stageshow/SKILL.md) creates faux product UI stills,
 animated cursor demos, and bento grids for marketing pages and docs. It includes
 the upstream React/CSS kit, examples, playground, and capture tools unchanged.
 Follow its [setup and usage guide](skills/stageshow/README.md) to run the examples.
+When copying kit or example source into another project, include the
+[Stageshow MIT notice](licenses/benjitaylor-stageshow.txt) and applicable
+[asset notices](skills/stageshow/NOTICE.md).
 
 ### Agent login
 
