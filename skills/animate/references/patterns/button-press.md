@@ -1,6 +1,6 @@
 # Button press
 
-Use for brief feedback on a real press when motion passes the gate. Use the project’s `--ease-out` token; if absent, start with `cubic-bezier(0.23, 1, 0.32, 1)`.
+Use when a real press needs added motion feedback. Use the project’s `--ease-out` token; if absent, start with `cubic-bezier(0.23, 1, 0.32, 1)`.
 
 ```css
 .button {

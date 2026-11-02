@@ -65,9 +65,15 @@ saved-work lifecycle.
 - [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`. Newer [skill terms](https://github.com/Jakubantalik/transitions.dev/blob/3bc58021c69725d8bf42108632ac6cf14f2b1d3c/skills/transitions-dev/LICENSE.txt) restrict republishing the collection as a competing library, template pack, or component kit. Further imports are held pending redistribution clarification; the import baseline remains unchanged.
 
 - One automatically discoverable cross-platform skill owns motion decisions,
-  implementation, tuning, and checks. Its entrypoint holds the shared motion gate
-  and routes web work to the imported task-based pattern guides and SwiftUI or
-  UIKit work to guidance grounded in current Apple documentation.
+  implementation, tuning, and checks. Its short decision guide prefers system
+  component behavior, then built-in effects or presets, then custom motion for
+  an unmet requirement. Native Liquid Glass interaction and morphing follow the
+  same preference. Added motion must serve the interaction; frequency
+  classifications and structured purpose/handoff reports are omitted. Apple
+  pitfalls, web implementation/recipes, and web tuning are conditional reads.
+  Apple guidance keeps state, lifecycle, gestures, accessibility, and verification
+  constraints; routine API catalogs are omitted. Component and material setup,
+  including glass availability and fallbacks, stays with the framework skills.
   Origin notes and source-based groups are absent from the skill. Current project
   tokens, platform conventions, component behavior, and measured results take
   precedence over examples.
@@ -114,7 +120,7 @@ saved-work lifecycle.
   clip reveals join `modal.md`, `menu-dropdown.md`, `accordion.md`, and
   `panel-reveal.md`. `scroll-and-viewport.md` edge decoration maps to
   `scroll-overflow-feedback.md`. All pattern paths are under `references/`.
-  Preserves the local motion gate, timing tokens, lifecycle, interruption, and
+  Preserves purposeful added motion, timing tokens, lifecycle, interruption, and
   reduced-motion paths. Scope inherited opt-ins to components; retain usable
   static states and native event ownership. Browser versions and upstream
   measurements are omitted; target support and rendering require checks.
