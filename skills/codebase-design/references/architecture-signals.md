@@ -12,6 +12,7 @@ Group symptoms with the same cause into one recommendation.
 | Folders grouped by technical layer | One domain change repeatedly spans the same folders because ownership is scattered. Distinguish that friction from legitimate edits to separate adapters or contracts. |
 | Repeated logic | Multiple definitions own the same invariant and can drift. Check whether they change for the same reason before proposing shared ownership. |
 | Invalid states | A type or constructor permits contradictory combinations that callers must reject or interpret. Show a constructible state and how an actual consumer handles it. |
+| Implicit state machines | Interacting flags, scattered status writes, required call ordering, or repeated cancellation/retry patches hide a lifecycle. Trace a concrete event sequence that breaks a rule or leaves its outcome ambiguous, and identify which module could own the transitions. |
 | Too many responsibilities | A module combines independently changing concepts or forces callers to learn unrelated details. Use responsibilities and caller knowledge to assess cohesion. |
 | Scattered edits | A single rule requires coordinated edits across modules. Trace a real change or its required edits, and identify the knowledge that could have one owner. |
 | Interface bypasses | Callers access implementation details through an available export, import, or mutable value. Cite the path that bypasses the intended owner. |
@@ -31,7 +32,8 @@ Read further guidance only when validating that candidate requires it; reuse
 relevant guidance already read for this task:
 
 - Ownership or bypass proof: [preventing recurring mistakes](preventing-mistakes.md).
-- State design: [Type System Discipline](../../engineering-principles/references/type-system-discipline.md).
+- Lifecycle design: [Model the Domain](../../engineering-principles/references/model-the-domain.md#stateful-behavior).
+- Valid state shapes: [Type System Discipline](../../engineering-principles/references/type-system-discipline.md).
 - Validation or visibility: [Boundary Discipline](../../engineering-principles/references/boundary-discipline.md).
 
 When the table and code evidence suffice, continue the owning workflow without

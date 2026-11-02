@@ -200,11 +200,13 @@ compatibility paths remain supported.
 
 `references/architecture-signals.md` supplies shared discovery prompts for
 structural friction, including hidden caller obligations, invalid states,
-scattered ownership, and validation. Architecture exploration and Thermo use
-the same reference. Signals need evidence; size, layout, duplication, or wrapper
-counts alone do not justify a refactor.
+implicit state machines, scattered ownership, and validation. Architecture
+exploration and Thermo use the same reference. Signals need evidence;
+size, layout, duplication, or wrapper counts alone do not justify a refactor.
 The diagnostic table stands on its own. Deeper reading requires a concrete
 candidate needing further validation; agents reuse relevant guidance already read.
+Lifecycle ownership is a deep-module principle, with state-machine mechanics
+kept in the shared domain principle.
 
 ## correct
 
@@ -322,6 +324,8 @@ flags, effect ownership, stale completions, and conditional statechart adoption.
 Product requirements remain the independent source for behavior checks.
 The stateful-behavior practice is self-contained, with guards and a submission
 example; external source URLs stay in this provenance record.
+Event-order-dependent correctness calls for an explicit lifecycle model before
+handler design; valid state shapes and allowed transitions are distinct concerns.
 
 ## domain-modeling
 
@@ -483,6 +487,8 @@ carrying forward checked findings and experiments.
 
 Exploration also uses Codebase Design's shared architecture signals, grounded in
 caller traces, state validity, and maintenance history rather than layout or size.
+Lifecycle candidates include a transition table, compare lifecycle ownership and
+caller obligations, and carry observed event sequences into verification plans.
 
 ## arena
 
@@ -519,6 +525,9 @@ Review, verification, demonstrations and access, and publication keep their
 existing owners. Independent
 consensus is recorded without requiring artificial structural differences.
 The rationale keeps detailed sketches and evidence alongside its concise prose.
+Design candidates and rationales include a transition table for correctness
+that depends on event order, with lifecycle ownership and caller obligations
+included in design comparison. Important sequences carry into implementation checks.
 Candidate briefs end at their assigned output; rationale selection records
 cover supplied designs as well as fresh synthesis, and distinguish checked
 claims from unproven runtime behavior. Cursor-specific models and fixed file-hop thresholds
@@ -578,6 +587,8 @@ drift classification, and sync-revision records. Reusable recipes follow local
 documentation policy rather than generating project skills. Model sensitivity
 and real-code correspondence have distinct proof levels; a synchronized model
 can expose a code bug. Ordinary verification requires no new formal model.
+Stateful workflow checks carry architecture-discovered event sequences into
+public-entry-point checks with expectations grounded in product requirements.
 The standalone statechart scripts and mandatory statechart invocation are
 excluded; domain traces and optional diagrams need no bundled renderer.
 Ordinary checks use a temporary plan when no map exists and maintain affected
