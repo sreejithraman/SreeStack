@@ -1279,7 +1279,9 @@ passthrough behavior of other formats.
 
 Imported unchanged, including instructions, references, React kit, examples,
 playground, scripts, dependency lockfile, and license notices. Automatically
-discoverable in both hosts, as upstream.
+discoverable in both hosts, as upstream. Root `.gitattributes` preserves the
+upstream Discover SVG's CRLF and teaching reference's final blank line during
+whitespace checks without changing their bytes.
 
 ## retro
 
