@@ -65,9 +65,15 @@ saved-work lifecycle.
 - [Jakubantalik/transitions.dev](https://github.com/Jakubantalik/transitions.dev/tree/598d3d6ad89dabb4bdf742fd2e887ca53914a888/skills) — `skills/transitions-dev/` and `skills/transitions-polish/`; commit `598d3d6ad89dabb4bdf742fd2e887ca53914a888`. No license file found in this revision; see `THIRD_PARTY_NOTICES.md`. Newer [skill terms](https://github.com/Jakubantalik/transitions.dev/blob/3bc58021c69725d8bf42108632ac6cf14f2b1d3c/skills/transitions-dev/LICENSE.txt) restrict republishing the collection as a competing library, template pack, or component kit. Further imports are held pending redistribution clarification; the import baseline remains unchanged.
 
 - One automatically discoverable cross-platform skill owns motion decisions,
-  implementation, tuning, and checks. Its entrypoint holds the shared motion gate
-  and routes web work to the imported task-based pattern guides and SwiftUI or
-  UIKit work to guidance grounded in current Apple documentation.
+  implementation, tuning, and checks. Its short decision guide prefers system
+  component behavior, then built-in effects or presets, then custom motion for
+  an unmet requirement. Native Liquid Glass interaction and morphing follow the
+  same preference. Added motion must serve the interaction; frequency
+  classifications and structured purpose/handoff reports are omitted. Apple
+  pitfalls, web implementation/recipes, and web tuning are conditional reads.
+  Apple guidance keeps state, lifecycle, gestures, accessibility, and verification
+  constraints; routine API catalogs are omitted. Component and material setup,
+  including glass availability and fallbacks, stays with the framework skills.
   Origin notes and source-based groups are absent from the skill. Current project
   tokens, platform conventions, component behavior, and measured results take
   precedence over examples.
@@ -114,7 +120,7 @@ saved-work lifecycle.
   clip reveals join `modal.md`, `menu-dropdown.md`, `accordion.md`, and
   `panel-reveal.md`. `scroll-and-viewport.md` edge decoration maps to
   `scroll-overflow-feedback.md`. All pattern paths are under `references/`.
-  Preserves the local motion gate, timing tokens, lifecycle, interruption, and
+  Preserves purposeful added motion, timing tokens, lifecycle, interruption, and
   reduced-motion paths. Scope inherited opt-ins to components; retain usable
   static states and native event ownership. Browser versions and upstream
   measurements are omitted; target support and rendering require checks.
@@ -127,7 +133,7 @@ saved-work lifecycle.
 
 ## app-store-connect
 
-- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/9a093fa52177d1b784fcbb06f9abfef4974e7701) — `skills/`; commit `9a093fa52177d1b784fcbb06f9abfef4974e7701`, imported 2026-10-03. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
+- [rorkai/app-store-connect-cli-skills](https://github.com/rorkai/app-store-connect-cli-skills/tree/7de1ef7cc831f62d205dfa589063f3831f66391b) — `skills/`; commit `7de1ef7cc831f62d205dfa589063f3831f66391b`, imported 2026-11-01. Author: Rudrank Riyam; MIT notice in `licenses/rudrankriyam-app-store-connect-cli-skills.txt`.
 
 - One discoverable skill: upstream `skills/asc-cli-usage/SKILL.md` supplies the
   entrypoint; the other `skills/<name>/SKILL.md` files map to local
@@ -135,11 +141,20 @@ saved-work lifecycle.
   and omit skill frontmatter. The skill omits upstream scripts and app settings.
 - Guide selection by task, checks against the installed CLI, and IDs and release
   rules from the project. API key creation requires a setup request. Apple Ads
-  detail lives in its guide only.
+  detail lives in its guide only. In-app events and Asset Library media are
+  discoverable through this entrypoint; cross-guide handoffs use local links.
+- First-version and multi-item event recovery use release assembly. Review
+  monitoring preserves exact target IDs and re-reads them after latest-version
+  waits. Task routing covers read-only pricing and schedule inspection.
+- IAP lookups reflect CLI 6.3.0 multi-territory filters, automatic price-filter
+  pagination, and territory includes for candidate and equalized price points.
 - Screenshot cleanup uses working copies; associative-array examples require
   Bash 4. The guides qualify unsupported ranking claims and distinguish App Store
   description, promotional text, and release-note guidance. Build-ID guidance
   uses the `--build-id` flag required by the installed CLI.
+- Screenshot device operations route through `simulator-lifecycle` and the host
+  driver contract. Raw examples are limited to authorized unmanaged targets;
+  disposable multi-locale work uses manager leases rather than hand-created devices.
 
 Authentication reuses cached profiles and web sessions, verifies providers, and
 serializes interactive challenges. Developer Portal cache recovery follows
@@ -191,11 +206,13 @@ compatibility paths remain supported.
 
 `references/architecture-signals.md` supplies shared discovery prompts for
 structural friction, including hidden caller obligations, invalid states,
-scattered ownership, and validation. Architecture exploration and Thermo use
-the same reference. Signals need evidence; size, layout, duplication, or wrapper
-counts alone do not justify a refactor.
+implicit state machines, scattered ownership, and validation. Architecture
+exploration and Thermo use the same reference. Signals need evidence;
+size, layout, duplication, or wrapper counts alone do not justify a refactor.
 The diagnostic table stands on its own. Deeper reading requires a concrete
 candidate needing further validation; agents reuse relevant guidance already read.
+Lifecycle ownership is a deep-module principle, with state-machine mechanics
+kept in the shared domain principle.
 
 ## correct
 
@@ -313,6 +330,8 @@ flags, effect ownership, stale completions, and conditional statechart adoption.
 Product requirements remain the independent source for behavior checks.
 The stateful-behavior practice is self-contained, with guards and a submission
 example; external source URLs stay in this provenance record.
+Event-order-dependent correctness calls for an explicit lifecycle model before
+handler design; valid state shapes and allowed transitions are distinct concerns.
 
 ## domain-modeling
 
@@ -332,6 +351,16 @@ path reference, and the three ADR criteria live in the entrypoint at the stable
 `offer-adrs-sparingly` anchor. ADR formatting preserves system/context placement
 and sequential numbering. Discovery and invocation settings remain unchanged.
 
+
+## explain
+
+- Local: `skills/explain` (SreeStack). Conceptual input from Cursor pstack's
+  [bro](https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md),
+  [teach](https://github.com/cursor/plugins/blob/main/pstack/skills/teach/SKILL.md),
+  and [in-your-own-words](https://github.com/cursor/plugins/blob/main/pstack/skills/in-your-own-words/SKILL.md),
+  checked 2026-11-01. Independently written, user-invoked only in both hosts. Technical
+  explanations using "explain it to a PM or junior engineer" as the instruction.
+  Adds brief teaching guidance. No upstream prose copied.
 
 ## eli5
 
@@ -464,6 +493,8 @@ carrying forward checked findings and experiments.
 
 Exploration also uses Codebase Design's shared architecture signals, grounded in
 caller traces, state validity, and maintenance history rather than layout or size.
+Lifecycle candidates include a transition table, compare lifecycle ownership and
+caller obligations, and carry observed event sequences into verification plans.
 
 ## arena
 
@@ -500,6 +531,9 @@ Review, verification, demonstrations and access, and publication keep their
 existing owners. Independent
 consensus is recorded without requiring artificial structural differences.
 The rationale keeps detailed sketches and evidence alongside its concise prose.
+Design candidates and rationales include a transition table for correctness
+that depends on event order, with lifecycle ownership and caller obligations
+included in design comparison. Important sequences carry into implementation checks.
 Candidate briefs end at their assigned output; rationale selection records
 cover supplied designs as well as fresh synthesis, and distinguish checked
 claims from unproven runtime behavior. Cursor-specific models and fixed file-hop thresholds
@@ -559,6 +593,8 @@ drift classification, and sync-revision records. Reusable recipes follow local
 documentation policy rather than generating project skills. Model sensitivity
 and real-code correspondence have distinct proof levels; a synchronized model
 can expose a code bug. Ordinary verification requires no new formal model.
+Stateful workflow checks carry architecture-discovered event sequences into
+public-entry-point checks with expectations grounded in product requirements.
 The standalone statechart scripts and mandatory statechart invocation are
 excluded; domain traces and optional diagrams need no bundled renderer.
 Ordinary checks use a temporary plan when no map exists and maintain affected
@@ -597,6 +633,9 @@ assertion coverage beyond a successful command. Targeted suites preserve require
 integration gates, reconcile every selected test and attempt, and require matching
 runtime evidence for pre-existing failure claims. Xcode MCP and platform CLIs
 supply build/log operations or host-supported fallback.
+Simulator/emulator preparation routes through `simulator-lifecycle`, retaining
+T3's panel and pinned driver contract. Native suites use the granted destination
+and device set, independent leases for concurrent runs, and clone accounting.
 Terminal and service checks use process or PTY driving, bounded
 completion, public protocols, and fresh persisted-output reads. Harness selection
 follows host routing, including T3 preview opening and actionable-error recovery,
@@ -646,7 +685,10 @@ preserved and shut down only when the task booted them and no consumer remains.
 Cleanup reconstructs process, device, and install ownership from available
 session history and tool results, with logs, current state, and optional handoffs
 as supporting evidence. Discovery and cleanup rules live together in
-`references/development-resources.md`; no launch-time bookkeeping is required.
+`references/development-resources.md`. SimLock resources route through
+`simulator-lifecycle`: release the acquiring lease and leave device reclamation
+to its manager. Run receipts support recovery and host-output cleanup; legacy
+ownership can still be reconstructed without launch-time bookkeeping.
 Preserves shared installs, retained data, inspection lifetimes, and resources
 needed by unmerged stack layers.
 
@@ -834,6 +876,11 @@ version tables. Global text trimming and destructive layout resets are omitted.
 - [mattpocock/skills / skills/engineering/research](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/research) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
 Research owns a cited primary-source note and uses shared research defaults.
+Notes default to host-provided session scratch storage outside the repo, with
+a unique writable OS temp directory as fallback. Project output follows an
+explicit request or a task's maintained-document requirement. Handoffs and
+compaction summaries retain absolute note paths; continued work rereads and
+updates the note, keeping it available for the session and dependent workers.
 YouTube retrieval uses Gemini and X posts use Grok through orchestration's
 configured selections. Assigned researchers own synthesis; their briefs permit
 needed source tasks, whose retrievers work directly. Parents check source
@@ -841,7 +888,17 @@ evidence and access gaps before acceptance.
 
 ## reframe
 
-- Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc), checked 2026-10-18; independently written brief preparation, model-discoverable for requested reframing and Goal Swarm goal formation. Scales to uncertainty, preserves authorized scope, and returns to the calling workflow; standalone reframing ends with the brief.
+- Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) (article checked 2026-11-02) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc) (checked 2026-10-18).
+- [robonuggets/be-ambitious / SKILL.md](https://github.com/robonuggets/be-ambitious/blob/dc116a3ebd8cf772e4d0930626f67369bd60399d/SKILL.md) — conceptual comparison at `dc116a3ebd8cf772e4d0930626f67369bd60399d`, checked 2026-11-02; no upstream prose copied.
+
+Independently written brief preparation, model-discoverable for requested
+reframing, ambition, prompt improvement, and Goal Swarm goal formation. Scales
+to uncertainty and considers harder targets, raw evidence, testable discoveries,
+cross-field methods, and lasting workflows with explicit setup and ownership.
+Preserves authorized scope and the agreed finish line, allows qualitative
+evaluation, and returns to the calling workflow. Standalone reframing ends with
+the brief; prompt rewriting returns a copyable prompt. No mandatory ladder,
+expert roster, numerical stretch target, or fixed output template.
 
 ## review
 
@@ -897,8 +954,13 @@ Indirect-consumer checks use `blast-radius`; React or Next assessments use
 The shared review brief carries applicable evaluation criteria and evidence,
 including empirical comparison conditions, qualitative judgments, and changes
 to tests, fixtures, and measurement methods.
-Delegated review evidence adds task-specific output paths, supported read-range
-receipts, frozen-source citation checks, and caller-retained original artifacts.
+Delegated review evidence adds explicit workflow/pass identities, configured
+model metadata, task-specific output paths, supported read-range receipts,
+frozen-source citation checks, and caller-retained original artifacts.
+Common inputs are separate from same-round peer outputs; briefs state the
+cooperative peer-read boundary and exposure uses the existing failure policy.
+Source snapshots exclude designated generated review artifacts while retaining
+other nonignored untracked source.
 
 ## review-fix-loop
 
@@ -909,7 +971,8 @@ receipts, frozen-source citation checks, and caller-retained original artifacts.
   from each provider pool. The loop owns provider-reference delivery, skips,
   and stable snapshots. Generic
   delegation and handoff use Orchestration, with tasks mapped to review
-  assignments and rounds; findings use Review Sweep.
+  assignments and workflow/pass identities; findings use Review Sweep with
+  stable issue IDs and per-issue repair/check evidence.
 
 ## pr
 
@@ -954,8 +1017,10 @@ remain unchanged.
 
 ## review-sweep
 
-- Local: `skills/review-sweep` (SreeStack). Findings retain assignment/model
-  provenance; accepted fixes use orchestration's implementation selection.
+- Local: `skills/review-sweep` (SreeStack). Canonical issues retain workflow/pass,
+  source-report relationships, and assignment/model provenance. Acceptance,
+  applied repairs, and snapshot-specific checks remain separate; accepted fixes
+  use orchestration's implementation selection.
   Settlement weighs supported exposure and impact, preserving rare material and
   required failures while deferring low-impact work and rejecting hypotheticals.
 
@@ -983,9 +1048,11 @@ facts, explicit overrides, or needed pointers while preserving existing scope
 and conditions; final checks catch paraphrased duplication and redundant reruns.
 Project workflow pointers call `showroom` for inspectable results and useful
 UI iteration feedback; demonstration and access procedures remain in that skill.
-Full setup and research-note convention updates ensure `/docs/research/` is
-ignored through the repo's `.gitignore`, reuse equivalent rules, verify ignore
-behavior, and report already tracked notes without changing their tracking.
+Simulator projects record their runner/host integration and retained targets
+through `simulator-lifecycle`; ordinary setup does not claim environment adoption
+or native proof from a documentation pointer.
+Research owns session-note storage; setup leaves research directories and
+ignore rules to explicit project requirements.
 
 Domain defaults use `GLOSSARY.md` / `GLOSSARY-MAP.md`; established legacy/custom
 paths and one vocabulary source per context remain supported. Context boundaries,
@@ -1007,6 +1074,19 @@ PR workflow references use the local `pr` entry point.
 
 - Local: `skills/showroom` (SreeStack). Owns demonstrations and access for
   inspectable results, with model-selected formats and delivery paths.
+
+## simulator-lifecycle
+
+- [callstackincubator/simlock](https://github.com/callstackincubator/simlock) — generated skill from published `simlock@0.4.0`, `dist/instructions/skill.js` (`src/instructions/skill.ts` upstream); package git revision unrecorded. MIT notice in `licenses/callstackincubator-simlock.txt`.
+
+Preserves the upstream setup and installed-instructions steps. Local name is
+`simulator-lifecycle`; automatic discovery covers simulators/emulators rather
+than test phones. Adds host-routing, retained-target and shared-requester ownership
+gates plus fresh lease-identity requirements, and links local
+run/handoff, runner-integration and adoption references, including bounded iOS
+agent-device helper preparation and bridge capability checks. Runtime lease rules stay
+with `simlock instructions`. Technical citations use checked upstream source
+documents rather than inaccessible deployed documentation routes.
 
 ## tdd
 

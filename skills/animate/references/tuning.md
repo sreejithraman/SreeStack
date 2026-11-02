@@ -1,6 +1,6 @@
 # Tuning motion
 
-Use when existing motion feels slow, abrupt, inconsistent, or poorly timed. Inspect the requested interaction and its current tokens first. A broader scan belongs only to a broader request. Check CSS, keyframes and their driving animation, inline styles, CSS-in-JS, Tailwind values, and motion-library options as needed.
+Use for an observed timing or feel problem in web motion. Inspect the requested interaction and its current tokens first. A broader scan belongs only to a broader request. Check CSS, keyframes and their driving animation, inline styles, CSS-in-JS, Tailwind values, and motion-library options as needed.
 
 Match a value to its purpose before changing it. Reuse the project's token for that purpose; nearby numbers alone do not make tokens equivalent. Keep unmatched values unless observation gives a reason to change them. Report the behavior a change improves, then test the affected interaction.
 
@@ -9,7 +9,7 @@ Match a value to its purpose before changing it. Reuse the project's token for t
 - Closings usually benefit from shorter, quieter motion: dropdown/modal 250ms in and 150ms out; panel 400ms in and 350ms out. For a toast, start near 250ms on close and test against the product’s existing behavior.
 - Reversible changes can keep the same timing both ways: page slide, tabs, accordion, and icon swap around 250ms; text swap around 150ms. A separate exit phase is not always needed.
 - Overshoot can suit a rare entrance or playful gesture. A close should settle promptly. Exit distance and blur can shrink while preserving the spatial path.
-- Hover entry should be direct, usually 250ms or less. A softer return can fit a playful avatar row; use only when the motion gate and product style support it.
+- Hover entry should be direct, usually 250ms or less. A softer return can fit a playful avatar row when the added feedback serves the interaction and product style.
 - Start a stagger around 40ms per item, or 80ms for a few large items. Keep the last item's start delay near 300ms or less: with zero-based indices, that delay is `(count - 1) * offset`. Shrink the offset or cap the animated group for long lists. Also check the last item's finish time and keep interaction available.
 - An intent delay can prevent stray tooltip activation; start around 80ms. A short delay can also sequence a checkmark path. Add delay only for a clear purpose. If feedback feels late, inspect existing delay and duration; dismissal and hover-out should start promptly.
 

@@ -13,6 +13,7 @@ Use this guide to manage build state, processing, and retention.
 
 ## Inspect processing state
 - `asc builds info --build-id "BUILD_ID"`
+- TestFlight state in one call: `asc builds info --build-id "BUILD_ID" --include buildBetaDetail,betaAppReviewSubmission,betaGroups --output json`. A build never submitted for beta review has no `betaAppReviewSubmissions` entry in `included`.
 
 ## Distribution flows
 - Prefer end-to-end:

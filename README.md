@@ -43,12 +43,14 @@ instructions rather than maintaining another API manual.
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Compare independent candidates and synthesize a result | `arena` |
 | Understand current code, historical decisions, or change risks | `how`, `why`, and `blast-radius`, respectively |
+| Explain simply, including for a PM or junior engineer | [explain](skills/explain/SKILL.md) |
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
 | Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
 | Delegate independent work | `orchestration`; `research` owns cited investigations |
 | Prove behavior | `verify` |
+| Share disposable simulators across agents and projects | [simulator-lifecycle](skills/simulator-lifecycle/SKILL.md), using SimLock |
 | Run complexity, duplication, or mutation tools | `code-quality` |
 | Show results and make them available to try | `showroom` chooses demonstrations and access |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
@@ -86,8 +88,11 @@ changes. Material scope or tradeoff changes need authorization; routine framing
 adds no approval checkpoint.
 
 You can also invoke `$reframe` in Codex or `/reframe` in Claude Code directly.
-For example, “Reframe our upload errors around helping users recover, preserving
-existing upload behavior” returns a brief with methods and suitable evaluation.
+For example, “Be more ambitious about helping users recover from upload errors,
+preserving existing upload behavior” returns a brief with a stronger outcome,
+methods, needed setup, and suitable evaluation. It can propose harder targets or
+a lasting workflow; execution follows the authorized scope. Ask to rewrite a
+prompt to receive a copyable version of that brief.
 It needs the task context and relevant evidence; investigation may need the
 project's tools. Reframing alone ends with the brief. When Goal Swarm calls it,
 Reframe returns the brief to that owner, which continues execution.
@@ -174,8 +179,10 @@ Sample requests and expected results:
   prose or wording-only edit with no procedure change uses parent review.
 - When an additional reviewer is unavailable or fails, the loop records a skip
   and continues. Missing required coverage cannot produce a clean result.
-- A substantive fix triggers a fresh round against the original base. A changed
-  snapshot supersedes in-flight review; successful dispatch alone is not a pass.
+- A substantive fix gets a fresh pass through the selected angles, bounded to
+  changes, affected behavior, prior findings, and relevant proof. Retain earlier
+  coverage only where it still applies. Keep the original base for context.
+  A changed snapshot supersedes in-flight review; dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
   goal or swarm work can use ordinary tasks; requested native tracking follows
   the host's available capabilities.
@@ -324,6 +331,22 @@ the corresponding handoff pointer. The repository edits do not update installed
 skills or live host instructions. Apply them through your stable clone and the
 host setup below to activate those routes.
 
+### Shared simulators
+
+[Simulator Lifecycle](skills/simulator-lifecycle/SKILL.md) routes disposable
+agent devices through [SimLock](https://incubator.callstack.com/simlock/).
+It reads the installed tool's rules instead of maintaining another lease system.
+Verify uses that route for tests; Showroom records inspection lifetimes; Repo
+Cleanup releases managed leases and handles proven task-owned host outputs.
+
+Use its [setup and rollout guide](skills/simulator-lifecycle/references/setup.md)
+to configure a bounded reusable pool and prove concurrent isolation, failure
+cleanup and retained-device protection. Project adoption wires the normal test
+command to [acquisition and teardown](skills/simulator-lifecycle/references/project-runners.md).
+Linking the skill alone does not install SimLock or integrate project runners.
+T3 interactive work requires its supported route to the same SimLock lease.
+Retained app data stays outside the disposable pool; expiry can wipe pooled data.
+
 ### Code quality tools
 
 [Code Quality](skills/code-quality/SKILL.md) runs Crapper, Dryer, and Mutator and
@@ -380,8 +403,9 @@ uses explicit policy settings rather than named rank presets. Start a new task
 after changing host settings and check its effective selection; active tasks
 may retain earlier settings.
 
-Local research notes under `docs/research/` are ignored by Git. Keep maintained
-technical citations beside their guidance. Host setup follows OpenAI's
+Use [research](skills/research/SKILL.md) for cited investigations and session
+notes. Keep maintained technical citations beside their guidance. Host setup
+follows OpenAI's
 [config precedence](https://learn.chatgpt.com/docs/config-file/config-basic) and
 [global instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
@@ -409,7 +433,7 @@ uses and adapts:
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Felix Rieseberg](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad](https://www.youtube.com/watch?v=RbfQayMNtJc) — outcome, depth, range, and verification ideas informing Reframe and goal execution; instructions are independently written.
-- [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md). Local adaptations are recorded in [SOURCES.md](SOURCES.md#gauntlet-loop).
+- [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md), and [be-ambitious](https://github.com/robonuggets/be-ambitious), which informed independently written Reframe guidance. Source records are in [SOURCES.md](SOURCES.md).
 - [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.
@@ -420,11 +444,12 @@ uses and adapts:
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
 - [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.
+- [Callstack’s SimLock](https://github.com/callstackincubator/simlock) — adapted skill entrypoint in `simulator-lifecycle`; runtime instructions stay with the installed tool. [MIT notice](licenses/callstackincubator-simlock.txt).
 - [Anthropic’s skills](https://github.com/anthropics/skills) — art-direction guidance used by `ui-design`.
 - [Anthropic’s Claude Plugins Community](https://github.com/anthropics/claude-plugins-community) — the `eli5` skill.
 - [GitHub’s gh-stack](https://github.com/github/gh-stack) — the stacked PR skill.

@@ -1,13 +1,17 @@
 # Return Format
 
-Return findings grouped by class:
+Return canonical issues grouped by class, retaining their normalized records:
 
 ```text
+Workflow: [workflow_id]; current pass: [pass or unknown]
+
 Must-fix:
 - [id] location - claim
+  First seen: [pass or unknown]
+  Reports: [source IDs, assignments/passes, relationships]
   Reason:
-  Action:
-  Evidence:
+  Action: [repair state; applied snapshot and change evidence, or pending/unknown]
+  Evidence: [claim evidence; check state, snapshot, method, result, scope, limits]
 
 Worth-fixing:
 - ...
@@ -24,6 +28,12 @@ Acknowledge:
 Won't do:
 - ...
 ```
+
+Use the same identity and source-report fields for every class. For accepted
+issues, distinguish acceptance from an applied repair and a relevant check.
+State unavailable evidence explicitly. Link retained records and artifacts
+instead of duplicating their contents. Repeated reports remain attached to the
+existing issue; they do not add rejected findings to the summary.
 
 Include:
 

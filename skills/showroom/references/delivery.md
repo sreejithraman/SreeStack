@@ -45,6 +45,16 @@ evidence labeled by target: a Simulator capture cannot establish physical-device
 behavior. Preserve an explicitly requested target; if unavailable, report that
 gap and identify any secondary demonstration.
 
+For simulators and emulators, use
+[Simulator Lifecycle](../../simulator-lifecycle/SKILL.md) before allocation or
+handoff. A disposable pool lease is a temporary viewing surface: record who
+keeps it renewed and when to review it. Put app data that must survive lease
+loss on an explicitly designated inspection device outside that pool, or export
+a supported durable artifact. Record the kept build/data, recipient, reason,
+location and review date; keep this retention evidence outside disposable output.
+Closing a panel alone does not establish lease release, and a retention note
+does not prevent an expired pooled device from being wiped.
+
 Confirm the intended app and changed screen or flow after launch. Report which
 device or distribution path holds which build and how the user can open it.
 An install alone does not show an interaction; add captures or a demonstrated

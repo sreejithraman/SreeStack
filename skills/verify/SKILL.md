@@ -80,8 +80,11 @@ A project verification skill alone does not establish a documentation map.
    repeated input while pending, failure then retry, interruption, cancellation,
    and late completion after cancellation or replacement where supported. State
    the expected visible result and external effect, then exercise them through
-   the affected public entry points. Passing reducer or machine tests alone
-   does not establish that the product connects these paths correctly.
+   the affected public entry points. Carry forward sequences identified during
+   architecture work, checking their expected outcomes against product
+   requirements independently of the transition table. Passing reducer or
+   machine tests alone does not establish that the product connects these
+   paths correctly.
 
    For component stress tests, worst-case data, or content-dependent failures,
    read [realistic edge data](references/edge-data.md) to select fixtures and
@@ -109,8 +112,11 @@ A project verification skill alone does not establish a documentation map.
    workflow with the best available tooling for other interactive products.
 
    Discover actual launch commands, readiness signals, prerequisites, fixtures,
-   and isolation options from the repository and environment. Before concurrent
-   or long-running checks, identify contention across tasks and worktrees. Apply
+   and isolation options from the repository and environment. For simulator or
+   emulator work, use [Simulator Lifecycle](../simulator-lifecycle/SKILL.md)
+   for allocation, lease lifetime, runner teardown and retained-device policy.
+   Before concurrent or long-running checks, identify contention across tasks
+   and worktrees. Apply
    [Separate Before Serializing Shared State](../engineering-principles/references/separate-before-serializing-shared-state.md):
    choose run-owned fixtures, ports, and data profiles for independent checks;
    coordinate access where sharing is required and preserve active owners.
