@@ -1,6 +1,8 @@
 # Web motion
 
-Use this branch for websites and web apps. Follow [implementation checks](implementation.md) for every web motion change, whether or not a pattern fits. For timing or feel changes, also read [tuning](tuning.md).
+Use this reference when a web component needs additional motion. Follow
+[implementation checks](implementation.md) whether or not a recipe fits. Read
+[tuning](tuning.md) when an observed timing or feel problem needs correction.
 
 ## Tool choice
 
@@ -65,7 +67,7 @@ The Web Animations API guidance also recommends a way to pause or disable animat
 
 ## Patterns
 
-Choose by the interaction and state change after motion passes the gate. Read only the relevant guides, including their variables, state hooks, CSS, JavaScript, and limits. Each guide combines techniques for one interaction; choose the variant that fits the existing component. If none fits, build from the rules above.
+Choose by the required interaction and state change. Read only the relevant guides, including their variables, state hooks, CSS, JavaScript, and limits. Each guide combines techniques for one interaction; choose the variant that fits the existing component. If none fits, build from the rules above.
 
 ### Surfaces and layout
 

@@ -1,6 +1,6 @@
 # Implementation checks
 
-Read the full selected pattern, then implement it within the project’s component and motion system. The examples show motion mechanics; complete the component lifecycle and affected input paths as part of the change.
+When using a pattern, read it fully and adapt it within the project’s component and motion system. The examples show motion mechanics; complete the component lifecycle and affected input paths as part of the change.
 
 ## Components and state
 

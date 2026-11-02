@@ -1,6 +1,6 @@
 # Card elevation
 
-For a shadow change that passes the motion gate, start with a direct `box-shadow`
+For a shadow change that needs added motion feedback, start with a direct `box-shadow`
 transition on a small isolated card. When measurement shows paint cost in larger
 surfaces or grids, try fading two fixed shadows instead. Compare paint and layer
 cost on the target page; opacity does not guarantee that a shadow paints only once.

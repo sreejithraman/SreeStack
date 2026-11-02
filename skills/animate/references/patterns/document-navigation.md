@@ -2,7 +2,7 @@
 
 For occasional navigation between separate documents, a cross-document view
 transition can bridge the page change while preserving the existing navigation.
-Apply it only after the motion gate; ordinary navigation is the baseline.
+Use it when navigation needs added continuity feedback; ordinary navigation is the baseline.
 
 ```css
 @media (prefers-reduced-motion: no-preference) {

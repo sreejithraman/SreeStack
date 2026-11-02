@@ -5,62 +5,41 @@ description: "Design, implement, and tune web, SwiftUI, and UIKit interface moti
 
 # Animate
 
-Build the requested motion on its real platform. An instant state change is a valid result when motion would add delay without meaning.
+Use the platform's motion before designing your own.
 
-For an authorized build or fix, implement and test the workflow below. For a
-plan or review, leave the product unchanged and report the proposed motion or
-instant alternative, exact changes, and checks the implementation must pass.
+1. Inspect the existing interaction, components, and supported platform versions.
+2. Use the standard component and its behavior when it fits. Let the system own
+   its timing, gestures, and presentation lifecycle.
+3. For additional motion, prefer built-in effects, transitions, and presets.
+4. Build custom motion only for a requirement those options cannot meet. Reuse
+   the product's components, motion tokens, and dependencies.
+5. Verify the affected interaction on the target platform, including rapid
+   repetition, interruption, affected input methods, and reduced motion. Preserve
+   controls, useful feedback, and the final state when motion is disabled or the
+   preference changes during use.
 
-## Process
+Added motion should explain a change or provide useful feedback. Occasional
+delight can fit when it leaves the task unblocked. Keep frequent interactions
+quiet, useful content available, and reading surfaces steady. An instant state
+change is a valid result.
 
-1. Inspect the real interaction, nearby motion, design tokens, target platform and supported versions, input methods, use rate, state changes, and runnable surface. Finish when every animated element in scope has this evidence.
-2. Apply the motion gate below. Name the purpose and frequency tier. If motion fails the gate, keep the state change instant and test that state on the real surface.
-3. Read the platform branch before choosing APIs or timing:
-   - For websites and web apps, read [web motion](references/web.md). Read only the pattern guides that match the interaction.
-   - For SwiftUI or UIKit, read [Apple-platform motion](references/apple-platforms.md).
-4. Choose the smallest mechanism that fits the interaction. Use the product's current components, motion system, and tokens before adding another abstraction or dependency.
-5. Implement the reduced-motion path with the primary behavior. Preserve useful feedback and the final state when movement is reduced or removed.
-6. Test entry, exit, rapid repeat, interruption, affected input methods, and reduced motion on the target platform. Slow playback or frame-step when timing and coordination need closer study.
+On Apple platforms, native behavior includes Liquid Glass interaction and
+morphing. Using framework animation APIs to recreate a standard interaction is
+still custom work. Keep system defaults unless an observed problem requires a
+change. Framework skills own component and material setup.
 
-When motion passes the gate, the work is done when it has a stated purpose, follows the product and platform conventions, survives interruption, and passes the affected input and reduced-motion paths. When motion fails the gate, the work is done when the instant or static state passes those same affected paths.
+On the web, preserve the existing accessible component's behavior and use the
+simplest suitable browser mechanism.
 
-## Motion gate
+Read supporting guidance only when needed:
 
-| Use rate | Default |
-| --- | --- |
-| Very frequent or keyboard-led | Instant |
-| Frequent, such as hover or list movement | None or very short |
-| Occasional, such as a modal, drawer, or toast | Standard interface motion |
-| Rare, explanatory, or celebratory | More room for delight |
+- [Apple motion pitfalls](references/apple-platforms.md) for app-owned motion,
+  custom gestures, or reduced-motion handling beyond the system's behavior.
+- [Web implementation checks](references/implementation.md) when adding or
+  changing web motion. Read [tools and recipes](references/web.md) only when the
+  component needs additional motion.
+- [Web tuning](references/tuning.md) when an observed timing or feel problem
+  needs correction. Reference values are starting points for added effects.
 
-Motion needs one job:
-
-- Confirm input.
-- Explain spatial origin or destination.
-- Mark a state change.
-- Bridge a change that would otherwise feel abrupt.
-- Teach a rare flow.
-- Add delight to a rare moment without blocking the task.
-
-Keep content steady while someone reads or acts on it. Decorative motion must not move useful data or its controls. If none of the jobs applies, stop at the gate.
-
-## Shared behavior
-
-- Prefer the platform's standard components and transitions. Add custom motion only when it communicates something the system behavior does not.
-- Make feedback immediate, brief, and proportional to the state change. Frequent actions should feel faster and quieter than rare ones.
-- Preserve spatial meaning between entry and exit. Tune them separately when the system response should be faster on dismissal.
-- Start interrupted motion from its live value. Gesture-driven motion should track input directly, preserve the grab point, and settle from the release state rather than restart from an old target.
-- Keep controls usable while decorative motion runs. Important information needs a non-motion cue.
-- Treat durations, curves, and spring values as test points. Geometry, content, input, platform, and product tone determine what feels right.
-
-## Handoff
-
-For a build, deliver the implemented result first. When the gate rejects motion,
-deliver the instant or static alternative instead. For a plan or review, deliver
-the proposal or findings without editing the product. Then state:
-
-- The motion gate result and purpose.
-- The platform mechanism and reduced-motion behavior.
-- Any feel check that still needs slow motion, frame stepping, Simulator, or device testing.
-
-Keep the note brief; the tested interaction is the result.
+For a build or fix, implement and test. For a plan or review, report the proposal
+or findings without editing the product. State any verification left untested.
