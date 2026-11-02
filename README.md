@@ -338,6 +338,13 @@ copy planning, device geometry, HTML/CSS composition, and visual verification.
 Follow its [setup guide](skills/koubou/references/setup.md) for the CLI and HTML
 renderer. App capture follows the project's run scripts and the host's device tooling.
 
+### Product illustrations and demos
+
+The [stageshow skill](skills/stageshow/SKILL.md) creates faux product UI stills,
+animated cursor demos, and bento grids for marketing pages and docs. It includes
+the upstream React/CSS kit, examples, playground, and capture tools unchanged.
+Follow its [setup and usage guide](skills/stageshow/README.md) to run the examples.
+
 ### Agent login
 
 The [agent-login skill](skills/agent-login/SKILL.md) owns application sign-in,
@@ -396,6 +403,7 @@ uses and adapts:
 
 - [Suraj Sharma](https://x.com/suraj_sharma14/status/2116062550416871512) and [Rakesh Patel](https://x.com/rakeshpatelco/status/2116065801279291422) — website SEO coverage and deployed crawl verification ideas; instructions are independently written.
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
+- [Benji Taylor / Stageshow](https://github.com/benjitaylor/skills) — product UI illustrations, animated demos, and the bundled React kit and examples.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
 - [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods adapted into `writing-for-agents`.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.

@@ -8,6 +8,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Source | Bundled material | Notice |
 | --- | --- | --- |
 | David Collado / Koubou | koubou screenshot design workflow and references | [MIT](licenses/bitomule-koubou.txt) |
+| Benji Taylor / Stageshow | stageshow skill, React kit, examples, playground, and scripts | [MIT](licenses/benjitaylor-stageshow.txt); [asset notices and terms](skills/stageshow/NOTICE.md) |
 | OpenClaw Foundation | 1password CLI authentication and secret-handling adaptation | [MIT](licenses/openclaw.txt) |
 | Sree Raman / Snip Snap | snip-snap | [MIT](licenses/sreejithraman-snip-snap.txt) |
 | Rudrank Riyam | app-store-connect usage and workflow guides | [MIT](licenses/rudrankriyam-app-store-connect-cli-skills.txt) |
