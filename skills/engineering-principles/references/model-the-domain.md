@@ -10,10 +10,11 @@ When derivation is impractical, check parity so a partial update fails visibly.
 
 ## Stateful behavior
 
-Use explicit states and transitions when behavior depends on event order,
-several flags can contradict each other, or cancellation and retries make
-async work hard to follow. Keep simple local state when it expresses the
-behavior clearly.
+When correctness depends on event order, model the lifecycle explicitly before
+distributing behavior across handlers. Interacting flags, required call ordering,
+and cancellation or retry races are signals to examine. Types constrain valid
+state snapshots; a state machine constrains how events change them. Keep simple
+local state when it expresses the behavior clearly.
 
 - Name the finite states, accepted events, allowed transitions, and conditions
   (guards) that enable them. Evaluate guards synchronously from current data.

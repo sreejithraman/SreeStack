@@ -17,7 +17,7 @@ the requested architecture work addresses an evidenced failure class.
 Use [Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md)
 when shaping a candidate,
 [Model the Domain](../engineering-principles/references/model-the-domain.md)
-when ownership changes, and
+when ownership changes or correctness depends on event order, and
 [Migrate Callers Then Delete Legacy APIs](../engineering-principles/references/migrate-callers-then-delete-legacy-apis.md)
 when moving callers. Codebase Design supplies the module vocabulary and interface
 techniques used below.
@@ -114,6 +114,12 @@ When a decision rests on an untested technical assumption, run a focused
 requirements, migration cost, and enforceable invariants. Use the shared
 measurement guidance linked there for performance claims. Return commands,
 observations, and limits; keep unrun proposals distinct from checked designs.
+
+For a lifecycle candidate, include a compact transition table using
+[stateful behavior](../engineering-principles/references/model-the-domain.md#stateful-behavior).
+Use the observed event sequence to compare which design concentrates lifecycle
+ownership and removes ordering knowledge from callers. Carry that sequence and
+its required outcomes into the verification plan.
 
 During interactive design, apply "domain-modeling" as decisions crystallize:
 

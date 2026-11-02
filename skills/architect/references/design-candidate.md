@@ -21,6 +21,12 @@ axes to pick a base.
 - Data structures first. Get the core types right and the code becomes obvious.
   Trace each dominant access pattern through the proposed structure. If the
   answer is "we'll add a map / index / cache later," revisit the structure.
+- Lifecycle model when correctness depends on event order. Include a compact
+  transition table alongside the types: states, events, guards, allowed
+  transitions, and effect ownership, including duplicate, late, and rejected
+  events where relevant. Use [Model the Domain](../../engineering-principles/references/model-the-domain.md#stateful-behavior)
+  for the mechanics. Show which module owns the lifecycle and what ordering
+  knowledge callers still need; prefer the design that hides those obligations.
 - Interface depth. Compare the capability hidden behind the public surface
   relative to the size of that surface. Prefer a simple interface that pulls
   complexity into the callee, even when the implementation becomes less simple.

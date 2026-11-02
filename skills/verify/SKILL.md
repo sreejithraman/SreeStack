@@ -80,8 +80,11 @@ A project verification skill alone does not establish a documentation map.
    repeated input while pending, failure then retry, interruption, cancellation,
    and late completion after cancellation or replacement where supported. State
    the expected visible result and external effect, then exercise them through
-   the affected public entry points. Passing reducer or machine tests alone
-   does not establish that the product connects these paths correctly.
+   the affected public entry points. Carry forward sequences identified during
+   architecture work, checking their expected outcomes against product
+   requirements independently of the transition table. Passing reducer or
+   machine tests alone does not establish that the product connects these
+   paths correctly.
 
    For component stress tests, worst-case data, or content-dependent failures,
    read [realistic edge data](references/edge-data.md) to select fixtures and
