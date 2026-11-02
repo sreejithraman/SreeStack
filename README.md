@@ -88,8 +88,11 @@ changes. Material scope or tradeoff changes need authorization; routine framing
 adds no approval checkpoint.
 
 You can also invoke `$reframe` in Codex or `/reframe` in Claude Code directly.
-For example, “Reframe our upload errors around helping users recover, preserving
-existing upload behavior” returns a brief with methods and suitable evaluation.
+For example, “Be more ambitious about helping users recover from upload errors,
+preserving existing upload behavior” returns a brief with a stronger outcome,
+methods, needed setup, and suitable evaluation. It can propose harder targets or
+a lasting workflow; execution follows the authorized scope. Ask to rewrite a
+prompt to receive a copyable version of that brief.
 It needs the task context and relevant evidence; investigation may need the
 project's tools. Reframing alone ends with the brief. When Goal Swarm calls it,
 Reframe returns the brief to that owner, which continues execution.
@@ -422,7 +425,7 @@ uses and adapts:
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Felix Rieseberg](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad](https://www.youtube.com/watch?v=RbfQayMNtJc) — outcome, depth, range, and verification ideas informing Reframe and goal execution; instructions are independently written.
-- [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md). Local adaptations are recorded in [SOURCES.md](SOURCES.md#gauntlet-loop).
+- [Jay E / RoboNuggets](https://github.com/robonuggets/gauntlet-loop) — the adapted `gauntlet-loop` prompt-writing skill (CC BY 4.0), based on [Matt Shumer's technique](https://github.com/mshumer/Claude-of-Duty/blob/main/prompt.md), and [be-ambitious](https://github.com/robonuggets/be-ambitious), which informed independently written Reframe guidance. Source records are in [SOURCES.md](SOURCES.md).
 - [HumanLayer / Dex Horthy](https://github.com/humanlayer/skills) — visual explanation guidance credited by Matt Pocock's PR skill.
 - [Emil Kowalski](https://github.com/emilkowalski/skills) — animation, motion and gesture behavior, typography and materials, interface access/input, and interface-review guidance.
 - [Jakub Antalík’s transitions.dev](https://github.com/Jakubantalik/transitions.dev) — motion pattern references and tuning guidance used by `animate`.

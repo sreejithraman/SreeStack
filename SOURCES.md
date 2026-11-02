@@ -882,7 +882,17 @@ evidence and access gaps before acceptance.
 
 ## reframe
 
-- Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc), checked 2026-10-18; independently written brief preparation, model-discoverable for requested reframing and Goal Swarm goal formation. Scales to uncertainty, preserves authorized scope, and returns to the calling workflow; standalone reframing ends with the brief.
+- Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) (article checked 2026-11-02) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc) (checked 2026-10-18).
+- [robonuggets/be-ambitious / SKILL.md](https://github.com/robonuggets/be-ambitious/blob/dc116a3ebd8cf772e4d0930626f67369bd60399d/SKILL.md) — conceptual comparison at `dc116a3ebd8cf772e4d0930626f67369bd60399d`, checked 2026-11-02; no upstream prose copied.
+
+Independently written brief preparation, model-discoverable for requested
+reframing, ambition, prompt improvement, and Goal Swarm goal formation. Scales
+to uncertainty and considers harder targets, raw evidence, testable discoveries,
+cross-field methods, and lasting workflows with explicit setup and ownership.
+Preserves authorized scope and the agreed finish line, allows qualitative
+evaluation, and returns to the calling workflow. Standalone reframing ends with
+the brief; prompt rewriting returns a copyable prompt. No mandatory ladder,
+expert roster, numerical stretch target, or fixed output template.
 
 ## review
 
