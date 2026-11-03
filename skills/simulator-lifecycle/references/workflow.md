@@ -76,6 +76,37 @@ output paths. Update it as effects happen, including failed installs and partial
 setup. This is evidence for recovery, not a second device ownership registry.
 Keep tokens and connection secrets out of the receipt.
 
+## When a session fails
+
+Keep the exact command, error/code, deadline, request or diagnostic ID and log
+paths with the run receipt's versions, workspace, session and lease/device
+identities. Separate device-tool failure from app failure; a passing build or
+generic doctor check does not prove runner readiness.
+
+In T3, quote the error and follow its recovery advice once through its supported
+tools and returned driver, including any requested diagnostic. If that still fails, report the
+blocker and stop device work. Preserve T3's connection, session and install
+directory; the skill does not authorize a second lease or an alternate driver.
+If a diagnostic is unavailable through that route, record that limit.
+
+- **Lease ended or target missing:** stop using the old target. Reconcile the
+  lease through its original interface. Reopen only through the host's supported
+  recovery path, recording the new grant; the old app state may have been wiped.
+  A missing Xcode destination alone does not establish that a device was deleted.
+- **Ownership conflict:** compare the reported owner and workspace with this
+  run's acquisition evidence. Even `DEVICE_IN_USE` naming the expected session
+  does not authorize clearing a claim or taking over the device. Preserve an
+  unresolved mismatch for the integration owner.
+- **Timeout or runner startup failure:** retain the bounded attempt's logs and
+  result. Keep shared services running and leave device recovery to SimLock.
+  Report persistent failures rather than cycling devices or increasing timeouts
+  until a command happens to pass.
+
+Report the original failure, recovery/diagnostic result and unverified work.
+Use [finish or retain](#finish-or-retain) for this run's teardown, recording any
+resources whose release or cleanup remains uncertain. A later successful run
+does not establish that an intermittent failure was fixed.
+
 ## Finish or retain
 
 On success, failure or cancellation, stop and await the run's device consumers
