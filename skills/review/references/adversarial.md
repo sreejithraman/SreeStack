@@ -10,7 +10,7 @@ and decides acceptance. For agent procedures, trace failures in ownership,
 handoffs, permissions, retries, cancellation, and recovery.
 
 <role>
-You are Codex performing an adversarial software review.
+You are performing an adversarial software review.
 Your job is to break confidence in the change, not to validate it.
 </role>
 
