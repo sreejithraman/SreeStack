@@ -1,31 +1,164 @@
 # SreeStack
 
 A collection of agent skills for planning, coding, review, research, and UI work,
-with T3 Code orchestration and optional shared Codex host defaults.
+with T3 Code orchestration and shared instructions for Codex and Claude Code.
 It includes original workflows and adapted skills from the projects credited below.
 Browse [skills/](skills/) and see [SOURCES.md](SOURCES.md) for upstream origins
 and local differences to preserve during updates.
 
 ## Use
 
-Clone the repo, then link the skills you want into your agent’s skill directory.
-For a host that reads `~/.agents/skills`:
+Clone the repo to a dedicated stable location, keep that clone on `main`, and
+do task work in T3 worktrees. Then sync the clone into each host:
 
 ```bash
 git clone https://github.com/sreejithraman/SreeStack.git
 cd SreeStack
-mkdir -p ~/.agents/skills
-ln -s "$PWD/skills/tdd" ~/.agents/skills/tdd
+python3 scripts/sync_hosts.py --check   # preview; changes no host files
+python3 scripts/sync_hosts.py           # link skills and shared instructions
 ```
 
-Repeat the last command for other skills. If that destination already exists,
-keep it or move it aside before linking. To uninstall, remove only the symlink
-you created. Pull changes in this clone to update linked skills.
+Sync reads each host's manifest. It links every skill folder one by one, and
+links each host's global instructions to [global/AGENTS.md](global/AGENTS.md):
+
+| Host | Manifest | Skill links | Instructions link |
+|---|---|---|---|
+| Codex | [codex/setup.json](codex/setup.json) | `~/.agents/skills/<skill>` | `~/.codex/AGENTS.md` |
+| Claude Code | [claude/setup.json](claude/setup.json) | `~/.claude/skills/<skill>` | `~/.claude/CLAUDE.md` |
+
+Manifest paths are relative to home. New skills link to every host by default;
+add a skill name to a manifest's `exclude` list to keep it out of that host.
+Sync rejects unknown manifest keys and unknown skill names.
+
+Sync is idempotent. It adds links for new skills and removes or repoints links
+into this clone's `skills/` that no longer match a skill. It leaves every other
+entry alone, including Claude's `synced/` account downloads and links into other
+folders. It reports a conflict and leaves the path unchanged when it finds:
+
+- a file, folder, or foreign link at a skill's name;
+- instructions whose content differs from `global/AGENTS.md`; merge that guidance
+  into `global/AGENTS.md` or move the file aside, then rerun;
+- a skills folder linked to anything other than this clone's `skills/`.
+
+Instructions with the same content are kept as `<name>.backup-<UTC time>` before
+sync links the path. A link that already resolves to `global/AGENTS.md`, such as
+`~/.codex-t3/AGENTS.md` pointing at `~/.codex/AGENTS.md`, stays as it is. A
+skills folder linked as a whole to this clone's `skills/` becomes a real folder
+of per-skill links. To undo that, move the folder aside and run
+`ln -s "$PWD/skills" ~/.agents/skills`.
+
+Sync and hook installation write only from the stable clone with `main` checked
+out. They refuse linked worktrees, feature branches, and detached checkouts.
+`--check` changes no host files; it may create a lock file in the repo's Git
+directory. In a T3 worktree it checks the stable clone's setup, using that clone's
+script and manifests. It exits 0 only when host setup matches the stable clone.
+Both modes
+exit 1 on conflicts, and `--check` also exits 1 when changes are pending.
+`--home DIR` configures another home directory.
+
+The links point straight into the stable clone, so hosts read whatever that
+clone's working tree holds. Editing files there, or checking out another branch,
+changes what both hosts load. Work in T3 worktrees: they never change installed
+links or the stable clone's files.
+
+### Sync after updates
+
+Install the Git hook once, from the stable clone:
+
+```bash
+python3 scripts/sync_hosts.py --install-hooks
+python3 scripts/sync_hosts.py --check-hooks
+```
+
+This installs `.git/hooks/sreestack-host-sync` and links Git's
+`reference-transaction` hook to it. It records the home directory in the repo's
+local Git config as `sreestack.home`. Git runs the hook for ref updates in every
+worktree. The handler checks in shell, before it reads any SreeStack file or
+config, that the update was committed, touched `main` or `HEAD`, ran in the
+stable clone, and left `main` checked out. Anything else exits quietly, so
+worktrees keep working when the stable clone is on an older branch or `python3`
+is missing.
+
+Each sync refreshes an existing SreeStack-owned handler from `main` when it
+changes. `--check-hooks` reports a missing or stale handler, unusable hook
+integration, or home setting; it also works from T3 worktrees. Both check modes
+fail when the stable clone is off `main`. Rerun `--install-hooks` to
+repair those settings. `--check` checks skill and instruction links separately.
+
+The hook syncs after each local update of `main`: commit, amend, merge, pull,
+rebase, `reset --hard`, and switching back to `main`. A merge on GitHub changes
+nothing until this clone's `main` is updated. Nothing polls or fetches in the
+background. The handler needs `python3` on Git's `PATH`. Tested with Git 2.54
+and 2.56.
+
+A failed hook sync prints its conflicts and says the Git operation was not
+rolled back. Git ignores this hook's exit status after a commit, so the Git
+command still exits 0. Watch for `sreestack:` warnings, or run
+`python3 scripts/sync_hosts.py --check` after updating; it exits 0 only when
+host setup is current. To recover, fix the conflict and run
+`python3 scripts/sync_hosts.py`.
+
+Install keeps your hooks. When `reference-transaction` already exists or
+`core.hooksPath` is set, it still installs the handler and `sreestack.home`,
+changes no hook, and prints the block to add immediately after the hook's
+shebang, before any commands. The block preserves reference input byte for byte,
+including empty input, for your existing hook. Rerun `--install-hooks` until it
+recognizes the installed block, then run `--check-hooks`.
+
+The block does nothing in repositories without the handler, so a shared hooks
+directory can carry it.
+
+To remove the hook:
+
+```bash
+rm .git/hooks/reference-transaction .git/hooks/sreestack-host-sync
+git config --remove-section sreestack
+```
+
+If you chained the block into your own hook, remove that block instead of
+deleting `reference-transaction`.
 
 Read each skill before use. Delegation and review target T3 Code's orchestration
 MCP tools and its configured provider runtimes. Other workflows may need goal
 state tools, GitHub CLI, optional Tailscale sharing, or Apple development tools. Linking skills
 does not install provider executables, authenticate accounts, or enable models.
+
+### Claude Code
+
+Claude Code loads personal skills from `~/.claude/skills`; see
+[skill locations and symlink support](https://code.claude.com/docs/en/skills#choose-where-skills-load).
+Sync links each skill there instead of linking the whole folder, because Claude
+also stores account downloads in `synced/`. Those downloads stay out of
+SreeStack and Codex.
+
+Claude reads user instructions from `~/.claude/CLAUDE.md`, which sync links to
+the same `global/AGENTS.md` as Codex. Claude Code v2.1.277 or later reads project
+`AGENTS.md` by default when no project or ancestor `CLAUDE.md` or `CLAUDE.local.md`
+exists; see [instruction discovery and exceptions](https://code.claude.com/docs/en/memory#agents-md).
+
+Merge the keys from [claude/settings.json](claude/settings.json) into your
+`~/.claude/settings.json`, preserving unrelated settings, just as with
+[codex/config.toml](codex/config.toml). Keep the destination as a real private
+config file rather than a symlink. Sync manages skills and instructions, not
+these host settings templates.
+
+The template's `cc-plugin-agents-md@builtin` configuration applies to Claude Code
+v2.1.285 or later. It keeps reading `AGENTS.md` when a project also has Claude
+instructions. This setting applies at user scope, not project/local scope.
+Claude still reads the shared global `~/.claude/CLAUDE.md`. See
+[instruction file selection](https://code.claude.com/docs/en/memory#choose-which-instruction-files-load).
+
+The template also sets a personal 500k-token compaction budget: how much context
+Claude Code keeps before it compacts the conversation. It does not change output
+tokens or the model's maximum context, which the host model sets separately.
+See [`autoCompactWindow`](https://code.claude.com/docs/en/settings-reference#autocompactwindow).
+
+In a fresh T3 Claude session, check that `orchestration` is discoverable and
+invoke `/reframe` to check direct invocation. Inspect `/skills` in Claude Code to
+confirm which files load; personal skills can replace same-named bundled skills.
+T3 must also have the provider enabled and authenticated. Test a small delegated
+task to confirm execution. Local links configure Claude Code on this machine;
+Cowork and cloud sessions have separate skill loading rules.
 
 ### How the skills fit together
 
@@ -137,6 +270,9 @@ additional-review pools.
 The local concurrency ceiling is in that same reference. This is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
+
+Agent routing defines interaction selections, UI and implementation tiers, escalation, and
+availability fallbacks; the table owns each selection.
 
 Enable and authenticate the providers named in that table in T3 Code. Routing
 resolves their exact instance/model IDs and supported options from the live
@@ -384,27 +520,33 @@ private account mappings, provider prerequisites, and development checks.
 login readiness; [runtime provisioning](skills/agent-login/references/runtime-provisioning.md)
 covers private environment files and host-specific access checks.
 
-## Optional Codex host defaults
+## Optional host defaults
 
-The files under [codex/](codex/) provide parent-session settings and shared host
-instructions. They are separate from orchestration's delegated model policy.
-Keeping them here does not change live Codex configuration. Keep the full
-personal config local; it may contain machine paths, trusted projects, and
-integration settings.
+The host settings templates below supply parent-session defaults, separate
+from orchestration's delegated model policy. Merge them manually into real
+private config files rather than symlinking them. Sync manages only skills and
+instructions, not either settings template. Keep the full personal configs local;
+they may contain machine paths, trusted projects, and integration settings.
 
-| Source | Destination | How to apply |
+| Template | Destination | How to apply |
 |---|---|---|
-| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Merge parent settings and the native concurrency ceiling |
-| [global-instructions.md](codex/global-instructions.md) | `~/.codex/AGENTS.md` | Merge these shared instructions |
-| [optional-instructions.md](codex/optional-instructions.md) | `~/.codex/AGENTS.md` | Merge only sections you want to enable |
-| [optional.rules](codex/optional.rules) | `~/.codex/rules/default.rules` | Replace its path placeholder and merge selected rules |
+| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Manually merge parent settings and the native concurrency ceiling |
+| [settings.json](claude/settings.json) | `~/.claude/settings.json` | Manually merge the template keys, preserving unrelated settings |
 
-Back up local files, preserve unrelated values/instructions, and check that
-TOML parses after merging. If `~/.codex/AGENTS.override.md` exists, it takes
-precedence over `AGENTS.md`; update the active file. Native child execution
-uses explicit policy settings rather than named rank presets. Start a new task
-after changing host settings and check its effective selection; active tasks
-may retain earlier settings.
+Shared instructions are not a template: sync links them, as described in [Use](#use).
+
+Back up local files, preserve unrelated values, and check that TOML or JSON parses
+after merging. If `~/.codex/AGENTS.override.md` exists, it takes precedence over
+the linked `AGENTS.md`; merge its guidance into `global/AGENTS.md` or remove it.
+Native child execution uses explicit policy settings rather than named rank
+presets. Start a new task after changing host settings and check its effective
+selection; active tasks may retain earlier settings.
+
+Each template applies to its own host. T3 can override model and effort per
+assignment. T3 thread selections and
+Orchestration's delegated model defaults are separate from either host's
+defaults. Sharing instructions does not change those selections. See Claude's
+[user instruction location](https://code.claude.com/docs/en/memory#choose-where-to-put-claudemd-files).
 
 Use [research](skills/research/SKILL.md) for cited investigations and session
 notes. Keep maintained technical citations beside their guidance. Host setup

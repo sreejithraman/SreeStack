@@ -597,6 +597,8 @@ Stateful workflow checks carry architecture-discovered event sequences into
 public-entry-point checks with expectations grounded in product requirements.
 The standalone statechart scripts and mandatory statechart invocation are
 excluded; domain traces and optional diagrams need no bundled renderer.
+Interactive driving takes its model from Orchestration's working selection
+while Verify keeps assertions and verdicts.
 Ordinary checks use a temporary plan when no map exists and maintain affected
 recipes when a map is already set up. Creating a map requires a setup or reusable
 documentation request; verification can also explicitly leave existing docs alone.
@@ -914,7 +916,7 @@ Reviewer references:
 
 - `references/standards.md` and `references/spec.md`: [mattpocock/skills / skills/engineering/code-review](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/engineering/code-review) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 - `references/thermo.md`: [cursor/plugins / cursor-team-kit/skills/thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/tree/a29f5a8ca161b1de4ffc5484454958bebc04eaa5/cursor-team-kit/skills/thermo-nuclear-code-quality-review) — commit `a29f5a8ca161b1de4ffc5484454958bebc04eaa5`.
-- `references/adversarial.md`: [openai/codex-plugin-cc / plugins/codex/prompts/adversarial-review.md](https://github.com/openai/codex-plugin-cc/blob/db52e28f4d9ded852ab3942cea316258ae4ef346/plugins/codex/prompts/adversarial-review.md) and [schemas/review-output.schema.json](https://github.com/openai/codex-plugin-cc/blob/db52e28f4d9ded852ab3942cea316258ae4ef346/plugins/codex/schemas/review-output.schema.json) — import baseline `db52e28f4d9ded852ab3942cea316258ae4ef346`, Apache-2.0. Preserves the prompt's wording, XML structure, review criteria, and JSON verdict contract; `references/adversarial-output.schema.json` is byte-identical to upstream. Local edits add a heading and modification comment, bind the four template placeholders to the supplied brief, link the schema, put Review's coverage metadata in the JSON summary, and retain parent settlement/read-only limits and equivalent agent-procedure tracing. License and copyright notice: `licenses/openai-codex-plugin-cc.txt` and `licenses/openai-codex-plugin-cc-NOTICE.txt`.
+- `references/adversarial.md`: [openai/codex-plugin-cc / plugins/codex/prompts/adversarial-review.md](https://github.com/openai/codex-plugin-cc/blob/db52e28f4d9ded852ab3942cea316258ae4ef346/plugins/codex/prompts/adversarial-review.md) and [schemas/review-output.schema.json](https://github.com/openai/codex-plugin-cc/blob/db52e28f4d9ded852ab3942cea316258ae4ef346/plugins/codex/schemas/review-output.schema.json) — import baseline `db52e28f4d9ded852ab3942cea316258ae4ef346`, Apache-2.0. Preserves the prompt's wording, XML structure, review criteria, and JSON verdict contract; `references/adversarial-output.schema.json` is byte-identical to upstream. Local edits add a heading and modification comment, remove the fixed model persona, bind the four template placeholders to the supplied brief, link the schema, put Review's coverage metadata in the JSON summary, and retain parent settlement/read-only limits and equivalent agent-procedure tracing. License and copyright notice: `licenses/openai-codex-plugin-cc.txt` and `licenses/openai-codex-plugin-cc-NOTICE.txt`.
 - `references/opencode.md`: [anomalyco/opencode / packages/core/src/plugin/command/review.txt](https://github.com/anomalyco/opencode/blob/68bc26b7da1990ce10ffecfbc1e09eb13aa5d824/packages/core/src/plugin/command/review.txt) — v2.1.4, import baseline `68bc26b7da1990ce10ffecfbc1e09eb13aa5d824`, MIT. Preserves upstream wording and sections, including target-discovery commands and tool guidance. Local edits add a heading, bind `$ARGUMENTS` to the caller's request/target, and establish Review's resolved scope, read-only/coverage contract, parent settlement, and direct search when further delegation is not authorized. License: `licenses/anomalyco-opencode.txt`.
 - `references/gemini.md`: [gemini-cli-extensions/code-review / skills/code-review-commons/SKILL.md](https://github.com/gemini-cli-extensions/code-review/blob/dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04/skills/code-review-commons/SKILL.md) and [commands/code-review.toml](https://github.com/gemini-cli-extensions/code-review/blob/dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04/commands/code-review.toml) — v0.1.0, import baseline `dd1a10d2c9d07b2ebade866590fdfa59cd8f9d04`, Apache-2.0. Preserves the commons body verbatim, including persona, severity guidance, changed-line restriction, and technical constraints; removes host frontmatter because this is a reference. Includes the command's output block with only its merge-ready assertion removed and the required coverage report allowed. Local integration adds a modification comment and Review's supplied scope, assigned criteria, read-only/procedure checks, coverage metadata, and parent settlement. No fixed `origin/HEAD` discovery, PR-posting command, or installed wrapper imported. License: `licenses/gemini-cli-extensions-code-review.txt`.
 - `references/ponytail.md`: combines these sources from `DietrichGebert/ponytail`
@@ -1212,14 +1214,33 @@ repairs require comparable reruns; failed required cases cannot be averaged away
 
 Locally written T3-oriented delegation flow with one editable Markdown table
 of model defaults, including research and source routes, in the routing reference.
-The table gives each required review role its own default: Primary and Ponytail
-use Sol High; Thermo and Adversarial use Terra Max. It also includes
+The table gives each required review role its own default and includes
 additional-review pools. Primary covers cross-judges and
 single-reviewer audits. Review Fix Loop owns review assignment, draw, harness,
 and skip policy.
 Assignment briefs replace a generic
 agent-rank taxonomy; discovery resolves working defaults before direct work,
 and the main procedure owns the direct-work match/delegate gate.
+Interaction rows for computer, browser, desktop, or device UI operation,
+including interactive workflow verification, are checked first, with effort
+chosen automatically from flow complexity and false-pass cost and escalated on
+missed checks or inconsistent judgments, not on product failures alone. Mixed
+work splits building from driving through the existing handoff; Verify keeps
+assertions and verdicts.
+Implementation pins UI building and changes to a dedicated UI row regardless of
+difficulty. This is checked
+before three generic tiers: Simple for clearly small, routine, low-judgment
+work, Standard by default, and Hardest for deep uncertainty, with automatic
+escalation as evidence changes. Rows may list an availability fallback, never
+Simple, used only for quota, unavailable model/provider, or provider runtime
+failures. It preserves acceptance and review criteria, writer reconciliation,
+and explicit user constraints; a review fallback still runs as a fresh
+independent review. Authentication, permission denials, and poor task results
+do not trigger it. The model table owns every model, effort, and
+fallback value. Selection changes honor host delegation authority: children
+without permission return incomplete work and
+an escalation request for parent-owned reconciliation and dispatch. A failed
+escalation back to an active implementer preserves that owner and its context.
 Live host instructions own API/transport and task lifecycle; routing owns local
 concurrency and bounded recovery, subject to caller-specific failure policy.
 Assignment, runtime selection, and acceptance remain distinct; handoffs identify
@@ -1309,12 +1330,26 @@ the session evidence and routes further investigation only within the user's sco
 
 - [unclebob/ub-mode / SKILL.md](https://github.com/unclebob/ub-mode/blob/57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f/SKILL.md) — conceptual input checked at revision `57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f` on 2026-10-25; no upstream prose or code copied.
 
-`codex/global-instructions.md` expresses simplicity, behavior-verification, and
+`global/AGENTS.md` expresses simplicity, behavior-verification, and
 failed-assumption defaults in locally written guidance. Simplification stays
 within the requested scope; verification uses independent expectations and
 reports gaps when meaningful automation is impractical. Detailed engineering
 and testing procedures stay in their existing skills. Tool-specific gates,
 action diaries, automatic cleanup, and push-to-main instructions are omitted.
+It also carries the user's standing Snip Snap capture instruction.
+`scripts/sync_hosts.py` links it as `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`
+and links skills per host from the `codex/` and `claude/` setup manifests, from
+the stable clone on `main` only. Its `reference-transaction` hook syncs after
+local `main` updates and chains into existing hooks without replacing them or
+changing their reference input. Sync refreshes its owned handler; hook health
+checks report drift separately from host links. Checks from linked worktrees
+use the stable clone's script and manifests.
+README.md documents sync, the hook, and Claude Code's personal skill links.
+`codex/config.toml` and `claude/settings.json` are manual-merge host settings
+templates outside the managed links; private host configs remain local files.
+Provider model settings stay separate; technical claims link to the host
+documentation beside the setup steps. User-level instruction-file selection
+keeps project `AGENTS.md` loading alongside Claude-specific instructions.
 
 ## T3 integration comparison
 

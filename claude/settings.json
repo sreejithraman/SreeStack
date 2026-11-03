@@ -1,0 +1,12 @@
+{
+  "model": "opus[1m]",
+  "effortLevel": "high",
+  "autoCompactWindow": 500000,
+  "pluginConfigs": {
+    "cc-plugin-agents-md@builtin": {
+      "options": {
+        "instructionFiles": "claude-md-and-agents-md"
+      }
+    }
+  }
+}
