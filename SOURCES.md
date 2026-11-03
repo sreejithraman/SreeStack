@@ -1345,6 +1345,8 @@ changing their reference input. Sync refreshes its owned handler; hook health
 checks report drift separately from host links. Checks from linked worktrees
 use the stable clone's script and manifests.
 README.md documents sync, the hook, and Claude Code's personal skill links.
+`codex/config.toml` and `claude/settings.json` are manual-merge host settings
+templates outside the managed links; private host configs remain local files.
 Provider model settings stay separate; technical claims link to the host
 documentation beside the setup steps. User-level instruction-file selection
 keeps project `AGENTS.md` loading alongside Claude-specific instructions.

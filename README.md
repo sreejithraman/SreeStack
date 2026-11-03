@@ -136,34 +136,21 @@ the same `global/AGENTS.md` as Codex. Claude Code v2.1.277 or later reads projec
 `AGENTS.md` by default when no project or ancestor `CLAUDE.md` or `CLAUDE.local.md`
 exists; see [instruction discovery and exceptions](https://code.claude.com/docs/en/memory#agents-md).
 
-On Claude Code v2.1.285 or later, merge this into your user
-`~/.claude/settings.json` to keep reading `AGENTS.md` when a project also has
-Claude instructions. Preserve other settings:
+Merge the keys from [claude/settings.json](claude/settings.json) into your
+`~/.claude/settings.json`, preserving unrelated settings, just as with
+[codex/config.toml](codex/config.toml). Keep the destination as a real private
+config file rather than a symlink. Sync manages skills and instructions, not
+these host settings templates.
 
-```json
-{
-  "pluginConfigs": {
-    "cc-plugin-agents-md@builtin": {
-      "options": { "instructionFiles": "claude-md-and-agents-md" }
-    }
-  }
-}
-```
-
-This setting applies at user scope, not project/local scope. Claude still reads
-the shared global `~/.claude/CLAUDE.md`. See
+The template's `cc-plugin-agents-md@builtin` configuration applies to Claude Code
+v2.1.285 or later. It keeps reading `AGENTS.md` when a project also has Claude
+instructions. This setting applies at user scope, not project/local scope.
+Claude still reads the shared global `~/.claude/CLAUDE.md`. See
 [instruction file selection](https://code.claude.com/docs/en/memory#choose-which-instruction-files-load).
 
-Optionally, set a personal compaction budget in the same file. This setup uses
-a 500k-token window:
-
-```json
-{ "autoCompactWindow": 500000 }
-```
-
-This sets how much context Claude Code keeps before it compacts the conversation.
-It does not change output tokens or the model's maximum context, which the host
-model sets separately. Sync does not manage this or any other private setting.
+The template also sets a personal 500k-token compaction budget: how much context
+Claude Code keeps before it compacts the conversation. It does not change output
+tokens or the model's maximum context, which the host model sets separately.
 See [`autoCompactWindow`](https://code.claude.com/docs/en/settings-reference#autocompactwindow).
 
 In a fresh T3 Claude session, check that `orchestration` is discoverable and
@@ -535,26 +522,28 @@ covers private environment files and host-specific access checks.
 
 ## Optional host defaults
 
-[codex/config.toml](codex/config.toml) is a template for parent-session settings,
-separate from orchestration's delegated model policy. Sync does not touch it.
-Keep the full personal config local; it may contain machine paths, trusted
-projects, and integration settings.
+The host settings templates below supply parent-session defaults, separate
+from orchestration's delegated model policy. Merge them manually into real
+private config files rather than symlinking them. Sync manages only skills and
+instructions, not either settings template. Keep the full personal configs local;
+they may contain machine paths, trusted projects, and integration settings.
 
 | Template | Destination | How to apply |
 |---|---|---|
-| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Merge parent settings and the native concurrency ceiling |
+| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Manually merge parent settings and the native concurrency ceiling |
+| [settings.json](claude/settings.json) | `~/.claude/settings.json` | Manually merge the template keys, preserving unrelated settings |
 
 Shared instructions are not a template: sync links them, as described in [Use](#use).
 
-Back up local files, preserve unrelated values, and check that TOML parses
+Back up local files, preserve unrelated values, and check that TOML or JSON parses
 after merging. If `~/.codex/AGENTS.override.md` exists, it takes precedence over
 the linked `AGENTS.md`; merge its guidance into `global/AGENTS.md` or remove it.
 Native child execution uses explicit policy settings rather than named rank
 presets. Start a new task after changing host settings and check its effective
 selection; active tasks may retain earlier settings.
 
-Claude's model and effort settings remain in its own host configuration; the
-Codex TOML applies to Codex. T3 thread selections and
+Each template applies to its own host. T3 can override model and effort per
+assignment. T3 thread selections and
 Orchestration's delegated model defaults are separate from either host's
 defaults. Sharing instructions does not change those selections. See Claude's
 [user instruction location](https://code.claude.com/docs/en/memory#choose-where-to-put-claudemd-files).
