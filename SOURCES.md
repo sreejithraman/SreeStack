@@ -1084,7 +1084,9 @@ Preserves the upstream setup and installed-instructions steps. Local name is
 than test phones. Adds host-routing, retained-target and shared-requester ownership
 gates plus fresh lease-identity requirements, and links local
 run/handoff, runner-integration and adoption references, including bounded iOS
-agent-device helper preparation and bridge capability checks. Runtime lease rules stay
+agent-device helper preparation, bounded failure diagnostics and bridge capability
+checks. Failure guidance defers to host recovery instructions and preserves unresolved
+ownership conflicts. Runtime lease rules stay
 with `simlock instructions`. Technical citations use checked upstream source
 documents rather than inaccessible deployed documentation routes.
 

@@ -26,4 +26,7 @@ host routing, run evidence, teardown and retention. Use
 [project runner integration](references/project-runners.md) when changing normal
 test commands, and [setup and rollout](references/setup.md) for authorized adoption.
 
+If acquisition, runner preparation or a device command fails, read
+[when a session fails](references/workflow.md#when-a-session-fails) before retrying.
+
 More: [Connect your agent](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/getting-started/connect-your-agent.mdx).
