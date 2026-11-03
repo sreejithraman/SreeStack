@@ -1,0 +1,4 @@
+interface:
+  display_name: "Swarm"
+  short_description: "Run bounded parallel work and combine results"
+  default_prompt: "Use $swarm to choose a bounded parallel assignment, verify worker evidence, and return one consolidated result."

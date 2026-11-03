@@ -23,7 +23,7 @@ material keeps the terms listed below; the root license does not replace them.
 | OpenAI | review/references/adversarial.md (adapted) and adversarial-output.schema.json (unmodified) | [Apache-2.0](licenses/openai-codex-plugin-cc.txt), [NOTICE](licenses/openai-codex-plugin-cc-NOTICE.txt) |
 | OpenCode | review/references/opencode.md (adapted) | [MIT](licenses/anomalyco-opencode.txt) |
 | Gemini CLI Extensions | review/references/gemini.md (adapted) | [Apache-2.0](licenses/gemini-cli-extensions-code-review.txt) |
-| Lauren Tan / pstack | arena, architect, how, show-dont-tell, correct, engineering-principles, verify, blast-radius, why, codebase-design, diagnosing-bugs, pr, handoff, goal-swarm, and orchestration adaptations | [MIT](licenses/lauren-tan-pstack.txt) |
+| Lauren Tan / pstack | arena, architect, how, show-dont-tell, correct, engineering-principles, verify, blast-radius, why, codebase-design, diagnosing-bugs, pr, handoff, chief-of-staff, swarm, and orchestration adaptations | [MIT](licenses/lauren-tan-pstack.txt) |
 | Anthropic skills | ui-design art-direction guidance | [Apache-2.0](licenses/anthropics-frontend-design.txt) ([upstream](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt)) |
 | Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |
@@ -60,3 +60,7 @@ for s0xDk/refactoring-ui-skill also remains unknown. Bundled notices do not reso
 those source-history gaps.
 Linked API docs, component catalogs, and other live references sit beside the
 guidance they support; links alone are not bundled copies.
+
+The Chief of Staff dashboard loads Lucide `1.67.0` as an external,
+integrity-checked browser dependency. Its assets are not bundled in this repo.
+See the [upstream ISC and Feather MIT license](https://cdn.jsdelivr.net/npm/lucide@1.67.0/LICENSE).

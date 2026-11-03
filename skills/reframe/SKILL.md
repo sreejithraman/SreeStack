@@ -1,6 +1,6 @@
 ---
 name: reframe
-description: Form a brief when asked to reframe a task, be more ambitious, raise the bar, or improve a prompt; also use for Goal Swarm's goal formation. Establish the outcome, methods, constraints, evaluation, and finish line from context.
+description: Form a brief when asked to reframe a task, be more ambitious, raise the bar, or improve a prompt, or when another workflow needs a clearer outcome. Establish the outcome, methods, constraints, evaluation, and finish line from context.
 ---
 
 # Reframe
@@ -60,12 +60,13 @@ When prompt rewriting is the requested product, return a copyable prompt with
 the outcome, preserved constraints, methods, and evaluation.
 
 When another workflow calls Reframe, return the brief to that owner. The owner
-continues execution; do not start another copy of its workflow. In particular,
-Goal Swarm consumes the brief and keeps ownership of the goal.
+continues execution; do not start another copy of its workflow.
 
 For a direct reframing request, return the brief in chat unless another format
 or destination was requested. If the user also requested execution, continue
-through the authorized workflow with that brief. Requested goal or swarm
-execution uses [Goal Swarm](../goal-swarm/SKILL.md), passing the formed brief so
-it can be reused. Reframing alone authorizes no implementation, native goal,
+through the authorized workflow with that brief. Use
+[Implement](../implement/SKILL.md) for one PR-sized change,
+[Chief of Staff](../chief-of-staff/SKILL.md) for a program of PRs, and
+[Swarm](../swarm/SKILL.md) for a bounded parallel assignment when useful.
+Reframing alone authorizes no implementation, native goal,
 schedule, or external action.

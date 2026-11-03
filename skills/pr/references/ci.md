@@ -28,6 +28,15 @@ Inspect failures, timeouts, cancellations, and action-required results:
 Only the parent thread owning the PR watches it. Delegated children return
 their results to the parent. Use one watcher per PR.
 
+A delegated owner handles current actionable failures, leaves the PR pending,
+and ends its turn with a **pending report**: PR link, head/base, check and
+review state, remaining work, its thread/task IDs, and the event it awaits.
+The parent watches. When a wake needs a change, the parent sends the evidence
+to that same owner session so the branch keeps one writer; in T3,
+`t3_thread_send` resumes the child thread (record any new task ID it returns).
+A fresh review or re-check still uses a new delegated task. A pending PR keeps
+its owner; waiting on CI is no reason to cancel it.
+
 Handle existing checks and comments first. While checks or reviews are pending,
 or monitoring is explicitly requested, call `watch_pull_request` and end the
 turn. T3 wakes the thread for check results, comments, reviews, or conflicts.
@@ -37,8 +46,8 @@ messages. Watches persist across pushes; reassess the new head rather than
 starting a second watcher.
 See the [T3 watch contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/pullRequests/tools.ts#L290).
 
-Before handing back control because the PR is ready, blocked, or needs a user
-decision, call `unwatch_pull_request`. Ending a turn to await watcher events
+Before handing back control because the PR is ready, blocked, or waiting only
+on a user decision, call `unwatch_pull_request`. Ending a turn to await watcher events
 keeps the watch active. GitHub must confirm any merge or close.
 
 If watching stops because GitHub cannot be read, inspect the error and rate

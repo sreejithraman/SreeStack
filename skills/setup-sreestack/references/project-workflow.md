@@ -36,9 +36,10 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   stacks through `gh-stack` and each layer's PR workflow. `merge` handles landing
   when requested. Document deviations or missing host support without promising
   automatic publication or merging from a setup request.
-- **Delegation:** link `orchestration` when the project uses parallel work or
-  ticket graphs. Use `goal-swarm` for explicit goal or swarm requests. Link
-  orchestration's shared model policy for agent defaults;
+- **Delegation:** link `orchestration` for shared delegation mechanics and
+  `swarm` for bounded parallel assignments. `implement` owns one PR-sized change;
+  `chief-of-staff` coordinates a program's PR sessions and ticket dependencies.
+  Link orchestration's shared model policy for agent defaults;
   preserve explicit project/user overrides. Do not infer new model or effort
   preferences from this setup run or duplicate the shared policy in project docs.
 

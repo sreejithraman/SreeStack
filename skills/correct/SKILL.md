@@ -70,8 +70,9 @@ behavior to hide the failure is not prevention.
 Use [orchestration](../orchestration/SKILL.md) for bounded assignments and
 [review-fix-loop](../review-fix-loop/SKILL.md) for behavior or procedure changes.
 Use [verify](../verify/SKILL.md) when the repair changes a user workflow.
-Requested stacked delivery uses [gh-stack](../gh-stack/SKILL.md); explicitly
-requested goal or swarm execution uses [goal-swarm](../goal-swarm/SKILL.md).
+Requested stacked delivery uses [gh-stack](../gh-stack/SKILL.md).
+Use [Chief of Staff](../chief-of-staff/SKILL.md) for a program of repair PRs and
+[Swarm](../swarm/SKILL.md) for bounded parallel investigation or implementation.
 The requested finish line governs PR publication and merging.
 
 Report each class as planned, prevented, partly covered, resolved already, or deferred,

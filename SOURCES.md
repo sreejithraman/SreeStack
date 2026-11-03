@@ -54,7 +54,8 @@ saved-work lifecycle.
 ## snipsnap-do-chores
 
 - Local: `skills/snipsnap-do-chores` (SreeStack). Selects saved mechanical work
-  through Snip Snap and executes it with Goal Swarm.
+  through Snip Snap; Implement owns one PR-sized batch, Chief of Staff
+  coordinates several PRs, and Swarm supplies bounded parallel work.
 
 ## animate
 
@@ -224,8 +225,8 @@ counts independent occurrences, checks current exposure, and ranks live classes.
 Shared design and enforcement selection use `engineering-principles`; guard proof
 remains in `codebase-design`. Technical experiments use the architecture reference.
 Planning and implementation honor
-the requested finish line and reuse existing delivery workflows. Explicit goal
-or swarm execution routes through `goal-swarm` with optional native tracking.
+the requested finish line and reuse existing delivery workflows. Program execution routes through `chief-of-staff`; bounded parallel work
+uses `swarm`.
 Automatic correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
 
@@ -381,33 +382,61 @@ comparison reporting, and workspace-scoped progress. Execution follows an
 explicit run request and available host capabilities; no default budget or
 round cap is added.
 
-## goal-swarm
+## chief-of-staff
 
-- Local: `skills/goal-swarm` (SreeStack). Outcome pursuit with optional native tracking.
-- [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/swarm) and [figure-it-out](https://github.com/cursor/plugins/tree/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/figure-it-out), plus [poteto-mode/playbooks/autonomous-run.md](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/poteto-mode/playbooks/autonomous-run.md) — commit `88d47514b82e7c44f00f2b2a72ff6dd12158038c`. MIT notice in `licenses/lauren-tan-pstack.txt`.
-- Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc); independently written outcome, method, and evaluation guidance.
+- Local: `skills/chief-of-staff` (SreeStack). Original PR-program workflow and
+  dashboard implementation, informed by the user-supplied `chief-of-staff.zip`
+  (attachment `0b05f3ba-72ce-4fe1-b35e-e1f0a28adff3`, reviewed 2026-11-02).
+- [mattpocock/skills / skills/in-progress/chief-of-staff](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/in-progress/chief-of-staff) and [skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/implement-spec) — adaptation baseline `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`. MIT notice in `licenses/mattpocock-skills.txt`.
+- [cursor/plugins / pstack/skills/poteto-mode](https://github.com/cursor/plugins/tree/ae5650febf4320793844c12c4adaa937f417f8da/pstack/skills/poteto-mode) — `SKILL.md` and `playbooks/orchestrate.md`, `playbooks/autonomous-run.md`, and `playbooks/multi-phase-plan.md`; adaptation baseline `ae5650febf4320793844c12c4adaa937f417f8da`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [lauren / empirical review post](https://x.com/poteto/status/2117437607940681849) and [clarification](https://x.com/poteto/status/2117440753551204735) — conceptual input, read with the user's supplied history assessment on 2026-11-03. No post text copied.
+- [DeepSeek / dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) — conceptual input reviewed at `8c32a9dc5d72c033816c6a8110b37f40cf94fba4`: `docs/000-philosophy.md`, `docs/001-domain.md`, `docs/003-execution.md`, `docs/004-prompts.md`, and the `prompts/` role, dispatch, work, reply, handoff, scope, communication, and delivery instructions. Informs Chief of Staff, Implement, Orchestration, and Showroom; no code or prose copied.
+- [Lucide Icons](https://lucide.dev/guide/lucide/getting-started) — external browser dependency, version `1.67.0`, loaded asynchronously from `https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js` with SHA-384 integrity and no referrer. No Lucide source assets or license text are vendored. [Upstream package license](https://cdn.jsdelivr.net/npm/lucide@1.67.0/LICENSE) covers ISC and applicable Feather MIT notices.
 
-Runs for an explicitly requested goal or swarm. The parent owns the finish line,
-chooses solo work or bounded workers, and retains supported progress without
-lowering hard targets or accepting regressions. Preserves pstack's partition or
-comparison choice, declared selection rule, owned outputs, self-contained briefs,
-and assessment of artifact and measurement evidence. Orchestration owns T3
-routing, task lifecycle, recovery and integration; Cursor cloud placement, model
-defaults, fixed retry counts and mandatory fan-out are excluded. Native goal
-tracking is optional, requested explicitly, and governed by the host rather than
-copied function or state rules. Prompts do not substitute for runtime wakeups;
-schedules and separate conversations retain their explicit authorization.
+Automatically discoverable program owner. One Implement owner per PR unit,
+started from `assets/owner-kickoff.md` with an explicit return route and report
+file; the chief reads owner reports, accepts units under
+Orchestration, watches delegated owners' pending PRs, lands accepted PRs, and
+routes discoveries through an explicit disposition table.
+`references/task-graphs.md` keeps the upstream frontier scheduling, adds
+verification at the dependent's base, and linearizes fork-and-join inputs into
+reviewable stacks. Existing trackers stay authoritative; there is no mandatory
+wiki, Linear, Slack, cloud runtime, merge grant, or recurring schedule.
 
-Verify's shared acceptance guidance supports progressive brownfield discovery,
-empirical checks and qualitative judgment. Required delivery checks remain;
-existing independent review assesses decisive evidence without a separate judge
-for every experiment. No universal upfront harness, audit schema or program store
-is required. Reframe normally forms new goals from the request and context,
-with concise confirmation for precise requests and reuse of settled briefs
-through execution. Material user decisions receive concrete questions; stronger
-and cross-domain methods serve the authorized outcome without enlarging scope.
-Reframe returns to the calling owner without restarting execution. PR delivery
-routes through `pr`.
+The original command center renders a checked JSON snapshot of the program
+record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
+Needs you before Work, per-row observation times, copyable decision prompts
+that name one recorded option, and accepted tradeoffs. It
+replaces the supplied archive's Claude artifact database and integrations; no
+archive code or prose is copied. Validation rejects non-PR merge states and
+terminal rows with active blockers. `references/hosting.md` serves the page
+through Showroom's hosting lifecycle, including Tailscale Serve.
+
+## implement
+
+- [mattpocock/skills / skills/engineering/implement](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/implement) — adaptation baseline `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`. MIT notice in `licenses/mattpocock-skills.txt`.
+- [cursor/plugins / pstack/skills/figure-it-out](https://github.com/cursor/plugins/tree/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/figure-it-out) and [poteto-mode/playbooks/autonomous-run.md](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/poteto-mode/playbooks/autonomous-run.md) — measurable-target pursuit, baseline `88d47514b82e7c44f00f2b2a72ff6dd12158038c`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
+
+Automatically discoverable owner for one PR-sized change, written against a
+generic caller. Keeps upstream spec/ticket resolution, TDD at meaningful
+seams, verification, and review. Adds local method selection, a fixed finish
+line, measurable-target pursuit that keeps hard targets and rejects
+regressions, invariant escalation through Attack the Premise, and an
+owner-report contract. Native goal tracking stays optional and explicitly
+requested. Publishing and merging follow the request; no issue tracker is
+required for a supplied spec.
+
+## swarm
+
+- [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ae5650febf4320793844c12c4adaa937f417f8da/pstack/skills/swarm) — adaptation baseline `ae5650febf4320793844c12c4adaa937f417f8da`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+
+Automatically discoverable bounded parallel tool that returns to its caller.
+Keeps upstream coverage, races, mixed assignments, declared selection rules,
+self-contained briefs, and disjoint outputs. Orchestration supplies model
+selection, concurrency, recovery, and acceptance; Arena keeps candidate
+synthesis. Cloud placement, upstream model defaults, mandatory fan-out, and
+program or native-goal ownership are omitted.
 
 ## gh-stack
 
@@ -718,13 +747,6 @@ Delegation, review, and delivery belong to the caller.
 
 - Local: `skills/merge` (SreeStack).
 
-PR workflow references and T3 thread registration use the local `pr` entry point.
-Requires current review including Show, Don't Tell and required verification
-for each PR, including docs-only changes, routing missing or stale evidence
-through PR preparation.
-Preparation returns evidence to the original Merge caller, which rechecks
-affected layers after repairs or restacking and retains the full landing set.
-
 
 ## prototype
 
@@ -897,7 +919,7 @@ evidence and access gaps before acceptance.
 - [robonuggets/be-ambitious / SKILL.md](https://github.com/robonuggets/be-ambitious/blob/dc116a3ebd8cf772e4d0930626f67369bd60399d/SKILL.md) — conceptual comparison at `dc116a3ebd8cf772e4d0930626f67369bd60399d`, checked 2026-11-02; no upstream prose copied.
 
 Independently written brief preparation, model-discoverable for requested
-reframing, ambition, prompt improvement, and Goal Swarm goal formation. Scales
+reframing, ambition, prompt improvement, and brief formation for a calling workflow. Scales
 to uncertainty and considers harder targets, raw evidence, testable discoveries,
 cross-field methods, and lasting workflows with explicit setup and ownership.
 Preserves authorized scope and the agreed finish line, allows qualitative
@@ -1005,6 +1027,8 @@ appropriate, with unavailable before states disclosed. Reversibility, concrete
 consumers, rollout, and restoration limits replace a forced one-word blast-radius
 rating. Small PRs can use concise prose; publication refreshes the guide's facts
 against the current scope/head. Cross-skill references use the current local name.
+A delegated owner returns a pending report instead of watching; the parent
+watches and resumes that same owner for repairs.
 Evidence reuses Showroom's checked demonstrations and access links when available.
 History changes share a local preservation reference with Merge and gh-stack:
 back up current retained bytes outside affected checkouts, preserve both versions
@@ -1042,8 +1066,8 @@ feature recipes and live proof use `verify` when requested. Feature directories
 are created with the first recipe. Scoped updates and glossary migration
 preserve their requested scope. Project workflow guidance
 uses current local review, PR, stack, merge, acceptance, and delegation owners;
-host settings and installation remain separate. Goal or swarm execution stays
-explicitly requested, with native tracking optional. Agent defaults link the shared
+host settings and installation remain separate. Program ownership uses `chief-of-staff`, one PR-sized change uses `implement`,
+and bounded parallel work uses `swarm`. Native tracking follows explicit requests. Agent defaults link the shared
 orchestration policy rather than duplicating host rank settings. Existing commands and standards
 are linked rather than duplicated. Active instruction files are selected by the
 user/host or existing pointer ownership, with `AGENTS.md` for a new default.
@@ -1080,6 +1104,7 @@ PR workflow references use the local `pr` entry point.
 - Local: `skills/showroom` (SreeStack). Owns demonstrations and access for
   inspectable results, with model-selected formats and delivery paths, including
   physical-device development delivery and bounded recovery guidance.
+- Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied. Visual comparison guidance is reached before editing, matches scenario, viewport/device, theme, data, and state, and retains labeled revisions and honest baseline gaps. Verify retains acceptance ownership.
 
 ## simulator-lifecycle
 
@@ -1209,63 +1234,36 @@ repairs require comparable reruns; failed required cases cannot be averaged away
 
 - Local: `skills/orchestration` (SreeStack).
 - [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
 
-- [mattpocock/skills / skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/implement-spec) — task-graph/frontier scheduling adapted into `references/task-graphs.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
+Shared T3-oriented assignment, execution, recovery, and acceptance mechanics.
+One editable table in `references/agent-routing.md` owns working, research,
+source-retrieval, and review model defaults, including effort and additional
+review pools. The direct-work match/delegate gate applies to the working
+selection. Live host instructions own APIs, transport, task lifecycle,
+permissions, and workspace binding. Local policy owns concurrency and bounded
+recovery, subject to caller-specific failure policy.
 
-Locally written T3-oriented delegation flow with one editable Markdown table
-of model defaults, including research and source routes, in the routing reference.
-The table gives each required review role its own default and includes
-additional-review pools. Primary covers cross-judges and
-single-reviewer audits. Review Fix Loop owns review assignment, draw, harness,
-and skip policy.
-Assignment briefs replace a generic
-agent-rank taxonomy; discovery resolves working defaults before direct work,
-and the main procedure owns the direct-work match/delegate gate.
-Interaction rows for computer, browser, desktop, or device UI operation,
-including interactive workflow verification, are checked first, with effort
-chosen automatically from flow complexity and false-pass cost and escalated on
-missed checks or inconsistent judgments, not on product failures alone. Mixed
-work splits building from driving through the existing handoff; Verify keeps
-assertions and verdicts.
-Implementation pins UI building and changes to a dedicated UI row regardless of
-difficulty. This is checked
-before three generic tiers: Simple for clearly small, routine, low-judgment
-work, Standard by default, and Hardest for deep uncertainty, with automatic
-escalation as evidence changes. Rows may list an availability fallback, never
-Simple, used only for quota, unavailable model/provider, or provider runtime
-failures. It preserves acceptance and review criteria, writer reconciliation,
-and explicit user constraints; a review fallback still runs as a fresh
-independent review. Authentication, permission denials, and poor task results
-do not trigger it. The model table owns every model, effort, and
-fallback value. Selection changes honor host delegation authority: children
-without permission return incomplete work and
-an escalation request for parent-owned reconciliation and dispatch. A failed
-escalation back to an active implementer preserves that owner and its context.
-Live host instructions own API/transport and task lifecycle; routing owns local
-concurrency and bounded recovery, subject to caller-specific failure policy.
-Assignment, runtime selection, and acceptance remain distinct; handoffs identify
-child tasks. Native children
-are used when they support the exact selection; T3 owns cross-provider tasks
-and review rounds. Parallel coverage, competing approaches, revision-bound
-verification, and measured results are checked during integration. It does not
-create goals or require pstack's cloud worker setup. `pr` owns review when it
-will review the same integrated scope before publication.
-Integrated results the user can inspect or try route to `showroom` for
-demonstrations and access, reusing applicable verification evidence.
+Working selection checks interactive operation first, UI building next, then
+Simple, Standard, or Hardest implementation. Interaction effort follows flow
+complexity and false-pass cost; mixed building and driving use separate
+assignments, with Verify retaining assertions and verdicts. Listed availability
+fallbacks apply to quota, unavailable providers/models, and provider runtime
+failures while preserving acceptance, review criteria, and explicit selections.
+Selection changes honor host delegation authority; children without permission
+return incomplete work for parent-owned reconciliation and dispatch. Failed
+escalation preserves an active fallback owner and its context.
 
-The task-graph reference preserves existing integration, review, PR and cleanup
-owners. Delegated workers can share the integration checkout with disjoint
-ownership or use host-managed isolated worktrees; separate ordinary threads
-remain explicit. Isolated workers receive relevant uncommitted inputs explicitly
-and report their starting revision. Workspaces
-preserve unexpected edits; dependency outcomes require integration and verification. Scheduling alone does not enable native goal tracking or assume a worker's
-last merge guarantees a fast-forward. Explicit goal or swarm requests route to
-`goal-swarm`.
-Design and implementation work selects useful `engineering-principles` references
-and includes them in implementation briefs. Review prompts retain their source
-wording and criteria. Principles do not replace runtime selection, assignment,
-or acceptance.
-
+Names no callers. Briefs carry the original request and accepted
+corrections; work keeps a stable identity across attempts; explicit human holds
+persist until released. Children return decision requests with stable IDs that
+stay open until answered or withdrawn. A result is accepted only after
+inspecting its artifact at a named revision; every required slice is accounted
+for. Acceptance, actual delivery state, and handoff delivery stay separate, and
+a failed handoff is resent only to its original recipient. Review Fix Loop owns
+assessment coverage, PR owns that loop when it will review the same scope, and
+Showroom owns demonstrations. Ordinary delegation creates no goals, recurring
+schedules, or ordinary top-level threads.
 
 ## koubou
 

@@ -4,6 +4,12 @@ Capture the actual running result. Choose states and framing that make the
 change understandable. For iteration, comparable views of alternatives or
 before/after states can help the user give specific feedback. Label their
 revision or variant; use a real earlier capture when showing a before state.
+For a before/after comparison, retain the baseline before editing when needed
+and match the scenario, device/viewport, theme, data, and relevant UI state.
+Reuse valid earlier captures and refresh comparisons affected by later changes.
+Label intentional differences and the limits they place on the comparison.
+If a baseline is unavailable, identify the after view and missing evidence;
+keep acceptance claims within Verify's evidence rules and the task's finish line.
 
 Save run artifacts outside the repository unless the user asks for committed
 evidence. Use descriptive names, with an order prefix for a sequence, such as
