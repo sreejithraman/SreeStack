@@ -648,6 +648,9 @@ check delivery in the actual host interface, and
 distinguish provider authentication, automatic login, and post-login verification.
 Routes inspectable results to `showroom` for demonstrations and access while
 retaining acceptance selection and judgments.
+Physical-device development installs route to Showroom's delivery reference
+from shared preparation for setup and recovery, retaining platform tooling and
+acceptance guidance here.
 Provider mechanics stay in agent-login’s references; maps link the authoritative
 approved mapping and record delivery setup.
 
@@ -1073,7 +1076,8 @@ PR workflow references use the local `pr` entry point.
 ## showroom
 
 - Local: `skills/showroom` (SreeStack). Owns demonstrations and access for
-  inspectable results, with model-selected formats and delivery paths.
+  inspectable results, with model-selected formats and delivery paths, including
+  physical-device development delivery and bounded recovery guidance.
 
 ## simulator-lifecycle
 

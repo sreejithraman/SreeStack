@@ -99,6 +99,12 @@ A project verification skill alone does not establish a documentation map.
 2. **Prepare the recipes and interface.** Prepare temporary or maintained recipes
    according to the documentation policy above.
 
+   For a physical-device development install, read Showroom's
+   [native-device delivery](../showroom/references/native-device-delivery.md)
+   before building, changing signing setup, or diagnosing device access.
+   It owns delivery setup and recovery; Verify retains platform tooling,
+   workflow coverage, and acceptance judgments.
+
    When selected workflows need login or authenticated commands, read
    [authenticated verification](references/authenticated-verification.md) before
    retrieving credentials or driving login. Reuse designated test accounts and

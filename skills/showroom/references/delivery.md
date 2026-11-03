@@ -34,9 +34,11 @@ still matches. Tailnet teardown checks mapping and origin separately under
 Choose between a running Simulator/emulator, a connected physical device, and
 an existing development or beta distribution path based on what the user needs
 to assess or try. An iPhone install may be the right delivery even when earlier
-checks used Simulator. Discover available devices and development tooling;
-select a suitable target, build the current revision, and install and launch
-when that is the chosen path and within the task's scope.
+checks used Simulator. For a physical-device development install, read
+[native-device delivery](native-device-delivery.md) before building, changing
+signing setup, or diagnosing access. Discover available devices and development
+tooling; select a suitable target, build the current revision, and install and
+launch when that is the chosen path and within the task's scope.
 
 Use Verify's [iOS tooling](../../verify/references/ios.md) for builds and device
 operations and the host's device routing for available platforms. Its default
