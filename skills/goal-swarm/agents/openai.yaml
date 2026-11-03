@@ -1,4 +1,0 @@
-interface:
-  display_name: "Goal Swarm"
-  short_description: "Pursue an outcome solo or with bounded workers"
-  default_prompt: "Use $goal-swarm to form or resume this goal, using Reframe when the goal is not already settled; preserve its constraints and pursue it through the requested finish line."

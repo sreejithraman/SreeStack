@@ -171,7 +171,7 @@ instructions rather than maintaining another API manual.
 | Task | Owner |
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
-| Form or improve a task brief | `reframe`, requested directly or used by Goal Swarm for goal formation |
+| Form or improve a task brief | `reframe`, requested directly or used by the responsible workflow |
 | Write or maintain skills and agent instructions | [writing-for-agents](skills/writing-for-agents/SKILL.md) |
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
 | Compare independent candidates and synthesize a result | `arena` |
@@ -179,9 +179,11 @@ instructions rather than maintaining another API manual.
 | Explain simply, including for a PM or junior engineer | [explain](skills/explain/SKILL.md) |
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
-| Implement or diagnose | The relevant platform/domain skill, using orchestration's working model |
+| Own one PR-sized change | [implement](skills/implement/SKILL.md), using the relevant platform/domain methods |
+| Coordinate a program of PRs | [chief-of-staff](skills/chief-of-staff/SKILL.md), with one owner session per PR |
 | Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
-| Delegate independent work | `orchestration`; `research` owns cited investigations |
+| Run bounded parallel work | [swarm](skills/swarm/SKILL.md), returning results to its caller |
+| Delegate and accept results | `orchestration` supplies shared mechanics; `research` owns cited investigations |
 | Prove behavior | `verify` |
 | Share disposable simulators across agents and projects | [simulator-lifecycle](skills/simulator-lifecycle/SKILL.md), using SimLock |
 | Run complexity, duplication, or mutation tools | `code-quality` |
@@ -201,9 +203,9 @@ not required for repository and public-response checks.
 Use only the skills triggered by the task. A small change needs no global mode,
 mandatory design panel, or planning registry. Specialists retain their current
 invocation choices; setup, planning commands, handoff, and retrospective remain
-explicit where configured. Ordinary work creates no goals, schedules, or new
-conversations. Explicit goal or swarm requests use `goal-swarm`; native goal
-tracking is optional and follows the host's instructions.
+explicit where configured. Ordinary delegation creates no native goals,
+schedules, or ordinary top-level conversations. Program execution, new sessions,
+native tracking, and recurring work follow the user's request and host rules.
 
 [Writing for Agents](skills/writing-for-agents/SKILL.md) routes skill revisions,
 tool-guidance audits, and instruction comparisons to conditional procedures.
@@ -213,12 +215,12 @@ tests the affected requests. Context-savings claims need measured trials with
 validated isolation. The evaluation guidance defines an adapter contract; it
 does not install a runner or authenticate a model provider.
 
-[Reframe](skills/reframe/SKILL.md) forms goals from the user's request and
-context as Goal Swarm's normal starting step. It scales to what is unsettled:
-a precise request may need only a concise confirmation. Goal Swarm reuses the
-settled brief through execution and revisits it when evidence or user direction
-changes. Material scope or tradeoff changes need authorization; routine framing
-adds no approval checkpoint.
+[Reframe](skills/reframe/SKILL.md) forms a brief from the user's request and
+context. It scales to what is unsettled: a precise request may need only a
+concise confirmation. The calling workflow reuses the settled brief through
+execution and revisits it when evidence or user direction changes. Material
+scope or tradeoff changes need authorization; routine framing adds no approval
+checkpoint.
 
 You can also invoke `$reframe` in Codex or `/reframe` in Claude Code directly.
 For example, “Be more ambitious about helping users recover from upload errors,
@@ -227,20 +229,35 @@ methods, needed setup, and suitable evaluation. It can propose harder targets or
 a lasting workflow; execution follows the authorized scope. Ask to rewrite a
 prompt to receive a copyable version of that brief.
 It needs the task context and relevant evidence; investigation may need the
-project's tools. Reframing alone ends with the brief. When Goal Swarm calls it,
-Reframe returns the brief to that owner, which continues execution.
+project's tools. Reframing alone ends with the brief. When another workflow
+calls it, Reframe returns the brief to that owner, which continues execution.
 
-[Goal Swarm](skills/goal-swarm/SKILL.md) pursues a clear outcome and preserves
-required constraints, working solo or through bounded worker tasks. Evaluation
-starts with what should improve, what must hold, and how the result will be judged;
-checks grow with the risks discovered. Qualitative work uses criteria and
-judgment. It asks for unresolved preferences or tradeoffs that materially change
-the result. For example, “Use Goal Swarm to reduce search p95 to 200 ms while
-preserving results and existing resource limits” keeps a correct 300 ms result
-as progress and continues toward 200 ms. It completes at the requested finish
-line; user approval is needed when that finish line requires it. Native goal
-tracking is used when explicitly requested and supported. Unattended continuation
-needs host runtime support; a prompt alone does not supply wakeups.
+[Implement](skills/implement/SKILL.md) owns one cohesive change through its
+finish line and returns an owner report to whoever started it. For example,
+“Implement this ticket and open a PR” covers implementation, verification,
+review, publication, and CI through readiness; landing needs a merge request.
+It also pursues measurable targets: “Reduce search p95 to 200 ms while
+preserving results and resource limits” keeps a correct 300 ms improvement as
+progress and continues toward 200 ms. Separate improvements go back to the
+caller, or to Snip Snap when the user started it directly.
+
+[Chief of Staff](skills/chief-of-staff/SKILL.md) runs a program of PRs. It maps
+the work to PR units, starts one Implement owner per unit from a kickoff
+template, reads their owner reports, watches pending PRs, routes discoveries
+and shared blockers, and lands accepted PRs when merging is authorized. Its command center shows Needs you first and
+Work second, rendered from a checked snapshot of the program record; answers
+go back through chat. Existing trackers stay authoritative. A hosting guide can serve the page at a stable
+private URL through Showroom and Tailscale Serve. Refreshes need a new
+snapshot; background refresh needs explicitly requested host scheduling.
+
+[Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
+“Swarm these three possible causes and return evidence” partitions the question
+and returns one consolidated result with coverage gaps. It supports coverage,
+races, and mixed assignments without taking over its caller's PR or program.
+
+Implement and Swarm work on their own; Chief of Staff uses them as tools.
+[Orchestration](skills/orchestration/SKILL.md) supplies the shared mechanics they
+all use: model selection, briefs, decision requests, holds, and acceptance.
 
 [Engineering Principles](skills/engineering-principles/SKILL.md) is automatically
 discoverable. Its task-based index links to 24 reference files, one per principle,
@@ -570,10 +587,12 @@ Report security issues through the [private reporting channel](SECURITY.md).
 Thank you to the authors and contributors who shared the skills this collection
 uses and adapts:
 
+- [DeepSeek Harness Team](https://github.com/deepseek-ai/dsh-superagent-prototype) — coordination, attention, handoff, and visual-comparison ideas; instructions are independently written.
+- [Lucide Icons and Contributors](https://github.com/lucide-icons/lucide), with Feather-derived work by Cole Bemis — chief-of-staff dashboard icons.
 - [Suraj Sharma](https://x.com/suraj_sharma14/status/2116062550416871512) and [Rakesh Patel](https://x.com/rakeshpatelco/status/2116065801279291422) — website SEO coverage and deployed crawl verification ideas; instructions are independently written.
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Benji Taylor / Stageshow](https://github.com/benjitaylor/skills) — product UI illustrations, animated demos, and the bundled React kit and examples.
-- [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including the Standards and Spec review rules.
+- [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including implementation, chief-of-staff coordination, and the Standards and Spec review rules.
 - [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods adapted into `writing-for-agents`.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
@@ -589,7 +608,7 @@ uses and adapts:
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `goal-swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `chief-of-staff`, `swarm`, and `orchestration`.
 - [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.

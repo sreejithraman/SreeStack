@@ -21,6 +21,8 @@ jobs:
         run: python3 -m pip install -r scripts/requirements-checks.txt
       - name: Test repository checks
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Test command center renderer
+        run: python3 -m unittest discover -s skills/chief-of-staff/scripts -p 'test_*.py' -v
       - name: Check skills and links
         run: python3 scripts/check_skills.py
       - name: Check whitespace

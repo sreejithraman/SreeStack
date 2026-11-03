@@ -27,9 +27,10 @@ Return readiness blockers to the caller; fixes belong to `pr` or the caller.
 
    For every PR, including docs-only changes, require current head/base review
    that includes [Show, Don't Tell](../show-dont-tell/SKILL.md), plus required
-   verification. Reuse matching evidence. If missing or stale, invoke
-   [pr](../pr/SKILL.md) in preparation-only mode and return refreshed evidence
-   here. After repairs or restacking, recheck every affected layer.
+   verification. Reuse matching evidence. If missing or stale, return the gap
+   to a caller that keeps its own repair owner for the PR; otherwise invoke [pr](../pr/SKILL.md) in
+   preparation-only mode and return refreshed evidence here. After repairs or
+   restacking, recheck every affected layer.
    Before local history changes, apply [Preserve local files](../pr/references/preserve-local-files.md)
    and verify retained files after success or recovery.
    Land the original merge set only after all its PRs meet readiness requirements.

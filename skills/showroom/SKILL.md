@@ -22,6 +22,10 @@ Inspect existing run artifacts, available tools, running services, and suitable
 devices before choosing. Follow explicit format and target requests; otherwise
 make the choice without asking the user to select a medium.
 
+When a before/after comparison is requested or planned, read
+[captures](references/captures.md) and preserve the real baseline before edits
+or state changes can make it unavailable.
+
 Read the matching [delivery guidance](references/delivery.md) before selecting
 access. Website work always follows its preview-link requirement.
 
