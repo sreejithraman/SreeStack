@@ -1,9 +1,9 @@
 # Agent routing
 
-Use this reference to select a model and execute a delegated assignment.
-T3's injected orchestration instructions and live tool descriptions own the
-API, transport, permissions, task state, and workspace binding. Read those
-when dispatching; this reference owns SreeStack's defaults and execution policy.
+This reference owns SreeStack's model defaults, selection, reuse, and recovery
+policy. [Orchestration](../SKILL.md) owns assignment, dispatch, and acceptance.
+T3's injected instructions and live tool descriptions own the API, transport,
+permissions, task state, and workspace binding.
 
 ## Model defaults
 
@@ -14,10 +14,10 @@ Edit this table to change the defaults.
 | UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
 | Simple implementation and fixes | Codex | GPT-6.1 Sol | Medium | — | — |
 | Standard implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6.1 Sol / High | — |
-| Routine interaction | Codex | GPT-6.1 Terra | Medium | — | — |
-| Demanding interaction | Codex | GPT-6.1 Terra | High | — | — |
-| Complex interaction | Codex | GPT-6.1 Terra | X-High | — | — |
+| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6 Astra / X-High | — |
+| Routine UI operation | Codex | GPT-6.1 Terra | Medium | — | — |
+| Demanding UI operation | Codex | GPT-6.1 Terra | High | — | — |
+| Complex UI operation | Codex | GPT-6.1 Terra | X-High | — | — |
 | General research | Codex | GPT-6.1 Sol | Medium | — | — |
 | YouTube retrieval | Antigravity | Gemini 4 Argon | High | Antigravity / Gemini 3.8 Flash / High | — |
 | X retrieval | Grok | Grok 4.7 | High | — | — |
@@ -31,203 +31,179 @@ Edit this table to change the defaults.
 | Additional review | Antigravity | Gemini 3.8 Flash | High | — | Gemini |
 
 The primary-review row also supplies the selection used by cross-judges and
-single-reviewer audits.
+single-reviewer audits. [Research](../../research/SKILL.md#source-routing) uses
+the YouTube and X retrieval rows; these specify routing policy, not exclusive
+source access. [Review Fix Loop](../../review-fix-loop/SKILL.md) owns review
+coverage, assignment selection, harness review, and optional-failure policy.
 
-Implementation selections cover code, builds, tests, refactoring, configuration,
-documentation changes, non-interactive verification, and accepted fixes. Interaction selections cover
-operating a computer, browser, desktop app, or device UI, including verifying
-interactive workflows. The General research selection covers source reading,
-comparison, and synthesis.
-[Research](../../research/SKILL.md#source-routing) uses the YouTube and X retrieval
-rows. These specify routing policy, not exclusive source access.
-[Review Fix Loop](../../review-fix-loop/SKILL.md) owns review coverage, assignment
-selection, harness review, and optional-failure policy.
 Use the exact OpenCode Go IDs above, preserving the subscription route rather
 than substituting free or other paid endpoints.
-[OpenCode Go model IDs](https://opencode.ai/v2/docs/console/go/#models).
-User instructions override defaults; preserve explicit user choices when
-applying project requirements.
 
 Resolve names and effort through `orchestrator_capabilities` to exact available
 provider-instance/model IDs and supported options. Use a caller/project choice
 to disambiguate multiple matches; otherwise report the ambiguity. Gemini's
-effort can be encoded in its model ID. Pass the complete resolved selection:
-T3 replaces supplied options rather than merging them with inherited options.
-[T3 selection semantics](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/OrchestratorMcpService.ts#L1001).
+effort can be encoded in its model ID. Pass the complete resolved selection and
+intended options using the live tool contract.
+
+## Operate a UI
+
+The agent already on a task operates a browser, computer, desktop app, or device
+UI itself as a routine step when its tools reach the target. That step needs no
+model match or new selection. This covers UI operation only: live host rules,
+permissions, and action authorization still apply, and all other work keeps its
+[working selection](#choose-working-selection), including UI code changes.
+
+Use a dedicated operator only for:
+
+- substantial UI work, such as a lengthy or difficult workflow;
+- a specialized capability the agent's tools lack;
+- required independent verification, using an operator
+  [independent](#reuse-an-agent) of the assessed work;
+- repeated operational difficulty, such as tool failures, state mismatches, or
+  inconsistent judgments. A product failure is a finding for the implementer,
+  not a handoff trigger.
+
+Choose a tier only for a dedicated operator. It changes the model, not
+permissions or action authorization:
+
+| Tier | Use for |
+| --- | --- |
+| Routine UI operation | A well-understood, linear flow. Still check intermediate and final states |
+| Demanding UI operation | Branching, uncertain state, recovery, or several interacting assertions |
+| Complex UI operation | Complex edge cases, or a high cost of a false pass |
+
+The handoff carries expected and observed states, evidence, unresolved checks, and
+relevant session or tool references, under the
+[selection handoff](#selection-handoff). The operator returns product failures to
+the implementer for repair. [Verify](../../verify/SKILL.md) owns acceptance
+assertions and verdicts.
 
 ## Choose working selection
 
-Choose the selection automatically for each bounded assignment before direct
-work or dispatch, checking in this order:
+Choose automatically for each bounded assignment before direct work or dispatch.
+Explicit user selections and effort limits come first and hold through project
+requirements, then a task-specific selection, then the first matching row:
 
-1. Operating a computer, browser, desktop app, or device UI, including verifying
-   an interactive workflow, uses an [interaction row](#choose-interaction-effort).
-   Split assignments that also build UI as described below.
-2. Building or changing UI uses the UI implementation row, however small,
-   including a one-line CSS, SwiftUI, or UIKit fix. UI work never uses Simple.
-   UI work stays at this row regardless of difficulty; it does not use Hardest.
-3. Other implementation uses a tier below.
+| Assignment | Selection |
+| --- | --- |
+| Source review, including of UI | Its named review row |
+| Research-only source reading, comparison, synthesis, or retrieval, including of UI | General research, or the YouTube or X row |
+| [Dedicated UI operation](#operate-a-ui), including verifying an interactive workflow | Routine, Demanding, or Complex UI operation |
+| Building or changing UI, however small | UI implementation at any difficulty, never Simple or Hardest |
+| Diagnosis, design decisions, other code, builds, tests, refactoring, configuration, documentation, non-interactive verification, or accepted fixes | Simple, Standard, or Hardest implementation |
 
-Source review and programmatic research, including of UI, keep their named
-review and research rows. Builds, unit tests, and other checks that need no
-interactive operation keep the implementation selection.
-
-Task difficulty or an unsatisfactory answer calls for diagnosis or escalation,
-not an availability fallback. Honor explicit user selections and effort limits.
-Report the chosen selection and its concrete reason in the assignment or handoff.
-
-### Choose interaction effort
-
-- **Routine:** a well-understood, linear flow. Still check intermediate and
-  final states.
-- **Demanding:** branching, uncertain state, recovery, or several interacting
-  assertions.
-- **Complex:** complex edge cases, or a high cost of a false pass.
-
-Choose a higher row upfront when known complexity warrants it. Escalate on
-evidence of missed checks, state mismatches, or inconsistent judgments. A real
-product failure is a finding to diagnose or fix, not by itself a reason to
-escalate until the check passes. An interaction row changes the model, not
-permissions or action authorization.
-
-Split work that both builds and drives. The implementation selection builds;
-the interaction selection then operates and verifies, and returns product
-failures to implementation for repair. Each handoff carries expected and
-observed states, evidence, unresolved checks, and relevant session or tool
-references. [Selection handoff](#selection-handoff) and writer reconciliation
-apply. [Verify](../../verify/SKILL.md) owns acceptance assertions and verdicts.
-
-### Choose implementation tier
-
-Standard is the default:
-
-- **Simple:** only when the evidence clearly shows a small, routine, mechanical
-  task that needs little judgment, such as a typo, rename, or formatting fix
-  with an obvious check.
-- **Standard:** all other implementation, fixes, diagnosis, and non-interactive
-  verification, including substantive work with clear requirements or
-  established patterns.
-- **Hardest:** unresolved architectural tradeoffs, subtle state or concurrency
-  invariants, or repeated failed approaches that require challenging shared
-  assumptions. Choose this tier when the depth of uncertainty and judgment
-  warrants its configured effort.
+| Row | Use for |
+| --- | --- |
+| Simple | Evidence clearly shows a small, routine, mechanical task with an obvious check, such as a typo, rename, or formatting fix |
+| Standard | The default, including diagnosis and substantive work with clear requirements or established patterns |
+| Hardest | Rare cases where evidence shows Standard is insufficient: unresolved architectural tradeoffs, subtle state or concurrency invariants, or repeated failed approaches that require challenging shared assumptions |
 
 Choose Standard when Simple is in doubt. Small size alone does not make a task
 Simple; a small concurrency fix can be Hardest.
 
-Reassess when investigation or failed checks expose greater difficulty. Escalate
-Simple to Standard, or Standard to Hardest, as needed; choose Hardest directly
-when the evidence already warrants it. Reapply the ordered checks when work
-turns out to change UI or need interactive operation. Carry the task,
-proof, partial work, and failed assumptions into the next assignment. Reconcile
-earlier writers before a handoff.
+Continue directly only when this agent's effective model and effort match the
+selection or an explicit user override. Otherwise use the
+[selection handoff](#selection-handoff), preserving the parent's configuration.
+Report the chosen selection and its concrete reason in the assignment or handoff.
+
+**Reassess** when investigation, failed checks, missed checks, state mismatches,
+or inconsistent judgments expose greater difficulty, and reapply the first table
+when work turns out to change UI or need a dedicated operator. Escalate one row, or
+directly to Hardest when the evidence warrants it. Carry the task, proof,
+partial work, and failed assumptions into the next assignment, and reconcile
+earlier writers first. A real product failure is a finding to diagnose or fix,
+not by itself a reason to escalate until the check passes.
 
 ### Selection handoff
 
-Follow the host's delegation authority for both initial selection mismatches and
-later escalation. A child without permission to delegate stops work
-at a safe checkpoint and returns a selection-change request to its parent.
-Include the requested row and reason, completed and remaining work with exact
-paths, checks and failed assumptions, and any active writers. This is incomplete
-work awaiting reassignment, not a completed task. The parent reconciles earlier
-writers and partial changes, then dispatches the selected replacement. A child
-with delegation authority stays within its assigned scope.
+Follow the host's delegation authority for initial mismatches and later
+escalation. A child with authority stays within its assigned scope. A child
+without it stops at a safe checkpoint and returns a selection-change request:
+the requested row and reason, completed and remaining work with exact paths,
+checks and failed assumptions, and any active writers. This is incomplete work
+awaiting reassignment. The parent reconciles earlier writers and partial changes,
+then dispatches the selected replacement.
 
-## Dispatch and track
+## Reuse an agent
 
-Follow live host routing and task-lifecycle rules. Each child must support the
-resolved model/options; use a generic role when custom ranks would override
-them. The assignment brief defines obligations; T3's broad `role` is not a model
-preset.
+Prefer a retained agent you already know of when its context would help; finding
+one needs no search. It qualifies when it:
 
-For a native slash command through `delegate_task`, use `role: general` and
-start `task` with the command. Other roles prepend text before the command.
+- matches the assignment's resolved model and effort exactly;
+- reaches the correct workspace and current revision;
+- holds useful context that is current, not stuck, and not anchored on failed
+  assumptions;
+- keeps that context under a continuation the host both supports and permits for
+  this work. A working continuation tool does not establish that permission.
 
-Use fresh delegated tasks for independent reviews, and for other bounded
-assignments unless [reuse](#reuse-an-agent) fits.
-Carry needed context in the brief. Shared-checkout children need disjoint writes
-and serialized git/index operations. For a separate checkout, use the host's
-worktree-isolated delegation. Confirm its starting revision and supply relevant
-uncommitted inputs explicitly; they may not be copied.
+Otherwise use a new agent, as with an unavailable or deleted agent or work that
+needs an independent attempt. Normal assignment rules still apply, and
+[recovery](#recover-work) takes precedence.
 
-The default local ceiling is 12 active children, reduced by host/user limits.
-Count workers and reviewers together. Start ready assignments as slots free;
-retain each task's request key, ID, selection, owned output, and state.
+**Independence** means separation from writing or directing the assessed work. An
+agent that did either is excluded from later independent assessment of that work;
+its pre-edit coverage follows the loop's
+[coverage rule](../../review-fix-loop/SKILL.md#coverage-rule). An earlier
+assessment alone does not end independence.
 
-Prefer async dispatch and follow the returned next action. A wait timeout leaves
-work live; reconcile its state before replacement.
+**Follow-up reviews and rechecks** prefer the role's original reviewer when it
+qualifies, its reports and receipts are archived, and its context is free of
+same-round peer content. Otherwise, or when the host requires a new task for
+reviews or rechecks, start a new independent task with the role's criteria and
+selection and supply the prior reports, receipts, and dispositions. Record it as a
+replacement with prior evidence, not as continuation.
 
-Before overlapping a replacement with earlier writers, account for pending
-child runs and reconcile their files. Cancellation or a terminal task receipt
-alone does not establish that every later or nested writer has stopped.
+Either way the assessment is a new assignment with its own snapshot-bound brief,
+output paths, and read proof under
+[Review evidence](../../review/references/review-evidence.md). Earlier context
+guides navigation; reads of the current snapshot supply the proof.
 
-### Reuse an agent
-
-For new work, prefer a retained agent you already know of when its context would
-help; finding one needs no search. It must match the assignment's resolved model
-and effort exactly, reach the correct workspace and current revision, and keep
-that context under a continuation the host supports. Normal assignment rules
-still apply. Choose a new agent when that context is stale, the agent repeats
-failed assumptions, or the work needs an independent attempt.
-[Recover work](#recover-work) and [availability fallback](#availability-fallback)
-take precedence.
-
-A read-only reviewer can take accepted repairs once its whole review pass is
-complete, reports and receipts are archived under
-[Review evidence](../../review/references/review-evidence.md), and the caller or
-Review Sweep has settled the findings. Its brief lists those repairs and
-explicitly supersedes the read-only assignment. Implementation already
-authorized needs no new human approval.
-
-An agent that wrote or directed a change is excluded from later independent
-assessment of that change. Its earlier pre-edit coverage follows
-[carry-forward rules](../../review-fix-loop/SKILL.md#review-settle-repeat). Each
-independent review or recheck is a fresh delegated task.
+**Reviewer to implementer.** A read-only reviewer can take accepted repairs once
+its whole pass is complete, its reports and receipts are archived, and the caller
+or Review Sweep has settled the findings. Its brief lists those repairs and
+explicitly supersedes the read-only assignment. Implementation already authorized
+needs no new human approval.
 
 ## Recover work
 
-Repeat an uncertain dispatch with its existing key in the same provider session
-so it resolves to the same work. A fresh execution after terminal failure,
-including a retry in the same review round, needs a new key. Reconcile retained
-IDs before replacing work after a session change or lost response.
-[T3 command identity](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/OrchestratorMcpService.ts#L1531).
+Retain partial results and the failure cause. A caller's failure policy, such as
+[additional-review skips](../../review-fix-loop/references/review-assignments.md#handle-failures),
+overrides the retry below. Use a new key for any fresh execution after terminal
+failure. Before replacing work, reconcile retained IDs and
+[earlier writers](../SKILL.md#dispatch).
 
-Retain partial results and the failure cause. Unless the caller defines a
-different failure policy, a transient terminal failure may have one fresh-task
-retry per target per workflow. Quota or unavailable models need changed conditions
-or a listed fallback. Authentication failures need resolved authentication.
-Permission or policy denials
-stop the blocked action; another model or transport does not authorize it.
+| Failure | Action |
+| --- | --- |
+| Uncertain dispatch or lost response | Repeat with its existing key in the same provider session so it resolves to the same work |
+| Transient terminal or provider runtime failure | May retry once per target per workflow, including within a review round, before the listed fallback |
+| Quota, or an unavailable model or provider | The [listed fallback](#availability-fallback) with no retry, otherwise wait for changed conditions |
+| Authentication failure | Resolve authentication |
+| Permission or policy denial | Stop the blocked action; another model or transport does not authorize it |
+| Wrong answer, failed product check, or task difficulty | Diagnose or escalate |
 
-Failed required selections without a listed fallback remain blockers after
-permitted recovery. A fallback never authorizes unlisted models or changes
-additional-review skip policy.
+A required selection without a usable fallback remains a blocker after permitted
+recovery.
 
 ### Availability fallback
 
-When an assignment uses its row's configured provider and model, that row lists
-a fallback, and the selection cannot run because of quota, an unavailable
-model/provider, or a provider runtime failure, use that fallback automatically.
-A wrong answer or failed product check is not a runtime failure, and
-authentication or permission failures follow the recovery rules above.
-Other explicit selections require their own authorized fallback. Record the failed
-selection, failure evidence, and fallback. A transient runtime failure may use
-the one retry above before fallback; confirmed quota or unavailability needs no
-retry. Reconcile partial work and earlier writers before starting a replacement.
+A row's fallback applies when the assignment uses that row's configured provider
+and model. Other explicit selections need their own authorized fallback, and an
+explicit user selection without substitution takes precedence. Use the exact
+listed model and effort, and report a blocker if it also cannot run. A fallback
+never authorizes unlisted models, the Simple tier, or a change to additional-review
+skip policy.
 
-Preserve the assignment's scope, requirements, verification bar, and review
-criteria. A review fallback still performs that role's review in a fresh
-independent review task; it does not reuse the implementer's result or another
-assessment as its coverage. An explicit user selection without substitution
-takes precedence. If the fallback also cannot run, report the blocker. A
-fallback is the row's listed selection, never the Simple tier. Keep the exact
-fallback model and effort for that assignment until availability changes or the
-user directs otherwise; task difficulty alone must not cycle the assignment back
-to its unavailable selection. For implementation, if the
-fallback matches a still-running owner of that assignment, keep that owner and
-record the failed escalation rather than starting a duplicate replacement.
-Pass the reassessed selection and evidence to that owner. If the former run has ended,
-dispatch a fresh fallback task with the saved handoff instead.
+Record the failed selection, failure evidence, and fallback. Preserve the
+assignment's scope, requirements, verification bar, and review criteria. A review
+fallback performs that role's review in a new independent task, rather than using
+the implementer's result or another assessment as its coverage.
+
+Keep the fallback for that assignment until availability changes or the user
+directs otherwise; task difficulty alone never cycles it back to the unavailable
+selection. For implementation, if the fallback matches a still-running owner,
+keep that owner, record the failed escalation, and pass it the reassessed selection
+and evidence. If the former run has ended, dispatch a new fallback task with the
+saved handoff.
 
 Dispatch identity and stored thread options can confirm configuration, not
 provider execution fidelity.
