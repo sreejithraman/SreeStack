@@ -1,5 +1,5 @@
-# Merge these settings into ~/.codex/config.toml after review.
-# Keep the rest of the local config, including any other [agents] settings.
+# Sync merges these keys into ~/.codex/config.toml and ~/.codex-t3/config.toml.
+# Every other local key stays local, including other [agents] settings.
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 

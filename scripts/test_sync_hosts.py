@@ -10,13 +10,15 @@ import tempfile
 import unittest
 
 
-SCRIPT = Path(__file__).with_name("sync_hosts.py")
+SCRIPTS = Path(__file__).parent
 HOSTS = {
     "codex": {"skills": ".agents/skills", "instructions": ".codex/AGENTS.md", "exclude": []},
     "claude": {"skills": ".claude/skills", "instructions": ".claude/CLAUDE.md", "exclude": []},
 }
 SKILL_DIRS = (".agents/skills", ".claude/skills")
 INSTRUCTIONS = "# Shared\n\n- Keep it simple.\n"
+CLAUDE_TEMPLATE = {"model": "template-model", "pluginConfigs": {"demo": {"options": {"mode": "on"}}}}
+CODEX_TEMPLATE = '# Public note.\nmodel = "template-model"\n\n[agents]\nmax_threads = 12\n'
 HOOK = "reference-transaction"
 
 
@@ -34,7 +36,7 @@ class Fixture(unittest.TestCase):
         self.bin = self.base / "bin"
         self.bin.mkdir()
         os.symlink(shutil.which("git"), self.bin / "git")
-        os.symlink(sys.executable, self.bin / "python3")
+        self.python_shim(self.bin / "python3")
         self.env = {
             **os.environ,
             "PATH": f"{self.bin}{os.pathsep}/usr/bin{os.pathsep}/bin",
@@ -44,16 +46,26 @@ class Fixture(unittest.TestCase):
             "GIT_AUTHOR_EMAIL": "test@example.com",
             "GIT_COMMITTER_NAME": "Test",
             "GIT_COMMITTER_EMAIL": "test@example.com",
+            "PYTHONDONTWRITEBYTECODE": "1",
         }
         (self.repo / "scripts").mkdir(parents=True)
-        shutil.copyfile(SCRIPT, self.repo / "scripts/sync_hosts.py")
+        for script in ("sync_hosts.py", "host_settings.py"):
+            shutil.copyfile(SCRIPTS / script, self.repo / "scripts" / script)
         self.write("global/AGENTS.md", INSTRUCTIONS)
+        self.write("claude/settings.json", json.dumps(CLAUDE_TEMPLATE))
+        self.write("codex/config.toml", CODEX_TEMPLATE)
         for host, manifest in HOSTS.items():
             self.write(f"{host}/setup.json", json.dumps(manifest))
         self.add_skill("alpha")
         self.add_skill("beta")
         self.git("init", "--quiet", "--initial-branch=main")
         self.commit("initial")
+
+    def python_shim(self, path, *flags):
+        """Wrap the test interpreter; a symlink would lose its virtual environment."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f'#!/bin/sh\nexec "{sys.executable}" {" ".join(flags)} "$@"\n')
+        path.chmod(0o755)
 
     def write(self, name, content, root=None):
         path = (root or self.repo) / name
@@ -327,7 +339,8 @@ class InstructionTests(Fixture):
         self.assertEqual(codex_backup.read_text(), INSTRUCTIONS)
         [claude_backup] = claude.parent.glob("CLAUDE.md.backup-*")
         self.assertEqual(os.readlink(claude_backup), "../.codex/AGENTS.md")
-        self.assertEqual(sorted(os.listdir(codex.parent)), ["AGENTS.md", codex_backup.name])
+        self.assertEqual(sorted(os.listdir(codex.parent)),
+                         ["AGENTS.md", codex_backup.name, "config.toml"])
 
     def test_keeps_aliases_that_already_resolve_to_shared_instructions(self):
         codex = self.home / ".codex/AGENTS.md"

@@ -14,9 +14,16 @@ do task work in T3 worktrees. Then sync the clone into each host:
 ```bash
 git clone https://github.com/sreejithraman/SreeStack.git
 cd SreeStack
-python3 scripts/sync_hosts.py --check   # preview; changes no host files
-python3 scripts/sync_hosts.py           # link skills and shared instructions
+python3 -m venv --clear .venv                           # once
+.venv/bin/python -m pip install -r scripts/requirements-sync.txt   # once
+.venv/bin/python scripts/sync_hosts.py --check   # preview; changes no host files
+.venv/bin/python scripts/sync_hosts.py           # link and merge host setup
 ```
+
+The ignored `.venv` holds the pinned `tomlkit` package that keeps TOML comments
+intact. Re-running setup rebuilds this dedicated environment. Without it, sync
+still links skills and instructions, then reports the
+settings as unmerged and prints this setup. Nothing installs packages for you.
 
 Sync reads each host's manifest. It links every skill folder one by one, and
 links each host's global instructions to [global/AGENTS.md](global/AGENTS.md):
@@ -51,8 +58,8 @@ Sync and hook installation write only from the stable clone with `main` checked
 out. They refuse linked worktrees, feature branches, and detached checkouts.
 `--check` changes no host files; it may create a lock file in the repo's Git
 directory. In a T3 worktree it checks the stable clone's setup, using that clone's
-script and manifests. It exits 0 only when host setup matches the stable clone.
-Both modes
+script, manifests, and `.venv`. It exits 0 only when host setup matches the
+stable clone. Both modes
 exit 1 on conflicts, and `--check` also exits 1 when changes are pending.
 `--home DIR` configures another home directory.
 
@@ -66,8 +73,8 @@ links or the stable clone's files.
 Install the Git hook once, from the stable clone:
 
 ```bash
-python3 scripts/sync_hosts.py --install-hooks
-python3 scripts/sync_hosts.py --check-hooks
+.venv/bin/python scripts/sync_hosts.py --install-hooks
+.venv/bin/python scripts/sync_hosts.py --check-hooks
 ```
 
 This installs `.git/hooks/sreestack-host-sync` and links Git's
@@ -83,20 +90,22 @@ Each sync refreshes an existing SreeStack-owned handler from `main` when it
 changes. `--check-hooks` reports a missing or stale handler, unusable hook
 integration, or home setting; it also works from T3 worktrees. Both check modes
 fail when the stable clone is off `main`. Rerun `--install-hooks` to
-repair those settings. `--check` checks skill and instruction links separately.
+repair those settings. `--check` checks links and settings separately and needs
+`tomlkit`; `--check-hooks` and `--install-hooks` do not.
 
 The hook syncs after each local update of `main`: commit, amend, merge, pull,
 rebase, `reset --hard`, and switching back to `main`. A merge on GitHub changes
 nothing until this clone's `main` is updated. Nothing polls or fetches in the
-background. The handler needs `python3` on Git's `PATH`. Tested with Git 2.54
-and 2.56.
+background. The handler runs the clone's `.venv/bin/python` when it exists and
+`python3` from Git's `PATH` otherwise. It never installs packages or uses the
+network. Tested with Git 2.54 and 2.56.
 
 A failed hook sync prints its conflicts and says the Git operation was not
 rolled back. Git ignores this hook's exit status after a commit, so the Git
 command still exits 0. Watch for `sreestack:` warnings, or run
-`python3 scripts/sync_hosts.py --check` after updating; it exits 0 only when
-host setup is current. To recover, fix the conflict and run
-`python3 scripts/sync_hosts.py`.
+`.venv/bin/python scripts/sync_hosts.py --check` after updating; it exits 0 only
+when host setup is current. To recover, fix the conflict and run
+`.venv/bin/python scripts/sync_hosts.py`.
 
 Install keeps your hooks. When `reference-transaction` already exists or
 `core.hooksPath` is set, it still installs the handler and `sreestack.home`,
@@ -136,11 +145,8 @@ the same `global/AGENTS.md` as Codex. Claude Code v2.1.277 or later reads projec
 `AGENTS.md` by default when no project or ancestor `CLAUDE.md` or `CLAUDE.local.md`
 exists; see [instruction discovery and exceptions](https://code.claude.com/docs/en/memory#agents-md).
 
-Merge the keys from [claude/settings.json](claude/settings.json) into your
-`~/.claude/settings.json`, preserving unrelated settings, just as with
-[codex/config.toml](codex/config.toml). Keep the destination as a real private
-config file rather than a symlink. Sync manages skills and instructions, not
-these host settings templates.
+Sync merges the keys from [claude/settings.json](claude/settings.json) into your
+`~/.claude/settings.json`; see [Host defaults](#host-defaults).
 
 The template's `cc-plugin-agents-md@builtin` configuration applies to Claude Code
 v2.1.285 or later. It keeps reading `AGENTS.md` when a project also has Claude
@@ -537,23 +543,43 @@ private account mappings, provider prerequisites, and development checks.
 login readiness; [runtime provisioning](skills/agent-login/references/runtime-provisioning.md)
 covers private environment files and host-specific access checks.
 
-## Optional host defaults
+## Host defaults
 
 The host settings templates below supply parent-session defaults, separate
-from orchestration's delegated model policy. Merge them manually into real
-private config files rather than symlinking them. Sync manages only skills and
-instructions, not either settings template. Keep the full personal configs local;
-they may contain machine paths, trusted projects, and integration settings.
+from orchestration's delegated model policy. Sync and its Git hook merge them
+into these private config files:
 
-| Template | Destination | How to apply |
+| Template | Destination | Keys |
 |---|---|---|
-| [config.toml](codex/config.toml) | `~/.codex/config.toml` | Manually merge parent settings and the native concurrency ceiling |
-| [settings.json](claude/settings.json) | `~/.claude/settings.json` | Manually merge the template keys, preserving unrelated settings |
+| [config.toml](codex/config.toml) | `~/.codex/config.toml`, `~/.codex-t3/config.toml` | Parent settings and the native concurrency ceiling |
+| [settings.json](claude/settings.json) | `~/.claude/settings.json` | Parent settings and instruction-file selection |
 
 Shared instructions are not a template: sync links them, as described in [Use](#use).
 
-Back up local files, preserve unrelated values, and check that TOML or JSON parses
-after merging. If `~/.codex/AGENTS.override.md` exists, it takes precedence over
+The templates own the keys they set, and a local change to one of those keys is
+replaced on the next sync. Every other key stays local and never reaches this
+repo. Full configs stay regular files, because they may hold machine paths,
+trusted projects, and integration settings. TOML comments are preserved. JSON is
+reformatted only when a managed key changes. When nothing differs, sync leaves
+the file untouched.
+
+Before it replaces a config, sync writes an exact private copy beside it, named
+`<file>.backup-<time>-<random>`, then renames a new file into place. Sync keeps
+these backups; delete them when you no longer need them. New folders and files
+are private (`0700` and `0600`). An existing file keeps its mode.
+
+Sync refuses a config it cannot merge safely, leaves it unchanged, and continues
+with the rest. It refuses malformed files, a table or list where the template
+sets a value, a value where the template needs a table, JSON numbers that would
+change if rewritten, symlinks, hard links, special files, a symlinked config
+folder such as `~/.codex-t3 -> ~/.codex`, and any destination inside a checkout.
+Each refusal names the file and managed key, never a config value.
+
+Sync rereads a config just before replacing it and stops if it changed, but a
+host can still write in the moment before the rename and lose that write. The
+backup holds the version sync read. Quit hosts first when that matters.
+
+If `~/.codex/AGENTS.override.md` exists, it takes precedence over
 the linked `AGENTS.md`; merge its guidance into `global/AGENTS.md` or remove it.
 Native child execution uses explicit policy settings rather than named rank
 presets. Start a new task after changing host settings and check its effective
