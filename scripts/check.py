@@ -42,18 +42,17 @@ def usable(environment: Path) -> bool:
     """Importing pip proves the interpreter exists and still sees these packages."""
     python = environment / "bin/python"
     return python.exists() and subprocess.run(
-        [str(python), "-c", "import pip"], capture_output=True,
+        [str(python), "-I", "-c", "import pip"], capture_output=True,
     ).returncode == 0
 
 
 def build(environment: Path) -> None:
+    print(f"Preparing the check environment at {environment}", file=sys.stderr)
     environment.parent.mkdir(exist_ok=True)
     with open(environment.parent / "build.lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if usable(environment):  # Another run finished while this one waited.
             return
-        print(f"Building the check environment at {environment}", file=sys.stderr)
-        shutil.rmtree(environment, ignore_errors=True)
         with tempfile.TemporaryDirectory(dir=environment.parent, prefix=".build-") as directory:
             draft = Path(directory) / "environment"
             subprocess.run([sys.executable, "-m", "venv", str(draft)], check=True)
@@ -62,6 +61,7 @@ def build(environment: Path) -> None:
                  "--disable-pip-version-check", "-r", str(REQUIREMENTS)],
                 check=True,
             )
+            shutil.rmtree(environment, ignore_errors=True)
             draft.rename(environment)
 
 

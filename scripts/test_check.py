@@ -1,11 +1,13 @@
 """Exercise the check runner against small Git repositories."""
 
+import fcntl
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 
@@ -50,9 +52,11 @@ class CheckRunnerTests(unittest.TestCase):
         return subprocess.run(["git", *args], cwd=cwd or self.repo, text=True,
                               capture_output=True, check=True).stdout
 
-    def run_checks(self, *args, root=None, code=0):
-        result = subprocess.run([sys.executable, str((root or self.repo) / "scripts/check.py"), *args],
-                                text=True, capture_output=True)
+    def runner(self, root=None):
+        return [sys.executable, str((root or self.repo) / "scripts/check.py")]
+
+    def run_checks(self, *args, root=None, cwd=None, code=0):
+        result = subprocess.run([*self.runner(root), *args], cwd=cwd, text=True, capture_output=True)
         self.assertEqual(result.returncode, code, result.stdout + result.stderr)
         return result
 
@@ -98,6 +102,32 @@ class CheckRunnerTests(unittest.TestCase):
         shutil.rmtree(environment / "lib")
 
         self.run_checks("-c", "import pip")
+
+    def test_working_directory_cannot_condemn_a_healthy_environment(self):
+        environment = self.environment()
+        (environment / "marker").touch()
+        elsewhere = self.base / "elsewhere"
+        elsewhere.mkdir()
+        (elsewhere / "pip.py").write_text("raise ImportError\n")
+
+        self.run_checks("-c", "pass", cwd=elsewhere)
+
+        self.assertTrue((environment / "marker").exists())
+
+    def test_run_waiting_for_a_build_keeps_the_finished_environment(self):
+        environment = self.environment()
+        (environment / "marker").touch()
+        finished = self.base / "finished"
+        environment.rename(finished)
+        with open(environment.parent / "build.lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            waiting = subprocess.Popen([*self.runner(), "-c", "pass"], text=True, stderr=subprocess.PIPE)
+            time.sleep(1)  # Let the run find no environment and reach the lock.
+            finished.rename(environment)
+        _, stderr = waiting.communicate(timeout=60)
+
+        self.assertEqual(waiting.returncode, 0, stderr)
+        self.assertTrue((environment / "marker").exists())
 
     def test_runs_every_check_and_fails_when_any_check_fails(self):
         self.assertIn("ran whitespace", self.run_checks().stdout)
