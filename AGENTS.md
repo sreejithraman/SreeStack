@@ -25,6 +25,9 @@ skill folders. Built-in and plugin-managed skills stay with their hosts.
 - Update `SOURCES.md` when an origin, import baseline, or local difference changes.
   Describe the current difference, not how the skill was built. Keep local-only
   skills to a short origin note. Git holds edit, rename, and review history.
+- Run repository checks with `python3 scripts/check.py`, and one script or test
+  with `python3 scripts/check.py scripts/test_sync_hosts.py`. Install no packages
+  for them.
 - Keep skill instructions, setup, and supporting references inside each skill's
   folder. Use [README.md](README.md) for the repository overview, skill discovery,
   and links.

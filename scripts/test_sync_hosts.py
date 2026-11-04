@@ -9,6 +9,10 @@ import sys
 import tempfile
 import unittest
 
+try:
+    import tomlkit  # noqa: F401
+except ImportError as error:
+    raise ImportError(f"{error}. Run: python3 scripts/check.py") from error
 
 SCRIPTS = Path(__file__).parent
 HOSTS = {

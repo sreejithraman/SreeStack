@@ -9,13 +9,13 @@ import sys
 import textwrap
 import unittest
 
-import tomlkit
-
 from test_sync_hosts import CLAUDE_TEMPLATE, Fixture
 
 try:
     from tomllib import loads as parse_toml
 except ImportError:  # Python 3.9 and 3.10 have no standard TOML parser.
+    import tomlkit
+
     def parse_toml(text):
         return tomlkit.parse(text).unwrap()
 
