@@ -20,12 +20,16 @@ for the invocation choice.
 Keep each skill in one folder directly under `skills/`. Put supporting files
 beside that skill. Keep repo-wide records outside `skills/`.
 
-Install the checker dependency with
-`python3 -m pip install -r scripts/requirements-checks.txt`.
+Run the tests and repository checks with `python3 scripts/check.py`. It needs no
+setup in a clone or worktree. The first run with a set of pinned requirements
+builds a shared environment in the clone's Git directory, which takes network
+access and write access to that directory. Later runs in every worktree reuse it
+and need neither. To run one script or test with those dependencies, pass it as
+arguments: `python3 scripts/check.py scripts/test_sync_hosts.py`.
 
 Before submitting:
 
-- Run `python3 scripts/check_skills.py` and `git diff --check`.
+- Run `python3 scripts/check.py` and `git diff --check`.
   CI also scans Git history for secrets.
 - For skill changes, try a sample request in the intended host and report any
   tool or account requirements. Mark checks you could not run.

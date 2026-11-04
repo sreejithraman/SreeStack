@@ -9,6 +9,10 @@ import sys
 import tempfile
 import unittest
 
+import host_settings
+
+if host_settings.tomlkit is None:
+    raise ImportError("No module named 'tomlkit'. Run: python3 scripts/check.py")
 
 SCRIPTS = Path(__file__).parent
 HOSTS = {

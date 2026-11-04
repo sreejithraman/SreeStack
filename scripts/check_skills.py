@@ -18,8 +18,11 @@ import sys
 import unicodedata
 from urllib.parse import unquote, urlsplit
 
-from markdown_it import MarkdownIt
-import yaml
+try:
+    from markdown_it import MarkdownIt
+    import yaml
+except ImportError as error:
+    sys.exit(f"{error}. Run: python3 scripts/check.py")
 
 
 class RenderedHTML(HTMLParser):
