@@ -133,7 +133,7 @@ class CheckRunnerTests(unittest.TestCase):
         with open(environment.parent / "build.lock", "w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             waiting = subprocess.Popen([*self.runner(), "-c", "pass"], text=True, stderr=subprocess.PIPE)
-            waiting.stderr.readline()  # The run found no environment and reached the lock.
+            waiting.stderr.readline()  # The run found no environment and is heading for the lock.
             finished.rename(environment)
         _, stderr = waiting.communicate(timeout=60)
 
