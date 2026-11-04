@@ -39,7 +39,7 @@ def environment_path() -> Path:
 
 
 def usable(environment: Path) -> bool:
-    """Importing pip proves the interpreter exists and still sees these packages."""
+    """Importing pip proves the interpreter runs and still sees its site-packages."""
     python = environment / "bin/python"
     return python.exists() and subprocess.run(
         [str(python), "-I", "-c", "import pip"], capture_output=True,
@@ -55,9 +55,9 @@ def build(environment: Path) -> None:
             return
         with tempfile.TemporaryDirectory(dir=environment.parent, prefix=".build-") as directory:
             draft = Path(directory) / "environment"
-            subprocess.run([sys.executable, "-m", "venv", str(draft)], check=True)
+            subprocess.run([sys.executable, "-I", "-m", "venv", str(draft)], check=True)
             subprocess.run(
-                [str(draft / "bin/python"), "-m", "pip", "install", "--quiet",
+                [str(draft / "bin/python"), "-I", "-m", "pip", "install", "--quiet",
                  "--disable-pip-version-check", "-r", str(REQUIREMENTS)],
                 check=True,
             )

@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 
 
@@ -60,8 +59,8 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertEqual(result.returncode, code, result.stdout + result.stderr)
         return result
 
-    def environment(self, root=None):
-        return Path(self.run_checks("-c", PRINT_PYTHON, root=root).stdout.strip())
+    def environment(self, root=None, cwd=None):
+        return Path(self.run_checks("-c", PRINT_PYTHON, root=root, cwd=cwd).stdout.strip())
 
     def test_worktrees_share_one_environment_outside_their_files(self):
         environment = self.environment()
@@ -103,13 +102,25 @@ class CheckRunnerTests(unittest.TestCase):
 
         self.run_checks("-c", "import pip")
 
-    def test_working_directory_cannot_condemn_a_healthy_environment(self):
+    def test_failed_rebuild_keeps_the_existing_environment(self):
+        self.write("scripts/requirements-checks.txt", "-r ../outside-the-environment-name.txt\n")
+        self.write("outside-the-environment-name.txt", "")
         environment = self.environment()
-        (environment / "marker").touch()
+        shutil.rmtree(environment / "lib")
+        (self.repo / "outside-the-environment-name.txt").unlink()
+
+        self.run_checks(code=1)
+
+        self.assertTrue((environment / "bin/python").exists())
+
+    def test_working_directory_modules_cannot_affect_the_environment(self):
         elsewhere = self.base / "elsewhere"
         elsewhere.mkdir()
-        (elsewhere / "pip.py").write_text("raise ImportError\n")
+        for module in ("pip.py", "venv.py"):
+            (elsewhere / module).write_text("raise SystemExit(1)\n")
 
+        environment = self.environment(cwd=elsewhere)
+        (environment / "marker").touch()
         self.run_checks("-c", "pass", cwd=elsewhere)
 
         self.assertTrue((environment / "marker").exists())
@@ -122,7 +133,7 @@ class CheckRunnerTests(unittest.TestCase):
         with open(environment.parent / "build.lock", "w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             waiting = subprocess.Popen([*self.runner(), "-c", "pass"], text=True, stderr=subprocess.PIPE)
-            time.sleep(1)  # Let the run find no environment and reach the lock.
+            waiting.stderr.readline()  # The run found no environment and reached the lock.
             finished.rename(environment)
         _, stderr = waiting.communicate(timeout=60)
 
