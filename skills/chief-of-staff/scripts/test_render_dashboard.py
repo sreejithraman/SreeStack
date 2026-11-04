@@ -1,7 +1,10 @@
+from colorsys import rgb_to_hsv
 import copy
 from html.parser import HTMLParser
+from itertools import combinations
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -50,9 +53,29 @@ def text_of(html):
     return Text(html).value
 
 
+def status_colors(html):
+    """Fallback light and dark colors of each status token, as RGB channels from 0 to 1."""
+    colors = {}
+    for name, light, dark in re.findall(r"--([a-z-]+): light-dark\(#(\w{6}), #(\w{6})\)", html):
+        colors[name] = [tuple(int(value[i:i + 2], 16) / 255 for i in (0, 2, 4)) for value in (light, dark)]
+    return colors
+
+
+def contrast(first, second):
+    def luminance(color):
+        red, green, blue = (c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in color)
+        return .2126 * red + .7152 * green + .0722 * blue
+    lighter, darker = sorted((luminance(first), luminance(second)), reverse=True)
+    return (lighter + .05) / (darker + .05)
+
+
 class DashboardTests(unittest.TestCase):
     def setUp(self):
         self.state = json.loads(EXAMPLE.read_text())
+
+    def badges(self, html, identity):
+        card = html.split(f'aria-labelledby="work-{identity.encode().hex()}"')[1].split('</article>')[0]
+        return re.findall(r'<span class="state ([a-z-]+)">', card)
 
     def test_example_has_needs_first_and_work_hidden(self):
         html = render(self.state)
@@ -62,7 +85,7 @@ class DashboardTests(unittest.TestCase):
         self.assertNotIn("hidden", panels[0])
         self.assertIn("hidden", panels[1])
         self.assertIn("Illustrative example", html)
-        self.assertIn("4 work items · 0 merged", html)
+        self.assertIn("5 work items · 1 merged", html)
         self.assertIn("Worth a second look", html)
         self.assertIn(self.state['work'][0]['description'], html)
 
@@ -117,9 +140,9 @@ class DashboardTests(unittest.TestCase):
         row["state"] = "closed"
         html = render(self.state)
         self.assertIn("Closed without merge", html)
-        self.assertIn("4 work items · 0 merged", html)
+        self.assertIn("5 work items · 1 merged", html)
         row["state"] = "merged"
-        self.assertIn("4 work items · 1 merged", render(self.state))
+        self.assertIn("5 work items · 2 merged", render(self.state))
 
     def test_answered_needs_stop_blocking_work(self):
         need = self.state["needs"][0]
@@ -127,7 +150,7 @@ class DashboardTests(unittest.TestCase):
         need["answer"] = "Keep the entry"
         html = render(self.state)
         page = text_of(html)
-        self.assertIn("Answered decisions (1)", html)
+        self.assertIn("Answered decisions 2", page)
         self.assertNotIn("Decision Should expired", page)
         self.assertIn("Your answer Keep the entry", page)
         self.assertIn("Answered W2-D1 Affected W2", page)
@@ -139,7 +162,7 @@ class DashboardTests(unittest.TestCase):
         support["state"] = "done"
         html = render(self.state)
         self.assertIn('state done', html)
-        self.assertIn("4 work items · 0 merged", html)
+        self.assertIn("5 work items · 1 merged", html)
         self.assertNotIn("W3 (Done)", html)
         self.state["work"][0]["state"] = "done"
         with self.assertRaisesRegex(ValueError, "PRs must use"):
@@ -188,7 +211,7 @@ class DashboardTests(unittest.TestCase):
                     render(state)
         self.state["work"][1].update(state="merged", blockedBy=[])
         self.state["needs"] = [{**decision, "blocks": ["W2"], "status": "answered", "answer": "Keep it"}]
-        self.assertIn("4 work items · 1 merged", render(self.state))
+        self.assertIn("5 work items · 2 merged", render(self.state))
 
     def test_invalid_shapes_and_missing_answers_are_errors(self):
         cases = [[], {}, {**self.state, "needs": {}}]
@@ -227,25 +250,6 @@ class DashboardTests(unittest.TestCase):
             self.assertNotEqual(bad.returncode, 0)
             self.assertEqual(json.loads(source.read_text()), self.state)
 
-    def test_cli_inline_view_retains_work_without_the_page_header(self):
-        with tempfile.TemporaryDirectory() as directory:
-            source, output = Path(directory) / "state.json", Path(directory) / "inline.html"
-            source.write_text(json.dumps(self.state))
-            result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--state", str(source), "--output", str(output), "--inline"],
-                capture_output=True, text=True,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr)
-            html = output.read_text()
-            elements = Elements(html).elements
-            self.assertIn(("html", {"lang": "en", "data-presentation": "inline"}), elements)
-            self.assertFalse(any(tag == "header" for tag, _ in elements))
-            self.assertEqual(sum(attrs.get("role") == "tab" for _, attrs in elements), 2)
-            self.assertIn(self.state['goal'], html)
-            self.assertIn(self.state['finishLine'], html)
-            for row in self.state["work"]:
-                self.assertIn(row["title"], html)
-
     def test_choice_prompts_preserve_context_and_escape_untrusted_values(self):
         self.state['needs'][0]['options'][0]['label'] = 'Keep "entry" <safe>'
         html = render(self.state)
@@ -277,7 +281,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(external[0]['referrerpolicy'], 'no-referrer')
         self.assertIn('PR #42</a>', html)
         self.assertNotIn('<details class="card work"', html)
-        self.assertEqual(sum(tag == 'article' and attrs.get('class') == 'card work' for tag, attrs in elements), 4)
+        self.assertEqual(sum(tag == 'article' and attrs.get('class') == 'card work' for tag, attrs in elements), 5)
         pr_links = [attrs for tag, attrs in elements if tag == 'a' and attrs.get('href') == self.state['work'][0]['url']]
         self.assertEqual(len(pr_links), 1)
         self.assertTrue(all(attrs['rel'] == 'noopener noreferrer' for attrs in pr_links))
@@ -308,12 +312,113 @@ class DashboardTests(unittest.TestCase):
             self.assertNotIn(legacy, html)
 
     def test_work_reads_in_stage_order_with_a_counted_overview(self):
-        self.state['work'][2]['state'] = 'mergeable'
-        self.state['work'][2]['kind'] = 'pr'
+        self.state['needs'] = []
+        self.state['work'][1]['blockedBy'] = []
+        self.state['work'][2].update(state='mergeable', kind='pr')
         html = render(self.state)
-        headings = [text_of(part.split('</h3>')[0].split('>', 1)[1]) for part in html.split('class="stage-heading"')[1:]]
-        self.assertEqual(headings, ['Planned 1', 'Building 1', 'In review 1', 'Ready to merge 1'])
-        self.assertIn('aria-label="1 planned, 1 building, 1 in review, 1 ready to merge"', render(self.state))
+        headings = [text_of(part.split('</h3>')[0].split('>', 1)[1]) for part in html.split('<h3 id="stage-')[1:]]
+        self.assertEqual(headings, ['Planned 1', 'Building 1', 'In review 2', 'Merged 1'])
+        self.assertIn('aria-label="1 planned, 1 building, 2 in review, 1 merged"', html)
+        segments = [attrs for _, attrs in Elements(html).elements if 'segment' in attrs.get('class', '')]
+        self.assertEqual([attrs['class'].split()[1] for attrs in segments], ['planned', 'building', 'in-review', 'merged'])
+        self.assertEqual([int(attrs['style'].split(':')[1]) for attrs in segments], [1, 1, 2, 1])
+
+    def test_every_status_keeps_the_lifecycle_uninterrupted(self):
+        self.state['needs'] = []
+        template = self.state['work'][2]
+        self.state['work'] = [{**template, 'id': f'W-{stage}', 'state': stage, 'kind': 'support' if stage == 'done' else 'pr'}
+                              for stage in ('cancelled', 'closed', 'unknown', 'done', 'merged', 'mergeable', 'in-review', 'building', 'planned')]
+        html = render(self.state)
+        self.assertEqual(re.findall(r'<h3 id="stage-([a-z-]+)"', html),
+                         ['planned', 'building', 'in-review', 'merged', 'done', 'unknown', 'closed', 'cancelled'])
+        self.assertIn('In review 2', text_of(html))
+
+    def test_mergeable_only_work_reads_as_in_review_with_a_readiness_badge(self):
+        self.state['needs'] = []
+        self.state['work'] = [self.state['work'][0]]
+        self.state['work'][0]['state'] = 'mergeable'
+        before = copy.deepcopy(self.state)
+        html = render(self.state)
+        self.assertEqual(self.state, before)
+        self.assertEqual(re.findall(r'<h3 id="stage-([a-z-]+)"', html), ['in-review'])
+        self.assertIn('aria-label="1 in review"', html)
+        self.assertIn('1 work item · 0 merged', html)
+        self.assertEqual(self.badges(html, 'W1'), ['in-review', 'mergeable'])
+        card = text_of(html.split('<article class="card work"')[1].split('</article>')[0])
+        self.assertIn('In review Ready to merge', card)
+        self.state['work'][0]['state'] = 'in-review'
+        self.assertEqual(self.badges(render(self.state), 'W1'), ['in-review'])
+
+    def test_readiness_and_blocked_badges_coexist_with_blocker_summaries(self):
+        row = self.state['work'][1]
+        row.update(state='mergeable', url='https://example.com/app/pull/43')
+        html = render(self.state)
+        self.assertEqual(self.badges(html, 'W2'), ['in-review', 'mergeable', 'blocked'])
+        card = text_of(html.split('aria-labelledby="work-' + 'W2'.encode().hex() + '"')[1].split('</article>')[0])
+        self.assertIn('W2-D1 Decision', card)
+        self.assertIn('W1 In review Retry interrupted export jobs', card)
+        heading = html.split('<h3 id="stage-in-review"')[1].split('</h3>')[0]
+        self.assertEqual(text_of(heading.split('>', 1)[1]), 'In review 2 , 1 blocked')
+
+    def test_dependency_on_a_mergeable_row_still_blocks_and_names_its_state(self):
+        self.state['needs'] = []
+        self.state['work'][0]['state'] = 'mergeable'
+        html = render(self.state)
+        card = text_of(html.split('aria-labelledby="work-' + 'W2'.encode().hex() + '"')[1].split('</article>')[0])
+        self.assertIn('W1 Ready to merge Retry interrupted export jobs', card)
+        self.assertEqual(self.badges(html, 'W2'), ['building', 'blocked'])
+
+    def test_sections_toggle_natively_and_start_open(self):
+        html = render(self.state)
+        sections = html.split('<section class="collapsible"')[1:]
+        self.assertEqual(len(sections), 6)
+        for section in sections:
+            label = re.search(r'aria-labelledby="([^"]+)"', section)[1]
+            summary = section.split('</summary>')[0]
+            self.assertIn('<details open><summary class="section-toggle', summary)
+            self.assertIn(f'id="{label}"', summary)
+            self.assertRegex(text_of(summary.split('>', 1)[1]), r'^\D+ \d+( , \d+ blocked)?$')
+        self.assertEqual(html.count('<details open>'), 6)
+        self.assertNotIn('<details open class="work-context"', html)
+
+    def test_collapsed_stage_summary_still_reports_blocked_work(self):
+        html = render(self.state)
+        building = html.split('<section class="collapsible" aria-labelledby="stage-building"')[1].split('</summary>')[0]
+        self.assertEqual(text_of(building.split('>', 1)[1]), 'Building 2 , 1 blocked')
+        planned = html.split('<section class="collapsible" aria-labelledby="stage-planned"')[1].split('</summary>')[0]
+        self.assertNotIn('blocked', planned)
+
+    def test_needs_tab_history_uses_decision_cards(self):
+        html = render(self.state)
+        for heading, count in (('revisits-heading', 2), ('answered-heading', 1)):
+            section = html.split(f'aria-labelledby="{heading}"')[1].split('</section>')[0]
+            self.assertEqual(section.count('<article class="card need">'), count)
+        tradeoff = text_of(html.split('aria-labelledby="revisits-heading"')[1].split('</article>')[0])
+        for value in ('Tradeoff R1', 'Source: W1 scope decision', self.state['revisits'][0]['tradeoff'], f"Revisit {self.state['revisits'][0]['revisit']}"):
+            self.assertIn(value, tradeoff)
+        self.assertIn('class="need-id settled"', html)
+        self.assertEqual(html.count('class="need-id"'), 1)
+
+    def test_work_panel_stays_reachable_without_scripts(self):
+        html = render(self.state)
+        fallback = html.split('<noscript>')[1].split('</noscript>')[0]
+        self.assertIn('#work-panel { display: block !important;', fallback)
+        self.assertIn('.navigation { display: none;', fallback)
+
+    def test_status_colors_are_distinct_and_readable(self):
+        colors = status_colors(render(self.state))
+        lifecycle = ['planned', 'building', 'in-review', 'mergeable', 'merged']
+        surfaces = ((1, 1, 1), (.11, .11, .118))
+        for theme, surface in enumerate(surfaces):
+            for name in [*lifecycle, 'closed', 'unknown']:
+                with self.subTest(name=name, theme=theme):
+                    self.assertGreaterEqual(contrast(colors[name][theme], surface), 4.5)
+            hues = {name: rgb_to_hsv(*colors[name][theme]) for name in lifecycle}
+            self.assertLess(hues.pop('planned')[1], .1)
+            for (first, a), (second, b) in combinations(hues.items(), 2):
+                separation = abs(a[0] - b[0]) * 360
+                with self.subTest(first=first, second=second, theme=theme):
+                    self.assertGreater(min(separation, 360 - separation), 25)
 
     def test_header_states_finish_line_and_snapshot_time(self):
         page = text_of(render(self.state))

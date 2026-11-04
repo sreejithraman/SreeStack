@@ -27,6 +27,18 @@
         "W2"
       ],
       "status": "open"
+    },
+    {
+      "id": "W0-D1",
+      "ask": "Should a retried export keep its original job ID?",
+      "context": [
+        "Keeping the ID lets users follow one export through retries."
+      ],
+      "blocks": [
+        "W0"
+      ],
+      "status": "answered",
+      "answer": "Keep the original job ID."
     }
   ],
   "work": [
@@ -92,6 +104,30 @@
       "required": false,
       "origin": "Discovered during W1 review; separate from retry correctness.",
       "updatedAt": "2026-11-02T16:45:00Z"
+    },
+    {
+      "id": "W0",
+      "title": "Add idempotency keys to export jobs",
+      "repo": "example/worker",
+      "kind": "pr",
+      "description": "Give each export a stable key so a retry cannot start a second job.",
+      "state": "merged",
+      "url": "https://example.com/worker/pull/39",
+      "owner": "Worker PR owner",
+      "updatedAt": "2026-11-02T15:30:00Z",
+      "tickets": [
+        {
+          "label": "EXP-100",
+          "url": "https://example.com/tracker/EXP-100"
+        }
+      ],
+      "origin": "Split from W1 so retries could land on a stable job identity.",
+      "evidence": [
+        {
+          "label": "Duplicate-job fixture run",
+          "url": "https://example.com/worker/actions/runs/5"
+        }
+      ]
     }
   ],
   "revisits": [
@@ -101,6 +137,13 @@
       "tradeoff": "A fixed delay keeps the first repair small but may delay recovery during bursts.",
       "revisit": "After the retry PR lands, inspect production retry timings.",
       "source": "W1 scope decision"
+    },
+    {
+      "id": "R2",
+      "title": "Job IDs outlive their first attempt",
+      "tradeoff": "Reusing the original job ID keeps one export easy to follow but merges each attempt's logs.",
+      "revisit": "If support needs per-attempt logs, add an attempt number.",
+      "source": "W0-D1"
     }
   ]
 }
