@@ -56,7 +56,8 @@ existing grant; only the human releases a hold.
 
 Finish assignment when every required slice has an owner, usable inputs,
 compatible ownership, and a completion check. Then follow agent routing to
-resolve the model and start ready work within the concurrency ceiling.
+resolve the model, consider [reuse](references/agent-routing.md#reuse-an-agent),
+and start ready work within the concurrency ceiling.
 
 ## Return
 

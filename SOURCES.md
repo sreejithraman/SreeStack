@@ -1262,8 +1262,13 @@ escalation preserves an active fallback owner and its context.
 
 Names no callers. Briefs carry the original request and accepted
 corrections; work keeps a stable identity across attempts; explicit human holds
-persist until released. Children return decision requests with stable IDs that
-stay open until answered or withdrawn. A result is accepted only after
+persist until released. New work prefers a retained agent when its context helps
+and it matches the resolved model and effort, workspace, and a supported host
+continuation; failure recovery and fallback keep precedence. An agent that wrote
+or directed a change is excluded from later independent assessment of it, and
+independent reviews and rechecks stay fresh delegated tasks. Children return
+decision requests with stable IDs that stay open until answered or withdrawn. A
+result is accepted only after
 inspecting its artifact at a named revision; every required slice is accounted
 for. Acceptance, actual delivery state, and handoff delivery stay separate, and
 a failed handoff is resent only to its original recipient. Review Fix Loop owns
