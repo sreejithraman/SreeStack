@@ -81,20 +81,23 @@ class CheckRunnerTests(unittest.TestCase):
 
         result = self.run_checks(code=1)
 
-        self.assertIn("needs network access", result.stderr)
+        self.assertIn("network access", result.stderr)
         self.assertNotIn("ran skills", result.stdout)
-        self.assertEqual(list((self.repo / ".git/sreestack-check-env").iterdir()), [])
+        built = (self.repo / ".git/sreestack-check-env").iterdir()
+        self.assertEqual([path.name for path in built], ["build.lock"])
         self.write("scripts/requirements-checks.txt", requirements)
         self.run_checks()
 
-    def test_environment_with_a_removed_interpreter_is_rebuilt(self):
+    def test_environment_that_lost_its_interpreter_or_packages_is_rebuilt(self):
         environment = self.environment()
         python = environment / "bin/python"
         python.unlink()
         python.symlink_to(self.base / "removed-python")
 
         self.assertEqual(self.environment(), environment)
-        self.assertTrue(python.exists())
+        shutil.rmtree(environment / "lib")
+
+        self.assertEqual(self.environment(), environment)
 
     def test_runs_every_check_and_fails_when_any_check_fails(self):
         self.assertIn("ran whitespace", self.run_checks().stdout)
@@ -114,7 +117,7 @@ class BarePythonTests(unittest.TestCase):
         for command in (["scripts/check_skills.py"],
                         ["-m", "unittest", "discover", "-s", "scripts", "-p", "test_sync_hosts.py"]):
             with self.subTest(command=command):
-                result = subprocess.run([sys.executable, "-S", *command], cwd=SCRIPTS.parent,
+                result = subprocess.run([sys.executable, "-E", "-S", *command], cwd=SCRIPTS.parent,
                                         text=True, capture_output=True)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("python3 scripts/check.py", result.stderr)
