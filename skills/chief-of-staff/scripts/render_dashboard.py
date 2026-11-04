@@ -177,13 +177,13 @@ def validate(state):
     return state
 
 
-STAGE_ORDER = ("planned", "building", "in-review", "mergeable", "unknown", "merged", "done", "closed", "cancelled")
+STAGE_ORDER = ("planned", "building", "in-review", "merged", "done", "unknown", "closed", "cancelled")
 ICONS = {
     "planned": "circle-dashed", "building": "hammer", "in-review": "scan-eye",
     "mergeable": "circle-check", "merged": "git-merge", "done": "check-check",
     "closed": "circle-x", "cancelled": "ban", "unknown": "circle-question-mark",
     "blocked": "triangle-alert", "copy": "copy", "copied": "check", "decision": "message-circle-question-mark",
-    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "snapshot": "clock",
+    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "snapshot": "clock", "tradeoff": "scale",
 }
 
 
@@ -218,10 +218,24 @@ def revision(need):
     return hashlib.sha256(json.dumps(need, sort_keys=True).encode()).hexdigest()[:10]
 
 
+def display_stage(row):
+    """The stage a row reads under; a mergeable PR stays in review and adds a readiness badge."""
+    return "in-review" if row["state"] == "mergeable" else row["state"]
+
+
 def state_label(row):
     if row["state"] == "closed":
         return "Closed without merge"
-    return STATES[row["state"]]
+    return STATES[display_stage(row)]
+
+
+def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", alert=""):
+    """A section whose heading stays visible, and whose count stays readable, when collapsed."""
+    return (
+        f'<section class="collapsible" aria-labelledby="{heading_id}"><details open>'
+        f'<summary class="section-toggle {state}"><h{level} id="{heading_id}" class="section-title">{mark}{e(title)} <span class="count">{count}</span>{alert}</h{level}></summary>'
+        f"{body}</details></section>"
+    )
 
 
 def choice(row, option, index, state):
@@ -250,7 +264,7 @@ def choice(row, option, index, state):
 
 def need_card(row, state):
     answered = row["status"] == "answered"
-    content = f'<article class="card need"><p class="need-meta"><span class="need-id">{icon("decision")}{"Answered" if answered else "Decision"} {e(row["id"])}</span>'
+    content = f'<article class="card need"><p class="need-meta"><span class="need-id{" settled" if answered else ""}">{icon("decision")}{"Answered" if answered else "Decision"} {e(row["id"])}</span>'
     if row.get("blocks"):
         content += f'<span>{"Affected" if answered else "Blocks"} {e(", ".join(row["blocks"]))}</span>'
     content += f'</p><h3>{e(row["ask"])}</h3>'
@@ -263,6 +277,13 @@ def need_card(row, state):
     elif row.get("recommendation"):
         content += f'<div class="suggested-answer"><p class="answer-label">Suggested answer</p><p>{e(row["recommendation"])}</p></div>'
     return content + link_list(row.get("links", [])) + "</article>"
+
+
+def revisit_card(row):
+    content = f'<article class="card need"><p class="need-meta"><span class="need-id settled">{icon("tradeoff")}Tradeoff {e(row["id"])}</span>'
+    if row.get("source"):
+        content += f'<span>Source: {e(row["source"])}</span>'
+    return content + f'</p><h3>{e(row["title"])}</h3><p class="context">{e(row["tradeoff"])}</p><div class="answer"><p class="answer-label">Revisit</p><p>{e(row["revisit"])}</p></div></article>'
 
 
 def pending_parent(row, by_id):
@@ -291,7 +312,10 @@ def work_card(row, needs, by_id):
     reasons = blockers(row, needs, by_id)
     heading_id = "work-" + row["id"].encode().hex()
     content = f'<article class="card work" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">'
-    content += f'<span class="state {e(row["state"])}">{icon(row["state"])}{e(state_label(row))}</span>'
+    primary = display_stage(row)
+    content += f'<span class="state {e(primary)}">{icon(primary)}{e(state_label(row))}</span>'
+    if row["state"] == "mergeable":
+        content += f'<span class="state mergeable">{icon("mergeable")}{e(STATES["mergeable"])}</span>'
     if reasons:
         content += f'<span class="state blocked">{icon("blocked")}Blocked</span>'
     content += "</p></div>"
@@ -316,11 +340,11 @@ def work_card(row, needs, by_id):
             content += f'<li>{prefix}<span class="blocker-kind">{e(kind)}</span> {e(text_value)}</li>'
         content += "</ul></div>"
     if row.get("origin") or row.get("evidence"):
-        content += '<details class="work-context"><summary>Evidence and history</summary>'
+        content += '<details class="work-context"><summary class="section-toggle">Evidence and history</summary><div class="section-body">'
         if row.get("origin"):
             content += f'<p><strong>Origin</strong> {e(row["origin"])}</p>'
         content += link_list(row.get("evidence", []))
-        content += "</details>"
+        content += "</div></details>"
     content += '<div class="work-footer"><div class="assignee">'
     if row.get("owner"):
         owner = link(row["owner"], row["sessionUrl"]) if row.get("sessionUrl") else e(row["owner"])
@@ -336,7 +360,7 @@ def work_card(row, needs, by_id):
 def overview(work):
     total = len(work)
     merged = sum(row["state"] == "merged" for row in work)
-    counts = [(key, sum(row["state"] == key for row in work)) for key in STAGE_ORDER]
+    counts = [(key, sum(display_stage(row) == key for row in work)) for key in STAGE_ORDER]
     counts = [(key, count) for key, count in counts if count]
     summary = ", ".join(f"{count} {STATES[key].lower()}" for key, count in counts)
     bar = "".join(f'<span class="segment {e(key)}" style="flex-grow:{count}"></span>' for key, count in counts)
@@ -347,7 +371,7 @@ def overview(work):
     )
 
 
-def render(state, *, inline=False):
+def render(state):
     validate(state)
     open_needs = [row for row in state["needs"] if row["status"] == "open"]
     answered = [row for row in state["needs"] if row["status"] == "answered"]
@@ -355,21 +379,20 @@ def render(state, *, inline=False):
 
     needs_html = "".join(need_card(row, state) for row in open_needs) or '<p class="empty">Nothing needs you in this snapshot.</p>'
     if state.get("revisits"):
-        needs_html += '<section class="revisits" aria-labelledby="revisits-heading"><h2 id="revisits-heading" class="section-label">Worth a second look</h2><div class="card group">'
-        for row in state["revisits"]:
-            needs_html += f'<article class="revisit"><h3>{e(row["title"])}</h3><p>{e(row["tradeoff"])}</p><p class="revisit-trigger"><strong>Revisit</strong> {e(row["revisit"])}</p>'
-            if row.get("source"):
-                needs_html += f'<p class="source">Source: {e(row["source"])}</p>'
-            needs_html += "</article>"
-        needs_html += "</div></section>"
+        cards = "".join(revisit_card(row) for row in state["revisits"])
+        needs_html += collapsible("revisits-heading", "Worth a second look", len(state["revisits"]), f'<div class="section-body">{cards}</div>')
     if answered:
-        needs_html += f'<details class="answered"><summary>Answered decisions ({len(answered)})</summary>' + "".join(need_card(row, state) for row in answered) + "</details>"
+        cards = "".join(need_card(row, state) for row in answered)
+        needs_html += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{cards}</div>')
 
     stages = ""
     for key in STAGE_ORDER:
-        rows = [row for row in state["work"] if row["state"] == key]
+        rows = [row for row in state["work"] if display_stage(row) == key]
         if rows:
-            stages += f'<section class="stage" aria-labelledby="stage-{key}"><h3 id="stage-{key}" class="stage-heading">{icon(key)}{e(STATES[key])} <span class="count">{len(rows)}</span></h3><div class="stage-cards">' + "".join(work_card(row, state["needs"], by_id) for row in rows) + "</div></section>"
+            blocked = sum(bool(blockers(row, state["needs"], by_id)) for row in rows)
+            alert = f'<span class="state blocked"><span class="sr-only">, </span>{icon("blocked")}{blocked} blocked</span>' if blocked else ""
+            cards = "".join(work_card(row, state["needs"], by_id) for row in rows)
+            stages += collapsible(f"stage-{key}", STATES[key], len(rows), f'<div class="section-body stage-cards">{cards}</div>', level=3, state=key, mark=icon(key), alert=alert)
     work_html = (overview(state["work"]) + stages) if stages else '<p class="empty">No work recorded in this snapshot.</p>'
 
     facts = ""
@@ -377,11 +400,7 @@ def render(state, *, inline=False):
         facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(state["finishLine"])}</span></p>'
     facts += f'<p class="fact">{icon("snapshot")}<span><span class="fact-label">Snapshot</span> {when(state["updatedAt"], age=True)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
-    intro = f'<p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div>'
-    if inline:
-        content = f'<div class="inline-intro">{demo}{intro}</div>'
-    else:
-        content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1>{intro}</header>'
+    content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="tab-count{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
@@ -392,7 +411,7 @@ def render(state, *, inline=False):
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
     template = (Path(__file__).resolve().parents[1] / "assets" / "command-center.html").read_text()
-    return template.replace("<!--PRESENTATION-->", "inline" if inline else "page").replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
+    return template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
 
 
 def main():
@@ -401,7 +420,6 @@ def main():
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--output", type=Path)
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
-    parser.add_argument("--inline", action="store_true", help="Use a transparent layout without the standalone page header")
     args = parser.parse_args()
     if args.revision is not None:
         try:
@@ -415,7 +433,7 @@ def main():
     if args.state.resolve() == args.output.resolve():
         parser.error("--output must differ from --state")
     try:
-        result = render(json.loads(args.state.read_text()), inline=args.inline)
+        result = render(json.loads(args.state.read_text()))
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(result)
     except (OSError, ValueError) as error:

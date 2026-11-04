@@ -48,7 +48,8 @@ old observation time; use `unknown` with `unknownReason` when its state cannot b
 Row states:
 
 - `in-review`: an open PR while review or CI repairs continue.
-- `mergeable`: current readiness evidence from the delivery workflow.
+- `mergeable`: current readiness evidence from the delivery workflow. Shown
+  under In review with a Ready to merge badge.
 - `merged`: confirmed landing. `closed`: closed without merge.
 - `done`: completed non-PR work. A PR unit never uses `done`.
 
@@ -141,7 +142,5 @@ Need. Print a Need's current revision with:
 python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>
 ```
 
-For an inline T3 view, render a separate output with `--inline`, pass the
-generated HTML to `html_preview`, check the preview and console, then show it
-with `html_render` at the reported height. Outside an inline-HTML host, link
-the generated file and state its snapshot time.
+Deliver the page through [dashboard hosting](hosting.md). Do not render it
+inline in T3 or another chat surface.

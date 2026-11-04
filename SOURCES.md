@@ -405,12 +405,13 @@ wiki, Linear, Slack, cloud runtime, merge grant, or recurring schedule.
 
 The original command center renders a checked JSON snapshot of the program
 record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
-Needs you before Work, per-row observation times, copyable decision prompts
+Needs you before Work, collapsible sections, per-row observation times, copyable decision prompts
 that name one recorded option, and accepted tradeoffs. It
 replaces the supplied archive's Claude artifact database and integrations; no
 archive code or prose is copied. Validation rejects non-PR merge states and
-terminal rows with active blockers. `references/hosting.md` serves the page
-through Showroom's hosting lifecycle, including Tailscale Serve.
+terminal rows with active blockers. Delivery is hosted only;
+`references/hosting.md` serves the page through Showroom's hosting lifecycle,
+including Tailscale Serve.
 
 ## implement
 

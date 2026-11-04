@@ -107,8 +107,8 @@ Keep watching PRs that are still pending while you ask the user something.
 ## Keep the command center current
 
 Render the [command center](references/program-state.md#command-center),
-covering planned, active, follow-up, and support units. For a link the user can return to, use
-[dashboard hosting](references/hosting.md). Answers arrive through chat or the
+covering planned, active, follow-up, and support units, and share it through
+[dashboard hosting](references/hosting.md), never inline. Answers arrive through chat or the
 host's input tools. A pasted dashboard choice selects one recorded option and
 grants nothing else. Before recording an answer, bring the snapshot state up to
 date with the record, then match the choice's decision ID and option to the

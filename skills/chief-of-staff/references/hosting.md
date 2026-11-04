@@ -1,7 +1,7 @@
 # Host the command center
 
-Use when the user wants a dashboard link they can return to outside the chat.
-The page is a read-only snapshot. The chief owns its data; hosting serves the
+The command center is hosted only: give the user a link to return to, not an
+inline render in the chat. The page is a read-only snapshot. The chief owns its data; hosting serves the
 file and adds no coordinator, database, or wakeups.
 
 1. Choose a task-owned directory that survives worktree cleanup. Keep the
