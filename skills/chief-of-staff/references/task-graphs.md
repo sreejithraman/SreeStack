@@ -45,9 +45,10 @@ that base cannot. Landing is required only when the finish line requires it.
 
 ## Join unmerged inputs
 
-Plan branch topology before dispatch when a dependent PR needs several inputs
-and the finish line keeps them unmerged. For two independent units A and B
-feeding C, a reviewable linear chain can be A, then B based on A, then C based
+Plan branch topology before dispatch when the user requests a stack, or when a
+dependent PR needs several inputs and the finish line keeps them unmerged. For
+two independent units A and B feeding C, a reviewable linear chain can be A,
+then B based on A, then C based
 on B. Record the extra branch-order constraint separately from logical ticket
 dependencies. Verify C's base contains both required artifacts before starting it.
 

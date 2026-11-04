@@ -10,7 +10,9 @@ Acceptance: <observations that establish the result>.
 Repository and base: <repo> at <base>. Owned branch: <branch>. Owned paths: <paths>.
 Inputs available at that base: <dependencies>. Uncommitted inputs: <paths, or none>.
 
-Finish line: <local changes | review-ready PR>. Merging belongs to the chief.
+Finish line: <local changes | review-ready PR | merged>.
+Merge authority: <absolute link to program record's scope and finish-line entry>, under <absolute path to Chief of Staff's Establish the program section>. Within that scope, the current chief's recorded landing release is the merge request for this PR.
+Landing: report PR readiness and end your turn. Land through Merge only on that release. Immediately before submitting, re-read the record: confirm the current chief, your active release, and no affecting hold or decision; match the forge's head/base to the release. Report a mismatch instead of landing.
 Holds and user gates: <hold, source, release condition, or none>.
 Delegation allowance: <helpers you may start>.
 
