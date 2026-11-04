@@ -250,7 +250,9 @@ caller, or to Snip Snap when the user started it directly.
 [Chief of Staff](skills/chief-of-staff/SKILL.md) runs a program of PRs. It maps
 the work to PR units, starts one Implement owner per unit from a kickoff
 template, reads their owner reports, watches pending PRs, and routes discoveries
-and shared blockers. By default, owners merge their PRs once the chief accepts
+and shared blockers. It settles reversible decisions that a recorded source or
+your standing approval already answers, and you can reopen any of them; the rest
+come to you, with judgment calls ahead of quick picks. By default, owners merge their PRs once the chief accepts
 them, and the chief can land any PR itself. You can ask for a review-ready stack,
 decide each merge yourself, or stop at a plan, local work, or review. Its command center shows Needs you first and
 Work second, rendered from a checked snapshot of the program record; answers

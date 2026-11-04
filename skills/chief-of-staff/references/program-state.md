@@ -26,8 +26,8 @@ Keep:
 - Each owner report's disposition and evidence, handled follow-up sources,
   live helpers and waits, and task IDs returned when an owner resumes.
 - Discoveries with origin and destination, support work and affected owners,
-  decision requests with their dispositions, and accepted tradeoffs with what
-  would prompt revisiting them.
+  decision requests with their dispositions, standing approvals, and accepted
+  tradeoffs with what would prompt revisiting them.
 - The current chief thread, the snapshot state and HTML paths, and the next
   useful action.
 
@@ -38,7 +38,9 @@ and recheck current facts at their source before acting on them.
 Each decision request keeps its ID, originating owner and message, exact
 question, affected work, and disposition under Orchestration's
 [decision requests](../../orchestration/SKILL.md#return). Mark a Need answered
-only with the user's answer and its source. A withdrawn or replaced Need records
+only with the user's answer and its source. Mark it resolved only under the
+chief's [triage](../SKILL.md#triage-decision-requests), citing the source that
+settled it; a reopened Need keeps that history. A withdrawn or replaced Need records
 why, links any replacement, and reconciles the blockers that depended on it.
 
 ## Command center
@@ -65,7 +67,8 @@ without changing a row's state. Before marking a row terminal,
 clear its active blockers and open Needs; history stays in the record. Unresolved
 work stays visible even after its owner failed or its PR was abandoned.
 
-Every snapshot carries all open Needs; answered ones may remain. Omit a
+Every snapshot carries all open and resolved Needs, so each resolved one stays
+reopenable; answered ones may remain. Omit a
 withdrawn or superseded Need only after recording its disposition. If work
 lands while a Need about it is open, keep the merged row and point the Need's
 `blocks` at a follow-up row for any change the answer requires.
@@ -93,10 +96,12 @@ type Need = {
   context?: string[];
   recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
   options?: { label: string; effect: string; recommended?: boolean }[]; // at most one recommended
+  weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
   blocks?: string[]; // work IDs waiting on this answer
   links?: Link[];
-  status: "open" | "answered";
-  answer?: string; // required when answered
+  status: "open" | "answered" | "resolved"; // resolved: the chief settled it
+  answer?: string; // required unless open
+  basis?: string; // required when resolved: what settled it and why it is reversible
 };
 type Work = {
   id: string; title: string; repo: string;
@@ -138,8 +143,9 @@ The renderer validates the snapshot, escapes content, and writes standalone
 HTML. It makes no tracker, forge, or session changes. The
 [example snapshot](../assets/example-state.json) uses fictional work.
 
-Each copied choice names its decision's revision, a digest of the whole
-Need. Print a Need's current revision with:
+Each copied choice or reopen request names its decision's revision, a digest of
+the whole Need. Two or more open quick picks add a batch prompt that takes every
+recommendation. Print a Need's current revision with:
 
 ```bash
 python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>

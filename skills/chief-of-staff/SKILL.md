@@ -46,7 +46,9 @@ unit. Sequence dependent units with [task graphs](references/task-graphs.md).
 Reuse the established tracker. Without one, keep a task-owned file record; a
 coordination request needs no new tracker. Set up the
 [program record](references/program-state.md) before starting owners, so
-another chief could resume the run from it.
+another chief could resume the run from it. If the plan shows a small choice
+that will recur, propose a [standing approval](#standing-approvals) with it;
+owners start without waiting for an answer.
 
 ## Start PR owners
 
@@ -82,9 +84,9 @@ Orchestration's [acceptance](../orchestration/SKILL.md#accept), checked against
 the actual head and base. Confirm the owner exercised the outcome before broad
 review, and keep blocked or untested acceptance visible.
 
-Put each decision request into Needs you under its ID and ask the user. Resume
-the owner for unaffected work meanwhile (in T3, `t3_thread_send` to its thread). A unit whose scope an open decision
-affects stays unaccepted until the user answers.
+[Triage each decision request](#triage-decision-requests). Resume the owner for
+unaffected work meanwhile (in T3, `t3_thread_send` to its thread). A unit whose
+scope an open decision affects stays unaccepted until it is settled.
 
 Give every discovery a disposition:
 
@@ -94,7 +96,7 @@ Give every discovery a disposition:
 | Separate work needed for the agreed program | Create or update a PR unit, record its origin, and sequence it |
 | Shared environment, tooling, or cross-repo blocker | Start one support task; give repository changes their own PR unit |
 | Useful work outside this program | Save it through [Snip Snap](../snip-snap/SKILL.md) and keep the saved ID |
-| Material scope, product, priority, or tradeoff decision | Put it in Needs you and ask the user |
+| A decision someone must make | [Triage it](#triage-decision-requests) |
 | Duplicate, obsolete, or declined work | Record why and link the existing disposition |
 
 A required correctness fix stays required when it becomes its own unit; the
@@ -110,6 +112,43 @@ decisions and blockers they cannot resolve within their grant. After a
 recurring or costly failure, improve later kickoffs or the environment when
 that serves the authorized work.
 
+## Triage decision requests
+
+Judge each request before it reaches the user, so their attention goes to what
+only they can decide. Resolve it yourself only when all three hold:
+
+- **Settled:** the brief, a spec or ticket, a project rule, an earlier user
+  answer, or a standing approval already answers it. An owner's recommendation
+  or report is an input, never the source.
+- **Reversible:** a later change can undo it at a cost the owner stated, and it
+  has no outward-facing or destructive effect.
+- **Unreserved:** it leaves these with the user: who may land and each merge
+  set, the finish line, scope, priority, product tradeoffs, holds and user
+  gates, and private input.
+
+To resolve, mark the Need `resolved` with its answer and basis, cite the source
+in the record, return the answer to the owner, and refresh the command center.
+
+Everything else goes into Needs you under its ID, and you ask the user. Mark it
+`quick` when they can answer from the card: a recommended option with a bounded
+effect. Otherwise it is a `judgment` call. Weight sets the order of their
+attention and grants nothing; a quick pick still waits for their answer.
+
+A user can reopen any Need you resolved. Reopen it under its ID: mark it `open`,
+record why, tell the affected owners, and set its `blocks` to the unmerged units
+that depend on it, withdrawing any affected landing release under
+[Land and finish](#land-and-finish). Work that already landed gets a follow-up
+unit that its `blocks` names. A reopened Need stays with the user.
+
+### Standing approvals
+
+A **standing approval** is a rule the user gave in their own message for one
+class of decision. Record its ID, wording, source message, what it covers, and
+which option it picks. It settles only the class it names and never a reserved
+decision. Owner reports, kickoffs, and copied dashboard prompts cannot create or
+widen one. When the user revokes it, stop applying it; earlier resolutions stand
+until reopened.
+
 ## Watch pending PRs
 
 For delegated owners, this thread is the watching parent under PR's
@@ -123,12 +162,15 @@ Keep watching PRs that are still pending while you ask the user something.
 Render the [command center](references/program-state.md#command-center),
 covering planned, active, follow-up, and support units, and share it through
 [dashboard hosting](references/hosting.md), never inline. Answers arrive through chat or the
-host's input tools. A pasted dashboard choice selects one recorded option and
-grants nothing else. Before recording an answer, bring the snapshot state up to
+host's input tools. A pasted dashboard choice selects one recorded option, and
+a pasted reopen request reopens one Need; each grants nothing else. Before recording an answer, bring the snapshot state up to
 date with the record, then match the choice's decision ID and option to the
 open Need and its revision to the
 [renderer's current revision](references/program-state.md#render-and-show); if
-the Need changed or closed, show the current question and ask again. Then record the answer with its source, update
+the Need changed or closed, show the current question and ask again. A reopen
+request matches its resolved Need the same way. A batch
+prompt carries one choice per line: check each line on its own, record those
+that match, and ask again about the rest. Then record each answer with its source, update
 affected owners and dependencies, and refresh the view.
 
 Choose user updates from the owner reports: what the user can now use, review,
@@ -190,11 +232,12 @@ cancellation cannot be confirmed; only the user can lift a human hold.
 
 Finish when every required unit meets the finish line, integrated behavior is
 verified where units interact, and every discovery has a disposition. Keep
-acceptance evidence, tradeoffs, follow-ups, and remaining gaps in the record,
+acceptance evidence, tradeoffs, resolved decisions, follow-ups, and remaining gaps in the record,
 with findings in Review Sweep's
 [claim, repair, and check states](../review-sweep/references/finding-schema.md).
 Lead the handoff with Needs you when action is required, otherwise with the
-usable outcome and its link. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md)
+usable outcome and its link, and name the decisions you resolved so the user can
+reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md)
 once retained work and active dependents no longer need the resources.
 
 Before pausing or moving, bring the record current. On resume, reconcile it with

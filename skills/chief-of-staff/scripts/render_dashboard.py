@@ -145,13 +145,19 @@ def validate(state):
         path = f"needs[{row['id']}]"
         text(row.get("ask"), f"{path}.ask")
         text(row.get("status"), f"{path}.status")
-        if row.get("status") not in {"open", "answered"}:
-            raise ValueError(f"{path}.status must be open or answered")
-        if row["status"] == "answered":
+        if row.get("status") not in {"open", "answered", "resolved"}:
+            raise ValueError(f"{path}.status must be open, answered, or resolved")
+        if row["status"] != "open":
             text(row.get("answer"), f"{path}.answer")
+        if row["status"] == "resolved":
+            text(row.get("basis"), f"{path}.basis")
+        elif "basis" in row:
+            raise ValueError(f"{path}.basis applies only to resolved decisions")
         for key in ("recommendation", "answer"):
             if key in row:
                 text(row[key], f"{path}.{key}")
+        if row.get("weight", "judgment") not in {"quick", "judgment"}:
+            raise ValueError(f"{path}.weight must be quick or judgment")
         strings(row.get("context", []), f"{path}.context")
         for identity in strings(row.get("blocks", []), f"{path}.blocks"):
             if identity not in by_id:
@@ -168,6 +174,8 @@ def validate(state):
             raise ValueError(f"{path}: only one option can be recommended")
         if row.get("options") and row.get("recommendation") and not recommended:
             raise ValueError(f"{path}: mark the recommended option to attach its recommendation")
+        if row.get("weight") == "quick" and (len(row.get("options", [])) < 2 or not recommended):
+            raise ValueError(f"{path}: quick needs at least two options with one recommended")
         links(row.get("links", []), f"{path}.links")
     for row in revisits:
         for key in ("title", "tradeoff", "revisit"):
@@ -183,6 +191,7 @@ ICONS = {
     "mergeable": "circle-check", "merged": "git-merge", "done": "check-check",
     "closed": "circle-x", "cancelled": "ban", "unknown": "circle-question-mark",
     "blocked": "triangle-alert", "copy": "copy", "copied": "check", "decision": "message-circle-question-mark",
+    "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
     "recommended": "star", "pr": "git-pull-request", "finish": "flag", "snapshot": "clock", "tradeoff": "scale",
 }
 
@@ -238,13 +247,26 @@ def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", a
     )
 
 
-def choice(row, option, index, state):
-    prompt = (
+def decision_prompt(row, state, action):
+    return (
         f'Decision {json.dumps(row["id"], ensure_ascii=False)} (revision {revision(row)}) in {quoted(state["title"])}\n'
         f'Question: {quoted(row["ask"])}\n'
-        f'I choose option {index + 1}: {quoted(option["label"])}'
+        f'{action}'
     )
-    status_id = f'prompt-{row["id"].encode().hex()}-{index}'
+
+
+def copy_control(prompt, status_id, aria_label, idle, mark="copy"):
+    return (
+        f'<button type="button" class="copy-prompt" data-prompt="{e(prompt)}" '
+        f'aria-label="{e(aria_label)}" aria-describedby="{e(status_id)}">'
+        f'<span class="idle">{icon(mark)}{e(idle)}</span><span class="done">{icon("copied")}Copied</span></button>'
+        f'<span class="copy-status" id="{e(status_id)}" role="status"></span>'
+        f'<textarea class="manual-prompt" aria-label="{e("Prompt: " + aria_label)}" readonly hidden></textarea>'
+    )
+
+
+def choice(row, option, index, state):
+    prompt = decision_prompt(row, state, f'I choose option {index + 1}: {quoted(option["label"])}')
     recommended = option.get("recommended", False)
     content = f'<li class="{"recommended" if recommended else "choice"}"><div class="choice-body"><p class="choice-heading"><strong>{e(option["label"])}</strong>'
     if recommended:
@@ -252,14 +274,25 @@ def choice(row, option, index, state):
     content += f'</p><p class="choice-effect">{e(option["effect"])}</p>'
     if recommended and row.get("recommendation"):
         content += f'<p class="choice-rationale">{e(row["recommendation"])}</p>'
-    content += (
-        f'</div><button type="button" class="copy-prompt" data-prompt="{e(prompt)}" '
-        f'aria-label="{e("Copy prompt: " + option["label"])}" aria-describedby="{e(status_id)}">'
-        f'<span class="idle">{icon("copy")}Copy prompt</span><span class="done">{icon("copied")}Copied</span></button>'
-        f'<span class="copy-status" id="{e(status_id)}" role="status"></span>'
-        f'<textarea class="manual-prompt" aria-label="{e("Prompt: " + option["label"])}" readonly hidden></textarea></li>'
+    status_id = f'prompt-{row["id"].encode().hex()}-{index}'
+    return content + f'</div>{copy_control(prompt, status_id, "Copy prompt: " + option["label"], "Copy prompt")}</li>'
+
+
+def recommended_choice(row):
+    return next((index, option) for index, option in enumerate(row["options"]) if option.get("recommended"))
+
+
+def batch_view(quick, state):
+    """One prompt that takes every recommendation, naming each decision it answers."""
+    lines, summary = [f'Decisions in {quoted(state["title"])}'], []
+    for row in quick:
+        index, option = recommended_choice(row)
+        lines.append(f'Decision {json.dumps(row["id"], ensure_ascii=False)} (revision {revision(row)}): I choose option {index + 1}: {quoted(option["label"])}')
+        summary.append(f'<li><strong>{e(row["id"])}</strong> {e(option["label"])}</li>')
+    return (
+        f'<div class="card batch"><div class="batch-summary"><p class="answer-label">Take every recommended pick</p><ul>{"".join(summary)}</ul></div>'
+        f'{copy_control(chr(10).join(lines), "prompt-batch", f"Copy all {len(quick)} recommended picks", "Copy all recommended")}</div>'
     )
-    return content
 
 
 def card_id(kind, row):
@@ -267,10 +300,14 @@ def card_id(kind, row):
 
 
 def decision_label(row):
-    answered = row["status"] == "answered"
-    content = f'<span class="need-id{" settled" if answered else ""}">{icon("decision")}{"Answered" if answered else "Decision"} {e(row["id"])}</span>'
+    settled = row["status"] != "open"
+    name, mark = {
+        "answered": ("Answered", "decision"),
+        "resolved": ("Chief decided", "resolved"),
+    }.get(row["status"], ("Quick pick", "quick") if row.get("weight") == "quick" else ("Decision", "decision"))
+    content = f'<span class="need-id{" settled" if settled else ""}">{icon(mark)}{name} {e(row["id"])}</span>'
     if row.get("blocks"):
-        content += f'<span>{"Affected" if answered else "Blocks"} {e(", ".join(row["blocks"]))}</span>'
+        content += f'<span>{"Affected" if settled else "Blocks"} {e(", ".join(row["blocks"]))}</span>'
     return content
 
 
@@ -282,12 +319,16 @@ def tradeoff_label(row):
 
 
 def need_card(row, state, selected=False):
-    answered = row["status"] == "answered"
-    content = f'<article id="{card_id("decision", row)}" class="card need{" selected" if selected else ""}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["ask"])}</h3>'
+    classes = "card need" + (" quick" if row["status"] == "open" and row.get("weight") == "quick" else "") + (" selected" if selected else "")
+    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["ask"])}</h3>'
     if row.get("context"):
         content += '<ul class="context">' + "".join(f"<li>{e(item)}</li>" for item in row["context"]) + "</ul>"
-    if answered:
+    if row["status"] == "answered":
         content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{e(row["answer"])}</p></div>'
+    elif row["status"] == "resolved":
+        content += f'<div class="answer"><p class="answer-label">Chief\'s call</p><p>{e(row["answer"])}</p><p class="answer-label">Basis</p><p>{e(row["basis"])}</p></div>'
+        reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{row["id"].encode().hex()}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
+        content += f'<div class="reopen">{reopen}</div>'
     elif row.get("options"):
         content += '<ul class="options">' + "".join(choice(row, option, index, state) for index, option in enumerate(row["options"])) + "</ul>"
     elif row.get("recommendation"):
@@ -313,16 +354,26 @@ def inbox_group(heading_id, title, tone, rows):
     )
 
 
-def needs_view(state, open_needs, answered):
+def needs_view(state, judgment, quick, resolved, answered):
     """Decision cards in reading order, with the list that shows one card at a time in the dual-pane inbox."""
     empty = '<p class="empty">Nothing needs you in this snapshot.</p>'
     revisits = state.get("revisits", [])
-    if not (open_needs or revisits or answered):
+    open_needs = judgment + quick
+    if not (open_needs or resolved or revisits or answered):
         return empty
     selected = open_needs[0] if open_needs else None
-    cards, groups = "".join(need_card(row, state, selected=row is selected) for row in open_needs) or empty, ""
-    if open_needs:
-        groups += inbox_group("open-list", "Open decisions", "open", [inbox_row(card_id("decision", row), row["id"], row["ask"], selected=row is selected) for row in open_needs])
+    batch = batch_view(quick, state) if len(quick) > 1 else ""
+    cards = (
+        "".join(need_card(row, state, selected=row is selected) for row in judgment) + batch
+        + "".join(need_card(row, state, selected=row is selected) for row in quick)
+    ) or empty
+    groups = ""
+    for heading_id, title, rows in (("judgment-list", "Judgment calls", judgment), ("quick-list", "Quick picks", quick)):
+        if rows:
+            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["ask"], selected=row is selected) for row in rows])
+    if resolved:
+        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["ask"]) for row in resolved])
+        cards += collapsible("resolved-heading", "Chief decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>')
     if revisits:
         groups += inbox_group("revisits-list", "Worth a second look", "revisit", [inbox_row(card_id("tradeoff", row), row["id"], row["title"]) for row in revisits])
         cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>')
@@ -420,10 +471,13 @@ def overview(work):
 def render(state):
     validate(state)
     open_needs = [row for row in state["needs"] if row["status"] == "open"]
+    judgment = [row for row in open_needs if row.get("weight") != "quick"]
+    quick = [row for row in open_needs if row.get("weight") == "quick"]
+    resolved = [row for row in state["needs"] if row["status"] == "resolved"]
     answered = [row for row in state["needs"] if row["status"] == "answered"]
     by_id = {row["id"]: row for row in state["work"]}
 
-    needs_html = needs_view(state, open_needs, answered)
+    needs_html = needs_view(state, judgment, quick, resolved, answered)
 
     stages = ""
     for key in STAGE_ORDER:

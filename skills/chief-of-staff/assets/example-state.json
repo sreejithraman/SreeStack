@@ -29,6 +29,56 @@
       "status": "open"
     },
     {
+      "id": "W1-D2",
+      "ask": "How many retries should an interrupted export get?",
+      "weight": "quick",
+      "context": [
+        "Other worker jobs use three attempts."
+      ],
+      "options": [
+        {
+          "label": "Three attempts",
+          "recommended": true,
+          "effect": "Matches the other worker jobs."
+        },
+        {
+          "label": "Five attempts",
+          "effect": "Rides out longer outages but reports failures later."
+        }
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W3-D1",
+      "ask": "When should the simulator fixture reset?",
+      "weight": "quick",
+      "options": [
+        {
+          "label": "Once per run",
+          "effect": "Runs faster, but state can leak between test classes."
+        },
+        {
+          "label": "Between test classes",
+          "recommended": true,
+          "effect": "Adds about a minute and stops state leaking."
+        }
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W2-D2",
+      "ask": "Which component should render export history?",
+      "context": [
+        "The history view needs a sortable list."
+      ],
+      "blocks": [
+        "W2"
+      ],
+      "status": "resolved",
+      "answer": "Use the shared data table.",
+      "basis": "Project rule: history views reuse the shared data table. Swapping it later needs no data change."
+    },
+    {
       "id": "W0-D1",
       "ask": "Should a retried export keep its original job ID?",
       "context": [
