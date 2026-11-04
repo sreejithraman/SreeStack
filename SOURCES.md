@@ -411,7 +411,8 @@ wiki, Linear, Slack, cloud runtime, or recurring schedule.
 The original command center renders a checked JSON snapshot of the program
 record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
 Needs you before Work, collapsible sections, per-row observation times, copyable decision prompts
-that name one recorded option, and accepted tradeoffs. It
+that name one recorded option, and accepted tradeoffs. Below 900px it stays one
+column; wider, Needs you is a dual-pane inbox and Work a board of stage lanes. It
 replaces the supplied archive's Claude artifact database and integrations; no
 archive code or prose is copied. Validation rejects non-PR merge states and
 terminal rows with active blockers. Delivery is hosted only;

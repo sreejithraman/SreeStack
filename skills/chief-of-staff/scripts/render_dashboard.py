@@ -232,8 +232,8 @@ def state_label(row):
 def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", alert=""):
     """A section whose heading stays visible, and whose count stays readable, when collapsed."""
     return (
-        f'<section class="collapsible" aria-labelledby="{heading_id}"><details open>'
-        f'<summary class="section-toggle {state}"><h{level} id="{heading_id}" class="section-title">{mark}{e(title)} <span class="count">{count}</span>{alert}</h{level}></summary>'
+        f'<section class="collapsible{" " + state if state else ""}" aria-labelledby="{heading_id}"><details open>'
+        f'<summary class="section-toggle"><h{level} id="{heading_id}" class="section-title">{mark}{e(title)} <span class="count">{count}</span>{alert}</h{level}></summary>'
         f"{body}</details></section>"
     )
 
@@ -262,12 +262,28 @@ def choice(row, option, index, state):
     return content
 
 
-def need_card(row, state):
+def card_id(kind, row):
+    return f'{kind}-{row["id"].encode().hex()}'
+
+
+def decision_label(row):
     answered = row["status"] == "answered"
-    content = f'<article class="card need"><p class="need-meta"><span class="need-id{" settled" if answered else ""}">{icon("decision")}{"Answered" if answered else "Decision"} {e(row["id"])}</span>'
+    content = f'<span class="need-id{" settled" if answered else ""}">{icon("decision")}{"Answered" if answered else "Decision"} {e(row["id"])}</span>'
     if row.get("blocks"):
         content += f'<span>{"Affected" if answered else "Blocks"} {e(", ".join(row["blocks"]))}</span>'
-    content += f'</p><h3>{e(row["ask"])}</h3>'
+    return content
+
+
+def tradeoff_label(row):
+    content = f'<span class="need-id settled">{icon("tradeoff")}Tradeoff {e(row["id"])}</span>'
+    if row.get("source"):
+        content += f'<span>Source: {e(row["source"])}</span>'
+    return content
+
+
+def need_card(row, state, selected=False):
+    answered = row["status"] == "answered"
+    content = f'<article id="{card_id("decision", row)}" class="card need{" selected" if selected else ""}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["ask"])}</h3>'
     if row.get("context"):
         content += '<ul class="context">' + "".join(f"<li>{e(item)}</li>" for item in row["context"]) + "</ul>"
     if answered:
@@ -280,10 +296,40 @@ def need_card(row, state):
 
 
 def revisit_card(row):
-    content = f'<article class="card need"><p class="need-meta"><span class="need-id settled">{icon("tradeoff")}Tradeoff {e(row["id"])}</span>'
-    if row.get("source"):
-        content += f'<span>Source: {e(row["source"])}</span>'
-    return content + f'</p><h3>{e(row["title"])}</h3><p class="context">{e(row["tradeoff"])}</p><div class="answer"><p class="answer-label">Revisit</p><p>{e(row["revisit"])}</p></div></article>'
+    return f'<article id="{card_id("tradeoff", row)}" class="card need"><p class="need-meta">{tradeoff_label(row)}</p><h3>{e(row["title"])}</h3><p class="context">{e(row["tradeoff"])}</p><div class="answer"><p class="answer-label">Revisit</p><p>{e(row["revisit"])}</p></div></article>'
+
+
+def inbox_row(target, identity, title, selected=False):
+    return (
+        f'<button type="button" class="inbox-row" role="option" aria-selected="{str(selected).lower()}" aria-controls="{target}">'
+        f'<span class="inbox-row-title">{e(title)}</span><span class="inbox-row-id">{e(identity)}</span></button>'
+    )
+
+
+def inbox_group(heading_id, title, tone, rows):
+    return (
+        f'<div class="inbox-group {tone}" role="group" aria-labelledby="{heading_id}"><span id="{heading_id}" class="inbox-group-title">{e(title)} <span class="count-pill{" attention" if tone == "open" else ""}">{len(rows)}</span></span>'
+        + "".join(rows) + "</div>"
+    )
+
+
+def needs_view(state, open_needs, answered):
+    """Decision cards in reading order, with the list that shows one card at a time in the dual-pane inbox."""
+    empty = '<p class="empty">Nothing needs you in this snapshot.</p>'
+    revisits = state.get("revisits", [])
+    if not (open_needs or revisits or answered):
+        return empty
+    selected = open_needs[0] if open_needs else None
+    cards, groups = "".join(need_card(row, state, selected=row is selected) for row in open_needs) or empty, ""
+    if open_needs:
+        groups += inbox_group("open-list", "Open decisions", "open", [inbox_row(card_id("decision", row), row["id"], row["ask"], selected=row is selected) for row in open_needs])
+    if revisits:
+        groups += inbox_group("revisits-list", "Worth a second look", "revisit", [inbox_row(card_id("tradeoff", row), row["id"], row["title"]) for row in revisits])
+        cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>')
+    if answered:
+        groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["ask"]) for row in answered])
+        cards += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{"".join(need_card(row, state) for row in answered)}</div>')
+    return f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
 
 
 def pending_parent(row, by_id):
@@ -377,13 +423,7 @@ def render(state):
     answered = [row for row in state["needs"] if row["status"] == "answered"]
     by_id = {row["id"]: row for row in state["work"]}
 
-    needs_html = "".join(need_card(row, state) for row in open_needs) or '<p class="empty">Nothing needs you in this snapshot.</p>'
-    if state.get("revisits"):
-        cards = "".join(revisit_card(row) for row in state["revisits"])
-        needs_html += collapsible("revisits-heading", "Worth a second look", len(state["revisits"]), f'<div class="section-body">{cards}</div>')
-    if answered:
-        cards = "".join(need_card(row, state) for row in answered)
-        needs_html += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{cards}</div>')
+    needs_html = needs_view(state, open_needs, answered)
 
     stages = ""
     for key in STAGE_ORDER:
@@ -393,7 +433,7 @@ def render(state):
             alert = f'<span class="state blocked"><span class="sr-only">, </span>{icon("blocked")}{blocked} blocked</span>' if blocked else ""
             cards = "".join(work_card(row, state["needs"], by_id) for row in rows)
             stages += collapsible(f"stage-{key}", STATES[key], len(rows), f'<div class="section-body stage-cards">{cards}</div>', level=3, state=key, mark=icon(key), alert=alert)
-    work_html = (overview(state["work"]) + stages) if stages else '<p class="empty">No work recorded in this snapshot.</p>'
+    work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded in this snapshot.</p>'
 
     facts = ""
     if state.get("finishLine"):
@@ -401,11 +441,11 @@ def render(state):
     facts += f'<p class="fact">{icon("snapshot")}<span><span class="fact-label">Snapshot</span> {when(state["updatedAt"], age=True)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
     content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
-    needs_badge = f'<span class="tab-count{" attention" if open_needs else ""}">{len(open_needs)}</span>'
+    needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
         f'<button id="needs-tab" role="tab" aria-selected="true" aria-controls="needs-panel" tabindex="0">Needs you {needs_badge}</button>'
-        f'<button id="work-tab" role="tab" aria-selected="false" aria-controls="work-panel" tabindex="-1">Work <span class="tab-count">{len(state["work"])}</span></button>'
+        f'<button id="work-tab" role="tab" aria-selected="false" aria-controls="work-panel" tabindex="-1">Work <span class="count-pill">{len(state["work"])}</span></button>'
         "</div></nav>"
         f'<section id="needs-panel" role="tabpanel" aria-labelledby="needs-tab" tabindex="0"><h2 class="sr-only">Needs you</h2>{needs_html}</section>'
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
