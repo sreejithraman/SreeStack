@@ -5,8 +5,6 @@ description: Resolve working-model defaults and coordinate agents in T3 Code. Us
 
 # Orchestration
 
-Pick the model for each piece of work, assign it, and accept only what you have
-inspected. A **parent** assigns work. A **child** is an agent doing assigned work.
 The caller owns the outcome. Give independent, ready work to children when that adds
 speed or coverage. Keep cohesive work with one owner.
 
@@ -47,7 +45,7 @@ apply in the brief.
 Give the work a stable identity, separate from execution attempt IDs.
 
 - **In-scope follow-up:** send it to the existing owner, after checking which source
-  messages it has already handled.
+  messages it has already received or handled.
 - **Scope change:** return it to the caller with its source and reason.
 - **Human hold:** record its source, affected scope, and release condition. Keep it
   through retries, transfers, and restarts until that person lifts it. New evidence
@@ -66,13 +64,12 @@ task-lifecycle rules.
 - **Slash command:** through `delegate_task`, use `role: general` and start `task` with
   the command. Other roles put text before it.
 - **Separate checkout:** use the host's worktree-isolated delegation, confirm its
-  starting revision, and supply uncommitted inputs explicitly. They may not be copied.
+  starting revision, and supply uncommitted inputs explicitly.
 - **Limit:** by default 12 children stay active, lowered by host or user limits. Workers
   and reviewers count together. Start ready work as slots free.
 - **Tracking:** keep each task's request key, ID, selection, owned output, and state.
 
-Prefer async dispatch and follow the returned next action. A wait timeout leaves work
-live. Before a replacement overlaps earlier writers, account for pending child runs and
+Before a replacement overlaps earlier writers, account for pending child runs and
 reconcile their files. Cancellation or a terminal receipt alone does not show that every
 later or nested writer has stopped.
 

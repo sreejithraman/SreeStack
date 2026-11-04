@@ -7,8 +7,6 @@ and workspace binding.
 
 ## Model defaults
 
-Edit this table to change the defaults.
-
 | Purpose | Provider | Model | Effort | Availability fallback | Review pool |
 | --- | --- | --- | --- | --- | --- |
 | UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
@@ -74,9 +72,8 @@ action authorization:
 | Complex UI operation | Complex edge cases, or a high cost of a false pass |
 
 The handoff carries expected and observed states, evidence, unresolved checks, and session
-or tool references, under [selection handoff](#selection-handoff). The operator returns
-product failures to the implementer for repair. [Verify](../../verify/SKILL.md) owns
-acceptance assertions and verdicts.
+or tool references, under [selection handoff](#selection-handoff).
+[Verify](../../verify/SKILL.md) owns acceptance assertions and verdicts.
 
 ## Choose working selection
 
@@ -166,11 +163,8 @@ reports and receipts are archived, and its context is free of same-round peer co
 Otherwise, or when the host requires a new task for reviews or rechecks, start a new
 independent task with the role's criteria and selection, and supply the prior reports,
 receipts, and dispositions. Record it as a replacement with prior evidence, not as
-continuation.
-
-Either way the assessment is a new assignment with its own snapshot-bound brief, output
-paths, and read proof under [Review evidence](../../review/references/review-evidence.md).
-Earlier context guides navigation; reads of the current snapshot supply the proof.
+continuation. Either way, brief it under
+[Review evidence](../../review/references/review-evidence.md).
 
 **Reviewer to implementer.** A read-only reviewer can take accepted repairs once its whole
 pass is complete, its reports and receipts are archived, and the caller or Review Sweep has
@@ -199,8 +193,7 @@ A required selection without a usable fallback stays a blocker after permitted r
 
 A row's fallback applies when the assignment uses that row's provider and model. Other
 explicit selections need their own authorized fallback. A user choice that excludes
-substitution stays a blocker. Use the exact listed model and effort, and report a blocker if
-it also cannot run. A fallback never authorizes unlisted models, the Simple tier, or a change
+substitution stays a blocker. Use the exact listed model and effort. A fallback never authorizes unlisted models, the Simple tier, or a change
 to additional-review skip policy.
 
 Record the failed selection, failure evidence, and fallback. Keep the assignment's scope,
@@ -211,8 +204,8 @@ assessment as its coverage.
 Keep the fallback for that assignment until availability changes or the user directs
 otherwise. Task difficulty alone never sends it back to the unavailable selection.
 
-If the fallback matches a still-running owner, keep that owner, record the failed escalation,
-and pass it the reassessed selection and evidence. If the former run has ended, dispatch a new
+For implementation and document work, if the fallback matches a still-running owner, keep
+that owner, record the failed escalation, and pass it the reassessed selection and evidence. If the former run has ended, dispatch a new
 fallback task with the saved handoff.
 
 Dispatch identity and stored thread options confirm configuration, not which model the
