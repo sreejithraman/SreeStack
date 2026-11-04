@@ -3,6 +3,7 @@
 
 Each top-level <host>/setup.json names where that host reads skills and its
 global instructions, relative to the home directory, and which skills it skips.
+Sync also merges the public settings templates listed in host_settings.py.
 Supports the macOS system Python (3.9) because Git hooks may run it.
 """
 
@@ -21,6 +22,8 @@ import subprocess
 import sys
 import tempfile
 
+import host_settings
+
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 INSTRUCTIONS = ROOT / "global" / "AGENTS.md"
@@ -29,6 +32,7 @@ MAIN_BRANCH = "refs/heads/main"
 HOOK_EVENT = "reference-transaction"
 HANDLER_NAME = "sreestack-host-sync"
 HANDLER_MARKER = "# Installed by SreeStack scripts/sync_hosts.py --install-hooks."
+VENV_PYTHON = ".venv/bin/python"
 # Git runs this hook for ref updates in every worktree, so it must skip
 # unrelated updates before reading checkout files or config, and must never
 # fail the preparing or prepared phases (that would abort the Git command).
@@ -44,17 +48,20 @@ done
 [ "$(git rev-parse --absolute-git-dir 2>/dev/null)" = \\
   "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" ] || exit 0
 [ "$(git symbolic-ref -q HEAD)" = {MAIN_BRANCH} ] || exit 0
-script="$(git rev-parse --show-toplevel)/scripts/sync_hosts.py"
+root="$(git rev-parse --show-toplevel)"
+script="$root/scripts/sync_hosts.py"
+python="$root/{VENV_PYTHON}"
+[ -x "$python" ] || python=python3
 if [ ! -f "$script" ]; then
   echo "sreestack: $script is missing" >&2
-elif ! command -v python3 >/dev/null 2>&1; then
+elif ! command -v "$python" >/dev/null 2>&1; then
   echo "sreestack: python3 is not on Git's PATH" >&2
-elif python3 "$script" --hook; then
+elif "$python" "$script" --hook; then
   exit 0
 fi
 echo "sreestack: host sync failed. The Git operation completed and was not rolled" \\
-  "back. Fix the problem above, run python3 scripts/sync_hosts.py, then confirm" \\
-  "with python3 scripts/sync_hosts.py --check." >&2
+  "back. Fix the problem above, run {VENV_PYTHON} scripts/sync_hosts.py, then confirm" \\
+  "with {VENV_PYTHON} scripts/sync_hosts.py --check." >&2
 exit 1
 """
 CHAIN_SCRIPT = f"""# BEGIN SreeStack host sync
@@ -282,6 +289,15 @@ def git_dirs() -> tuple | None:
     return tuple(output.splitlines()) if output else None
 
 
+def checkouts() -> list:
+    """Return every checkout of this repository, starting with the primary one."""
+    listing = git("worktree", "list", "--porcelain", "-z")
+    if listing is None:
+        raise SetupError(f"could not list the checkouts of {ROOT}")
+    return [Path(field[len("worktree "):]) for field in listing.split("\0")
+            if field.startswith("worktree ")]
+
+
 def require_primary() -> Path:
     dirs = git_dirs()
     if dirs is None:
@@ -319,6 +335,11 @@ def sync(home: Path, check: bool, quiet: bool = False) -> int:
             if (hooks / HANDLER_NAME).exists():
                 install_handler(hooks)
         plan = make_plan(home)
+        # Settings go first so sync creates a missing host folder with private modes.
+        settings, refused = host_settings.merge_all(ROOT, home, checkouts(), check)
+        plan.conflicts = refused + plan.conflicts
+        for change in settings:
+            print(change)
         if check:
             for change in plan.changes:
                 print(describe(change))
@@ -330,9 +351,10 @@ def sync(home: Path, check: bool, quiet: bool = False) -> int:
                     plan.conflicts.append(f"{change.path}: could not {change.action}: {error}")
     for conflict in plan.conflicts:
         print(f"conflict: {conflict}", file=sys.stderr)
-    if plan.conflicts or (check and plan.changes):
+    pending = settings or plan.changes
+    if plan.conflicts or (check and pending):
         return 1
-    if not plan.changes and not quiet:
+    if not pending and not quiet:
         print(f"Host setup in {home} is up to date.")
     return 0
 
@@ -445,14 +467,15 @@ def main(argv: list | None = None) -> int:
         if args.check or args.check_hooks:
             dirs = git_dirs()
             if dirs is not None and dirs[0] != dirs[1]:
-                listing = git("worktree", "list", "--porcelain", "-z")
-                primary = Path(listing.split("\0", 1)[0].removeprefix("worktree "))
+                primary = checkouts()[0]
                 script = primary / "scripts" / "sync_hosts.py"
                 if not script.is_file():
                     raise SetupError(f"host sync is not available in stable clone {primary}")
+                venv = primary / VENV_PYTHON
+                python = str(venv) if os.access(venv, os.X_OK) else sys.executable
                 print(f"Checking stable clone {primary}", flush=True)
                 return subprocess.run(
-                    [sys.executable, str(script), "--home", str(home),
+                    [python, str(script), "--home", str(home),
                      "--check-hooks" if args.check_hooks else "--check"], cwd=primary,
                 ).returncode
         if args.check_hooks:

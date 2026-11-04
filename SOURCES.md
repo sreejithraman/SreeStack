@@ -1344,8 +1344,11 @@ changing their reference input. Sync refreshes its owned handler; hook health
 checks report drift separately from host links. Checks from linked worktrees
 use the stable clone's script and manifests.
 README.md documents sync, the hook, and Claude Code's personal skill links.
-`codex/config.toml` and `claude/settings.json` are manual-merge host settings
-templates outside the managed links; private host configs remain local files.
+`scripts/host_settings.py` merges the leaf keys of `claude/settings.json` into
+`~/.claude/settings.json` and of `codex/config.toml` into `~/.codex/config.toml`
+and `~/.codex-t3/config.toml` during that sync; private keys stay in those local
+files. The pinned `tomlkit` package is installed in the stable clone's ignored
+`.venv` from `scripts/requirements-sync.txt`; its source is not in this repo.
 Provider model settings stay separate; technical claims link to the host
 documentation beside the setup steps. User-level instruction-file selection
 keeps project `AGENTS.md` loading alongside Claude-specific instructions.
