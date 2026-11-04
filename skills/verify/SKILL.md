@@ -21,9 +21,9 @@ formal model.
 For product workflows and interfaces, follow the procedure below. Exercise the
 product's public entry points; observed outcomes establish assertion verdicts.
 Keep checks proportional to the requested scope. Orchestration's
-[working selection](../orchestration/references/agent-routing.md#choose-working-selection)
-chooses the model for interactive driving; this procedure keeps assertions and
-verdicts.
+[UI operation rule](../orchestration/references/agent-routing.md#operate-a-ui)
+decides who drives the interface and with which model; this procedure keeps
+assertions and verdicts.
 
 ## Scope and project knowledge
 

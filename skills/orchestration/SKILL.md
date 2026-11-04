@@ -6,20 +6,12 @@ description: Resolve working-model defaults and coordinate agents in T3 Code. Us
 # Orchestration
 
 The caller owns the outcome; this skill supplies the shared mechanics for
-assigning work, returning results, and accepting them. Give independent, ready
-work to children when it improves speed or coverage; keep cohesive work with
-one owner. Use the applicable
-selection in [agent routing](references/agent-routing.md#model-defaults),
-choosing the [working selection](references/agent-routing.md#choose-working-selection),
-including interaction rows for operating UIs and the UI row for building them,
-before direct work or dispatch. The working selection applies unless a
-task-specific selection or explicit user override covers the assignment.
-
-Resolve that selection before doing the work. Continue directly only when this
-agent's effective model and effort match it or an explicit user override.
-Otherwise use routing's [selection handoff](references/agent-routing.md#selection-handoff),
-preserving the parent's configuration. Use the steps below for delegation,
-including a single cohesive task that needs the working model.
+assigning and dispatching work, returning results, and accepting them. Give
+independent, ready work to children when it improves speed or coverage; keep cohesive work with
+one owner. Before direct work or dispatch, apply
+[agent routing](references/agent-routing.md#choose-working-selection) to choose
+the working selection. Use the steps below for delegation, including a single
+cohesive task that needs the working model.
 
 ## Assign
 
@@ -28,10 +20,11 @@ For design and implementation decisions, use
 helps the task. Include applicable references in implementation briefs.
 
 Resolve the required outcome and proof before splitting it. Each child owns
-one result and a checkable completion condition. Separate writable paths and
-shared resources; serialize work that would collide. Start a slice that
-depends on another's output once that output is accepted. For competing
-approaches, choose the comparison criteria before dispatch.
+one result and a checkable completion condition. Give shared-checkout children
+disjoint writes and separate shared resources; serialize git/index and other
+colliding work. Start a slice that depends on another's output once that output
+is accepted. For competing approaches, choose the comparison criteria before
+dispatch.
 
 Give each child a self-contained brief: requirements and accepted decisions,
 source paths and artifacts, owned output, permitted actions, shared files to
@@ -55,9 +48,30 @@ person lifts it. New evidence can clear an agent-reported blocker within the
 existing grant; only the human releases a hold.
 
 Finish assignment when every required slice has an owner, usable inputs,
-compatible ownership, and a completion check. Then follow agent routing to
-resolve the model, consider [reuse](references/agent-routing.md#reuse-an-agent),
-and start ready work within the concurrency ceiling.
+compatible ownership, and a completion check.
+
+## Dispatch
+
+Resolve each assignment's model, then use a new delegated task unless
+[reuse](references/agent-routing.md#reuse-an-agent) fits. Follow live host routing
+and task-lifecycle rules. Each child must support the resolved model and options;
+use a generic role when custom ranks would override them. The brief defines
+obligations; T3's broad `role` is not a model preset. For a native slash command
+through `delegate_task`, use `role: general` and start `task` with the command;
+other roles prepend text before it.
+
+For a separate checkout, use the host's worktree-isolated delegation, confirm its
+starting revision, and supply relevant uncommitted inputs explicitly; they may not
+be copied.
+
+The default local ceiling is 12 active children, reduced by host/user limits.
+Count workers and reviewers together. Start ready assignments as slots free, and
+retain each task's request key, ID, selection, owned output, and state.
+
+Prefer async dispatch and follow the returned next action. A wait timeout leaves
+work live. Before overlapping a replacement with earlier writers, account for
+pending child runs and reconcile their files. Cancellation or a terminal task
+receipt alone does not establish that every later or nested writer has stopped.
 
 ## Return
 

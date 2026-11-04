@@ -34,8 +34,9 @@ review state, remaining work, its thread/task IDs, and the event it awaits.
 The parent watches. When a wake needs a change, the parent sends the evidence
 to that same owner session so the branch keeps one writer; in T3,
 `t3_thread_send` resumes the child thread (record any new task ID it returns).
-A fresh review or re-check still uses a new delegated task. A pending PR keeps
-its owner; waiting on CI is no reason to cancel it.
+A review or re-check follows
+[agent reuse](../../orchestration/references/agent-routing.md#reuse-an-agent).
+A pending PR keeps its owner; waiting on CI is no reason to cancel it.
 
 Handle existing checks and comments first. While checks or reviews are pending,
 or monitoring is explicitly requested, call `watch_pull_request` and end the
