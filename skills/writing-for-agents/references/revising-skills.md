@@ -52,6 +52,9 @@ obsolete, or the case that tests behavior without it. Group equivalent items;
 ordinary edits need no permanent registry. A reference read by most relevant
 tasks may belong inline; use observed reads when available rather than guessing.
 
+Hold additions to the same standard: name the failure each new rule prevents.
+Prefer a net reduction when the same behavior survives.
+
 Keep critical guidance reachable before the action it constrains. Preserve
 supported hosts and invocation choices; lack of recent personal usage alone
 does not establish that another consumer no longer needs them.
@@ -66,8 +69,9 @@ subsequent changes.
 Have the existing independent review account for the old guidance and verify
 new factual claims against sources. When an uncovered removal could change
 behavior, add a preservation case and run it in fresh sessions. Repeat uncertain
-cases enough to expose variation; retain or restore necessary guidance when
-evidence is insufficient. A successful no-skill example supports only that case.
+cases enough to expose variation. When evidence is insufficient, retain the
+guidance. An [audit](auditing-skills.md) instead settles each rule by its reason.
+A successful no-skill example supports only that case.
 
 Use [Review Fix Loop](../../review-fix-loop/SKILL.md) for agent-procedure changes.
 That workflow owns reviewer selection and rounds; this reference adds no second

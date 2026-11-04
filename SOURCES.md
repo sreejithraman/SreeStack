@@ -1214,6 +1214,11 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 - [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures (MIT).
 
+The entrypoint is a local plain-language rewrite of the upstream writing guidance.
+It adds plain-writing rules, keeps the upstream concepts that change behavior, and
+drops their extended explanation. Audits test a fresh draft, then settle old rules
+by the failure they prevent; revisions hold additions to the same standard as
+removals.
 Documents paired Claude Code and Codex invocation settings and writes context
 pointers as request-shaped triggers. Existing invocation choices are preserved.
 Conditional revision guidance scales checks to the change, inventories consumers
@@ -1255,14 +1260,16 @@ selection. Live host instructions own APIs, transport, task lifecycle,
 permissions, and workspace binding. Local policy owns concurrency and bounded
 recovery, subject to caller-specific failure policy.
 
-Working selection checks interactive operation first, UI building next, then
-Simple, Standard, or Hardest implementation. Interaction effort follows flow
+Working selection checks interactive operation first, UI building next, document
+writing and revision next, then Simple, Standard, or Hardest implementation.
+Interaction effort follows flow
 complexity and false-pass cost; mixed building and driving use separate
 assignments, with Verify retaining assertions and verdicts. Listed availability
 fallbacks apply to quota, unavailable providers/models, and provider runtime
 failures while preserving acceptance, review criteria, and explicit selections.
 Selection changes honor host delegation authority; children without permission
-return incomplete work for parent-owned reconciliation and dispatch. Failed
+return incomplete work for parent-owned reconciliation and dispatch. The parent
+reports a blocker for a repeat request with no new evidence. Failed
 escalation preserves an active fallback owner and its context.
 
 Names no callers. Briefs carry the original request and accepted
