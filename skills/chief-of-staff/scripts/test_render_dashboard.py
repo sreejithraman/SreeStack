@@ -370,7 +370,7 @@ class DashboardTests(unittest.TestCase):
 
     def test_sections_toggle_natively_and_start_open(self):
         html = render(self.state)
-        sections = html.split('<section class="collapsible"')[1:]
+        sections = re.split(r'<section class="collapsible\b', html)[1:]
         self.assertEqual(len(sections), 6)
         for section in sections:
             label = re.search(r'aria-labelledby="([^"]+)"', section)[1]
@@ -383,21 +383,84 @@ class DashboardTests(unittest.TestCase):
 
     def test_collapsed_stage_summary_still_reports_blocked_work(self):
         html = render(self.state)
-        building = html.split('<section class="collapsible" aria-labelledby="stage-building"')[1].split('</summary>')[0]
+        building = html.split('<section class="collapsible building" aria-labelledby="stage-building"')[1].split('</summary>')[0]
         self.assertEqual(text_of(building.split('>', 1)[1]), 'Building 2 , 1 blocked')
-        planned = html.split('<section class="collapsible" aria-labelledby="stage-planned"')[1].split('</summary>')[0]
+        planned = html.split('<section class="collapsible planned" aria-labelledby="stage-planned"')[1].split('</summary>')[0]
         self.assertNotIn('blocked', planned)
 
     def test_needs_tab_history_uses_decision_cards(self):
         html = render(self.state)
         for heading, count in (('revisits-heading', 2), ('answered-heading', 1)):
             section = html.split(f'aria-labelledby="{heading}"')[1].split('</section>')[0]
-            self.assertEqual(section.count('<article class="card need">'), count)
+            self.assertEqual(len(re.findall(r'<article id="[^"]+" class="card need"', section)), count)
         tradeoff = text_of(html.split('aria-labelledby="revisits-heading"')[1].split('</article>')[0])
+        html = html.split('class="inbox-detail"')[1]
         for value in ('Tradeoff R1', 'Source: W1 scope decision', self.state['revisits'][0]['tradeoff'], f"Revisit {self.state['revisits'][0]['revisit']}"):
             self.assertIn(value, tradeoff)
         self.assertIn('class="need-id settled"', html)
         self.assertEqual(html.count('class="need-id"'), 1)
+
+    def inbox(self, html):
+        """Each inbox row's (target, selected, text), with the cards that exist in the page."""
+        cards = {attrs["id"]: attrs["class"].split() for tag, attrs in Elements(html).elements if tag == "article" and "id" in attrs}
+        rows = [(re.search(r'aria-controls="([^"]+)"', row)[1], 'aria-selected="true"' in row.split('>')[0], text_of(row.split('>', 1)[1]))
+                for row in re.findall(r'<button type="button" class="inbox-row".*?</button>', html)]
+        return rows, cards
+
+    def test_every_decision_card_has_one_inbox_row_and_the_first_open_decision_is_selected(self):
+        html = render(self.state)
+        rows, cards = self.inbox(html)
+        self.assertEqual([target for target, _, _ in rows], [card for card in cards if card.startswith(("decision-", "tradeoff-"))])
+        self.assertEqual(len(rows), 4)
+        self.assertEqual([selected for _, selected, _ in rows], [True, False, False, False])
+        self.assertEqual([card for card, classes in cards.items() if "selected" in classes], [rows[0][0]])
+
+    def test_inbox_rows_lead_with_the_title_and_leave_metadata_to_the_detail(self):
+        html = render(self.state)
+        rows, _ = self.inbox(html)
+        self.assertEqual([row_text for _, _, row_text in rows], [
+            "Should expired export links remain visible? W2-D1",
+            "Retry delay remains fixed R1",
+            "Job IDs outlive their first attempt R2",
+            "Should a retried export keep its original job ID? W0-D1",
+        ])
+        detail = text_of(html.split('class="inbox-detail"')[1])
+        for metadata in ("Decision W2-D1 Blocks W2", "Tradeoff R1 Source: W1 scope decision", "Tradeoff R2 Source: W0-D1", "Answered W0-D1 Affected W0"):
+            self.assertIn(metadata, detail)
+
+    def test_inbox_groups_count_their_rows_and_only_open_decisions_ask_for_attention(self):
+        html = render(self.state)
+        titles = re.findall(r'class="inbox-group-title">(.*?</span>)</span>', html)
+        self.assertEqual([text_of(title) for title in titles], ["Open decisions 1", "Worth a second look 2", "Answered decisions 1"])
+        self.assertEqual(["attention" in title for title in titles], [True, False, False])
+
+    def test_inbox_groups_expose_their_status_to_styling(self):
+        self.assertEqual(re.findall(r'class="inbox-group (\w+)"', render(self.state)), ["open", "revisit", "answered"])
+
+    def test_only_the_first_of_several_open_decisions_starts_selected(self):
+        self.state["needs"].insert(1, {**self.state["needs"][0], "id": "W2-D2"})
+        rows, cards = self.inbox(render(self.state))
+        self.assertEqual([selected for _, selected, _ in rows[:2]], [True, False])
+        self.assertEqual([card for card, classes in cards.items() if "selected" in classes], [rows[0][0]])
+
+    def test_decision_and_tradeoff_with_one_id_keep_separate_cards(self):
+        self.state["revisits"][0]["id"] = self.state["needs"][0]["id"]
+        rows, _ = self.inbox(render(self.state))
+        self.assertEqual(len({target for target, _, _ in rows}), len(rows))
+
+    def test_inbox_without_open_decisions_says_so_and_selects_nothing(self):
+        self.state["needs"] = [row for row in self.state["needs"] if row["status"] == "answered"]
+        html = render(self.state)
+        rows, cards = self.inbox(html)
+        self.assertIn("Nothing needs you in this snapshot", html)
+        self.assertEqual([selected for _, selected, _ in rows], [False] * 3)
+        self.assertFalse(any("selected" in classes for classes in cards.values()))
+
+    def test_empty_needs_render_no_inbox_list(self):
+        self.state.update(needs=[], revisits=[])
+        html = render(self.state)
+        self.assertIn("Nothing needs you in this snapshot", html)
+        self.assertNotIn('role="listbox"', html)
 
     def test_work_panel_stays_reachable_without_scripts(self):
         html = render(self.state)
