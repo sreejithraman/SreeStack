@@ -97,7 +97,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertEqual(self.environment(), environment)
         shutil.rmtree(environment / "lib")
 
-        self.assertEqual(self.environment(), environment)
+        self.run_checks("-c", "import pip")
 
     def test_runs_every_check_and_fails_when_any_check_fails(self):
         self.assertIn("ran whitespace", self.run_checks().stdout)
