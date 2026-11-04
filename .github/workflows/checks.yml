@@ -17,18 +17,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Install checker dependency
-        run: python3 -m pip install -r scripts/requirements-checks.txt
-      - name: Test repository checks
-        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
-      - name: Test command center renderer
-        run: python3 -m unittest discover -s skills/chief-of-staff/scripts -p 'test_*.py' -v
-      - name: Check skills and links
-        run: python3 scripts/check_skills.py
-      - name: Check whitespace
+      - name: Run repository checks
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python3 scripts/check_whitespace.py
+        run: python3 scripts/check.py
       - name: Scan for secrets
         shell: bash
         run: |
