@@ -18,4 +18,4 @@ Delegation allowance: <helpers you may start>.
 
 Owner report: write it to <record>/reports/<ID>.md.
 Route: <delegated: end your turn with it; the chief thread watches your PR | top-level: send it to the chief thread <link> with t3_thread_send; you watch your PR>.
-Decision requests and shared blockers use the same route as they arise.
+Decision requests and shared blockers use the same route as they arise. In each decision request, say what reversing each option would take and cite any recorded source that settles it.

@@ -68,8 +68,10 @@ When a person must decide or supply something, return a **decision request**
 apart from the progress report: a stable ID, prefixed with your assigned work ID
 when you have one (`W2-D1`), the exact question and its source, affected work, options with any
 recommendation, and what continues meanwhile. A parent forwards the question
-with its meaning intact through the host's user-input route. The request stays
-open until the person answers or withdraws it; record either with its source.
+with its meaning intact through the host's user-input route, unless its
+workflow authorizes it to settle the request. The request stays open until the
+person answers or withdraws it or that parent settles it; record each with its
+source.
 Progress, readiness, or a recommendation leaves it open. Keep the ID while the
 question stands; a changed question gets a new ID linked to the one it replaces.
 

@@ -390,6 +390,7 @@ round cap is added.
 - [mattpocock/skills / skills/in-progress/chief-of-staff](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/in-progress/chief-of-staff) and [skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/implement-spec) — adaptation baseline `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`. MIT notice in `licenses/mattpocock-skills.txt`.
 - [cursor/plugins / pstack/skills/poteto-mode](https://github.com/cursor/plugins/tree/ae5650febf4320793844c12c4adaa937f417f8da/pstack/skills/poteto-mode) — `SKILL.md` and `playbooks/orchestrate.md`, `playbooks/autonomous-run.md`, and `playbooks/multi-phase-plan.md`; adaptation baseline `ae5650febf4320793844c12c4adaa937f417f8da`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [lauren / empirical review post](https://x.com/poteto/status/2117437607940681849) and [clarification](https://x.com/poteto/status/2117440753551204735) — conceptual input, read with the user's supplied history assessment on 2026-11-03. No post text copied.
+- [Alex Hillman / between-turn judge post](https://x.com/alexhillman/status/2111972827452612679) — conceptual input for decision triage, read 2026-11-04. No post text copied.
 - [DeepSeek / dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) — conceptual input reviewed at `8c32a9dc5d72c033816c6a8110b37f40cf94fba4`: `docs/000-philosophy.md`, `docs/001-domain.md`, `docs/003-execution.md`, `docs/004-prompts.md`, and the `prompts/` role, dispatch, work, reply, handoff, scope, communication, and delivery instructions. Informs Chief of Staff, Implement, Orchestration, and Showroom; no code or prose copied.
 - [Lucide Icons](https://lucide.dev/guide/lucide/getting-started) — external browser dependency, version `1.67.0`, loaded asynchronously from `https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js` with SHA-384 integrity and no referrer. No Lucide source assets or license text are vendored. [Upstream package license](https://cdn.jsdelivr.net/npm/lucide@1.67.0/LICENSE) covers ISC and applicable Feather MIT notices.
 
@@ -397,7 +398,9 @@ Automatically discoverable program owner. One Implement owner per PR unit,
 started from `assets/owner-kickoff.md` with an explicit return route and report
 file; the chief reads owner reports, accepts units under
 Orchestration, watches delegated owners' pending PRs, and routes discoveries
-through an explicit disposition table. Merged delivery is the local default:
+through an explicit disposition table. The chief triages decision requests: it
+resolves reversible, unreserved ones that a recorded source or the user's
+standing approval settles, and the user can reopen any of them. Merged delivery is the local default:
 owners land accepted PRs on the chief's recorded landing release, and the chief
 lands when needed. Landing stays within the agreed program scope and inherited
 finish line, with one pending landing per target branch and hold reconciliation
@@ -411,7 +414,8 @@ wiki, Linear, Slack, cloud runtime, or recurring schedule.
 The original command center renders a checked JSON snapshot of the program
 record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
 Needs you before Work, collapsible sections, per-row observation times, copyable decision prompts
-that name one recorded option, and accepted tradeoffs. Below 900px it stays one
+that name one recorded option, judgment calls ahead of quick picks with a batch prompt, reopenable
+chief-resolved decisions, and accepted tradeoffs. Below 900px it stays one
 column; wider, Needs you is a dual-pane inbox and Work a board of stage lanes. It
 replaces the supplied archive's Claude artifact database and integrations; no
 archive code or prose is copied. Validation rejects non-PR merge states and

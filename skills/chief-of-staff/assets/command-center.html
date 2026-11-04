@@ -112,6 +112,12 @@ time { font-variant-numeric: tabular-nums; }
 .manual-prompt { inline-size: 100%; min-block-size: 150px; padding: 10px 12px; resize: vertical; border: 0; border-radius: 10px; background: var(--fill); color: var(--text); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .answer, .suggested-answer { margin-block-start: 18px; padding: 14px 16px; border-radius: 14px; background: var(--fill); }
 .answer-label { margin-block-end: 3px; color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.answer p + .answer-label { margin-block-start: 12px; }
+.reopen { display: grid; gap: 10px; margin-block-start: 14px; }
+.batch { display: grid; gap: 14px; margin-block: 16px; padding: 16px 20px; }
+.batch li { font-size: 15px; }
+.batch li + li { margin-block-start: 4px; }
+.batch .copy-prompt { background: var(--tint); color: var(--on-tint); }
 .links { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-block-start: 16px; font-size: 14px; }
 .links a { display: inline-block; padding-block: 6px; }
 
@@ -211,7 +217,8 @@ details[open] > .section-toggle::after { rotate: 45deg; }
   .inbox-detail :is(.need, .collapsible) { margin-block-start: 0; }
   .inbox-detail .section-body { padding-block: 0; }
   .inbox-detail details::details-content { content-visibility: visible; }
-  .inbox-detail :is(.need:not(.selected), .section-toggle), .inbox-detail:has(.selected) .empty { display: none; }
+  .inbox-detail :is(.need:not(.selected), .section-toggle), .inbox-detail:has(.selected) .empty, .inbox-detail:not(:has(.quick.selected)) .batch { display: none; }
+  .inbox-detail .batch { margin-block-start: 0; }
   .context { max-inline-size: 72ch; }
 }
 
