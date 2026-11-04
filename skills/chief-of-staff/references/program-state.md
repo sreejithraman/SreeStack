@@ -16,10 +16,13 @@ the snapshot. It needs no wiki or committed state file.
 Keep:
 
 - Outcome, scope, original request and message sources, accepted corrections,
-  preserved requirements, finish line, and holds with release conditions.
+  preserved requirements, finish line and who may land, and holds with release
+  conditions.
 - PR units with stable IDs, tickets, dependencies, acceptance evidence, intended
   base, owner thread/task IDs and links, start mode and return route,
-  workspace/branch, model selection, current head/base, and actual delivery state.
+  workspace/branch, model selection, current head/base, each merge set's lander,
+  target branch, pending submission or queue state, and landing release (issuing
+  chief, owner, accepted head/base, active or withdrawn), and actual delivery state.
 - Each owner report's disposition and evidence, handled follow-up sources,
   live helpers and waits, and task IDs returned when an owner resumes.
 - Discoveries with origin and destination, support work and affected owners,
@@ -78,7 +81,7 @@ type Link = { label: string; url: string };
 type Snapshot = {
   title: string;
   goal: string;
-  finishLine?: string;
+  finishLine?: string; // says who may land when not the default
   updatedAt: string; // snapshot assembly time
   demo?: boolean;   // true only for an illustrative example
   needs: Need[];

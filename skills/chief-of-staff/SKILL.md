@@ -19,10 +19,24 @@ dependent work.
 
 Read the request, specs, tickets, PRs, and project conventions. Use
 [Reframe](../reframe/SKILL.md) when the outcome needs clarifying; reuse a
-settled brief. Set the **finish line**: a plan, local work, review-ready PRs,
-or merged delivery. Merging needs the user's actual authorization; a PR that
-becomes mergeable has not received it. You land accepted PRs; owners carry
-theirs to review-ready.
+settled brief. Set the **finish line** and who may land:
+
+| The user or project asks for | Finish line | Landing |
+| --- | --- | --- |
+| Nothing specific | Merged | Each owner lands its accepted PR; you land when needed |
+| A stack | Stacked review-ready PRs | None until a later merge request |
+| User-decided merges | Merged, as the user approves | Each landing waits on the user's answer |
+| A plan, local work, or review-only PRs | That line | None |
+
+A program started here grants default landing only for work within the user's
+agreed program scope. Preserve a calling workflow's stated finish line; adding a
+unit or discovering another repository does not expand that scope. A stated
+finish line, hold, or project rule that reserves merging replaces the default,
+and a mergeable PR adds nothing to the grant. A stack requested together with
+merging keeps the default landing. For a requested stack, plan its order under task graphs'
+[topology procedure](references/task-graphs.md#join-unmerged-inputs). A later
+change applies to all unmerged work: update the record and owners, then reconcile
+pending landings under [Land and finish](#land-and-finish).
 
 Map the work to PR-sized units with acceptance evidence and explicit
 dependencies. Several tickets can share one cohesive PR; split a ticket that
@@ -125,18 +139,54 @@ Refresh on meaningful results and decisions, and show freshness honestly.
 
 ## Land and finish
 
-Recompute ready work after each accepted result under
+Recompute ready work after each accepted result or landing under
 [task graphs](references/task-graphs.md#dependencies).
 
-For landing, use [Merge](../merge/SKILL.md) and [gh-stack](../gh-stack/SKILL.md)
-within the program's authorization. Land each accepted PR in dependency order
-once no open decision affects it; later PRs need not wait for unrelated ones.
-A stacked PR lands with every unmerged layer below it, so each of those layers
-must meet the same conditions. Invoke Merge as a caller that keeps its own repair
-owner for the PR, and resume that owner for any readiness gap Merge returns
-before landing. Coordinate restacks with branch owners. Read the tracker's parent/child completion rules
+Owners stop at readiness so acceptance comes before landing. Where the finish
+line includes merging, answer that stop in the same pass: for each ready report,
+or watcher wake showing a delegated owner's PR ready, accept it and move to
+landing, return a repair to the owner, or record the dependency, decision, hold,
+or earlier landing it waits on and act when that clears.
+
+A PR can land in dependency order once it is accepted at its current head and no
+open decision or hold affects it; later PRs need not wait for unrelated ones. A
+stacked PR lands with every unmerged layer below it, so each of those layers must
+meet the same conditions. Where the user decides merges, first put the accepted
+merge set in Needs you, naming its PRs and heads. The units stay accepted, and the
+answer grants that set at those heads.
+
+Name one lander for each merge set and record it:
+
+- **Owner:** for a single-PR merge set, record a **landing release** from the
+  current chief naming the owner, PR, accepted head/base, and any resources
+  dependents still need, then resume that owner with it. The record is authoritative;
+  immediately before submitting a merge, the owner re-reads it to confirm the
+  current chief, active release, and absence of affecting decisions or holds,
+  and matches the forge's head/base to the release. A mismatch returns to you
+  for reconciliation.
+- **You:** when the set spans several owners, its owner cannot act, or sequencing
+  calls for one lander, confirm its owners have stopped writing, then land it
+  through [Merge](../merge/SKILL.md) and
+  [gh-stack](../gh-stack/SKILL.md). Invoke Merge as a caller that keeps its own
+  repair owner for the PR, and resume that owner, or
+  [transfer ownership](#start-pr-owners) if it cannot act, for any readiness gap
+  Merge returns before landing.
+
+Keep one pending landing per target branch, including queued merges. After it
+merges or is confirmed stopped, recheck the next set against the current base
+before releasing it. Land overlapping sets one at a time even across targets.
+A parent shared by several units lands once; recheck each dependent after it
+restacks. Coordinate restacks with branch
+owners. Read the tracker's parent/child completion rules
 before closing a rollup, and preserve unfinished and unrelated children.
 Confirm the actual merge and issue state; a PR closed without merge did not land.
+
+Withdraw a release in the record before notifying its owner when its head/base,
+chief, lander, finish line, decision, or hold changes. Reconcile any in-flight
+submission at the forge; a stop also cancels pending automatic or queued landing
+through supported forge controls. Confirm it stopped before assigning another
+lander or releasing the next set. Report anything already merged or whose
+cancellation cannot be confirmed; only the user can lift a human hold.
 
 Finish when every required unit meets the finish line, integrated behavior is
 verified where units interact, and every discovery has a disposition. Keep

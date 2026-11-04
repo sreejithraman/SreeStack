@@ -396,12 +396,17 @@ round cap is added.
 Automatically discoverable program owner. One Implement owner per PR unit,
 started from `assets/owner-kickoff.md` with an explicit return route and report
 file; the chief reads owner reports, accepts units under
-Orchestration, watches delegated owners' pending PRs, lands accepted PRs, and
-routes discoveries through an explicit disposition table.
+Orchestration, watches delegated owners' pending PRs, and routes discoveries
+through an explicit disposition table. Merged delivery is the local default:
+owners land accepted PRs on the chief's recorded landing release, and the chief
+lands when needed. Landing stays within the agreed program scope and inherited
+finish line, with one pending landing per target branch and hold reconciliation
+covering queued merges. A requested stack, user-decided merges, a plan, local work,
+review-only PRs, holds, or project rules narrow that default.
 `references/task-graphs.md` keeps the upstream frontier scheduling, adds
 verification at the dependent's base, and linearizes fork-and-join inputs into
 reviewable stacks. Existing trackers stay authoritative; there is no mandatory
-wiki, Linear, Slack, cloud runtime, merge grant, or recurring schedule.
+wiki, Linear, Slack, cloud runtime, or recurring schedule.
 
 The original command center renders a checked JSON snapshot of the program
 record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
