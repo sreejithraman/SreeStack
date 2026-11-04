@@ -91,7 +91,7 @@ task-specific selection, then the first matching row:
 | Diagnosis, design decisions, other code, builds, tests, refactoring, configuration, non-interactive verification, or accepted code fixes | Simple, Standard, or Hardest implementation |
 
 Mixed prose and code keeps one owner on the code's row, even inside a skill folder. Use at
-least Standard when the prose needs judgment.
+least Standard when the prose needs judgment. Its accepted fixes stay on that row.
 
 | Row | Use for |
 | --- | --- |
@@ -120,7 +120,7 @@ repeated failed attempts move it to Standard or Hardest. It and its accepted fix
 the raised row unless a UI row applies.
 
 Reapply the first table when work turns out to change UI, need a dedicated operator, or edit
-executable files or tests.
+executable files or tests. Keep a raised row if it is higher, unless a UI row applies.
 
 ### Selection handoff
 
@@ -191,9 +191,10 @@ A required selection without a usable fallback stays a blocker after permitted r
 
 ### Availability fallback
 
-A row's fallback applies when the assignment uses that row's provider and model. Other
-explicit selections need their own authorized fallback. A user choice that excludes
-substitution stays a blocker. Use the exact listed model and effort. A fallback never authorizes unlisted models, the Simple tier, or a change
+A row's fallback applies when the row supplied the selection. An explicit user selection
+needs a substitute the user authorized, and any other explicit selection needs its own
+authorized fallback. Otherwise it stays a blocker. Use the exact listed model and effort.
+A fallback never authorizes unlisted models, the Simple tier, or a change
 to additional-review skip policy.
 
 Record the failed selection, failure evidence, and fallback. Keep the assignment's scope,
