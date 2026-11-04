@@ -143,7 +143,8 @@ preset.
 For a native slash command through `delegate_task`, use `role: general` and
 start `task` with the command. Other roles prepend text before the command.
 
-Use fresh delegated tasks for bounded assignments and independent reviews.
+Use fresh delegated tasks for independent reviews, and for other bounded
+assignments unless [reuse](#reuse-an-agent) fits.
 Carry needed context in the brief. Shared-checkout children need disjoint writes
 and serialized git/index operations. For a separate checkout, use the host's
 worktree-isolated delegation. Confirm its starting revision and supply relevant
@@ -159,6 +160,29 @@ work live; reconcile its state before replacement.
 Before overlapping a replacement with earlier writers, account for pending
 child runs and reconcile their files. Cancellation or a terminal task receipt
 alone does not establish that every later or nested writer has stopped.
+
+### Reuse an agent
+
+For new work, prefer a retained agent you already know of when its context would
+help; finding one needs no search. It must match the assignment's resolved model
+and effort exactly, reach the correct workspace and current revision, and keep
+that context under a continuation the host supports. Normal assignment rules
+still apply. Choose a new agent when that context is stale, the agent repeats
+failed assumptions, or the work needs an independent attempt.
+[Recover work](#recover-work) and [availability fallback](#availability-fallback)
+take precedence.
+
+A read-only reviewer can take accepted repairs once its whole review pass is
+complete, reports and receipts are archived under
+[Review evidence](../../review/references/review-evidence.md), and the caller or
+Review Sweep has settled the findings. Its brief lists those repairs and
+explicitly supersedes the read-only assignment. Implementation already
+authorized needs no new human approval.
+
+An agent that wrote or directed a change is excluded from later independent
+assessment of that change. Its earlier pre-edit coverage follows
+[carry-forward rules](../../review-fix-loop/SKILL.md#review-settle-repeat). Each
+independent review or recheck is a fresh delegated task.
 
 ## Recover work
 
