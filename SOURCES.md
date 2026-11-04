@@ -1275,6 +1275,8 @@ operational difficulty, at a tier set by flow complexity and false-pass cost, wi
 Verify retaining assertions and verdicts. Listed availability
 fallbacks apply to quota, unavailable providers/models, and provider runtime
 failures while preserving acceptance, review criteria, and explicit selections.
+A user-named model blocks rather than falling back unless the user authorized a
+substitute.
 Selection changes honor host delegation authority; children without permission
 return incomplete work for parent-owned reconciliation and dispatch. The parent
 reports a blocker for a repeat request with no new evidence. Failed

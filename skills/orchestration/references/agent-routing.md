@@ -191,9 +191,9 @@ A required selection without a usable fallback stays a blocker after permitted r
 
 ### Availability fallback
 
-A row's fallback applies when the assignment uses that row's configured provider and
-model. Other explicit selections need their own authorized fallback, and an explicit user
-selection without substitution takes precedence. Use the exact listed model and effort. A
+A row's fallback applies only when the row supplied the selection. If the user named the
+model, report a blocker and wait unless the user authorized a substitute. Other explicit
+selections need their own authorized fallback. Use the exact listed model and effort. A
 fallback never authorizes unlisted models, the Simple tier, or a change to additional-review
 skip policy.
 
