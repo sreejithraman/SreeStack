@@ -637,7 +637,7 @@ Stateful workflow checks carry architecture-discovered event sequences into
 public-entry-point checks with expectations grounded in product requirements.
 The standalone statechart scripts and mandatory statechart invocation are
 excluded; domain traces and optional diagrams need no bundled renderer.
-Interactive driving takes its model from Orchestration's working selection
+Interactive driving follows Orchestration's UI operation rule
 while Verify keeps assertions and verdicts.
 Ordinary checks use a temporary plan when no map exists and maintain affected
 recipes when a map is already set up. Creating a map requires a setup or reusable
@@ -1002,12 +1002,16 @@ other nonignored untracked source.
 
 ## review-fix-loop
 
-- Local: `skills/review-fix-loop` (SreeStack). T3-owned rounds map required
-  assessments to their named model defaults, with Adversarial added on
-  substantial changes. Impact-based coverage decisions are recorded and retained
-  through fix rounds. Each independent round adds one random optional reviewer
-  from each provider pool. The loop owns provider-reference delivery, skips,
-  and stable snapshots. Generic
+- Local: `skills/review-fix-loop` (SreeStack). T3-owned passes map required
+  assessments to their named model defaults. Impact-based coverage selects one
+  Primary for contained work, Primary plus a fitting lens for contained risk, and
+  staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
+  Fixes route by what they change to the original reviewers for those angles,
+  under Orchestration's reuse rule; Primary's integrated check covers
+  cumulative repairs; and repeated repairs to an invariant trigger a parent
+  design checkpoint. The first independent pass adds one random optional reviewer
+  from each provider pool. The loop owns provider-reference
+  delivery, skips, and stable snapshots. Generic
   delegation and handoff use Orchestration, with tasks mapped to review
   assignments and workflow/pass identities; findings use Review Sweep with
   stable issue IDs and per-issue repair/check evidence.
@@ -1252,19 +1256,23 @@ repairs require comparable reruns; failed required cases cannot be averaged away
 - [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
 
-Shared T3-oriented assignment, execution, recovery, and acceptance mechanics.
-One editable table in `references/agent-routing.md` owns working, research,
-source-retrieval, and review model defaults, including effort and additional
-review pools. The direct-work match/delegate gate applies to the working
-selection. Live host instructions own APIs, transport, task lifecycle,
-permissions, and workspace binding. Local policy owns concurrency and bounded
-recovery, subject to caller-specific failure policy.
+Shared T3-oriented assignment, dispatch, and acceptance mechanics live in the
+entrypoint; `references/agent-routing.md` owns selection, reuse, and recovery.
+One editable table there owns working, research, source-retrieval, and review
+model defaults, including effort and additional review pools. The direct-work
+match/delegate gate applies to the working selection. Live host instructions own
+APIs, transport, task lifecycle, permissions, and workspace binding. Local policy
+owns concurrency and bounded recovery, subject to caller-specific failure policy.
 
-Working selection checks interactive operation first, UI building next, document
-writing and revision next, then Simple, Standard, or Hardest implementation.
-Interaction effort follows flow
-complexity and false-pass cost; mixed building and driving use separate
-assignments, with Verify retaining assertions and verdicts. Listed availability
+Working selection distinguishes source review and research, dedicated UI
+operation, UI building, document writing and revision, then Simple, Standard, or
+Hardest implementation. Hardest
+is rare and requires evidence that Standard is insufficient; its Codex fallback
+is GPT-6 Astra at X-High. Tool semantics come from the live contract.
+The existing agent handles routine UI operation; a dedicated operator is reserved
+for substantial work, specialized capabilities, required independence, or repeated
+operational difficulty, at a tier set by flow complexity and false-pass cost, with
+Verify retaining assertions and verdicts. Listed availability
 fallbacks apply to quota, unavailable providers/models, and provider runtime
 failures while preserving acceptance, review criteria, and explicit selections.
 Selection changes honor host delegation authority; children without permission
@@ -1275,12 +1283,14 @@ escalation preserves an active fallback owner and its context.
 Names no callers. Briefs carry the original request and accepted
 corrections; work keeps a stable identity across attempts; explicit human holds
 persist until released. New work prefers a retained agent when its context helps
-and it matches the resolved model and effort, workspace, and a supported host
-continuation; failure recovery and fallback keep precedence. An agent that wrote
-or directed a change is excluded from later independent assessment of it, and
-independent reviews and rechecks stay fresh delegated tasks. Children return
-decision requests with stable IDs that stay open until answered or withdrawn. A
-result is accepted only after
+and it matches the resolved model and effort, workspace, and a host continuation
+that is both supported and permitted; failure recovery and fallback keep
+precedence. An agent that wrote or directed a change is excluded from later
+independent assessment of it. Follow-up reviews prefer the role's original
+reviewer when reuse fits, its outputs are archived, and its context is free of
+same-round peer content; otherwise a new task receives the prior evidence and is
+recorded as a replacement. Children return decision requests with stable IDs that
+stay open until answered or withdrawn. A result is accepted only after
 inspecting its artifact at a named revision; every required slice is accounted
 for. Acceptance, actual delivery state, and handoff delivery stay separate, and
 a failed handoff is resent only to its original recipient. Review Fix Loop owns

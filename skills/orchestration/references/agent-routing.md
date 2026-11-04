@@ -1,21 +1,24 @@
 # Agent routing
 
-T3's injected orchestration instructions and live tool descriptions own the API,
-transport, permissions, task state, and workspace binding. Read those when you
-dispatch.
+This reference owns SreeStack's model defaults, selection, reuse, and recovery policy.
+[Orchestration](../SKILL.md) owns assignment, dispatch, and acceptance. T3's injected
+instructions and live tool descriptions own the API, transport, permissions, task state,
+and workspace binding.
 
 ## Model defaults
+
+Edit this table to change the defaults.
 
 | Purpose | Provider | Model | Effort | Availability fallback | Review pool |
 | --- | --- | --- | --- | --- | --- |
 | UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
 | Simple implementation and fixes | Codex | GPT-6.1 Sol | Medium | — | — |
 | Standard implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6.1 Sol / High | — |
+| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6 Astra / X-High | — |
 | Document writing and revision | Claude | Opus 5.5 | Medium | Codex / GPT-6.1 Sol / Medium | — |
-| Routine interaction | Codex | GPT-6.1 Terra | Medium | — | — |
-| Demanding interaction | Codex | GPT-6.1 Terra | High | — | — |
-| Complex interaction | Codex | GPT-6.1 Terra | X-High | — | — |
+| Routine UI operation | Codex | GPT-6.1 Terra | Medium | — | — |
+| Demanding UI operation | Codex | GPT-6.1 Terra | High | — | — |
+| Complex UI operation | Codex | GPT-6.1 Terra | X-High | — | — |
 | General research | Codex | GPT-6.1 Sol | Medium | — | — |
 | YouTube retrieval | Antigravity | Gemini 4 Argon | High | Antigravity / Gemini 3.8 Flash / High | — |
 | X retrieval | Grok | Grok 4.7 | High | — | — |
@@ -28,211 +31,189 @@ dispatch.
 | Additional review | Antigravity | Gemini 4 Argon | High | — | Gemini |
 | Additional review | Antigravity | Gemini 3.8 Flash | High | — | Gemini |
 
-The primary-review row also sets the model for cross-judges and single-reviewer
-audits.
+The primary-review row also sets the model for cross-judges and single-reviewer audits.
+[Research](../../research/SKILL.md#source-routing) uses the YouTube and X retrieval rows.
+These rows set routing policy, not exclusive source access.
+[Review Fix Loop](../../review-fix-loop/SKILL.md) owns review coverage, assignment
+selection, harness review, and optional-failure policy.
 
-- **Implementation** rows cover code, builds, tests, refactoring, configuration,
-  non-interactive verification, and accepted code fixes.
-- **Document writing and revision** covers prose: skills, agent instructions,
-  READMEs, other docs, and accepted fixes to them.
-- **General research** covers source reading, comparison, and synthesis.
-  [Research](../../research/SKILL.md#source-routing) uses the YouTube and X
-  retrieval rows. These rows set routing policy, not exclusive source access.
-
-Use the exact [OpenCode Go model IDs](https://opencode.ai/v2/docs/console/go/#models)
-above. They keep the subscription route, so leave free or other paid endpoints out.
-
-User instructions override these defaults. Keep explicit user choices when you
-apply project requirements.
+Use the exact OpenCode Go IDs above. They keep the subscription route, so leave free or
+other paid endpoints out.
 
 Resolve names and effort through `orchestrator_capabilities` to exact available
-provider-instance and model IDs and supported options. Use a caller or project
-choice to settle multiple matches. Otherwise report the ambiguity. Gemini's effort
-can be encoded in its model ID. Pass the complete resolved selection, because
-[T3 replaces supplied options](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/OrchestratorMcpService.ts#L1001)
-rather than merging them with inherited ones.
+provider-instance and model IDs and supported options. Use a caller or project choice to
+settle multiple matches. Otherwise report the ambiguity. Gemini's effort can be encoded
+in its model ID. Pass the complete resolved selection and intended options using the live
+tool contract.
+
+## Operate a UI
+
+The agent already on a task operates a browser, computer, desktop app, or device UI itself
+as a routine step when its tools reach the target. That step needs no model match or new
+selection. This covers UI operation only. Live host rules, permissions, and action
+authorization still apply, and all other work keeps its
+[working selection](#choose-working-selection), including UI code changes.
+
+Use a dedicated operator only for:
+
+- Substantial UI work, such as a lengthy or difficult workflow.
+- A specialized capability the agent's tools lack.
+- Required independent verification, using an operator [independent](#reuse-an-agent) of
+  the assessed work.
+- Repeated operational difficulty, such as tool failures, state mismatches, or
+  inconsistent judgments. A product failure is a finding for the implementer, not a
+  handoff trigger.
+
+Choose a tier only for a dedicated operator. It changes the model, not permissions or
+action authorization:
+
+| Tier | Use for |
+| --- | --- |
+| Routine UI operation | A well-understood, linear flow. Still check intermediate and final states |
+| Demanding UI operation | Branching, uncertain state, recovery, or several interacting assertions |
+| Complex UI operation | Complex edge cases, or a high cost of a false pass |
+
+The handoff carries expected and observed states, evidence, unresolved checks, and session
+or tool references, under [selection handoff](#selection-handoff). The operator returns
+product failures to the implementer for repair. [Verify](../../verify/SKILL.md) owns
+acceptance assertions and verdicts.
 
 ## Choose working selection
 
-Pick a selection for each bounded assignment before you work or dispatch. Take the
-first match:
+Pick a row for each bounded assignment before you work or dispatch. Explicit user
+selections and effort limits come first and hold through project requirements. Then use a
+task-specific selection, then the first matching row:
 
-1. Operating a computer, browser, desktop app, or device UI, including verifying
-   an interactive workflow, uses an [interaction row](#choose-interaction-effort).
-   Split work that also builds UI, as described below.
-2. Building or changing UI uses the UI implementation row, however small or hard.
-   That includes a one-line CSS, SwiftUI, or UIKit fix.
-3. Writing or revising prose uses the document row, however small. A doc update
-   that ships with a code change stays with that change's implementer. Executable
-   files and tests use implementation rows, even inside a skill folder.
-4. Other implementation uses a [tier](#choose-implementation-tier).
+| Assignment | Selection |
+| --- | --- |
+| Source review, including of UI | Its named review row |
+| Research-only source reading, comparison, synthesis, or retrieval, including of UI | General research, or the YouTube or X row |
+| [Dedicated UI operation](#operate-a-ui), including verifying an interactive workflow | Routine, Demanding, or Complex UI operation |
+| Building or changing UI, however small | UI implementation at any difficulty, never Simple or Hardest |
+| Writing or revising prose, however small: skills, agent instructions, READMEs, other docs, and accepted fixes to them | Document writing and revision |
+| Diagnosis, design decisions, other code, builds, tests, refactoring, configuration, non-interactive verification, or accepted code fixes | Simple, Standard, or Hardest implementation |
 
-Source review and programmatic research, including of UI, keep their named review
-and research rows.
+Mixed prose and code keeps one owner on the code's row, even inside a skill folder. Use at
+least Standard when the prose needs judgment.
 
-When a task is hard or an answer is poor, diagnose or escalate. Report the chosen
-selection and why in the assignment or handoff.
+| Row | Use for |
+| --- | --- |
+| Simple | The evidence clearly shows a small, routine, mechanical task with an obvious check, such as a code typo, rename, or formatting fix |
+| Standard | The default, including diagnosis and substantive work with clear requirements or established patterns |
+| Hardest | Rare cases where evidence shows Standard is insufficient: unresolved architectural tradeoffs, subtle state or concurrency invariants, or repeated failed approaches that require challenging shared assumptions |
 
-### Choose interaction effort
+Choose Standard when Simple is in doubt. Small size alone does not make a task Simple; a
+small concurrency fix can be Hardest.
 
-- **Routine:** a well-understood, linear flow. Still check intermediate and final
-  states.
-- **Demanding:** branching, uncertain state, recovery, or several interacting
-  assertions.
-- **Complex:** complex edge cases, or a high cost of a false pass.
-
-Escalate on
-evidence of missed checks, state mismatches, or inconsistent judgments. Treat a
-real product failure as a finding to diagnose or fix, not as a reason to escalate
-until the check passes. An interaction row changes the model, not permissions or
-action authorization.
-
-Split work that both builds and drives. The implementation selection builds. The
-interaction selection then operates and verifies, and returns product failures to
-implementation for repair. Each handoff carries expected and observed states,
-evidence, unresolved checks, and session or tool references.
-[Selection handoff](#selection-handoff) and writer reconciliation apply.
-[Verify](../../verify/SKILL.md) owns acceptance assertions and verdicts.
-
-### Choose implementation tier
-
-Standard is the default:
-
-- **Simple:** only when the evidence clearly shows a small, mechanical task with
-  an obvious check, such as a code typo, rename, or formatting fix.
-- **Standard:** all other implementation, fixes, diagnosis, and non-interactive
-  verification.
-- **Hardest:** unresolved architectural tradeoffs, subtle state or concurrency
-  invariants, or repeated failed approaches that require challenging shared
-  assumptions.
-
-Small size alone does not make a task Simple; a small concurrency fix can be
-Hardest.
-
-Reassess when investigation or failed checks show the work is harder. Escalate one
-tier, or go straight to Hardest when the evidence warrants it. Document work rarely
-escalates: hard or high-stakes prose stays on its row, and only repeated failed
-attempts move it to Standard or Hardest. It and its accepted fixes then keep the
-raised row unless check 1 or 2 applies. Reapply the
-ordered checks when work turns out to change UI, need interactive operation, or
-edit executable files or tests. Carry the task, proof, partial work, and failed
-assumptions into the next assignment, and reconcile earlier writers before a
+Do the work yourself only when your model and effort match the selection or an explicit
+user override. Otherwise use [selection handoff](#selection-handoff), and leave the
+parent's own settings unchanged. Report the chosen selection and why in the assignment or
 handoff.
+
+### Raise the row
+
+Reassess when investigation, failed checks, missed checks, state mismatches, or
+inconsistent judgments show the work is harder. Escalate one row, or go straight to Hardest
+when the evidence warrants it. Carry the task, proof, partial work, and failed assumptions
+forward, and reconcile earlier writers first. A real product failure is a finding to
+diagnose or fix, not a reason to escalate until the check passes.
+
+Document work rarely escalates. Hard or high-stakes prose stays on its row, and only
+repeated failed attempts move it to Standard or Hardest. It and its accepted fixes then keep
+the raised row unless a UI row applies.
+
+Reapply the first table when work turns out to change UI, need a dedicated operator, or edit
+executable files or tests.
 
 ### Selection handoff
 
 A child with delegation authority stays within its assigned scope.
 
-A child without that authority stops at a safe checkpoint and returns a
-selection-change request to its parent. The request gives the row wanted and why,
-what is new since any earlier request, completed and remaining work with exact
-paths, checks and failed assumptions, and any active writers. This is incomplete
-work awaiting reassignment, not a finished task. The parent reconciles earlier
-writers and partial changes, then dispatches the replacement.
+A child without that authority stops at a safe checkpoint and returns a selection-change
+request: the row wanted and why, what is new since any earlier request, completed and
+remaining work with exact paths, checks and failed assumptions, and active writers. This is
+incomplete work awaiting reassignment. The parent reconciles earlier writers and partial
+changes, then dispatches the replacement.
 
-The parent compares each request with the assignment's earlier ones. If a request
-asks for the same or a higher row and names no new check result, failed assumption,
-or artifact fact, report a blocker. A verify-and-repair cycle that changes the
-artifact or the check result is not a repeat.
+The parent compares each request with the assignment's earlier ones. If it asks for the same
+or a higher row and names no new check result, failed assumption, or artifact fact, report a
+blocker. A verify-and-repair cycle that changes the artifact or the check result is not a
+repeat.
 
 A top-level session that cannot get the row reports that to the user and asks.
 
-## Dispatch and track
+## Reuse an agent
 
-Each child must support the resolved model and options. Use a generic role when
-custom ranks would override them. The brief defines obligations; T3's broad `role`
-is not a model preset.
+Prefer a retained agent you already know of when its context would help. You need not search
+for one. It qualifies when it:
 
-For a native slash command through `delegate_task`, use `role: general` and start
-`task` with the command. Other roles put text before the command.
+- Matches the assignment's resolved model and effort exactly.
+- Reaches the correct workspace and current revision.
+- Holds useful context that is current, not stuck, and not anchored on failed assumptions.
+- Keeps that context under a continuation the host both supports and permits for this work.
+  A working continuation tool does not show that permission.
 
-Shared-checkout children need disjoint writes and one-at-a-time git and index
-operations. For a separate checkout, use the host's worktree-isolated delegation.
-Confirm its starting revision and supply uncommitted inputs explicitly, since they
-may not be copied.
+Otherwise use a new agent, as with an unavailable or deleted agent or work that needs an
+independent attempt. [Recovery](#recover-work) takes precedence.
 
-The default local ceiling is 12 active children, lowered by host or user limits.
-Count workers and reviewers together. Start ready assignments as slots free. Keep
-each task's request key, ID, selection, owned output, and state.
+**Independence** means separation from writing or directing the assessed work. An agent that
+did either stays out of later independent assessment of that work. Its pre-edit coverage
+follows the loop's [coverage rule](../../review-fix-loop/SKILL.md#coverage-rule). An earlier
+assessment alone does not end independence.
 
-A wait timeout leaves work live, so reconcile its state before replacing it.
+**Follow-up reviews and rechecks** prefer the role's original reviewer when it qualifies, its
+reports and receipts are archived, and its context is free of same-round peer content.
+Otherwise, or when the host requires a new task for reviews or rechecks, start a new
+independent task with the role's criteria and selection, and supply the prior reports,
+receipts, and dispositions. Record it as a replacement with prior evidence, not as
+continuation.
 
-Before a replacement overlaps earlier writers, account for pending child runs and
-reconcile their files. Cancellation or a terminal receipt alone does not show that
-every later or nested writer has stopped.
+Either way the assessment is a new assignment with its own snapshot-bound brief, output
+paths, and read proof under [Review evidence](../../review/references/review-evidence.md).
+Earlier context guides navigation; reads of the current snapshot supply the proof.
 
-### Reuse an agent
-
-For new work, prefer a retained agent you already know of when its context would
-help. You need not search for one. It must match the assignment's model and effort
-exactly, reach the right workspace and current revision, and keep its context under
-a continuation the host supports. Choose a new
-agent when that context is stale, the agent repeats failed assumptions, or the work
-needs an independent attempt. [Recover work](#recover-work) and
-[availability fallback](#availability-fallback) take precedence.
-
-A read-only reviewer can take accepted repairs after its whole review pass is
-complete, its reports and receipts are archived under
-[Review evidence](../../review/references/review-evidence.md), and the caller or
-Review Sweep has settled the findings. Its brief lists those repairs and explicitly
-replaces the read-only assignment. Already authorized implementation needs no new
-human approval.
-
-An agent that wrote or directed a change stays out of later independent assessment
-of it. Its earlier pre-edit coverage follows
-[carry-forward rules](../../review-fix-loop/SKILL.md#review-settle-repeat). Each
-independent review or recheck is a fresh delegated task.
+**Reviewer to implementer.** A read-only reviewer can take accepted repairs once its whole
+pass is complete, its reports and receipts are archived, and the caller or Review Sweep has
+settled the findings. Its brief lists those repairs and explicitly replaces the read-only
+assignment. Already authorized implementation needs no new human approval.
 
 ## Recover work
 
-Repeat an uncertain dispatch with its existing key in the same provider session,
-so it resolves to the same work
-([T3 command identity](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/OrchestratorMcpService.ts#L1531)).
-A fresh run after terminal failure, including a retry in the same review round,
-needs a new key. Reconcile retained IDs before replacing work after a session
-change or lost response.
+Keep partial results and the failure cause. A caller's failure policy, such as
+[additional-review skips](../../review-fix-loop/references/review-assignments.md#handle-failures),
+overrides the retry below. Use a new key for any fresh run after terminal failure. Before
+replacing work, reconcile retained IDs and [earlier writers](../SKILL.md#dispatch).
 
-Keep partial results and the failure cause. Then, unless the caller sets a different
-failure policy:
+| Failure | Action |
+| --- | --- |
+| Uncertain dispatch or lost response | Repeat with its existing key in the same provider session, so it resolves to the same work |
+| Transient terminal or provider runtime failure | May retry once per target per workflow, including within a review round, before the listed fallback |
+| Quota, or an unavailable model or provider | The [listed fallback](#availability-fallback) with no retry. Otherwise report the blocker and resume when conditions change |
+| Authentication failure | Stop and report it, or request the login through the host's secret route. Retry once it is resolved |
+| Permission or policy denial | Stop the blocked action. Another model or transport does not authorize it |
+| Wrong answer, failed product check, or task difficulty | Diagnose or escalate |
 
-- **Transient terminal failure:** one fresh-task retry per target per workflow.
-- **Quota or unavailable model:** use a listed fallback. Otherwise report the
-  blocker and resume when conditions change.
-- **Authentication failure:** stop and report it, or request the login through the
-  host's secret route. Retry once it is resolved.
-- **Permission or policy denial:** stop the blocked action. Another model or
-  transport does not authorize it.
-
-A failed required selection with no listed fallback stays a blocker after permitted
-recovery. A fallback never authorizes unlisted models or changes additional-review
-skip policy.
+A required selection without a usable fallback stays a blocker after permitted recovery.
 
 ### Availability fallback
 
-Use a row's listed fallback automatically when the assignment uses that row's
-provider and model and the selection cannot run because of quota, an unavailable
-model or provider, or a provider runtime failure. A wrong answer or failed product
-check is not a runtime failure. Authentication and permission failures follow the
-recovery rules above. Other explicit selections need their own authorized fallback.
+A row's fallback applies when the assignment uses that row's provider and model. Other
+explicit selections need their own authorized fallback. A user choice that excludes
+substitution stays a blocker. Use the exact listed model and effort, and report a blocker if
+it also cannot run. A fallback never authorizes unlisted models, the Simple tier, or a change
+to additional-review skip policy.
 
-Record the failed selection, failure evidence, and fallback. A transient runtime
-failure may use the one retry above first. Confirmed quota or unavailability needs
-no retry. Reconcile partial work and earlier writers before starting a replacement.
+Record the failed selection, failure evidence, and fallback. Keep the assignment's scope,
+requirements, verification bar, and review criteria. A review fallback does that role's
+review in a new independent task. It does not use the implementer's result or another
+assessment as its coverage.
 
-Keep the assignment's scope, requirements, verification bar, and review criteria. A
-review fallback still does that role's review in a fresh independent task. It does
-not reuse the implementer's result or another assessment as its coverage.
+Keep the fallback for that assignment until availability changes or the user directs
+otherwise. Task difficulty alone never sends it back to the unavailable selection.
 
-A user choice that excludes substitution stays a blocker. If the fallback also
-cannot run, report the blocker.
+If the fallback matches a still-running owner, keep that owner, record the failed escalation,
+and pass it the reassessed selection and evidence. If the former run has ended, dispatch a new
+fallback task with the saved handoff.
 
-Keep the exact fallback model and effort for that assignment until availability
-changes or the user directs otherwise. Task difficulty alone must not send the
-assignment back to its unavailable selection.
-
-If the fallback matches a still-running owner of that assignment, keep that owner
-and record the failed escalation rather than starting a duplicate. Pass the reassessed selection and evidence to that owner. If the former
-run has ended, dispatch a fresh fallback task with the saved handoff.
-
-Dispatch identity and stored thread options confirm configuration, not which model
-the provider ran.
+Dispatch identity and stored thread options confirm configuration, not which model the
+provider ran.

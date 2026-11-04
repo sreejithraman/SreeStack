@@ -9,7 +9,7 @@ Report material issues noticed outside the assigned lens.
 | Primary | Correctness, regressions, security/data loss, test gaps; [Spec](../../review/references/spec.md) and [Standards](../../review/references/standards.md) |
 | Ponytail | Proven simplification, deletion, reuse, and root-cause repairs using [Ponytail](../../review/references/ponytail.md) |
 | Thermo | Structure, boundaries, abstractions, types, and concrete design improvements using [Thermo](../../review/references/thermo.md) |
-| Adversarial | Challenge assumptions and trace material failure scenarios using [Adversarial](../../review/references/adversarial.md); required for substantial changes under Prepare |
+| Adversarial | Challenge assumptions and trace material failure scenarios using [Adversarial](../../review/references/adversarial.md) |
 | Additional reviewer | General review across Review's applicable criteria |
 
 Primary also owns Review's applicable indirect-consumer and React/Next checks,
@@ -17,17 +17,17 @@ including react-best-practices and React Doctor evidence.
 
 ## Select reviewers
 
-Map each required assessment chosen in Prepare to its named review row in
+Map each required assessment to its named review row in
 [model defaults](../../orchestration/references/agent-routing.md#model-defaults).
-For every independent review round, add one general reviewer from each named
-additional-review pool. These supplement required assessments. Parent-only
-prose review needs no additional agents.
+In the loop's first independent pass, add one general reviewer from each named
+additional-review pool. These supplement required assessments. Later stages add
+none. Parent-only prose review needs no additional agents.
 
 Resolve candidates through agent routing and record unavailable targets with
 reasons. Within each pool, use a tool-backed uniform random draw among eligible
 models. Use the sole eligible candidate when only one remains; skip an empty
-pool. Record one mapping per loop and retain it through fixes unless the user
-changes the selection policy. Each round is a new independent assignment.
+pool. Record one mapping per loop and retain it through fixes and any superseded
+first pass unless the user changes the selection policy.
 
 ## Use the selected provider
 
@@ -41,7 +41,8 @@ required reference is incomplete coverage.
 
 ## Handle failures
 
-Use agent routing's recovery for required reviewers and uncertain dispatches.
+Use agent routing's recovery for required reviewers at every stage and for
+uncertain dispatches.
 Additional reviewers override its transient-retry default: on a confirmed quota
 or rate limit, authentication failure, unavailable model, runtime error, or
 incomplete review, skip that assignment for the rest of the loop. Retain partial

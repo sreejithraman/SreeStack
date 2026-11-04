@@ -8,9 +8,10 @@ Work on a draft outside the skill folder. Unless the request also asks for the
 rewrite, end with the report and let the user decide.
 
 1. **Record what must survive.** List the skill's invocation choice, required
-   legal notices, the anchors and paths other files link to, and its consumers.
-   Read its project record, such as its entry in `SOURCES.md`, for context. A
-   recorded behavior is a rule to test, not an automatic keep. Follow
+   legal notices, the anchors and paths other files link to, its consumers, and
+   decisions the user has already made. Read its project record, such as its
+   entry in `SOURCES.md`, for context. Any other recorded behavior is a rule to
+   test, not an automatic keep. Follow
    [revising skills](revising-skills.md#establish-the-baseline). Done: the
    original can be recovered and the list is complete.
 

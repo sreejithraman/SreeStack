@@ -295,12 +295,14 @@ from T3's live catalog. Edit
 [model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
 to change working/research/review models, source-retrieval routes, effort, and
 additional-review pools.
-The local concurrency ceiling is in that same reference. This is the one source
+The local concurrency ceiling is in Orchestration. This table is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
 
-Agent routing defines interaction selections, UI and implementation tiers, document work,
-escalation, and availability fallbacks; the table owns each selection.
+Agent routing defines UI operation, UI and implementation tiers, document work,
+escalation, and availability fallbacks; the table owns each selection. The existing agent handles
+routine UI operation, with dedicated operators for substantial work, specialized
+capabilities, independent verification, or repeated difficulty.
 
 Enable and authenticate the providers named in that table in T3 Code. Routing
 resolves their exact instance/model IDs and supported options from the live
@@ -335,17 +337,22 @@ Sample requests and expected results:
   and Grok respectively, then checks the source evidence before writing a cited note.
 - “Implement this change”: the working policy supplies the model and options;
   parallel children have disjoint ownership in the same checkout.
-- “Review and fix this shared-contract change”: primary, Ponytail, Thermo, and
-  adversarial assessments and optional pool reviewers cover the same snapshot;
-  accepted fixes use the working model.
-- “Review this small fix”: one required primary assessment plus optional pool
-  reviewers when full-review risk/contract triggers do not apply. An ordinary
-  prose or wording-only edit with no procedure change uses parent review.
+- “Review and fix this shared-contract change”: Primary, Ponytail, Thermo, and
+  optional pool reviewers assess the initial snapshot. The parent settles scope
+  and design, then Adversarial assesses the settled snapshot. Accepted fixes use
+  the working model.
+- “Review this small fix”: one required Primary plus initial optional pool
+  reviewers for contained ordinary work; contained risky work adds a fitting
+  lens. An ordinary prose or wording-only edit with no procedure change uses
+  parent review.
 - When an additional reviewer is unavailable or fails, the loop records a skip
   and continues. Missing required coverage cannot produce a clean result.
-- A substantive fix gets a fresh pass through the selected angles, bounded to
-  changes, affected behavior, prior findings, and relevant proof. Retain earlier
-  coverage only where it still applies. Keep the original base for context.
+- A substantive fix returns to the original reviewers for the angles it touches
+  when the host permits continuing them; otherwise new tasks receive the prior
+  evidence. Each pass checks the current snapshot, bounded to affected behavior,
+  prior findings, and relevant proof. Primary's integrated check covers
+  cumulative repairs. Retain earlier coverage only where it still applies. Keep
+  the original base for context.
   A changed snapshot supersedes in-flight review; dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
   goal or swarm work can use ordinary tasks; requested native tracking follows
