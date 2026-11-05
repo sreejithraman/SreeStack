@@ -21,7 +21,7 @@ fetching, commits, publication, remote replies/resolution, and later review roun
    Only Must-fix and Worth-fixing are accepted. Record reasons for rejection,
    acknowledgment, or deferral, including the parent decision a deferral needs.
 4. **Repair and check.** Use the working selection from
-   [agent routing](../orchestration/references/agent-routing.md#model-defaults).
+   [agent routing](../orchestration/references/agent-routing.md#choose-working-selection).
    Preserve intended behavior within the authorized scope; a changed product
    decision belongs to the parent. Run checks affected by accepted fixes,
    including relevant React Doctor diagnostics. Reuse proof while it remains

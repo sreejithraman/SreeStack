@@ -42,7 +42,8 @@ required reference is incomplete coverage.
 ## Handle failures
 
 Use agent routing's recovery for required reviewers at every stage and for
-uncertain dispatches.
+uncertain dispatches. A reviewer that stays unknown after it is an incomplete
+review: a required assessment gets a new one, and an additional review is skipped.
 Additional reviewers override its transient-retry default: on a confirmed quota
 or rate limit, authentication failure, unavailable model, runtime error, or
 incomplete review, skip that assignment for the rest of the loop. Retain partial

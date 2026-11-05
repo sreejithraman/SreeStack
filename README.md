@@ -213,8 +213,9 @@ explicit where configured. Ordinary delegation creates no native goals,
 schedules, or ordinary top-level conversations. Program execution, new sessions,
 native tracking, and recurring work follow the user's request and host rules.
 
-[Writing for Agents](skills/writing-for-agents/SKILL.md) routes skill revisions,
-tool-guidance audits, and instruction comparisons to conditional procedures.
+[Writing for Agents](skills/writing-for-agents/SKILL.md) sets plain-writing rules
+and routes skill audits, revisions, tool-guidance audits, and instruction
+comparisons to conditional procedures.
 For example, “Correct this skill's command example” uses a focused check;
 “Shorten this skill while preserving its behavior” establishes a baseline and
 tests the affected requests. Context-savings claims need measured trials with
@@ -298,8 +299,8 @@ The local concurrency ceiling is in Orchestration. This table is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [agent routing](skills/orchestration/references/agent-routing.md).
 
-Agent routing defines UI operation, UI and implementation tiers, escalation, and
-availability fallbacks; the table owns each selection. The existing agent handles
+Agent routing defines UI operation, UI and implementation tiers, document work,
+escalation, and availability fallbacks; the table owns each selection. The existing agent handles
 routine UI operation, with dedicated operators for substantial work, specialized
 capabilities, independent verification, or repeated difficulty.
 
