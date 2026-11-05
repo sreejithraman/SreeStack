@@ -140,7 +140,8 @@ python3 scripts/render_dashboard.py --state /absolute/path/program.json --output
 ```
 
 The renderer validates the snapshot, escapes content, and writes standalone
-HTML. It makes no tracker, forge, or session changes. The
+HTML stamped with a digest of the page, which open pages compare to spot a new
+publication. It makes no tracker, forge, or session changes. The
 [example snapshot](../assets/example-state.json) uses fictional work.
 
 Each copied choice or reopen request names its decision's revision, a digest of
