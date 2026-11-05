@@ -258,8 +258,9 @@ them, and the chief can land any PR itself. You can ask for a review-ready stack
 decide each merge yourself, or stop at a plan, local work, or review. Its command center shows Needs you first and
 Work second, rendered from a checked snapshot of the program record; answers
 go back through chat. Existing trackers stay authoritative. A hosting guide can serve the page at a stable
-private URL through Showroom and Tailscale Serve. Refreshes need a new
-snapshot; background refresh needs explicitly requested host scheduling.
+private URL through Showroom and Tailscale Serve. Open pages pick up each new
+snapshot on their own and keep your place; publishing one in the background
+needs explicitly requested host scheduling.
 
 [Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
 “Swarm these three possible causes and return evidence” partitions the question

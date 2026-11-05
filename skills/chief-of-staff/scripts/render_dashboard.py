@@ -214,6 +214,10 @@ def icon(name):
     return f'<i class="icon" data-lucide="{ICONS[name]}" aria-hidden="true"></i>'
 
 
+def digest(value):
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
 def when(value, age=False):
     return f'<time datetime="{e(value)}"{" data-age" if age else ""}>{e(value)}</time>'
 
@@ -224,7 +228,7 @@ def quoted(value):
 
 def revision(need):
     """Digest of the decision content a copied choice answers."""
-    return hashlib.sha256(json.dumps(need, sort_keys=True).encode()).hexdigest()[:10]
+    return digest(json.dumps(need, sort_keys=True))[:10]
 
 
 def display_stage(row):
@@ -242,7 +246,7 @@ def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", a
     """A section whose heading stays visible, and whose count stays readable, when collapsed."""
     return (
         f'<section class="collapsible{" " + state if state else ""}" aria-labelledby="{heading_id}"><details open>'
-        f'<summary class="section-toggle"><h{level} id="{heading_id}" class="section-title">{mark}{e(title)} <span class="count">{count}</span>{alert}</h{level}></summary>'
+        f'<summary class="section-toggle" id="toggle-{heading_id}"><h{level} id="{heading_id}" class="section-title">{mark}{e(title)} <span class="count">{count}</span>{alert}</h{level}></summary>'
         f"{body}</details></section>"
     )
 
@@ -342,7 +346,7 @@ def revisit_card(row):
 
 def inbox_row(target, identity, title, selected=False):
     return (
-        f'<button type="button" class="inbox-row" role="option" aria-selected="{str(selected).lower()}" aria-controls="{target}">'
+        f'<button type="button" class="inbox-row" id="row-{target}" role="option" aria-selected="{str(selected).lower()}" aria-controls="{target}">'
         f'<span class="inbox-row-title">{e(title)}</span><span class="inbox-row-id">{e(identity)}</span></button>'
     )
 
@@ -408,7 +412,7 @@ def pr_link(target):
 def work_card(row, needs, by_id):
     reasons = blockers(row, needs, by_id)
     heading_id = "work-" + row["id"].encode().hex()
-    content = f'<article class="card work" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">'
+    content = f'<article class="card work" id="{card_id("work-card", row)}" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">'
     primary = display_stage(row)
     content += f'<span class="state {e(primary)}">{icon(primary)}{e(state_label(row))}</span>'
     if row["state"] == "mergeable":
@@ -437,7 +441,7 @@ def work_card(row, needs, by_id):
             content += f'<li>{prefix}<span class="blocker-kind">{e(kind)}</span> {e(text_value)}</li>'
         content += "</ul></div>"
     if row.get("origin") or row.get("evidence"):
-        content += '<details class="work-context"><summary class="section-toggle">Evidence and history</summary><div class="section-body">'
+        content += '<details class="work-context"><summary class="section-toggle" id="' + card_id("toggle-evidence", row) + '">Evidence and history</summary><div class="section-body">'
         if row.get("origin"):
             content += f'<p><strong>Origin</strong> {e(row["origin"])}</p>'
         content += link_list(row.get("evidence", []))
@@ -505,7 +509,8 @@ def render(state):
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
     template = (Path(__file__).resolve().parents[1] / "assets" / "command-center.html").read_text()
-    return template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
+    page = template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
+    return page.replace("<!--SNAPSHOT-->", digest(page)).replace("<!--TEMPLATE-->", digest(template))
 
 
 def main():

@@ -2,7 +2,7 @@
 
 The command center is hosted only: give the user a link to return to, not an
 inline render in the chat. The page is a read-only snapshot. The chief owns its data; hosting serves the
-file and adds no coordinator, database, or wakeups.
+file and adds no coordinator, database, or wakeups. A static file server is enough.
 
 1. Choose a task-owned directory that survives worktree cleanup. Keep the
    program record, snapshot JSON, logs, and hosting details outside a dedicated
@@ -26,8 +26,12 @@ exact stop commands, and access limits in the program record. The hosting
 machine must stay awake and connected, and viewers need tailnet access.
 
 On each meaningful result or decision, replace the page at the same path.
-Reloading shows the new snapshot; the open page does not refresh itself, and
-answers still go through chat.
+An open page fetches that URL every 20 seconds while visible and when the user
+returns to it, then shows a new snapshot in place with its tab, selection,
+sections, and scroll position kept. Each browser tab keeps that view for the
+URL, so a manual refresh returns to it too; a new tab starts at Needs you.
+Only the chief's next publish changes what any page shows, and answers still go
+through chat.
 
 For teardown, follow the
 [web sharing procedure](../../showroom/references/web-sharing.md)'s take-down

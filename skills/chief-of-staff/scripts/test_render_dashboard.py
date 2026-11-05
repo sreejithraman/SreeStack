@@ -85,6 +85,18 @@ class DashboardTests(unittest.TestCase):
         card = html.split(f'aria-labelledby="work-{identity.encode().hex()}"')[1].split('</article>')[0]
         return re.findall(r'<span class="state ([a-z-]+)">', card)
 
+    def versions(self, state):
+        return re.search(r'<html lang="en" data-snapshot="(\w{64})" data-template="(\w{64})">', render(state)).groups()
+
+    def test_identical_snapshots_share_a_version_and_any_change_makes_a_new_one(self):
+        snapshot, template = self.versions(self.state)
+        self.assertEqual(self.versions(copy.deepcopy(self.state)), (snapshot, template))
+        for field, value in (("updatedAt", "2026-11-03T09:30:00Z"), ("title", "Another title")):
+            changed = dict(self.state, **{field: value})
+            with self.subTest(field=field):
+                self.assertNotEqual(self.versions(changed)[0], snapshot)
+                self.assertEqual(self.versions(changed)[1], template)
+
     def test_example_has_needs_first_and_work_hidden(self):
         html = render(self.state)
         elements = Elements(html).elements

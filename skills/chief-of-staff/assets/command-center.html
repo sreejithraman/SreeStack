@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-snapshot="<!--SNAPSHOT-->" data-template="<!--TEMPLATE-->">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -237,12 +237,12 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 </head>
 <body>
 <main><!--CONTENT--></main>
+<p id="snapshot-status" class="sr-only" role="status"></p>
 <script id="lucide-icons" async src="https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js" integrity="sha384-xrRF3kGz5GMZeUudxpTxrrjy0NRy/+U3dHY72SdMEgy9OsrO9x8mCw6DCD8m+jjS" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const iconScript = document.getElementById('lucide-icons');
 const renderIcons = () => window.lucide?.createIcons();
-if (window.lucide) renderIcons();
-else iconScript.addEventListener('load', renderIcons, {once: true});
+if (!window.lucide) iconScript.addEventListener('load', renderIcons, {once: true});
 
 function connectSelection(items, select, previousKey, nextKey) {
   for (const item of items) {
@@ -255,8 +255,8 @@ function connectSelection(items, select, previousKey, nextKey) {
   }
 }
 
-const tabs = [...document.querySelectorAll('[role="tab"]')];
-function selectTab(tab) {
+let tabs = [];
+function showTab(tab) {
   for (const candidate of tabs) {
     const selected = candidate === tab;
     candidate.setAttribute('aria-selected', String(selected));
@@ -264,22 +264,26 @@ function selectTab(tab) {
     document.getElementById(candidate.getAttribute('aria-controls')).hidden = !selected;
   }
 }
-connectSelection(tabs, selectTab, 'ArrowLeft', 'ArrowRight');
+function selectTab(tab) {
+  captureScroll();
+  showTab(tab);
+  restoreScroll();
+}
 
-const inboxRows = [...document.querySelectorAll('.inbox-row')];
-const inboxDetail = document.querySelector('.inbox-detail');
-const navigation = document.querySelector('.navigation');
-function selectInboxRow(row) {
+let inboxRows = [];
+function showInboxRow(row) {
   for (const candidate of inboxRows) {
     const selected = candidate === row;
     candidate.setAttribute('aria-selected', String(selected));
     candidate.tabIndex = selected ? 0 : -1;
     document.getElementById(candidate.getAttribute('aria-controls')).classList.toggle('selected', selected);
   }
-  if (inboxDetail.getBoundingClientRect().top < navigation.offsetHeight) inboxDetail.scrollIntoView();
 }
-inboxRows.forEach((row, index) => { row.tabIndex = index ? -1 : 0; });
-connectSelection(inboxRows, selectInboxRow, 'ArrowUp', 'ArrowDown');
+function selectInboxRow(row) {
+  showInboxRow(row);
+  const detail = document.querySelector('.inbox-detail');
+  if (detail.getBoundingClientRect().top < document.querySelector('.navigation').offsetHeight) detail.scrollIntoView();
+}
 
 const ages = [['day', 86400], ['hour', 3600], ['minute', 60]];
 const relative = new Intl.RelativeTimeFormat(undefined, {numeric: 'auto'});
@@ -298,34 +302,243 @@ function describeTimes() {
     }
   }
 }
-describeTimes();
 setInterval(describeTimes, 60000);
-addEventListener('pageshow', describeTimes);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) describeTimes(); });
 
-for (const button of document.querySelectorAll('.copy-prompt')) {
-  let reset;
-  button.addEventListener('click', async () => {
-    const status = document.getElementById(button.getAttribute('aria-describedby'));
-    const manual = button.parentElement.querySelector('.manual-prompt');
-    clearTimeout(reset);
-    try {
-      await navigator.clipboard.writeText(button.dataset.prompt);
-      manual.hidden = true;
-      status.classList.add('sr-only');
-      status.textContent = 'Copied';
-      button.classList.add('copied');
-      reset = setTimeout(() => { button.classList.remove('copied'); status.textContent = ''; }, 1800);
-    } catch {
-      status.classList.remove('sr-only');
-      status.textContent = 'Copy unavailable. Select the text below.';
-      manual.value = button.dataset.prompt;
-      manual.hidden = false;
-      manual.focus();
-      manual.select();
-    }
-  });
+function connectCopyButtons() {
+  for (const button of document.querySelectorAll('.copy-prompt')) {
+    let reset;
+    button.addEventListener('click', async () => {
+      const status = document.getElementById(button.getAttribute('aria-describedby'));
+      const manual = button.parentElement.querySelector('.manual-prompt');
+      clearTimeout(reset);
+      try {
+        await navigator.clipboard.writeText(button.dataset.prompt);
+        manual.hidden = true;
+        status.classList.add('sr-only');
+        status.textContent = 'Copied';
+        button.classList.add('copied');
+        reset = setTimeout(() => { button.classList.remove('copied'); status.textContent = ''; }, 1800);
+      } catch {
+        status.classList.remove('sr-only');
+        status.textContent = 'Copy unavailable. Select the text below.';
+        manual.value = button.dataset.prompt;
+        manual.hidden = false;
+        manual.focus();
+        manual.select();
+      }
+    });
+  }
 }
+
+function connectContent() {
+  tabs = [...document.querySelectorAll('[role="tab"]')];
+  connectSelection(tabs, selectTab, 'ArrowLeft', 'ArrowRight');
+  inboxRows = [...document.querySelectorAll('.inbox-row')];
+  inboxRows.forEach((row, index) => { row.tabIndex = index ? -1 : 0; });
+  connectSelection(inboxRows, selectInboxRow, 'ArrowUp', 'ArrowDown');
+  connectCopyButtons();
+  describeTimes();
+  renderIcons();
+}
+
+const viewStorageKey = `command-center-view:${location.href.split('#')[0]}`;
+const scrollAreas = {
+  page: {find: () => document.scrollingElement, edge: 'top', anchors: '.card[id], summary[id]'},
+  board: {find: () => document.querySelector('.stage-board'), edge: 'left', anchors: '.stage-board > .collapsible > details > summary'},
+  inbox: {find: () => document.querySelector('.inbox-list'), edge: 'top', anchors: '.inbox-row'},
+};
+const anchorsKept = 6;
+const focusable = 'a, button, summary';
+const lastScroll = {}; // An area in a hidden tab has no box to read or scroll, so its position waits here.
+
+const scrollOffset = edge => edge === 'top' ? 'scrollTop' : 'scrollLeft';
+const areaStart = (area, edge) => area === document.scrollingElement ? 0 : area.getBoundingClientRect()[edge];
+
+// Side-by-side lanes stack independently, so following one card would shift the others.
+function inSideBySideLane(item) {
+  const board = item.closest('.stage-board');
+  return board?.childElementCount > 1 && getComputedStyle(board).display === 'flex';
+}
+
+function captureAreaScroll(area, {edge, anchors}) {
+  const position = area[scrollOffset(edge)];
+  if (!position) return {position, anchors: []};
+  const start = areaStart(area, edge);
+  const farEdge = edge === 'top' ? 'bottom' : 'right';
+  const inView = [...document.querySelectorAll(anchors)]
+    .filter(item => item.checkVisibility() && item.getBoundingClientRect()[farEdge] > start && (edge === 'left' || !inSideBySideLane(item)))
+    .slice(0, anchorsKept);
+  return {position, anchors: inView.map(item => ({id: item.id, offset: item.getBoundingClientRect()[edge] - start}))};
+}
+
+function captureScroll() {
+  for (const [name, scrollArea] of Object.entries(scrollAreas)) {
+    const area = scrollArea.find();
+    if (area?.checkVisibility()) lastScroll[name] = captureAreaScroll(area, scrollArea);
+  }
+  return lastScroll;
+}
+
+const isSavedScroll = saved => Number.isFinite(saved?.position) && Array.isArray(saved.anchors)
+  && saved.anchors.every(anchor => typeof anchor?.id === 'string' && Number.isFinite(anchor.offset));
+
+function restoreAreaScroll(area, edge, saved) {
+  area[scrollOffset(edge)] = saved.position;
+  for (const anchor of saved.anchors) {
+    const item = document.getElementById(anchor.id);
+    if (item?.checkVisibility()) {
+      area[scrollOffset(edge)] += item.getBoundingClientRect()[edge] - areaStart(area, edge) - anchor.offset;
+      return;
+    }
+  }
+}
+
+function restoreScroll() {
+  for (const [name, {find, edge}] of Object.entries(scrollAreas)) {
+    const area = find();
+    if (lastScroll[name] && area?.checkVisibility()) restoreAreaScroll(area, edge, lastScroll[name]);
+  }
+}
+
+const controlIdentity = control => control.getAttribute('aria-label') ?? control.getAttribute('href') ?? control.id;
+const controlsIn = owner => [owner, ...owner.querySelectorAll(focusable)];
+
+function captureFocus() {
+  const active = document.activeElement;
+  const owner = active?.closest('main [id]');
+  return owner && {owner: owner.id, control: controlIdentity(active)};
+}
+
+function restoreFocus(saved) {
+  const owner = document.getElementById(saved?.owner);
+  if (owner) controlsIn(owner).find(control => controlIdentity(control) === saved.control)?.focus({preventScroll: true});
+}
+
+function captureView() {
+  return {
+    tab: document.querySelector('[role="tab"][aria-selected="true"]')?.id,
+    decision: document.querySelector('.inbox-row[aria-selected="true"]')?.getAttribute('aria-controls'),
+    sections: Object.fromEntries([...document.querySelectorAll('summary[id]')].map(summary => [summary.id, summary.parentElement.open])),
+    scroll: captureScroll(),
+  };
+}
+
+function restoreView(view) {
+  for (const summary of document.querySelectorAll('summary[id]')) {
+    const open = view?.sections?.[summary.id];
+    if (typeof open === 'boolean') summary.parentElement.open = open;
+  }
+  const tab = tabs.find(candidate => candidate.id === view?.tab);
+  if (tab) showTab(tab);
+  const row = inboxRows.find(candidate => candidate.getAttribute('aria-controls') === view?.decision);
+  if (row) showInboxRow(row);
+  restoreScroll();
+}
+
+function saveView() {
+  try {
+    sessionStorage.setItem(viewStorageKey, JSON.stringify(captureView()));
+  } catch {
+    // Blocked or full storage only costs the view after a browser refresh.
+  }
+}
+
+function loadView() {
+  try {
+    return JSON.parse(sessionStorage.getItem(viewStorageKey));
+  } catch {
+    return null;
+  }
+}
+
+const inputQuietPeriod = 2000;
+const heldInteractionLimit = 120000;
+let lastInput = -Infinity;
+let pointerHeld = false;
+const noteInput = () => { lastInput = performance.now(); };
+const listenerOptions = {capture: true, passive: true};
+for (const type of ['pointerdown', 'keydown', 'scroll']) addEventListener(type, noteInput, listenerOptions);
+addEventListener('pointerdown', () => { pointerHeld = true; }, listenerOptions);
+for (const type of ['pointerup', 'pointercancel']) addEventListener(type, () => { pointerHeld = false; }, listenerOptions);
+addEventListener('pagehide', saveView);
+
+function userIsActive() {
+  const sinceInput = performance.now() - lastInput;
+  const holding = pointerHeld || document.activeElement?.matches('textarea') || getSelection()?.isCollapsed === false;
+  return sinceInput < inputQuietPeriod || (holding && sinceInput < heldInteractionLimit);
+}
+
+function parsePublishedPage(source) {
+  if (!source.trimEnd().endsWith('</html>')) return null;
+  const page = new DOMParser().parseFromString(source, 'text/html');
+  const {snapshot, template} = page.documentElement.dataset;
+  const main = page.querySelector('main');
+  if (!snapshot || !template || !main) return null;
+  return {snapshot, template, main, title: page.title};
+}
+
+function showSnapshot(published) {
+  const view = captureView();
+  const focus = captureFocus();
+  document.querySelector('main').replaceWith(published.main);
+  document.title = published.title;
+  connectContent();
+  restoreView(view);
+  restoreFocus(focus);
+  document.documentElement.dataset.snapshot = published.snapshot;
+  document.getElementById('snapshot-status').textContent = `Snapshot updated at ${new Date().toLocaleTimeString()}.`;
+}
+
+function applyPublishedPage(published) {
+  if (published.template === document.documentElement.dataset.template) {
+    showSnapshot(published);
+  } else if (history.state?.reloadedFor !== published.snapshot) {
+    history.replaceState({reloadedFor: published.snapshot}, '');
+    location.reload();
+  }
+}
+
+const checkInterval = 20000;
+const checkTimeout = 10000;
+let activeCheck;
+let nextCheck;
+
+async function checkForSnapshot() {
+  clearTimeout(nextCheck);
+  activeCheck?.abort();
+  if (document.hidden) return;
+  const check = activeCheck = new AbortController();
+  const timeout = setTimeout(() => check.abort(), checkTimeout);
+  try {
+    const response = await fetch(location.href, {cache: 'reload', signal: check.signal});
+    const published = response.ok ? parsePublishedPage(await response.text()) : null;
+    if (published && published.snapshot !== document.documentElement.dataset.snapshot && !userIsActive()) applyPublishedPage(published);
+  } catch {
+    // The page keeps its snapshot and the next check tries again.
+  } finally {
+    clearTimeout(timeout);
+    if (check === activeCheck) nextCheck = setTimeout(checkForSnapshot, checkInterval);
+  }
+}
+
+addEventListener('pageshow', event => {
+  describeTimes();
+  if (event.persisted) checkForSnapshot();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { saveView(); return; }
+  describeTimes();
+  checkForSnapshot();
+});
+
+const savedView = loadView();
+if (savedView) history.scrollRestoration = 'manual';
+for (const name of Object.keys(scrollAreas)) {
+  if (isSavedScroll(savedView?.scroll?.[name])) lastScroll[name] = savedView.scroll[name];
+}
+nextCheck = setTimeout(checkForSnapshot, checkInterval);
+connectContent();
+restoreView(savedView);
 </script>
 </body>
 </html>

@@ -421,7 +421,9 @@ replaces the supplied archive's Claude artifact database and integrations; no
 archive code or prose is copied. Validation rejects non-PR merge states and
 terminal rows with active blockers. Delivery is hosted only;
 `references/hosting.md` serves the page through Showroom's hosting lifecycle,
-including Tailscale Serve.
+including Tailscale Serve. A hosted page polls its own URL and swaps in a newer
+published digest without a server push, keeping the viewer's place per URL in
+session storage; the chief stays the only publisher.
 
 ## implement
 
