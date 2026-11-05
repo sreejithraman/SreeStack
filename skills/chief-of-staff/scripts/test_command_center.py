@@ -662,6 +662,7 @@ class ViewTests(CommandCenterCase):
                 self.prepare_view(page)
                 page.set_visible(False)
                 page.set_visible(True)
+                page.run("clock.settled()")
                 self.publish_retitled()
                 page.advance(CHECK_INTERVAL)
                 self.assertIn("Retitled snapshot", page.text())
