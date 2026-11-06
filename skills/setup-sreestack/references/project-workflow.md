@@ -61,7 +61,6 @@ workflow conventions in `docs/agents/workflow.md`.
 Before naming domain concepts or changing their model, read
 `docs/agents/domain.md` and its relevant glossary/ADR paths.
 For ticket work, read `docs/agents/issue-tracker.md`.
-For triage label changes, read `docs/agents/triage-labels.md`.
 For acceptance checks, read `docs/agents/verification/index.md`.
 When work produces something the user can inspect or try, use `showroom`
 before handoff; use it during UI iteration when showing progress helps feedback.

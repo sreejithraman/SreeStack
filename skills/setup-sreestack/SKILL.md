@@ -104,7 +104,7 @@ setup does not create empty ones.
 
 ## Issue tracking, when in scope
 
-Reuse the configured tracker and label vocabulary. If ticket workflows are
+Reuse the configured tracker. If ticket workflows are
 requested but their tracker is unsettled, recommend the existing GitHub/GitLab
 remote's tracker or local Markdown for work without a remote tracker; support
 other trackers through the user's established workflow.
@@ -112,15 +112,8 @@ other trackers through the user's established workflow.
 Adapt the matching seed into the project's existing tracker guide or
 `docs/agents/issue-tracker.md`: [GitHub](issue-tracker-github.md),
 [GitLab](issue-tracker-gitlab.md), or [local Markdown](issue-tracker-local.md).
-For other trackers, record how to publish/read tickets, express blockers,
-claim work, and complete it using the available integration. Keep external
-PR/MR triage disabled unless requested or already configured.
-
-Configure [triage labels](triage-labels.md) only when `triage` is available and
-triage is in scope. Preserve an existing mapping. For a new mapping, recommend
-`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`;
-ask for alternatives only when that choice is unresolved. Document strings in
-`docs/agents/triage-labels.md` or the established guide.
+For other trackers, record how to publish/read tickets, express blockers, check
+and make claims, and complete work using the available integration.
 
 ## Write and check
 

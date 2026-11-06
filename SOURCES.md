@@ -367,6 +367,9 @@ and sequential numbering. Discovery and invocation settings remain unchanged.
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
+Aims at a smart adult new to the topic and keeps the logic while simplifying the
+vocabulary. The description lists triggers only.
+
 ## gauntlet-loop
 
 - [robonuggets/gauntlet-loop / .claude/skills/gauntlet-loop](https://github.com/robonuggets/gauntlet-loop/tree/9b1975a1b8f01981f3f1e6b667ad3aaf907178ea/.claude/skills/gauntlet-loop) — `SKILL.md`; import baseline commit `9b1975a1b8f01981f3f1e6b667ad3aaf907178ea`. CC BY 4.0 notice in `licenses/robonuggets-gauntlet-loop.txt`.
@@ -481,6 +484,11 @@ the requested PR set.
 ## grilling
 
 - [mattpocock/skills / skills/productivity/grilling](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/grilling) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+
+Asks only frontier decisions that would change the outcome and that the agent
+can't predict, highest stakes first, and lists the rest in one Assuming block.
+Always asks decisions that risk data loss, private data, security, or can't be
+undone. The description lists triggers only.
 
 ## handoff
 
@@ -1076,7 +1084,7 @@ remain unchanged.
 
 Manual-only in both hosts. The local name and UI are SreeStack Setup. One setup
 workflow owns project-specific conventions and pointers, with scoped update,
-glossary migration, optional ticket/triage configuration, and a verification
+glossary migration, optional ticket configuration, and a verification
 foundation during full setup. Setup uses Verify's map format to create or reuse
 the index, records known setup facts and coverage gaps, and adds a discovery pointer;
 feature recipes and live proof use `verify` when requested. Feature directories
@@ -1105,13 +1113,13 @@ paths and one vocabulary source per context remain supported. Context boundaries
 not package count alone, determine layout. `domain.md` is adapted to actual
 project paths. Glossary migration preserves vocabulary, local edits, custom
 locations, and ADRs; updates consumers; handles collisions; and is a no-op on
-rerun. General context documents remain outside that migration. The GitHub tracker
-seed lists external PRs through the paginated REST endpoint and its
-`author_association` field instead of an unsupported `gh pr list` JSON field,
-fetching comments separately. Other tracker conventions retain their import
-behavior; the triage mapping uses an author-neutral role
-heading. Full setup writes only the configured/requested docs, preserves project
-additions, and distinguishes documented commands from exercised readiness.
+rerun. General context documents remain outside that migration. Tracker seeds
+keep the import's issue, blocking, and claim conventions, and leave out triage
+labels, PR request surfaces, and wayfinding maps. The GitHub seed adds and reads
+blocking edges through `gh issue`, and each seed's claim checks that a
+self-chosen ticket is free to take. Full setup writes only the
+configured/requested docs, preserves project additions, and distinguishes
+documented commands from exercised readiness.
 
 PR workflow references use the local `pr` entry point.
 
@@ -1166,8 +1174,9 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 
 - [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Uses supplied or project-configured tracker and label information; unresolved
-required choices can be supplied directly or through the manual setup skill.
+Uses supplied or project-configured tracker information, and publishes without
+a readiness label. Unresolved required choices can be supplied directly or
+through the manual setup skill.
 
 Setup references use the local `setup-sreestack` entry point.
 
@@ -1176,44 +1185,17 @@ Setup references use the local `setup-sreestack` entry point.
 
 - [mattpocock/skills / skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-tickets) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Uses supplied or project-configured tracker and label information; unresolved
-required choices can be supplied directly or through the manual setup skill.
+Uses supplied or project-configured tracker information, with no labels.
+Unresolved required choices can be supplied directly or through the manual setup
+skill.
+
+Each ticket delivers one result. Tickets record their inputs, and a ticket is
+ready when its blockers have delivered what it needs, its inputs exist, its
+acceptance criteria prove the result, and it passes the local parallelism test.
+A shared resource becomes a note under Inputs, and blocking edges mean one ticket
+needs another's output or decision.
 
 Setup references use the local `setup-sreestack` entry point.
-
-
-## triage
-
-- [mattpocock/skills / skills/engineering/triage](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/triage) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
-
-Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
-resolution preserves configured or existing legacy paths, keeps one glossary per
-context, and creates new files lazily. Cross-skill calls use host-neutral wording.
-
-Reads supplied or configured label mappings; a missing mapping blocks only the
-mutation that requires it. Setup stays user-invoked. Workflow reproduction can
-use `verify` when needed to resolve uncertainty; missing intended behavior requires clarification.
-
-Setup references use the local `setup-sreestack` entry point.
-
-
-## web-component-inspiration
-
-- Local: `skills/web-component-inspiration` (SreeStack); web-scoped and
-  explicit-only in both hosts, with Showroom owning demonstrations and access.
-
-## wayfinder
-
-- [mattpocock/skills / skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/wayfinder) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
-
-Uses supplied or configured tracker information, with the existing local-file
-fallback. Cross-skill calls are host-neutral and the prototype route remains
-UI-only.
-
-Research assignments use shared orchestration defaults and disjoint note paths
-in the parent checkout. The parent accepts findings and resolves tickets; separate
-research branches require explicitly requested, workspace-bound ordinary threads.
-Manual invocation and the one-decision-per-session rule remain unchanged.
 
 ## writing-for-agents
 

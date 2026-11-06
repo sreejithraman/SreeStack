@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Break a plan, spec, or conversation into a set of **tickets**: tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
-Use the issue tracker and triage labels supplied by the user or project configuration. If a required choice remains unknown, ask the user to supply it or run `/setup-sreestack`.
+Use the issue tracker supplied by the user or project configuration. If a required choice remains unknown, ask the user to supply it or run `/setup-sreestack`.
 
 ## Process
 
@@ -29,13 +29,23 @@ Break the work into **tracer bullet** tickets.
 <vertical-slice-rules>
 
 - Each slice cuts a narrow but COMPLETE path through every layer (schema, API, UI, tests): vertical, NOT a horizontal slice of one layer
-- A completed slice is demoable or verifiable on its own
-- Each slice is sized to fit in a single fresh context window
+- A completed slice is one result, demoable or verifiable on its own. Split a ticket that delivers more than one
 - Any prefactoring should be done first
 
 </vertical-slice-rules>
 
-Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
+Give each ticket its **blocking edges**: the other tickets that must complete before it can start. Give it its **inputs**: what it needs but will not build, such as settled contracts, a blocker's output, decisions, or access.
+
+Tickets pass the **parallelism test** when all of these hold:
+
+- Each can finish and be checked against fixed inputs.
+- Neither waits on, interprets, or revises around the other's decisions.
+- Writes, accounts, fixtures, ports, and devices are independent or explicitly coordinated.
+- One owner is responsible for integration.
+
+Separate files or worktrees alone do not prove independence. When two tickets fail the test, add a blocking edge if one needs the other's output or decision, note how they share a resource under Inputs, or merge them.
+
+A ticket is **ready** when its blockers have delivered what it needs, its inputs exist, its acceptance criteria prove the result, and it passes the parallelism test against the tickets running beside it. An empty "Blocked by" alone does not make a ticket ready.
 
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change (rename a column, retype a shared symbol) whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify ticket; green is promised only there.
 
@@ -45,6 +55,7 @@ Present the proposed breakdown as a numbered list. For each ticket, show:
 
 - **Title**: short descriptive name
 - **Blocked by**: which other tickets (if any) must complete first
+- **Inputs**: what it needs but will not build
 - **What it delivers**: the end-to-end behaviour this ticket makes work
 
 Ask the user:
@@ -60,9 +71,9 @@ Iterate until the user approves the breakdown.
 Publish the approved tickets. **How** depends on the tracker `/setup-sreestack` configured; the tickets are the same either way, only the shape of the blocking edges changes:
 
 - **Local files** → write one file per ticket under `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` in dependency order (blockers first). Each file's "Blocked by" lists the numbers/titles it depends on. Use the per-ticket file template below: one ticket per file, never a single combined file.
-- **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking / sub-issue relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues. Apply the `ready-for-agent` triage label unless instructed otherwise; the tickets are agent-grabbable by construction.
+- **A real issue tracker (GitHub, Linear, …)** → publish one issue per ticket in dependency order (blockers first) so each ticket's blocking edges can reference real identifiers. Use the platform's native blocking / sub-issue relationship where it has one; otherwise set each ticket's "Blocked by" to the blocking issues.
 
-Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
+Work the **frontier**: any unclaimed ticket that is ready. For a purely linear chain that means top to bottom.
 
 Do NOT close or modify any parent issue.
 
@@ -72,9 +83,11 @@ Do NOT close or modify any parent issue.
 
 **What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective, not a layer-by-layer implementation list.
 
-**Blocked by:** the numbers/titles of the tickets that gate this one, or "None (can start immediately)".
+**Blocked by:** the numbers/titles of the tickets that gate this one, or "None".
 
-**Status:** ready-for-agent
+**Inputs:** what this ticket needs but will not build, or "None".
+
+**Status:** open
 
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2
@@ -98,7 +111,11 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 
 ## Blocked by
 
-- A reference to each blocking ticket, or "None (can start immediately)".
+- A reference to each blocking ticket, or "None".
+
+## Inputs
+
+- What this ticket needs but will not build, or "None".
 
 </issue-template>
 

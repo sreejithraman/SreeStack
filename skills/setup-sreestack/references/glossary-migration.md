@@ -3,7 +3,7 @@
 Use for an explicit glossary migration or one agreed during repository setup.
 The result is the same domain vocabulary under `GLOSSARY.md` and
 `GLOSSARY-MAP.md`, with its consumers pointing to the new paths. Migration alone
-does not configure an issue tracker or triage labels.
+does not configure an issue tracker.
 
 ## Discover and plan
 
