@@ -193,7 +193,7 @@ instructions rather than maintaining another API manual.
 | Prove behavior | `verify` |
 | Share disposable simulators across agents and projects | [simulator-lifecycle](skills/simulator-lifecycle/SKILL.md), using SimLock |
 | Run complexity, duplication, or mutation tools | `code-quality` |
-| Show results and make them available to try | `showroom` chooses demonstrations and access |
+| Show results and make them available to try | `show-me` shows results in the thread and makes them easy to try |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
 | Publish and monitor | `pr`; `gh-stack` manages dependent layers |
@@ -256,7 +256,7 @@ them, and the chief can land any PR itself. You can ask for a review-ready stack
 decide each merge yourself, or stop at a plan, local work, or review. Its command center shows Needs you first and
 Work second, rendered from a checked snapshot of the program record; answers
 go back through chat. Existing trackers stay authoritative. A hosting guide can serve the page at a stable
-private URL through Showroom and Tailscale Serve. Open pages pick up each new
+private URL through Show Me and Tailscale Serve. Open pages pick up each new
 snapshot on their own and keep your place; publishing one in the background
 needs explicitly requested host scheduling.
 
@@ -488,14 +488,14 @@ the project's verifier or an installable suitable tool; unavailable proof stays
 blocked. The guidance adds no bundled model checker or statechart renderer.
 Product acceptance still exercises the real workflow.
 
-[showroom](skills/showroom/SKILL.md) helps you experience and judge results,
+[show-me](skills/show-me/SKILL.md) helps you experience and judge results,
 including during iteration. It chooses formats based on the work and available
 tools: screenshots, collages, video, preview links, device installs, runnable
 examples, or accessible files. It can combine demonstrations with hands-on
 access and reuse current verification evidence. Website handoffs include a
 checked PR preview or Tailscale URL when available.
 
-Showroom is automatically discoverable. The shared completion instructions and
+Show Me is automatically discoverable. The shared completion instructions and
 Orchestration call it for results you can inspect or try; project setup includes
 the corresponding handoff pointer. The repository edits do not update installed
 skills or live host instructions. Apply them through your stable clone and the
@@ -506,7 +506,7 @@ host setup below to activate those routes.
 [Simulator Lifecycle](skills/simulator-lifecycle/SKILL.md) routes disposable
 agent devices through [SimLock](https://incubator.callstack.com/simlock/).
 It reads the installed tool's rules instead of maintaining another lease system.
-Verify uses that route for tests; Showroom records inspection lifetimes; Repo
+Verify uses that route for tests; Show Me records inspection lifetimes; Repo
 Cleanup releases managed leases and handles proven task-owned host outputs.
 
 Use its [setup and rollout guide](skills/simulator-lifecycle/references/setup.md)

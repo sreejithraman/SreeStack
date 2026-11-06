@@ -10,9 +10,8 @@ file and adds no coordinator, database, or wakeups. A static file server is enou
 2. Render each snapshot to a staging file. When it validates, move it over the
    public `index.html` on the same filesystem, so the last valid page stays up
    and no partial file is served.
-3. Use [Showroom's delivery workflow](../../showroom/references/delivery.md#websites)
-   to choose hosting. For Tailscale, follow its
-   [web sharing procedure](../../showroom/references/web-sharing.md): a
+3. Use Show Me's [web sharing](../../show-me/references/web-sharing.md) to choose
+   hosting. For Tailscale, follow its procedure: a
    loopback-only origin on an unused port, existing Serve mappings preserved,
    verification, lifetime, and teardown. A small Python static file server is
    enough when the project has no server to reuse; serve only the public folder.
@@ -34,5 +33,5 @@ Only the chief's next publish changes what any page shows, and answers still go
 through chat.
 
 For teardown, follow the
-[web sharing procedure](../../showroom/references/web-sharing.md)'s take-down
+[web sharing](../../show-me/references/web-sharing.md#take-it-down)'s take-down
 rules. Keep the state and any page the chief still needs.

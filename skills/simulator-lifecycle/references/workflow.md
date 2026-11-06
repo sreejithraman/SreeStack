@@ -18,7 +18,8 @@ prerequisite. Environment setup and adoption checks use
 In T3, use its Device panel and returned driver for interactive work. Confirm
 that the host's documented SimLock integration acquires and drives the same
 underlying lease. A regular `device_open` session alone does not establish a
-SimLock lease. If that integration is unavailable, report interactive disposable
+SimLock lease. A device from a `simlock-` host in `device_list` is that integration. If it
+is unavailable, report interactive disposable
 verification blocked; do not combine an unrelated CLI lease with a panel session
 or substitute another driver. Project test suites may use their supported
 SimLock route independently of interactive panel support.
@@ -85,10 +86,17 @@ generic doctor check does not prove runner readiness.
 
 In T3, quote the error and follow its recovery advice once through its supported
 tools and returned driver, including any requested diagnostic. If that still fails, report the
-blocker and stop device work. Preserve T3's connection, session and install
+blocker and stop device work, unless a failure before a grant applies below. Preserve T3's connection, session and install
 directory; the skill does not authorize a second lease or an alternate driver.
 If a diagnostic is unavailable through that route, record that limit.
 
+- **Failed before a grant:** no lease exists, so ended-lease recovery does not apply.
+  Check `simlock status --json` for your own queued request or late grant. If you find
+  one, apply the [run ownership guard](#choose-the-route-before-acquiring) and don't
+  retry. Otherwise retry once, counting any retry the host's error advised, then try one
+  other model from `device_list`, unless the user named the target. If that model boots,
+  use it and label the substitution. If the same boot failure repeats on iOS on this Mac,
+  check [break glass](break-glass.md). Otherwise stop device work and report the blocker.
 - **Lease ended or target missing:** stop using the old target. Reconcile the
   lease through its original interface. Reopen only through the host's supported
   recovery path, recording the new grant; the old app state may have been wiped.
@@ -97,7 +105,7 @@ If a diagnostic is unavailable through that route, record that limit.
   run's acquisition evidence. Even `DEVICE_IN_USE` naming the expected session
   does not authorize clearing a claim or taking over the device. Preserve an
   unresolved mismatch for the integration owner.
-- **Timeout or runner startup failure:** retain the bounded attempt's logs and
+- **Timeout or runner startup failure after a grant:** retain the bounded attempt's logs and
   result. Keep shared services running and leave device recovery to SimLock.
   Report persistent failures rather than cycling devices or increasing timeouts
   until a command happens to pass.
@@ -126,12 +134,12 @@ authorizes an agent to erase, delete, shut down or uninstall from a device.
 Leave device recovery to SimLock; diagnose uncertain state rather than replaying
 cleanup against a device ID that may now belong to another run.
 
-For a user inspection handoff, use [Showroom](../../showroom/SKILL.md). A pooled
+For a user inspection handoff, use [Show Me](../../show-me/SKILL.md). A pooled
 device is a temporary viewing surface only while its lease is renewed. For data
 that must survive lease loss, use an explicitly designated inspection device
 outside the pool, or export a supported durable artifact before release. Record
 what is kept, why, for whom, its location, who maintains any live lease, and a
-review date. A retention note cannot suspend SimLock's expiry or wipe policy.
+review date, outside disposable output. A retention note cannot suspend SimLock's expiry or wipe policy.
 
 SimLock intentionally wipes disposable devices after release or expiry; it is
 not a guarantee that arbitrary external consumers have stopped. Work requiring

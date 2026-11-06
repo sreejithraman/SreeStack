@@ -44,7 +44,7 @@ when each answers a different question; simple changes often need prose alone.
 Report observed checks and results. For fixes, pair the failure with success on
 the same scenario when available. Name the workflow or command, expected
 behavior, and observed outcome. Link logs and artifacts instead of dumping runs.
-Reuse [showroom](../../showroom/SKILL.md)'s checked demonstrations and access links.
+Reuse [show-me](../../show-me/SKILL.md)'s checked demonstrations and access links.
 For UI, use comparable before/after views when useful; for other behavior,
 use tests, terminal output, API responses, or workflow observations.
 

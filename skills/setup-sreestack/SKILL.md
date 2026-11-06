@@ -58,7 +58,7 @@ agent doc; use `docs/agents/workflow.md` only when it needs a new home.
 
 Keep the shared workflows with their owners: `tdd` for test-driven changes,
 `research` for cited findings and session notes,
-`verify` for real acceptance, `showroom` for demonstrations and access,
+`verify` for real acceptance, `show-me` for demonstrations and access,
 `review-fix-loop` for independent review and fixes, `pr` for a single PR, and
 `gh-stack` for stack management. `merge` owns requested landing and cleanup.
 `orchestration` owns shared delegation mechanics, `swarm` supplies bounded

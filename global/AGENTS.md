@@ -24,7 +24,7 @@ I mainly use T3 Code, often from my phone. When working in T3, prefer its suppor
 
 - Verify the result I’ll actually use, and be clear about anything you haven’t tested.
 - Check observable results against independently established expectations. Tests should detect broken behavior and survive internal refactoring. When meaningful automation is impractical, use direct evidence and state the remaining gap.
-- When work produces something I can inspect or try, use `showroom` before handoff. Also use it during UI iteration when showing the current result would help me give feedback.
+- When work produces something I can see or try, use `show-me` before changing it, when it first works or changes, and at every stop. Capturing for `show-me` counts as me asking for browser and device work.
 - Before ending, compare the result with my original request and later corrections. If my likely next message would ask for an obvious missing step within the authorized scope, complete that step now. If something remains blocked, state exactly what is unfinished and what prevents completion.
 
 ## Writing rules

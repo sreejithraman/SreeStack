@@ -24,7 +24,7 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   [Setup's foundation step](../SKILL.md#verification-foundation), or the existing
   map for a scoped workflow update. Record established demonstration or access
   conventions. `verify` owns feature recipes and real workflow checks;
-  `showroom` chooses demonstrations and access.
+  `show-me` chooses demonstrations and access.
 - **Review:** identify the intended review base and required project checks.
   Link existing standards. Mechanical rules belong in existing tooling;
   `CODING_STANDARDS.md` is for genuine judgement calls, created only when such
@@ -62,8 +62,8 @@ Before naming domain concepts or changing their model, read
 `docs/agents/domain.md` and its relevant glossary/ADR paths.
 For ticket work, read `docs/agents/issue-tracker.md`.
 For acceptance checks, read `docs/agents/verification/index.md`.
-When work produces something the user can inspect or try, use `showroom`
-before handoff; use it during UI iteration when showing progress helps feedback.
+When work produces something the user can see or try, use `show-me` before
+changing it, when it first works or changes, and at every stop.
 ```
 
 Use actual resolved paths and include only docs that exist and belong to the

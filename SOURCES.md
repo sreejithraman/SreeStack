@@ -394,7 +394,7 @@ round cap is added.
 - [cursor/plugins / pstack/skills/poteto-mode](https://github.com/cursor/plugins/tree/ae5650febf4320793844c12c4adaa937f417f8da/pstack/skills/poteto-mode) — `SKILL.md` and `playbooks/orchestrate.md`, `playbooks/autonomous-run.md`, and `playbooks/multi-phase-plan.md`; adaptation baseline `ae5650febf4320793844c12c4adaa937f417f8da`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [lauren / empirical review post](https://x.com/poteto/status/2117437607940681849) and [clarification](https://x.com/poteto/status/2117440753551204735) — conceptual input, read with the user's supplied history assessment on 2026-11-03. No post text copied.
 - [Alex Hillman / between-turn judge post](https://x.com/alexhillman/status/2111972827452612679) — conceptual input for decision triage, read 2026-11-04. No post text copied.
-- [DeepSeek / dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) — conceptual input reviewed at `8c32a9dc5d72c033816c6a8110b37f40cf94fba4`: `docs/000-philosophy.md`, `docs/001-domain.md`, `docs/003-execution.md`, `docs/004-prompts.md`, and the `prompts/` role, dispatch, work, reply, handoff, scope, communication, and delivery instructions. Informs Chief of Staff, Implement, Orchestration, and Showroom; no code or prose copied.
+- [DeepSeek / dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) — conceptual input reviewed at `8c32a9dc5d72c033816c6a8110b37f40cf94fba4`: `docs/000-philosophy.md`, `docs/001-domain.md`, `docs/003-execution.md`, `docs/004-prompts.md`, and the `prompts/` role, dispatch, work, reply, handoff, scope, communication, and delivery instructions. Informs Chief of Staff, Implement, Orchestration, and Show Me; no code or prose copied.
 - [Lucide Icons](https://lucide.dev/guide/lucide/getting-started) — external browser dependency, version `1.67.0`, loaded asynchronously from `https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js` with SHA-384 integrity and no referrer. No Lucide source assets or license text are vendored. [Upstream package license](https://cdn.jsdelivr.net/npm/lucide@1.67.0/LICENSE) covers ISC and applicable Feather MIT notices.
 
 Automatically discoverable program owner. One Implement owner per PR unit,
@@ -423,7 +423,7 @@ column; wider, Needs you is a dual-pane inbox and Work a board of stage lanes. I
 replaces the supplied archive's Claude artifact database and integrations; no
 archive code or prose is copied. Validation rejects non-PR merge states and
 terminal rows with active blockers. Delivery is hosted only;
-`references/hosting.md` serves the page through Showroom's hosting lifecycle,
+`references/hosting.md` serves the page through Show Me's web sharing,
 including Tailscale Serve. A hosted page polls its own URL and swaps in a newer
 published digest without a server push, keeping the viewer's place per URL in
 session storage; the chief stays the only publisher.
@@ -698,9 +698,9 @@ Authenticated workflows reuse designated test accounts and standing scope,
 delegate application sign-in and command/API credential use to `agent-login`,
 check delivery in the actual host interface, and
 distinguish provider authentication, automatic login, and post-login verification.
-Routes inspectable results to `showroom` for demonstrations and access while
+Routes inspectable results to `show-me` for demonstrations and access while
 retaining acceptance selection and judgments.
-Physical-device development installs route to Showroom's delivery reference
+Physical-device development installs route to Show Me's device delivery reference
 from shared preparation for setup and recovery, retaining platform tooling and
 acceptance guidance here.
 Provider mechanics stay in agent-login’s references; maps link the authoritative
@@ -776,10 +776,10 @@ Delegation, review, and delivery belong to the caller.
 UI prototypes for web, mobile, and desktop; no logic-prototype mode. The local
 workflow chooses enough distinct options to expose the decision, coordinates
 with `ui-design`, `animate`, `swiftui` or `uikit`, `verify`, and
-`showroom`, and adds explicit rules for live side effects, unavailable target
+`show-me`, and adds explicit rules for live side effects, unavailable target
 tooling, comparison-control verification, durable decisions, and proportional
 prototype retention and cleanup.
-Showroom chooses demonstrations and access for the prototype result.
+Show Me chooses demonstrations and access for the prototype result.
 
 ## react-best-practices
 
@@ -1054,7 +1054,7 @@ rating. Small PRs can use concise prose; publication refreshes the guide's facts
 against the current scope/head. Cross-skill references use the current local name.
 A delegated owner returns a pending report instead of watching; the parent
 watches and resumes that same owner for repairs.
-Evidence reuses Showroom's checked demonstrations and access links when available.
+Evidence reuses Show Me's checked demonstrations and access links when available.
 History changes share a local preservation reference with Merge and gh-stack:
 back up current retained bytes outside affected checkouts, preserve both versions
 on conflicts, and verify hashes after success or recovery.
@@ -1100,7 +1100,7 @@ Setup compares proposed guidance by meaning across inherited global/host
 instructions, project docs, and shared skills. Additions supply missing project
 facts, explicit overrides, or needed pointers while preserving existing scope
 and conditions; final checks catch paraphrased duplication and redundant reruns.
-Project workflow pointers call `showroom` for inspectable results and useful
+Project workflow pointers call `show-me` for inspectable results and useful
 UI iteration feedback; demonstration and access procedures remain in that skill.
 Simulator projects record their runner/host integration and retained targets
 through `simulator-lifecycle`; ordinary setup does not claim environment adoption
@@ -1124,12 +1124,10 @@ documented commands from exercised readiness.
 PR workflow references use the local `pr` entry point.
 
 
-## showroom
+## show-me
 
-- Local: `skills/showroom` (SreeStack). Owns demonstrations and access for
-  inspectable results, with model-selected formats and delivery paths, including
-  physical-device development delivery and bounded recovery guidance.
-- Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied. Visual comparison guidance is reached before editing, matches scenario, viewport/device, theme, data, and state, and retains labeled revisions and honest baseline gaps. Verify retains acceptance ownership.
+- Local: `skills/show-me` (SreeStack). Shows results in the user's thread during the work and at every stop, in model-selected forms, and covers web sharing and device delivery, including physical-device recovery. Verify retains acceptance.
+- Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
 
 ## simulator-lifecycle
 
@@ -1142,7 +1140,7 @@ gates plus fresh lease-identity requirements, and links local
 run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
 checks. Failure guidance defers to host recovery instructions and preserves unresolved
-ownership conflicts. Runtime lease rules stay
+ownership conflicts. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
 with `simlock instructions`. Technical citations use checked upstream source
 documents rather than inaccessible deployed documentation routes.
 
@@ -1290,7 +1288,7 @@ inspecting its artifact at a named revision; every required slice is accounted
 for. Acceptance, actual delivery state, and handoff delivery stay separate, and
 a failed handoff is resent only to its original recipient. Review Fix Loop owns
 assessment coverage, PR owns that loop when it will review the same scope, and
-Showroom owns demonstrations. Ordinary delegation creates no goals, recurring
+Show Me owns demonstrations. Ordinary delegation creates no goals, recurring
 schedules, or ordinary top-level threads.
 
 ## koubou

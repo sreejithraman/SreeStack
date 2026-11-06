@@ -28,5 +28,6 @@ test commands, and [setup and rollout](references/setup.md) for authorized adopt
 
 If acquisition, runner preparation or a device command fails, read
 [when a session fails](references/workflow.md#when-a-session-fails) before retrying.
+A hold message from a session using [break glass](references/break-glass.md) says what to do.
 
 More: [Connect your agent](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/getting-started/connect-your-agent.mdx).
