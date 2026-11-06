@@ -19,7 +19,7 @@ requirements of its own. Resolve the repository, intended base, owned branch
 and files, available dependencies, preserved behavior, and an ambiguous ticket
 reference before changing anything.
 
-Use Verify's [acceptance guidance](../verify/references/acceptance-contract.md)
+Use Reframe's [acceptance guidance](../reframe/references/acceptance.md)
 to name the user-visible result, the invariants that must hold, and the
 observations that would establish them. Strengthen checks as discovery reveals
 risks; a complete harness is not a prerequisite for useful work.

@@ -1,259 +1,234 @@
 ---
 name: verify
-description: Plan evaluation for ambitious targets, consequential changes, or candidate selection; verify real workflows or interfaces; model-check invariants or maintain formal checks; or set up or maintain project verification documentation.
+description: Use when proving a change, a named workflow, or the whole app works in the real product, checking whether a reported behavior reproduces, auditing an interface, stress-testing a component with edge data, creating or changing a verification map, or model-checking an invariant or race, or when a change or request touches a formal check.
 ---
 
 # Verify
 
-For ambitious targets, consequential changes, or candidate selection, use
-[acceptance guidance](references/acceptance-contract.md) to identify the outcome,
-relevant constraints, and a suitable way to judge the result. Start with enough
-to act and strengthen evaluation as the work reveals risks. Qualitative work
-uses criteria and judgment; it does not require a product harness.
+Prove claims about a change through the entry points its users reach. Start from the
+claims in a brief, a request, or a diff. Leave a verdict and evidence for each one. You
+are done when every selected assertion has a verdict and its evidence is still
+readable after cleanup.
 
-For an explicit request to prove an invariant, model-check event ordering, or
-set up formal checks, read [formal verification](references/formal-verification.md).
-Also use it when maintaining existing formal checks affected by the change.
-That branch owns model and proof work; the product procedure below remains
-necessary for product acceptance claims. Ordinary workflow checks need no new
-formal model.
+An **assertion** is one observable expected result. A **workflow** is one user path
+through the product, with its assertions.
 
-For product workflows and interfaces, follow the procedure below. Exercise the
-product's public entry points; observed outcomes establish assertion verdicts.
-Keep checks proportional to the requested scope. Orchestration's
-[UI operation rule](../orchestration/references/agent-routing.md#operate-a-ui)
-decides who drives the interface and with which model; this procedure keeps
-assertions and verdicts.
+For an invariant, a race, or event ordering you were asked to prove, a request to maintain
+a formal check, or changed code that an existing formal check covers, read [formal verification](references/formal-verification.md).
+It owns its prerequisites, verdicts, and repo writes. The steps below apply to product
+claims. A model doesn't replace them, and ordinary workflows need no new model. Look for
+existing formal checks by function, not by name.
 
-## Scope and project knowledge
+Keep plans, scripts, and evidence in the session scratch directory. Verify writes no
+docs in any repo, including a repo's verification map. If the user asks to create or
+change a map, follow [verification maps](../setup-sreestack/references/verification-map.md).
 
-Read the request, current session, relevant diff, and project instructions.
-When a verification map exists, read its index and shared setup first. Select
-affected features and related regressions from the request, changes, and index,
-then load those recipes. Expand to linked recipes when their behavior is relevant;
-read every recipe for whole-app verification or whole-map maintenance. If the
-index is missing, list recipe files recursively to locate relevant entries.
+## Choose what to prove
 
-If the request leaves documentation unchanged, use a temporary plan and report
-discovered drift. Otherwise maintain the affected scope of an existing map,
-including incomplete maps or missing indexes: correct stale steps, add missing
-recipes, and reorganize while preserving useful assertions and gotchas. Create
-a new map only for a setup or reusable-documentation request. Without an existing
-map or setup request, use a temporary plan without documentation writes. For
-setup or maintenance, read [project maps](references/project-map.md).
+Read the request, the session, the diff, and the project instructions.
 
-Choose coverage independently of whether a map exists:
+If the project has a verification map, read its index and shared setup, then the
+recipes for the affected features. Follow links when the linked behavior is affected.
+Without an index, search for recipe files recursively. A map is working knowledge. It
+doesn't show the whole product is covered.
 
-- **Verify this change (default):** account for changed behavior and related
-  regressions in the session and diff, then exercise the selected workflows.
-- **Whole-app verification:** inventory current user-facing capabilities and
-  exercise their required workflows. With a map, include every mapped feature
-  and important unmapped surfaces. Without a map, build that inventory temporarily.
-  Disclose coverage gaps in either case.
-- **Set up or refresh documentation:** discover and document the requested scope,
-  then prove new or changed recipes live. A whole-map maintenance request audits
-  every mapped feature against source and live behavior, including index links,
-  recursive recipe inventory, and recent user-facing surfaces.
+Without a map, write a temporary plan. A project verification skill can supply launch
+or control facts if its invocation policy allows it. It isn't a map, and you leave it
+in place. Check its facts against this app, revision, and environment. Reach an
+explicit-only skill only through the user.
 
-A map is working knowledge, not proof of whole-product completeness. Plain
-project docs are the main reusable input. Existing project verification skills
-may supply useful launch or control facts only when their invocation policy
-permits using them; do not indirectly invoke an explicit-only skill. Match facts
-to the intended app, revision, and environment. Keep this skill's procedure as
-the owner of this run; do not automatically delete, rewrite, or migrate existing
-project skills.
-A project verification skill alone does not establish a documentation map.
+Choose the coverage:
 
-## Workflow
+- **This change (default):** every changed behavior, plus the workflows that share its
+  dependencies.
+- **A named workflow, surface, or suite:** when the request names one. It needs no diff.
+  Each required test in a named suite is an assertion.
+- **Whole app:** when asked. Inventory the user-facing capabilities, with every mapped
+  feature and each important surface the map lacks. Disclose gaps.
 
-1. **Account for coverage before driving.** Map every behavior-changing part of
-   the current diff and session to affected feature and workflow identifiers,
-   required assertions, and related regressions, including shared dependencies.
-   Identify missing recipes and explain material exclusions.
-   Finish selection only when each changed behavior has a check or an explicit
-   reason for exclusion. State expected results before observing outcomes.
+Cover the main path, the error and edge cases the change can reach, persistence, and
+each entry point that behaves differently. Use a recipe's required assertions in full.
 
-   For acceptance work, select realistic workflows covering the main path and
-   materially relevant error or edge cases, persistence, and distinct entry
-   points. Use the mapped required assertions rather than sampling a workflow's
-   obligations away. For docs-only requests, select the recipes being maintained
-   without inventing a product diff.
+For stateful flows, pick the sequences the product supports: repeated input while
+pending, failure then retry, interruption, cancellation, and late completion after
+cancellation or replacement. Include sequences found during architecture work, and
+take their expected results from product requirements, not from the transition table.
+Reducer or state machine tests alone don't show the product connects these paths.
 
-   For stateful flows, select relevant event sequences from the product contract:
-   repeated input while pending, failure then retry, interruption, cancellation,
-   and late completion after cancellation or replacement where supported. State
-   the expected visible result and external effect, then exercise them through
-   the affected public entry points. Carry forward sequences identified during
-   architecture work, checking their expected outcomes against product
-   requirements independently of the transition table. Passing reducer or
-   machine tests alone does not establish that the product connects these
-   paths correctly.
+Before you drive anything, write the expected result of each assertion. Every assertion
+needs both:
 
-   For component stress tests, worst-case data, or content-dependent failures,
-   read [realistic edge data](references/edge-data.md) to select fixtures and
-   required assertions.
+- **An independent expectation:** a requirement, a spec, a trusted example, a named
+  design or specialist standard, or prior behavior you observed on the base. An
+  expectation taken from what the new code does proves nothing.
+- **A way to run it:** a public entry point you can reach here.
 
-   For a whole-surface visual, interaction-quality, or accessibility audit, read
-   [interface review](references/interface-review.md) for specialist selection,
-   exhaustive coverage, and audit reporting. Also read it when acceptance checks
-   involve accessibility or platform material changes; apply its relevant checks
-   to the selected workflows.
+If either is missing, find it or ask for it. Otherwise mark the assertion `blocked`.
+Done: each changed behavior has an assertion, or a stated reason for leaving it out.
 
-2. **Prepare the recipes and interface.** Prepare temporary or maintained recipes
-   according to the documentation policy above.
+Add what the work needs:
 
-   For a physical-device development install, read Show Me's
-   [device delivery](../show-me/references/native-device-delivery.md)
-   before building, changing signing setup, or diagnosing device access.
-   It owns delivery setup and recovery; Verify retains platform tooling,
-   workflow coverage, and acceptance judgments.
+- Component stress tests or content-dependent failures: [edge data](references/edge-data.md).
+- A whole-surface visual, interaction, or accessibility audit, or checks that involve
+  accessibility or platform materials: [interface review](references/interface-review.md).
+- Deciding how to judge an ambitious target, a consequential change, competing
+  candidates, or qualitative work: [acceptance guidance](../reframe/references/acceptance.md).
+- Performance claims: [measurement validity](../diagnosing-bugs/references/measurement-validity.md).
 
-   When selected workflows need login or authenticated commands, read
-   [authenticated verification](references/authenticated-verification.md) before
-   retrieving credentials or driving login. Reuse designated test accounts and
-   existing authorization; verify delivery through the selected host interface.
+## Get a known starting point
 
-   Read the relevant platform reference: [web](references/web.md),
-   [iOS](references/ios.md), [macOS](references/macos.md),
-   or [terminal and services](references/terminal-and-service.md). iOS guidance
-   covers interactive device checks and repeatable suites, with XCTest
-   and XCUIAutomation preferred for new iOS UI workflow tests. Use the same
-   workflow with the best available tooling for other interactive products.
+Read the guide for the platform: [web](references/web.md), [iOS](references/ios.md),
+[macOS](references/macos.md), or [terminal and services](references/terminal-and-service.md).
+For anything else, use the best tool that shows the public interaction and its result.
+For simulators and emulators, follow [Simulator Lifecycle](../simulator-lifecycle/SKILL.md).
+For a physical-device install, read [device delivery](../show-me/references/native-device-delivery.md).
+For login or authenticated commands, read
+[authenticated verification](references/authenticated-verification.md) before you
+retrieve credentials or drive a login.
 
-   Discover actual launch commands, readiness signals, prerequisites, fixtures,
-   and isolation options from the repository and environment. For simulator or
-   emulator work, use [Simulator Lifecycle](../simulator-lifecycle/SKILL.md)
-   for allocation, lease lifetime, runner teardown and retained-device policy.
-   Before concurrent or long-running checks, identify contention across tasks
-   and worktrees. Apply
-   [Separate Before Serializing Shared State](../engineering-principles/references/separate-before-serializing-shared-state.md):
-   choose run-owned fixtures, ports, and data profiles for independent checks;
-   coordinate access where sharing is required and preserve active owners.
-   Use existing isolation options within verification-only scope; harness changes
-   require task authorization.
+Find the launch command, readiness signal, prerequisites, fixtures, and isolation
+options in the repo and the environment. Follow
+[Orchestration's UI rule](../orchestration/references/agent-routing.md#operate-a-ui) for
+who drives an interface and with which model. The driver reports what it saw, and you
+keep the verdicts.
 
-   Reuse available browser, device, CLI, HTTP, or PTY tooling; custom helpers are
-   optional. A CLI can drive a UI. Choose by the public interaction and observable
-   evidence it exposes, honoring host browser and device routing first. Internal
-   setters and test-only endpoints may prepare state or support diagnosis; they
-   cannot prove a public interaction works. Verify what dry-run or test modes
-   actually change.
+Prefer a script you can rerun over steps by hand. Put repeatable setup, driving, and
+evidence capture in it, and give the rerun command in your report.
 
-3. **Launch and establish known state.** Start or connect to the intended build
-   and check instance identity, revision, readiness, access, and required
-   connections before driving. Bound waits by observable conditions and deadlines.
-   Readiness means the selected workflow is usable: required initialization,
-   migrations, and fixtures have completed. A responsive port or database health
-   check alone may precede that state; inspect what the readiness signal proves.
-   For setup recipes or first-run behavior, prove launch from an isolated empty
-   data profile where supported, including required setup. Routine checks may
-   reuse known state without resetting user data.
-   If a substitute environment performed setup that the intended target will
-   not, list those steps as unverified until exercised on that target. Keep
-   target-dependent assertions blocked or untested as appropriate; substitute
-   proof cannot make them pass.
-   Preserve failing launch commands or health observations and their causes;
-   distinguish product failures from missing environment prerequisites. Recipes
-   that cannot be exercised remain draft with the specific blocker.
-   Missing fixture preconditions retain the intended assertions: report an
-   environment blocker, or a failure when the product's setup should have
-   supplied them, and record the cause in the recipe's gotchas.
-   Reuse launched instances for related checks; serialize drives that share
-   mutable state.
+**Run a read-only doctor before you drive.** Run the map's doctor if it has one, then
+check whatever it doesn't cover, without changing state:
 
-   Identify external effects and consequential actions. Prefer disposable
-   accounts, fixtures, and provider test modes.
-   Complete irreversible or externally visible actions only within the task's
-   authorization; otherwise stop at the last safe step and mark the remaining
-   assertions blocked. Record credential names and secure setup paths, never
-   values. Redact secrets and private data before retaining evidence.
+- The right instance and the right build, including uncommitted changes.
+- The right port or target, and the required connections.
+- The right account and role, and the right test or live mode for each external
+  provider.
+- Readiness for this workflow, after initialization, migrations, and fixtures. A
+  responsive port or a database health check can pass before that. Check what the signal
+  proves.
 
-4. **Exercise the selected workflows.** For interactive checks, wait for the known
-   starting state to settle. Inspect rendered appearance and semantic
-   representation when available. Perform one meaningful interaction, then
-   inspect its result before continuing. Prefer roles, labels, and identifiers;
-   use coordinates only when stable targets are unavailable, derived from
-   current state.
+Bound every wait with an observable condition and a deadline. If the doctor fails,
+fix the setup or report it. Keep the failing command and its output, and separate a
+missing prerequisite from a product failure. Missing fixtures keep their assertions:
+mark them `blocked`, or `failed` if the product's setup should have supplied them.
 
-   For automated workflow suites, discover existing targeted checks and select
-   coverage from changed behavior and relevant shared dependencies. Keep concrete
-   project commands and feature groups in project docs. Targeted checks support
-   iteration; preserve required broader integration gates and report any not run.
+For first-run behavior, launch from an isolated empty data profile where the product
+supports one. Routine checks can reuse known state and leave user data alone. If a
+substitute environment did setup the real target won't do, those steps stay unverified,
+and the assertions that depend on the target can't pass.
 
-   When changing harness isolation within the authorized scope, prove two
-   simultaneous runs reach their own resources, then stop one and confirm the
-   other remains usable.
+**Keep runs apart.** Before concurrent or long checks, find what tasks and worktrees
+share. Apply [Separate Before Serializing Shared State](../engineering-principles/references/separate-before-serializing-shared-state.md),
+and leave active owners alone. Reuse a launched instance for related checks, and
+serialize drives that share mutable state. Changing a harness needs the task's
+authorization. If you change its isolation, prove two simultaneous runs reach their own
+resources, then stop one and confirm the other still works.
 
-   Inspect selected tests and configuration before running them: connect required
-   assertions to actual checks, confirm the intended target and fixtures, and
-   account for filters, optional checks, and retries. Run the project command and
-   reconcile every selected test with its assertion results and retained artifacts,
-   including actual skips, unmet preconditions, and unfinished outcomes. Count
-   duplicate test identities once for coverage while retaining every attempt's
-   outcome. Exercise uncovered assertions separately. A successful command, zero
-   tests, partial results, or a passing rerun alone cannot establish the requested
-   pass.
+**Limit side effects.** Prefer disposable accounts, fixtures, and provider test modes.
+Check what a dry-run or test mode really changes. Take an irreversible or externally
+visible action only within the task's authorization. A request to verify doesn't
+authorize real money, live customer data, or messages to real people unless the user
+names that action. Otherwise stop at the last safe step and mark the rest `blocked`. Record credential names and setup paths, never values.
+Remove secrets and private data from evidence.
 
-   Call a failure pre-existing only with matching runtime baseline evidence:
-   match the relevant source artifact, including local changes, environment,
-   fixtures, and test method. Static source equality or another revision's results
-   alone do not prove baseline behavior. Retain precise limits on the comparison.
+## Show it red first
 
-   If an action produces no expected change, record that outcome before retrying.
-   Retry once only when observable evidence shows that the target moved or the
-   interface had not settled; record the retry as a separate attempt. A repeated
-   failure is evidence. After a stuck interface or surprising result, check
-   instance health and restore known state or relaunch safely even when the
-   process still looks healthy.
+When a claim says a behavior changed or a bug is fixed, reproduce the old result before
+you trust the new one. Run the same check, with the same environment and fixtures,
+against the base revision, in a disposable checkout if the change is already in place,
+and keep both results. Run the doctor there too. Red counts only when the old side runs
+and shows the old behavior. A setup error isn't red.
 
-   For intermittent reports, choose a bounded attempt count before testing.
-   Restore equivalent known state with disposable or uniquely identified data
-   before every planned attempt. Record every outcome; recovery retries are
-   separate from the planned count.
+A check that passes on both sides proves nothing: change it until it tells them apart, or
+mark the claim `untested`. If you can't run the old side, revert the change in a disposable
+copy and run the check there. If that fails too, mark the claim `untested` and say why.
+Reuse red evidence from `tdd` or `diagnosing-bugs` if the method matches.
 
-5. **Judge each assertion.** Compare expected and observed results. Check function
-   and relevant usability: layout, readability, focus, input, navigation,
-   loading, empty, disabled, and error states.
+## Drive
 
-   For persisted data or output artifacts, use a fresh read path independent of
-   the current screen and record the durable value or artifact inspected.
+Exercise the workflows through their public interfaces. A CLI can drive a UI. Internal
+setters and test-only endpoints can prepare state or help diagnosis, but they can't prove
+a public interaction works.
 
-   Classify mismatches as documentation drift, a harness gap, or a product
-   regression. Correct inaccurate driving steps and in-scope harness instructions,
-   then re-drive affected steps. Save documentation corrections only when this
-   run maintains or sets up a map. Change product behavior only when the active task
-   includes fixing it. Preserve intended assertions; never weaken expectations
-   to accept a defect. A recipe that detects a product failure can be valid
-   documentation while its product assertion remains failed. Label unproved
-   recipes draft, with blocked or untested steps and their reasons.
+**By hand:** Wait for the starting state to settle. Inspect the rendered view and the
+semantic tree when available. Do one meaningful action, then inspect the result before
+the next one. Target roles, labels, and identifiers. Use coordinates only when no stable
+target exists, and take them from current state.
 
-6. **Retain proof, clean up, and report.** Store run evidence outside the committed
-   map and disposable state. Include failed attempts, relevant screenshots,
-   semantic snapshots, logs, transcripts, or responses. Use visual captures for
-   visual claims. Stop only run-owned processes or sessions and remove their
-   disposable data after successful and failed attempts; preserve reused services
-   and source fixtures. Inspect retained evidence after cleanup to confirm it
-   survives and remains readable.
+**With a suite:** Find the targeted checks for the changed behavior and shared
+dependencies. Before running them, connect each assertion to a real check, and confirm
+the target, fixtures, filters, optional checks, and retries. Afterward, reconcile every
+selected test with its result: actual skips, unmet preconditions, and unfinished tests.
+Count a duplicate test once for coverage and keep every attempt's outcome. Exercise
+uncovered assertions yourself. A green command, zero tests, partial results, or a passing
+rerun can't establish a pass. Keep required broader gates, and report any you didn't run.
 
-   For every workflow and entry point, give identifiers, actions, expected and
-   observed results, and evidence locations. Assign every required assertion:
+**When something doesn't change:** Record it before you retry. Retry once, only when
+evidence shows the target moved or the interface hadn't settled, and record the retry as
+its own attempt. A repeated failure is evidence. After a stuck interface or a surprising
+result, check instance health and restore known state, even if the process looks fine.
 
-   - `passed`: observed result matched the assertion;
-   - `failed`: observed result differed;
-   - `blocked`: a missing prerequisite prevented the check;
-   - `untested`: the selected check was not exercised.
+**Intermittent reports:** Choose the attempt count before you start, and use it on both
+sides. Use about 3 divided by the failure rate, so about 30 attempts for 1 in 10. Restore
+equivalent state with disposable or uniquely named data before each planned attempt.
+Record every outcome, and count recovery retries separately.
 
-   A workflow passes only when every required assertion passes. Otherwise its
-   overall status follows `failed`, then `blocked`, then `untested`. Report defect
-   reproduction separately as `reproduced` or `not reproduced in N attempts`.
-   A reproduced defect makes the affected assertion and workflow failed;
-   non-reproduction does not establish a fix.
+## Judge
 
-   Report documentation changes and live recipe proof separately from product
-   verdicts. Name material exclusions, unmapped surfaces, draft recipes, blockers,
-   and untested coverage.
+Compare each observed result with the expected result you wrote down. Check that it
+works and that it's usable: layout, readability, focus, input, navigation, and loading,
+empty, disabled, and error states.
 
-If a step requires the user, give exact actions and location, then resume after
-they finish; continue independent checks meanwhile. Use `show-me` to demonstrate
-inspectable results and make them available to try, reusing current evidence
-while Verify keeps acceptance selection and judgments.
+For saved data or output files, use a fresh read that doesn't go through the current
+screen, and record the value or file you read.
+
+If tests, fixtures, or measurements changed with the code, check that they still detect
+the failure and measure the same work.
+
+Sort each mismatch:
+
+- **Drift:** a recipe or a project doc is wrong. Fix the steps for this run, drive again,
+  and report the drift. Leave the doc as it is.
+- **Harness gap:** the tooling can't show the result. Fix it within the task's scope, or
+  mark the assertion `blocked`.
+- **Product failure:** the assertion is `failed`. Change the product only if the task
+  includes fixing it.
+
+Keep the expectation you wrote. Weakening an assertion to accept a defect is a false pass.
+
+Call a failure pre-existing only with a runtime baseline that matches the source,
+including local changes, plus the environment, fixtures, and test method. Matching source
+or another revision's results don't show that. State the limits of the comparison.
+
+## Clean up and report
+
+Keep failed attempts and the screenshots, snapshots, logs, transcripts, or responses
+behind each verdict. Visual claims need visual captures.
+
+Stop only the processes and sessions this run started, and remove their disposable data,
+after success or failure. Leave reused services and source fixtures running. Then open
+the kept evidence to confirm it survived.
+
+Give each workflow and entry point its actions, expected and observed results, and
+evidence location. Give every assertion one verdict:
+
+- `passed`: the observed result matched.
+- `failed`: the observed result differed.
+- `blocked`: a missing prerequisite stopped the check.
+- `untested`: no check ran, or for a claimed change, none told the old result from the new.
+
+A workflow passes only when every required assertion passes. Otherwise it takes the
+first of `failed`, `blocked`, `untested` that applies.
+
+Report defect reproduction separately, as `reproduced` or `not reproduced in N attempts`.
+A defect reproduced on the build under test fails its assertion. Failing to reproduce a
+defect doesn't show it is fixed. Mark a fix claim `passed` only when the defect reproduced
+on the old behavior and a check tied to its cause now passes. Otherwise leave it `untested`
+and report the attempts, or `blocked` if it has no independent expectation.
+
+Name anything left out, surfaces with no recipe, blockers, and drift. For drift, say
+what the map or doc should now read, and that `setup-sreestack` can apply it.
+
+If a step needs the user, give the exact action and where to do it, keep going on
+independent checks, and resume when they finish. Label what they did and saw as
+user-reported. To show results or let the user try
+them, use [Show Me](../show-me/SKILL.md) with this evidence.

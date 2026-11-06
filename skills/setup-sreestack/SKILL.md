@@ -1,6 +1,6 @@
 ---
 name: setup-sreestack
-description: "Set up or update a repo for SreeStack workflows: project instructions, review and delivery conventions, domain docs, a verification foundation, optional issue tracking, or legacy glossary migration."
+description: "Set up or update a repo for SreeStack workflows: project instructions, review and delivery conventions, domain docs, verification maps, optional issue tracking, or legacy glossary migration."
 disable-model-invocation: true
 ---
 
@@ -21,9 +21,9 @@ settings, credentials, and product changes are separate tasks when requested.
 - **Update one convention:** change that part in place, leaving other settings.
 - **Migrate glossary:** follow [glossary migration](references/glossary-migration.md).
   This mode skips other setup and works without existing setup docs.
-- **Set up verification:** use [Verify](../verify/SKILL.md) to create and prove the
-  requested feature recipes beyond the foundation. Full recipe creation and
-  live verification require that scope; ordinary setup establishes the index.
+- **Set up or maintain verification:** follow
+  [verification maps](references/verification-map.md) to create, prove, or update
+  feature recipes.
 
 Honor the user's requested scope and choices already made in the session.
 Present concrete planned edits. Ask only about unresolved choices that affect
@@ -69,19 +69,11 @@ needed by the project, using current local names.
 
 ## Verification foundation
 
-During full setup or a verification-foundation update, create or reuse the
-project's verification index using
-[Verify's map format](../verify/references/project-map.md#location-and-authoritative-index).
-Preserve established map locations, recipes, and coverage; add only missing
-shared facts and a discovery pointer in the project's agent instructions.
-
-Populate a new index from project discovery: known prerequisites, links to
-authoritative launch and check commands, and coverage gaps. Mark unknown or
-unexercised details explicitly. With no recipes, state that feature coverage is
-not yet documented and live verification has not been run as part of setup.
-Keep this step to the index and its pointer; feature recipes and live proof
-belong to verification work. Other scoped updates and glossary migration leave
-verification documentation alone.
+During full setup or a verification-foundation update, create or reuse the index
+with [verification maps](references/verification-map.md). Keep this step to the
+index and its discovery pointer. State that live verification has not been run as
+part of setup. Feature recipes and live proof belong to the verification scope.
+Other scoped updates and glossary migration leave verification documentation alone.
 
 ## Domain documentation
 

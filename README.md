@@ -440,41 +440,37 @@ before the existing review; merge checks that current review includes the pass.
 
 [SreeStack setup](skills/setup-sreestack/SKILL.md) is the manual
 `setup-sreestack` entry point for project workflow conventions, glossary/ADR
-paths, a verification foundation, and optional issue tracking.
+paths, verification maps, and optional issue tracking.
 Full setup creates or reuses `docs/agents/verification/index.md`, or an equivalent
 established location, records known setup facts and coverage gaps, and adds an
 agent-instruction pointer. It links the project's existing checks and review
-and PR conventions to the shared skills. Feature
-recipes and live verification use `verify` when requested. Invoke setup with
+and PR conventions to the shared skills. Ask setup to add feature recipes, prove
+them live, or maintain the map. Invoke setup with
 “migrate glossary” to move existing domain `CONTEXT.md` / `CONTEXT-MAP.md` files
 to `GLOSSARY.md` / `GLOSSARY-MAP.md` and update their consumers without repeating
 other setup.
 
 ### Product verification
 
-[verify](skills/verify/SKILL.md) tests real user workflows using a temporary plan
-when no verification map exists. Once a map is set up, verification uses and
-maintains its affected recipes. Maps use `docs/agents/verification/index.md`,
-or an equivalent established location, and may start with shared facts alone.
-Ask to set up verification to add and prove feature recipes; `features/` is
-created with the first recipe. Commit the map in the product repo. The shared
-skill supplies the procedure, so projects need no generated verification skill.
-You can also request map maintenance or verification without updating docs.
-For ambitious targets, consequential changes, or candidate comparisons, Verify
-starts with the desired outcome, relevant constraints, and suitable evaluation
-in the existing brief or task plan. Checks grow with discovered risks; detailed
-comparison records are needed where a claim depends on them. Qualitative work
-uses criteria and judgment. Product repositories supply the actual harnesses
-and enforced delivery checks for runtime claims.
+[verify](skills/verify/SKILL.md) proves a change through its real entry points.
+It runs a read-only doctor before driving, reproduces the old result when a claim
+needs one, and gives every assertion a verdict with evidence. It writes no docs in
+any repo, except the records of formal checks when asked or when the task changes
+code a check covers. With no verification map it uses a temporary plan. With a map it reads the
+map and reports drift. Project repositories supply the harnesses, so linking this
+skill doesn't install a browser, device, or terminal tool.
+
+[Verification maps](skills/setup-sreestack/references/verification-map.md) are for
+your own repos. `setup-sreestack` creates and maintains them when you ask. [Reframe](skills/reframe/SKILL.md) plans how a result will be judged,
+including qualitative work and candidate comparisons.
+
 Authenticated checks reuse designated test accounts and their existing access
 setup. Verify checks credential access and secure delivery before login, and
 reports automatic login separately from checks performed after user sign-in.
-Linking this skill does not install the product's browser, device, or terminal
-harness.
 
-[iOS verification](skills/verify/references/ios.md) covers interactive device
-checks and repeatable regression suites. It preserves host device routing and
-existing project harnesses, and prefers XCTest with XCUIAutomation for new iOS
+[iOS verification](skills/verify/references/ios.md) covers interactive
+checks and repeatable regression suites. `simulator-lifecycle` owns how to reach a
+device. Verification reuses existing project harnesses and prefers XCTest with XCUIAutomation for new iOS
 UI workflow tests. New Swift unit tests use Swift Testing; performance tests use
 XCTest. Project recipes link executable tests and their assertions; Verify judges
 coverage and evidence, including checks outside the suite.

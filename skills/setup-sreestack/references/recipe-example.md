@@ -34,8 +34,8 @@ Workflow `storage-error` (required assertions):
 1. Use the supported disposable fixture for unavailable download storage.
    Confirm export. Expect an actionable error, no partial output, and the
    selection preserved. Proof: error state and fresh directory inspection.
-Cleanup: remove only this run's disposable report and downloaded file after
-copying redacted evidence outside the scratch directory.
+Cleanup: remove only this run's disposable report and downloaded file. Keep
+redacted evidence as shared setup says.
 
 ## Gotchas
 Wait for the download completion event; clicking Confirm is not completion.

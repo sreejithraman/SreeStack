@@ -11,11 +11,12 @@ Establish three things in the existing brief, task record, or temporary plan:
 
 - **Outcome:** what should improve and what finish line the user requested.
 - **Constraints:** what relevant behavior, obligations, and scope must hold.
-- **Evaluation:** how the result will be judged and by whom.
+- **Evaluation:** how the result will be judged and by whom. For behavior, name
+  each claim's independent expected result and how to run it.
+  [Verify](../../verify/SKILL.md) blocks a claim that lacks either.
 
 A few sentences can suffice. Reuse settled decisions and project knowledge;
-no fixed schema, new project document, or whole-app audit is required. Follow
-Verify's documentation policy for any project-map writes.
+no fixed schema, new project document, or whole-app audit is required.
 
 Resolve facts and routine choices from context. Ask when a missing preference,
 conflicting requirement, consequential tradeoff, or missing authorization
@@ -34,7 +35,7 @@ acceptance depends on it; use [TDD](../../tdd/SKILL.md) for durable behavior che
 Demonstrate meaningful failure detection with a contrasting input, known bug,
 or invalid disposable fixture when that would resolve uncertainty about a check.
 An implementation and test that repeat the same mistake are not independent
-support. Use Verify's product workflow for runtime acceptance claims.
+support. Use [Verify](../../verify/SKILL.md) for runtime acceptance claims.
 
 For **qualitative work**, agree on useful criteria, references, and the judge.
 Compare concrete alternatives or use grounded critique where helpful. Explain
