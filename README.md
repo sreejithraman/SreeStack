@@ -213,14 +213,12 @@ explicit where configured. Ordinary delegation creates no native goals,
 schedules, or ordinary top-level conversations. Program execution, new sessions,
 native tracking, and recurring work follow the user's request and host rules.
 
-[Writing for Agents](skills/writing-for-agents/SKILL.md) sets plain-writing rules
-and routes skill audits, revisions, tool-guidance audits, and instruction
-comparisons to conditional procedures.
-For example, “Correct this skill's command example” uses a focused check;
-“Shorten this skill while preserving its behavior” establishes a baseline and
-tests the affected requests. Context-savings claims need measured trials with
-validated isolation. The evaluation guidance defines an adapter contract; it
-does not install a runner or authenticate a model provider.
+[Writing for Agents](skills/writing-for-agents/SKILL.md) sets the standard for
+skills, `AGENTS.md`, `CLAUDE.md`, and agent docs: a line stays only if removing it
+changes what an agent does. Root instruction files stay thin and map to the rest.
+For example, “Correct this skill's command example” uses a focused check, and
+“Rewrite this skill” starts fresh from its job and real requests. Context-savings
+claims need measured trials with validated isolation.
 
 [Reframe](skills/reframe/SKILL.md) forms a brief from the user's request and
 context. It scales to what is unsettled: a precise request may need only a
