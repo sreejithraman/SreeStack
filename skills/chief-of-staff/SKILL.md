@@ -39,7 +39,8 @@ change applies to all unmerged work: update the record and owners, then reconcil
 pending landings under [Land and finish](#land-and-finish).
 
 Map the work to PR-sized units with acceptance evidence and explicit
-dependencies. Several tickets can share one cohesive PR; split a ticket that
+dependencies. To split one spec, use [To Tasks](../to-tasks/SKILL.md), and keep each task's
+inputs and finish line on its unit. Several tickets can share one cohesive PR; split a ticket that
 needs independently reviewable changes. A parent ticket is a rollup, not a PR
 unit. Sequence dependent units with [task graphs](references/task-graphs.md).
 

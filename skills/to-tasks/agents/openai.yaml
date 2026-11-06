@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Tasks"
+  short_description: "Split a plan into tasks that can run in parallel"
+  default_prompt: "Use $to-tasks to split this spec into parallel tasks."
