@@ -1138,19 +1138,17 @@ through the manual setup skill.
 Setup references use the local `setup-sreestack` entry point.
 
 
-## to-tickets
+## to-tasks
 
 - [mattpocock/skills / skills/engineering/to-tickets](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-tickets) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Uses supplied or project-configured tracker information, with no labels.
-Unresolved required choices can be supplied directly or through the manual setup
-skill.
+Model-invoked, so workflows can reach it. It produces a task list. Publishing to a tracker
+happens only on request and stays user-approved. Uses supplied or project-configured tracker
+information, with no labels.
 
-Each ticket delivers one result. Tickets record their inputs, and a ticket is
-ready when its blockers have delivered what it needs, its inputs exist, its
-acceptance criteria prove the result, and it passes the local parallelism test.
-A shared resource becomes a note under Inputs, and blocking edges mean one ticket
-needs another's output or decision.
+Each task delivers one result. This skill owns the parallelism test and the ready rule, which the
+tracker seeds and `chief-of-staff` point to. A shared resource becomes a note under Inputs, and
+blocking edges mean one task needs another's output or decision.
 
 Setup references use the local `setup-sreestack` entry point.
 

@@ -22,7 +22,7 @@ that base cannot. Landing is required only when the finish line requires it.
    open until the final merge and therefore misstate readiness during a run.
    A human decision, support dependency, or missing acceptance contract can
    block a unit even when its ticket edges are clear.
-3. Start ready owners within Orchestration's limits. Independent PRs start from
+3. Start [ready](../../to-tasks/SKILL.md#ready) owners within Orchestration's limits. Independent PRs start from
    the intended shared base. A dependent PR can stack only when its required
    inputs are committed on the chosen parent branch; otherwise it waits for
    delivery to its base. Use [gh-stack](../../gh-stack/SKILL.md) for stack

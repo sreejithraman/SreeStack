@@ -21,5 +21,5 @@ Read the file at the referenced path. The user will normally pass the path or th
 ## Blocking and claiming
 
 - **Blocking**: a `Blocked by: NN, NN` line near the top.
-- **Claim**: Set `Status: claimed` and save before any work. If you chose the ticket yourself, re-read it first, and leave it if its `Status:` isn't `open`, if a blocker isn't `resolved`, or if an input doesn't exist. Only sessions sharing this checkout see the claim, so start parallel worktrees through one owner.
+- **Claim**: Set `Status: claimed` and save before any work. If you chose the ticket yourself, re-read it first, and leave it if its `Status:` isn't `open`, if a blocker isn't `resolved`, or if it isn't ready under the Ready rule in the `to-tasks` skill. Only sessions sharing this checkout see the claim, so start parallel worktrees through one owner.
 - **Resolve**: append the result under `## Comments`, then set `Status: resolved`.
