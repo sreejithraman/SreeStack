@@ -1,5 +1,5 @@
 interface:
   display_name: "SreeStack Setup"
-  short_description: "Set up SreeStack workflows or migrate glossaries"
+  short_description: "Set up SreeStack workflows, verification maps, or glossaries"
 policy:
   allow_implicit_invocation: false

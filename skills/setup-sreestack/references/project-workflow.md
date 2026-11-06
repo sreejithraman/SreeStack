@@ -23,7 +23,8 @@ Avoid a second source of truth for commands, standards, or shared procedures.
 - **Acceptance:** link the verification index established by
   [Setup's foundation step](../SKILL.md#verification-foundation), or the existing
   map for a scoped workflow update. Record established demonstration or access
-  conventions. `verify` owns feature recipes and real workflow checks;
+  conventions. `verify` owns real workflow checks, and
+  [verification maps](verification-map.md) own feature recipes;
   `show-me` chooses demonstrations and access.
 - **Review:** identify the intended review base and required project checks.
   Link existing standards. Mechanical rules belong in existing tooling;
@@ -61,7 +62,8 @@ workflow conventions in `docs/agents/workflow.md`.
 Before naming domain concepts or changing their model, read
 `docs/agents/domain.md` and its relevant glossary/ADR paths.
 For ticket work, read `docs/agents/issue-tracker.md`.
-For acceptance checks, read `docs/agents/verification/index.md`.
+For acceptance checks, read `docs/agents/verification/index.md` and use Verify.
+To change this map, use `setup-sreestack`.
 When work produces something the user can see or try, use `show-me` before
 changing it, when it first works or changes, and at every stop.
 ```

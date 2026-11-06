@@ -634,100 +634,55 @@ boundaries, lifecycle recovery, and caller migration; UIKit mechanics stay local
 - [emilkowalski/skills / skills/mobile-native](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native) — mobile browser behavior and matching verification assertions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 - [emilkowalski/skills / skills/break-ui](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui) — realistic edge-data method, catalog, and content-constrained layout decisions; import baseline `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`.
 
-One automatically discoverable skill owns real-workflow selection, launch,
-driving, acceptance judgments, evidence, cleanup, and project documentation.
-Formal checks use one conditional reference for explicitly requested proofs or
-model checking and maintenance of existing checks. It retains tool selection,
+One automatically discoverable skill owns real-workflow selection, launch, driving,
+acceptance judgments, evidence, and cleanup. It writes no docs in any repo, except formal check records under the
+formal reference's conditions: it uses a temporary plan without a map, reads a map when one exists, and reports drift.
+Adds a read-only doctor before driving, red-first reproduction against the base
+revision, rerunnable scripts, and refusal of an assertion with no independent
+expectation or way to run it. Formal checks use one conditional reference, also
+reached when a change touches an existing check. It retains tool selection,
 code/model correspondence, bounds, negative controls, counterexample replay,
-drift classification, and sync-revision records. Reusable recipes follow local
-documentation policy rather than generating project skills. Model sensitivity
-and real-code correspondence have distinct proof levels; a synchronized model
-can expose a code bug. Ordinary verification requires no new formal model.
+drift classification, and sync-revision records. Model sensitivity and real-code
+correspondence have distinct proof levels; a synchronized model can expose a code
+bug. The standalone statechart scripts and mandatory statechart invocation are
+excluded; domain traces and optional diagrams need no bundled renderer.
 Stateful workflow checks carry architecture-discovered event sequences into
 public-entry-point checks with expectations grounded in product requirements.
-The standalone statechart scripts and mandatory statechart invocation are
-excluded; domain traces and optional diagrams need no bundled renderer.
-Interactive driving follows Orchestration's UI operation rule
-while Verify keeps assertions and verdicts.
-Ordinary checks use a temporary plan when no map exists and maintain affected
-recipes when a map is already set up. Creating a map requires a setup or reusable
-documentation request; verification can also explicitly leave existing docs alone.
-Supports indexes containing shared facts before feature recipes exist; feature
-directories are created with the first recipe.
-Reads the project index before selected recipes, expanding to all recipes for
-whole-app or whole-map requests. Discloses map-writing examples and interface
-audit or accessibility guidance through conditional references.
-Centralizes documentation policy and shared verification rules in the main
-procedure; map and platform references retain their task-specific guidance.
-Plans resource ownership before concurrent or long checks, preserving active
-owners; authorized harness isolation changes require proof of concurrent
-isolation and independent cleanup.
-Uses an authoritative index and feature recipes in project docs, defaulting to
-`docs/agents/verification/`, rather than generating project skills. Adapts the
-pstack feature formula to user descriptions and sub-features, entry points,
-harness driving with assertions and proof, and gotchas. Supports proportional
-targeted updates, whole-app verification, source-and-live whole-map maintenance,
-and rewriting or reorganizing maps while preserving useful human assertions.
-Existing project skills may provide facts consistent with their invocation
-policies; this skill retains procedure ownership and leaves migration explicit.
+Interactive driving follows Orchestration's UI operation rule while Verify keeps
+verdicts. Existing project skills may provide facts consistent with their
+invocation policies; this skill retains procedure ownership and leaves migration
+explicit.
+Concurrent and long checks plan resource ownership; authorized harness isolation
+changes prove concurrent isolation and independent cleanup.
 Imported interface criteria retain full requested audit coverage. Web and iOS
 checks follow the requested deployment or Simulator/device target. The iOS
-reference owns T3 Device panel routing, returned driver/session flags, Apple
-build and device details, and native suite setup. It reuses project harnesses
-and prefers XCTest with XCUIAutomation for new iOS UI workflow tests, Swift
-Testing for new Swift unit tests, and XCTest for performance tests. Tests, CI
-configuration, and prerequisites stay in product repos; maps link executable
-assertions and uncovered checks. Suite execution preserves target identity,
-required-check execution, failure evidence, and isolated state;
-new harness setup checks failure detection with a disposable negative control.
-The shared procedure accepts interactive or automated evidence and requires
-assertion coverage beyond a successful command. Targeted suites preserve required
-integration gates, reconcile every selected test and attempt, and require matching
-runtime evidence for pre-existing failure claims. Xcode MCP and platform CLIs
-supply build/log operations or host-supported fallback.
-Simulator/emulator preparation routes through `simulator-lifecycle`, retaining
-T3's panel and pinned driver contract. Native suites use the granted destination
-and device set, independent leases for concurrent runs, and clone accounting.
-Terminal and service checks use process or PTY driving, bounded
-completion, public protocols, and fresh persisted-output reads. Harness selection
-follows host routing, including T3 preview opening and actionable-error recovery,
-and public user paths, including CLI-driven UIs. Keeps
-bounded reproduction attempts, failed-attempt evidence, authorization, isolation,
-redaction, run-owned cleanup, and separate documentation and product verdicts.
+reference reuses project harnesses and prefers XCTest with XCUIAutomation for new
+iOS UI workflow tests, Swift Testing for new Swift unit tests, and XCTest for
+performance tests. Suite execution preserves target identity, required-check
+execution, failure evidence, and isolated state; new harness setup checks failure
+detection with a disposable negative control. Evidence can be interactive or
+automated and needs assertion coverage beyond a successful command. Targeted
+suites preserve required integration gates, reconcile every selected test and
+attempt, and require matching runtime evidence for pre-existing failure claims.
+Terminal and service checks use process or PTY driving, bounded completion, public
+protocols, and fresh persisted-output reads. Keeps bounded reproduction attempts,
+failed-attempt evidence, authorization, isolation, redaction, run-owned cleanup,
+and separate defect-reproduction reporting.
 Authenticated workflows reuse designated test accounts and standing scope,
 delegate application sign-in and command/API credential use to `agent-login`,
-check delivery in the actual host interface, and
-distinguish provider authentication, automatic login, and post-login verification.
-Routes inspectable results to `show-me` for demonstrations and access while
-retaining acceptance selection and judgments.
-Physical-device development installs route to Show Me's device delivery reference
-from shared preparation for setup and recovery, retaining platform tooling and
-acceptance guidance here.
-Provider mechanics stay in agent-login’s references; maps link the authoritative
-approved mapping and record delivery setup.
-
+check delivery in the actual host interface, and distinguish provider
+authentication, automatic login, and post-login verification. Inspectable results
+route to `show-me`, and physical-device installs to its device delivery reference.
 Readiness requires usable workflow state after initialization, migrations, and
-fixtures. Setup/first-run recipes prove isolated empty-data launch; ordinary checks
+fixtures. Setup/first-run checks prove isolated empty-data launch; ordinary checks
 can reuse known state. Substitute environments leave target-specific setup
-unverified. Missing fixtures retain assertions with local failed/blocked verdicts,
-rather than requiring every missing precondition to be a product failure.
-
+unverified. Missing fixtures retain assertions with local failed/blocked verdicts.
 Edge-data workflow and catalog map to `references/edge-data.md`, with mobile
 assertions in `references/web.md`. Comparison controls are optional, fixtures
 are type-correct and task-scoped, existing authorization governs fixes, and
 retention is proportional. Missing schema limits are distinguished from verified
 unbounded input. Emulation and unavailable hardware checks carry explicit
 evidence limits. Greetings and attribution instructions are omitted.
-Stateful acceptance selects relevant event sequences and proves visible outcomes
-and external effects through public entry points, beyond transition tests alone.
-Shared acceptance guidance pairs outcomes with constraints and suitable
-evaluation, including qualitative judgment and research uncertainty. Brownfield
-discovery grows checks with actual risks. Evidence identity and comparison
-detail are required where claims depend on them; existing independent review
-assesses consequential evidence changes. Product assertions retain failure
-detection, method-repair requirements, and verdicts without requiring new maps
-or whole-app audits.
-
 
 ## repo-cleanup
 
@@ -939,7 +894,7 @@ evidence and access gaps before acceptance.
 - Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) (article checked 2026-11-02) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc) (checked 2026-10-18).
 - [robonuggets/be-ambitious / SKILL.md](https://github.com/robonuggets/be-ambitious/blob/dc116a3ebd8cf772e4d0930626f67369bd60399d/SKILL.md) — conceptual comparison at `dc116a3ebd8cf772e4d0930626f67369bd60399d`, checked 2026-11-02; no upstream prose copied.
 
-Independently written brief preparation, model-discoverable for requested
+Independently written brief preparation and acceptance planning, model-discoverable for requested
 reframing, ambition, prompt improvement, and brief formation for a calling workflow. Scales
 to uncertainty and considers harder targets, raw evidence, testable discoveries,
 cross-field methods, and lasting workflows with explicit setup and ownership.
@@ -947,6 +902,11 @@ Preserves authorized scope and the agreed finish line, allows qualitative
 evaluation, and returns to the calling workflow. Standalone reframing ends with
 the brief; prompt rewriting returns a copyable prompt. No mandatory ladder,
 expert roster, numerical stretch target, or fixed output template.
+`references/acceptance.md` pairs outcomes with constraints and suitable evaluation,
+including qualitative judgment and research uncertainty. Brownfield discovery grows
+checks with actual risks. Evidence identity and comparison detail are required
+where claims depend on them; existing independent review assesses consequential
+evidence changes.
 
 ## review
 
@@ -1081,14 +1041,21 @@ remain unchanged.
 ## setup-sreestack
 
 - [mattpocock/skills / skills/engineering/setup-matt-pocock-skills](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/setup-matt-pocock-skills) — prerelease-main import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60` (the skill folder matches v1.3.1).
+- [cursor/plugins / pstack/skills/create-verification-skill](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/create-verification-skill) and [maintain-verification-skill](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/maintain-verification-skill) — map and recipe format; import baselines as recorded under `verify`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 
 Manual-only in both hosts. The local name and UI are SreeStack Setup. One setup
 workflow owns project-specific conventions and pointers, with scoped update,
-glossary migration, optional ticket configuration, and a verification
-foundation during full setup. Setup uses Verify's map format to create or reuse
-the index, records known setup facts and coverage gaps, and adds a discovery pointer;
-feature recipes and live proof use `verify` when requested. Feature directories
-are created with the first recipe. Scoped updates and glossary migration
+glossary migration, optional ticket configuration, and verification maps. Full
+setup creates or reuses the index, records known setup facts and coverage gaps, and
+adds a discovery pointer. `references/verification-map.md` owns map creation and
+upkeep, on request and only in the user's own repos. It writes project docs and
+runnable helpers rather than generating project skills, adapts the pstack formula
+to five shared parts (launch, doctor, drive, evidence, cleanup) and feature recipes
+with descriptions and sub-features, entry points, harness driving with assertions
+and proof, and gotchas. It seeds the top 3 to 5 features, proves at least one live
+through `verify`, supports targeted updates and source-and-live whole-map audits,
+and keeps useful human assertions. Feature directories are created with the first
+recipe. Scoped updates and glossary migration
 preserve their requested scope. Project workflow guidance
 uses current local review, PR, stack, merge, acceptance, and delegation owners;
 host settings and installation remain separate. Program ownership uses `chief-of-staff`, one PR-sized change uses `implement`,
@@ -1140,7 +1107,8 @@ gates plus fresh lease-identity requirements, and links local
 run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
 checks. Failure guidance defers to host recovery instructions and preserves unresolved
-ownership conflicts. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
+ownership conflicts. Owns T3 Device panel routing, returned driver and session flags,
+and Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
 with `simlock instructions`. Technical citations use checked upstream source
 documents rather than inaccessible deployed documentation routes.
 

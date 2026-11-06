@@ -71,11 +71,12 @@ original result; preserve existing findings rather than forcing a clean pass.
 
 ## Keep reusable checks current
 
-Follow Verify's documentation policy: use a temporary plan unless maintaining
-existing verification docs or the user requested reusable setup. Keep models,
-harnesses, and property files with the project's verification tooling. Put the
-rerun recipe and coverage record in the established project docs, linking from
-the map when present; a generated project skill is unnecessary.
+Work in the session scratch directory unless the user asked for a reusable check, or
+the task changes code that an existing check covers or asks to maintain one. Then keep
+models, harnesses, and property files with the project's verification tooling, and put
+the rerun recipe and coverage record beside them or in the project's existing docs for
+those checks. If the task only asks you to check a change, run the check and any model
+update in scratch, and report the drift.
 
 Record what code each check describes, its property and limits, the reproducible
 command, and the source revision last reconciled with it. Advance that revision

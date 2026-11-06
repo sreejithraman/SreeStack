@@ -13,48 +13,12 @@ for device-dependent assertions. Identify the project or workspace, scheme, and
 build configuration. Record the app/build revision, bundle identifier, target ID,
 model, and OS version or Simulator runtime supporting the deployment target.
 
-Before acquiring or mutating a Simulator, follow
-[Simulator Lifecycle](../../simulator-lifecycle/SKILL.md). Disposable test devices
-use SimLock's supported allocation and cleanup route; retained inspection
-devices keep their explicit data and lifetime policy. A project runner must
-keep its lease through native builds and tests, use the granted device set and
-destination, and account for test-runner clones. A generic simulator build does
-not prove that a UI suite can run on the leased device.
-
-For interactive Simulator checks in T3 Code, use `device_list`, then `device_open`
-so the user can watch the selected device. Drive it with the exact `agent-device`
-launcher, host configuration, and session flags returned by `device_open`, keeping
-those flags on every command. Prefer current snapshot refs and use
-`device_screenshot` for visual inspection. Follow the live host device contract
-and report an unavailable platform.
-See the [T3 device contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/device/handlers.ts#L28).
-
-Run repository regression suites as project test operations. Use the host's
-device driver for interactive work and honor host restrictions on suite execution.
-Serialize suite runs and interactive work sharing a device, app data, or backend
-fixtures across runs unless those resources are isolated per run. Independent
-disposable runs also need independent device leases.
-Outside a host-managed device runtime, use available device tooling
-that exposes the required interaction and result.
-
-Use platform tools for builds, logs, or other operations the device driver does
-not cover, respecting SimLock's device routing when it owns the target.
-Outside that device runtime, choose the shortest available path that
-can observe the required result: Xcode's MCP tools can build, run, interact with the Simulator,
-and capture screenshots; `xcodebuild` and `xcrun simctl` cover build, install,
-and launch on targets those tools are authorized to control; Simulator or
-computer-use tools can provide the remaining
-interaction. Check the connected tool's capabilities before relying on it.
-Xcode 27 adds Simulator interaction to its MCP server
-([Xcode 27 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes)); external agents connect through
-[`xcrun mcpbridge`](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode).
-Before using those MCP tools, open the target project or workspace in Xcode. If
-Xcode's headless MCP server is enabled, `xcrun mcp-server open <project-or-workspace>`
-can open it instead; check `xcrun mcp-server status` when discovery fails.
-For physical-device checks, choose the device as Xcode's run destination or use
+Reach and drive simulators through [Simulator Lifecycle](../../simulator-lifecycle/SKILL.md).
+For a physical device, choose it as Xcode's run destination or use
 [`xcrun devicectl`](https://developer.apple.com/documentation/xcode/xcode-command-line-tool-reference)
-for available device operations. Interact through the device or connected
-interface tooling; check its capabilities before relying on it.
+for available device operations. Interact through the device or connected interface
+tooling, and check its capabilities first. If no tool can drive it, ask the user to
+do the steps.
 
 ## Choose a regression harness
 
@@ -73,7 +37,8 @@ and CI configuration in the product repo.
 
 Discover the project's UI test target, scheme, test plan, wrapper command, and
 CI configuration. Select the explicit Simulator or device destination and check
-that the runner uses it. Use the project's Xcode or `xcodebuild` workflow;
+that the runner uses it. For a Simulator, check its clone settings too, using
+[build and test target compatibility](../../simulator-lifecycle/references/project-runners.md#build-and-test-target-compatibility). Use the project's Xcode or `xcodebuild` workflow;
 confirm toolchain-dependent options through installed help and
 [Apple's test-running guidance](https://developer.apple.com/documentation/xcode/running-tests-and-interpreting-results).
 
@@ -145,7 +110,3 @@ Capture the workflow states needed to support visual claims. Use
 keyboard, focus, touch-target, and assistive-technology checks. Exercise VoiceOver
 usability and hardware-dependent behavior through suitable checks on the required
 target; accessibility identifiers supply selectors for automation.
-
-For reusable setup, follow [project maps](project-map.md): link executable tests
-to workflow assertions and document the method for exercising remaining checks.
-Keep run evidence separate from the map.

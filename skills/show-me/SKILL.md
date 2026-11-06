@@ -1,6 +1,6 @@
 ---
 name: show-me
-description: Use before changing a screen or anything you'll measure, when a visible result first works or changes, when asking about anything visual, before any stop or report on a result the user can open, run, or view, and when the user asks to see something or take a preview down.
+description: Use before changing a screen or anything you'll measure, when a visible result first works or changes, when you or the user ask about or choose anything visual, before any stop or report on a result the user can open, run, or view, and when the user asks to see something or take a preview down.
 ---
 
 # Show Me
@@ -52,9 +52,10 @@ inline. Read [captures](references/captures.md) before you make visual media.
 ## Show only what is real
 
 - Reach the changed behavior through its real interface, using the project's run path
-  and the host's browser, device, or terminal tools. For browser and iOS tools, follow
-  Verify's [web](../verify/references/web.md) and [iOS](../verify/references/ios.md)
-  guides.
+  and the host's browser, device, or terminal tools. For browsers, follow Verify's
+  [web guide](../verify/references/web.md). For iOS, follow its
+  [iOS guide](../verify/references/ios.md) and
+  [Simulator Lifecycle](../simulator-lifecycle/SKILL.md).
 - Confirm the current changes are present, then inspect each item as delivered. Open
   the link, view the saved image, or run the example. A loading screen, stale build,
   home screen, or made-up output doesn't count. A labeled mock of an unbuilt option is

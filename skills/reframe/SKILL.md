@@ -1,6 +1,6 @@
 ---
 name: reframe
-description: Form a brief when asked to reframe a task, be more ambitious, raise the bar, or improve a prompt, or when another workflow needs a clearer outcome. Establish the outcome, methods, constraints, evaluation, and finish line from context.
+description: Form a brief when asked to reframe a task, be more ambitious, raise the bar, or improve a prompt, when another workflow needs a clearer outcome, or when planning how to judge an ambitious target, a consequential change, or competing candidates.
 ---
 
 # Reframe
@@ -14,8 +14,8 @@ confirmation. Reframing alone ends with the brief.
 
 Read the request, settled decisions, and relevant project evidence. Separate
 the desired result from the proposed means or artifact. Keep alternatives beyond
-authorized scope labeled as proposals. Use Verify's
-[acceptance guidance](../verify/references/acceptance-contract.md) to resolve
+authorized scope labeled as proposals. Use the
+[acceptance guidance](references/acceptance.md) to resolve
 what context can establish and ask for material user decisions.
 
 Consider the dimensions that can improve this task:

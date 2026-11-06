@@ -15,7 +15,10 @@ is unavailable, continue independent build or code work and report the missing
 prerequisite. Environment setup and adoption checks use
 [setup and rollout](setup.md).
 
-In T3, use its Device panel and returned driver for interactive work. Confirm
+In T3, use `device_list`, then `device_open`, so the user can watch the device, and keep
+the exact `agent-device` launcher, host configuration, and session flags it returns on
+every command. Prefer current snapshot refs. Report an unavailable platform. See the
+[T3 device contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/device/handlers.ts#L28). Confirm
 that the host's documented SimLock integration acquires and drives the same
 underlying lease. A regular `device_open` session alone does not establish a
 SimLock lease. A device from a `simlock-` host in `device_list` is that integration. If it
@@ -41,6 +44,33 @@ only after this run's ownership is established.
 
 See [agent connection](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/getting-started/connect-your-agent.mdx)
 and [agent-device integration](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/using-devices/agent-device.mdx).
+
+## Drive the device
+
+Run repository test suites as project test operations, and honor the host's limits on
+them. Before you run a native suite, even an existing one, check its destination, device
+set, and clone settings against
+[build and test target compatibility](project-runners.md#build-and-test-target-compatibility).
+Serialize suites and interactive work that share a device, app data, or backend
+fixtures, unless each run isolates them. Independent disposable runs need independent
+leases.
+
+Use platform tools for builds, logs, and what the device driver doesn't cover, while
+SimLock owns the target. Outside a host device runtime, take the shortest path that shows
+the result:
+
+- Xcode's MCP tools can build, run, drive the Simulator, and take screenshots. Open the
+  project or workspace in Xcode first. With the headless server enabled,
+  `xcrun mcp-server open <project-or-workspace>` can open it, and `xcrun mcp-server status`
+  helps when discovery fails. External agents connect through
+  [`xcrun mcpbridge`](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode).
+  Simulator interaction arrived in
+  [Xcode 27](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes).
+- `xcodebuild` and `xcrun simctl` cover build, install, and launch on targets you're
+  authorized to control.
+- Simulator or computer-use tools can supply the remaining interaction.
+
+Check a tool's capabilities before you rely on it.
 
 ## Run and record
 
