@@ -1220,27 +1220,36 @@ Manual invocation and the one-decision-per-session rule remain unchanged.
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 - [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures (MIT).
 
-The entrypoint is a local plain-language rewrite of the upstream writing guidance.
-It adds plain-writing rules, keeps the upstream concepts that change behavior, and
-drops their extended explanation. Audits test a fresh draft, then settle old rules
-by the failure they prevent; revisions hold additions to the same standard as
-removals.
-Documents paired Claude Code and Codex invocation settings and writes context
-pointers as request-shaped triggers. Existing invocation choices are preserved.
-Conditional revision guidance scales checks to the change, inventories consumers
-and loaded copies, and accounts for removed knowledge. Tool guidance covers
-drift, help quality, call syntax, and usage-derived examples. Evaluation defines
-matched variants, adapter/isolation calibration, full outcome checks, and normal
-host integration; no runner or provider adapter is bundled. Scored no-skill
-trials serve attribution and removal claims; two-version comparisons use
-original/candidate trials. Focused text/metadata checks remain sufficient for
-ordinary structural preservation claims.
+A local rewrite around one test: a line stays only if removing it changes what an
+agent does. Keeps the upstream concepts that change behavior: pointers, placement,
+completion conditions, leading words, and pruning. Adds a ranked choice of home for
+guidance, goal-first writing, capability and workflow contracts, plain-writing rules,
+test-based rules, and retesting after model releases. Drops router skills and the
+upstream goal of the same process on every run.
 
-Uses shared acceptance and review owners and configured model routing. Does not
-adopt fixed size/growth budgets, inactivity-based host removal, schema-field
-hiding, fixed safety-line counts, or automatic deletion from no-skill success.
-Bytes, measured task context, cache usage, and cost remain distinct. Scorer
-repairs require comparable reruns; failed required cases cannot be averaged away.
+Documents paired Claude Code and Codex invocation settings, writes context pointers
+as request-shaped triggers, and limits a model-invoked description to its triggers.
+Existing invocation choices are preserved.
+Rewrites start fresh, then settle old rules by the failure they prevent. Tool guidance
+covers drift, help quality, call syntax, and usage-derived examples. Working on Skills
+starts from real runs. Controlled Comparison keeps matched variants, calibration,
+full outcome checks, and normal host integration; no runner or provider adapter is
+bundled.
+
+Keeps skill-diet's steps for adding a rule, its level rule, and its counts of 10–15
+requests and three runs. Holds an added rule to the three runs a removal needs, in
+place of one fresh session. Exempts a named set of guardrails from the line test.
+
+`SKILL.md` covers writing for any agent document and ends by routing to a guide for
+each kind of document. `references/agent-instructions.md` is local, built from host
+documentation and published evaluations checked on 2026-11-05, plus load tests on Claude
+Code 2.1.318 and Codex 0.166.0.
+
+Uses shared review owners. Does not adopt fixed size or growth budgets,
+inactivity-based host removal, schema-field hiding, fixed safety-line counts, or
+automatic deletion from no-skill success. Bytes, measured task context, cache usage,
+and cost remain distinct. Scorer repairs require comparable reruns; failed required
+cases cannot be averaged away.
 
 ## xcode-security-audit
 
