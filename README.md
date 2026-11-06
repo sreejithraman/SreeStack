@@ -440,7 +440,7 @@ before the existing review; merge checks that current review includes the pass.
 
 [SreeStack setup](skills/setup-sreestack/SKILL.md) is the manual
 `setup-sreestack` entry point for project workflow conventions, glossary/ADR
-paths, a verification foundation, and optional issue tracking and triage labels.
+paths, a verification foundation, and optional issue tracking.
 Full setup creates or reuses `docs/agents/verification/index.md`, or an equivalent
 established location, records known setup facts and coverage gaps, and adds an
 agent-instruction pointer. It links the project's existing checks and review

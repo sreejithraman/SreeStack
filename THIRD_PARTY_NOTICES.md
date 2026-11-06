@@ -25,7 +25,7 @@ material keeps the terms listed below; the root license does not replace them.
 | Gemini CLI Extensions | review/references/gemini.md (adapted) | [Apache-2.0](licenses/gemini-cli-extensions-code-review.txt) |
 | Lauren Tan / pstack | arena, architect, how, show-dont-tell, correct, engineering-principles, verify, blast-radius, why, codebase-design, diagnosing-bugs, pr, handoff, chief-of-staff, swarm, and orchestration adaptations | [MIT](licenses/lauren-tan-pstack.txt) |
 | Anthropic skills | ui-design art-direction guidance | [Apache-2.0](licenses/anthropics-frontend-design.txt) ([upstream](https://github.com/anthropics/skills/blob/34040c9c568585f6929bedeaad110ad08f079624/skills/frontend-design/LICENSE.txt)) |
-| Anthropic Claude Plugins Community | eli5 | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
+| Anthropic Claude Plugins Community | eli5 (adapted) | [Apache-2.0](licenses/anthropics-claude-plugins-community.txt) |
 | GitHub gh-stack | gh-stack | [MIT](licenses/github-gh-stack.txt) |
 | Szymon Chmal / Callstack SimLock | simulator-lifecycle skill entrypoint | [MIT](licenses/callstackincubator-simlock.txt) |
 | s0xDk / s13k | ui-design skill, web references, and token asset | [MIT and scope note](licenses/s0xdk-refactoring-ui-skill.txt) |

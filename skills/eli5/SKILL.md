@@ -1,10 +1,14 @@
 ---
 name: eli5
-description: Explain a topic like I'm a 5 year old. Use when the user types /eli5 <topic> or asks for a dead-simple picture explainer of how something works.
+description: Use when the user types /eli5 <topic>, asks to explain something like they're five, or asks for a picture explainer of how something works.
 ---
 
 # eli5
 
-Explain like I'm someone who knows nothing about this topic, using a HTML artifact with big pictures and few words.
+<!-- Modified by SreeStack. -->
+
+Explain this topic to a smart adult who is new to it, using an HTML artifact that leads with big pictures and uses few words.
+
+Show how it actually works. Simplify the vocabulary, not the logic. Give the real term for each idea once.
 
 Topic: $ARGUMENTS
