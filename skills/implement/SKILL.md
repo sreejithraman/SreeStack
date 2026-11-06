@@ -92,8 +92,8 @@ Before broad review, exercise the requested outcome through its real entry
 points and keep the evidence. An unavailable required check is blocked or
 untested; review can probe risk but cannot supply an unobserved result.
 
-[PR](../pr/SKILL.md) owns preparation, publication, CI, and feedback for a PR
-finish line. For local behavior or procedure changes, use
+[PR](../pr/SKILL.md) owns preparation, publication, and watching for a PR
+finish line, and [Review Sweep](../review-sweep/SKILL.md) settles CI failures and feedback. For local behavior or procedure changes, use
 [Review Fix Loop](../review-fix-loop/SKILL.md). Reuse matching coverage so the
 same scope is reviewed once. Settle findings through Review Sweep's
 [claim, repair, and check states](../review-sweep/references/finding-schema.md);
@@ -101,7 +101,7 @@ prefer a reproduction where feasible and keep precise source or contract
 arguments where execution is hard. Recheck evidence affected by fixes or base
 changes. Review repairs and babysitting stay with you.
 
-For a pending PR, follow PR's [wait procedure](../pr/references/ci.md#wait-for-events):
+For a pending PR, follow PR's [wait procedure](../pr/references/watch.md#wait):
 a delegated owner returns its pending report and lets the parent watch.
 Merge only within the assignment's authorization, with no open decision
 request on this PR's scope, through [Merge](../merge/SKILL.md). Coordinate stack changes affecting other layers
