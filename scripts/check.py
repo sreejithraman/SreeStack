@@ -24,6 +24,7 @@ CHECKS = (
     ("-m", "unittest", "discover", "-s", "scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/chief-of-staff/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/create-image/scripts", "-p", "test_*.py"),
+    ("-m", "unittest", "discover", "-s", "skills/pr/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/simulator-lifecycle/scripts", "-p", "test_*.py"),
     ("scripts/check_skills.py",),
     ("scripts/check_whitespace.py",),
@@ -79,6 +80,21 @@ def checks_python() -> str:
     return str(environment / "bin/python")
 
 
+def stable_clone_off_main() -> Path | None:
+    """Return the primary checkout when a worktree finds it off main.
+
+    Host sync stops without a sound once that checkout leaves main, so skills silently
+    go stale. CI and the primary checkout itself run with no linked worktree to speak for it.
+    """
+    listing = subprocess.check_output(
+        ["git", "worktree", "list", "--porcelain"], cwd=ROOT, text=True,
+    ).split("\n\n")[0].splitlines()
+    primary = Path(listing[0].removeprefix("worktree "))
+    if primary.resolve() == ROOT or "branch refs/heads/main" in listing:
+        return None
+    return primary
+
+
 def main() -> int:
     python = checks_python()
     if len(sys.argv) > 1:
@@ -86,7 +102,11 @@ def main() -> int:
     failed = [check for check in CHECKS if subprocess.run([python, *check], cwd=ROOT).returncode]
     for check in failed:
         print(f"Failed: {' '.join(check)}", file=sys.stderr)
-    return 1 if failed else 0
+    off_main = stable_clone_off_main()
+    if off_main:
+        print(f"Failed: stable clone {off_main} is not on main, so installed skills "
+              "stopped updating. Switch it back to main.", file=sys.stderr)
+    return 1 if failed or off_main else 0
 
 
 if __name__ == "__main__":

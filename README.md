@@ -197,7 +197,7 @@ instructions rather than maintaining another API manual.
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
 | Generate or edit images in any coding agent | [create-image](skills/create-image/SKILL.md), automatically discoverable; API first, then the host's subscription tool |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
-| Publish and monitor | `pr`; `gh-stack` manages dependent layers |
+| Publish and watch | `pr`; `gh-stack` manages dependent layers |
 | Land and clean up | `merge`, then `repo-cleanup` |
 | Transfer context or improve the environment | Explicit `handoff` or `retro` |
 
@@ -313,8 +313,9 @@ ACP bridge must be reachable from the agent. OpenCode and Gemini reviewers read
 their review references from this stack; provider plugins are not needed.
 
 [Review](skills/review/SKILL.md) assesses a snapshot without fixes.
-[Review Sweep](skills/review-sweep/SKILL.md) validates findings and implements
-accepted fixes with the working model selection.
+[Review Sweep](skills/review-sweep/SKILL.md) settles local findings, PR comments, and
+failing checks the same way, by outcome, and implements accepted fixes with the working
+model selection.
 [Review Fix Loop](skills/review-fix-loop/SKILL.md) owns review coverage, reviewer
 selection, harness review, optional skips, and fix rounds. It uses Orchestration's
 model table and delegation rules. Enable the OpenCode Go subscription routes
@@ -358,8 +359,9 @@ Sample requests and expected results:
   goal or swarm work can use ordinary tasks; requested native tracking follows
   the host's available capabilities.
 
-`pr` writes titles/bodies or brings a single PR to readiness; `merge` lands ready PRs or stacks and
-finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
+`pr` writes titles and bodies, publishes one PR, and watches it to ready. `merge` lands a
+finished change: it brings the PR to ready, stops only when a fix changes what you kept,
+shows the result, and finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
 stacks and `repo-cleanup` for completed task resources, including Mac development
 apps, simulator/emulator test installs, and task-created temporary devices when
 platform tooling is available.

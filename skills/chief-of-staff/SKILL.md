@@ -152,7 +152,7 @@ until reopened.
 ## Watch pending PRs
 
 For delegated owners, this thread is the watching parent under PR's
-[wait procedure](../pr/references/ci.md#wait-for-events). A top-level owner
+[wait procedure](../pr/references/watch.md#wait). A top-level owner
 watches its own PR.
 
 Keep watching PRs that are still pending while you ask the user something.

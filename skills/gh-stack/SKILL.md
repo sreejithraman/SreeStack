@@ -34,9 +34,9 @@ their callers and use separate stacks for independent work.
 - With multiple remotes, `push`, `submit`, `sync`, `rebase`, and `link` need
   `--remote <name>` unless `remote.pushDefault` selects it. `checkout` and `trunk`
   have no `--remote` flag and require that config.
-- Register every scoped PR taken over, created, or pushed through
-  [T3 thread registration](../pr/SKILL.md#thread-registration); a CLI operation
-  does not register its layers with the thread.
+- In T3, link every scoped PR taken over, created, or pushed, using
+  [PR's publish step](../pr/SKILL.md#publish). A CLI operation doesn't link its layers
+  to the thread.
 
 ### Worktree capabilities
 

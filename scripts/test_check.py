@@ -35,6 +35,7 @@ class CheckRunnerTests(unittest.TestCase):
             "scripts/test_fixture.py": PASSING_TEST,
             "skills/chief-of-staff/scripts/test_fixture.py": PASSING_TEST,
             "skills/create-image/scripts/test_fixture.py": PASSING_TEST,
+            "skills/pr/scripts/test_fixture.py": PASSING_TEST,
             "skills/simulator-lifecycle/scripts/test_fixture.py": PASSING_TEST,
         }.items():
             self.write(name, content)
@@ -72,6 +73,18 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertEqual(self.environment(root=worktree), environment)
         self.assertTrue(environment.is_relative_to(self.repo / ".git"))
         self.assertEqual(self.git("status", "--porcelain", cwd=worktree), "")
+
+    def test_worktree_fails_when_the_stable_clone_leaves_main(self):
+        worktree = self.base / "worktree"
+        self.git("worktree", "add", "--quiet", "-b", "task", str(worktree))
+        self.run_checks(root=worktree)
+
+        self.git("switch", "--quiet", "-c", "stray")
+
+        result = self.run_checks(root=worktree, code=1)
+        self.assertIn(f"stable clone {self.repo} is not on main", result.stderr)
+        self.assertIn("ran skills", result.stdout)
+        self.run_checks()
 
     def test_changed_requirements_get_their_own_environment(self):
         original = self.environment()
