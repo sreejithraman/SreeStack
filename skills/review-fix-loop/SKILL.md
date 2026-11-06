@@ -96,7 +96,10 @@ Invalid or lost required coverage needs a new assessment under the
 Give every result and partial finding to Review Sweep with its provenance. It
 settles findings and checks accepted fixes, carrying canonical issue IDs and their
 per-issue repair/check evidence forward. Reopen a settled finding only with new
-evidence; report stalled disputes rather than repeating equivalent passes.
+evidence; report stalled disputes rather than repeating equivalent passes. A
+[stop](../review-sweep/references/classification.md#continue-or-stop) blocks
+completion. Finish what doesn't depend on it, then report it to your caller with the decision
+it needs.
 
 ## 4. Route repairs
 

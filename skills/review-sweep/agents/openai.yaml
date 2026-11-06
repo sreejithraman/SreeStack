@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Sweep"
-  short_description: "Verify review findings and fix accepted issues"
-  default_prompt: "Use $review-sweep to verify these findings, fix accepted issues, and return clear defers."
+  short_description: "Verify findings and failures, then fix or decide"
+  default_prompt: "Use $review-sweep to verify these findings, fix accepted issues, and return clear decisions."

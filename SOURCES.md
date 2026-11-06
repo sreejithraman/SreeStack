@@ -465,8 +465,8 @@ promising unconditional rollback.
 History-changing operations use the shared PR preservation reference to back up
 retained local files affected by tracking deletions and verify restoration.
 
-Scoped PR layers follow `pr`’s T3 thread-registration rules; CLI publication
-does not substitute for app registration.
+Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
+publication does not substitute for that link.
 
 The entrypoint keeps common calls and first-action guards inline; installation,
 state fields, and exit-code details live with command behavior. Existing design
@@ -722,7 +722,6 @@ Delegation, review, and delivery belong to the caller.
 ## merge
 
 - Local: `skills/merge` (SreeStack).
-
 
 ## prototype
 
@@ -993,17 +992,11 @@ other nonignored untracked source.
 - [cursor/plugins / pstack PR feedback pagination fix](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/poteto-mode/scripts/watch-pr) — pagination/completeness requirement adapted from `github.ts`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. No watcher code imported. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
-The local name and UI are `pr`. Retains automatic discovery and the full local
-readiness/publication/CI/feedback/merge handoff workflow. Title/body drafting
-and remote-description edits bypass delivery; watching and feedback start at
-current GitHub state. Review Sweep verifies accepted edits; publication requires
-applicable complete-scope review evidence. Merge requests reuse delivery evidence
-and complete missing preparation before the `merge` handoff.
-Code and docs preparation invoke `show-dont-tell` before the existing review
-loop, with readiness evidence tied to the published head/base. Feedback fixes
-that change reviewed scope or invalidate checks return through preparation and review.
-Merge-owned preparation returns readiness evidence to the original caller;
-direct PR merge requests retain the normal Merge handoff.
+The local name and UI are `pr`, with automatic discovery. It owns PR text, publication, and
+watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing reuses
+matching review evidence, and runs `show-dont-tell` then the review loop when there is none.
+`scripts/pr_state.py` reads one head's checks, threads, comments, and reviews through every page,
+replacing hand-read readiness with `blockers`, `pending`, and `to_settle`.
 The body guide uses Summary/Evidence/Merge Danger by default, defers to project
 PR templates, and preserves local why/effect/root-cause/stack facts. It expands
 visual selection to algorithm, runtime, UI, file, interaction, diff, and complete
@@ -1011,23 +1004,14 @@ block views with a locally written diff example. Evidence is observed and revisi
 appropriate, with unavailable before states disclosed. Reversibility, concrete
 consumers, rollout, and restoration limits replace a forced one-word blast-radius
 rating. Small PRs can use concise prose; publication refreshes the guide's facts
-against the current scope/head. Cross-skill references use the current local name.
+against the current scope/head.
 A delegated owner returns a pending report instead of watching; the parent
-watches and resumes that same owner for repairs.
+watches and resumes that same owner for repairs. Unavailable watchers and exhausted
+rate limits remain explicit pending states without custom polling.
 Evidence reuses Show Me's checked demonstrations and access links when available.
 History changes share a local preservation reference with Merge and gh-stack:
 back up current retained bytes outside affected checkouts, preserve both versions
 on conflicts, and verify hashes after success or recovery.
-
-T3 PR registration is shared by all PR routes and reused by stack/merge entrypoints.
-Immediate linking follows live host rules without a mandatory final PR-list read.
-CI and reviews share one assessment/wait/readiness reference. Only the owning
-parent watches; handoffs unwatch, pushes retain the watch, and wakes require
-fresh state. Unavailable watchers and exhausted rate limits remain explicit
-pending states without custom polling. GitHub confirms merge completion.
-Feedback collection exhausts relevant pages and treats incomplete collection as
-unproven readiness. Existing forge/tool preferences and automatic invocation
-remain unchanged.
 
 ## review-sweep
 

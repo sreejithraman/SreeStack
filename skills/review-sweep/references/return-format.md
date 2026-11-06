@@ -41,6 +41,6 @@ Include:
 - verification results and the snapshot they apply to
 - review coverage gaps
 - blockers
-- every parent-owned defer
+- every stop with its decision needed, under `Stops:` above the classes, and parent-owned defers
 
 The parent should be able to see what was fixed, what remains, and which deferred decisions it owns.

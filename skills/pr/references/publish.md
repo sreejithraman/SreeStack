@@ -23,12 +23,9 @@ Prefer the GitHub connector; use `gh` for missing capabilities, current-branch
 discovery, or cross-repository heads. Reuse the PR matching the head branch,
 or create one. Confirm it targets the supplied immediate base.
 
-Apply [thread registration](../SKILL.md#thread-registration) immediately after
-creation or push; GitHub operations alone do not link the PR in T3.
-
 Use [PR body](pr-body.md) for the title and description. Refresh them when fixes
 change scope, evidence, or landing risk. Mark ready unless a draft was requested.
 
 Confirm the remote head matches the intended local head, the base is correct,
 and one PR represents that branch. Record its URL and remote head for
-[CI and reviews](ci.md).
+[watching](watch.md).
