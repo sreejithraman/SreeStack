@@ -34,6 +34,7 @@ class CheckRunnerTests(unittest.TestCase):
             "scripts/check_whitespace.py": 'print("ran whitespace")\n',
             "scripts/test_fixture.py": PASSING_TEST,
             "skills/chief-of-staff/scripts/test_fixture.py": PASSING_TEST,
+            "skills/simulator-lifecycle/scripts/test_fixture.py": PASSING_TEST,
         }.items():
             self.write(name, content)
         shutil.copyfile(SCRIPTS / "check.py", self.repo / "scripts/check.py")

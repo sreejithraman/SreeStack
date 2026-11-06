@@ -102,8 +102,8 @@ A project verification skill alone does not establish a documentation map.
 2. **Prepare the recipes and interface.** Prepare temporary or maintained recipes
    according to the documentation policy above.
 
-   For a physical-device development install, read Showroom's
-   [native-device delivery](../showroom/references/native-device-delivery.md)
+   For a physical-device development install, read Show Me's
+   [device delivery](../show-me/references/native-device-delivery.md)
    before building, changing signing setup, or diagnosing device access.
    It owns delivery setup and recovery; Verify retains platform tooling,
    workflow coverage, and acceptance judgments.
@@ -254,6 +254,6 @@ A project verification skill alone does not establish a documentation map.
    and untested coverage.
 
 If a step requires the user, give exact actions and location, then resume after
-they finish; continue independent checks meanwhile. Use `showroom` to demonstrate
+they finish; continue independent checks meanwhile. Use `show-me` to demonstrate
 inspectable results and make them available to try, reusing current evidence
 while Verify keeps acceptance selection and judgments.

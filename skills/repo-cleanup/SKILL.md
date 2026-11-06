@@ -36,7 +36,7 @@ Clean up only resources whose owner and disposal reason are established. A merge
    Preserve resources still needed by an unmerged stack layer or another active task.
 
 3. **Clean eligible resources.** Stop only matching review surfaces and
-   development processes; when Showroom is available, follow its skill for surfaces
+   development processes; when Show Me is available, follow its skill for surfaces
    tied to this task or worktree. Inspect a repository cleanup or slot-release
    command's effects and arguments before running it; use it only when it can be
    scoped to verified targets. For Mac development apps, supporting processes,

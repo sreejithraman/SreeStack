@@ -91,7 +91,7 @@ the specified method.
 3. Use [review-fix-loop](../review-fix-loop/SKILL.md) for behavior and agent-procedure
    changes. When [pr](../pr/SKILL.md) will review the same complete scope before publication,
    let it run that loop once.
-4. Use [showroom](../showroom/SKILL.md) when the user can inspect or try the result.
+4. Use [show-me](../show-me/SKILL.md) when the user can inspect or try the result.
 5. Track acceptance, delivery state, and handoff delivery separately. A queued handoff with no
    host receipt is unknown. To recover a failed handoff, keep the verified work and recheck
    the request, holds, revision, and affected evidence. Then resend only what is missing, to

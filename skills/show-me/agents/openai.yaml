@@ -1,0 +1,4 @@
+interface:
+  display_name: "Show Me"
+  short_description: "Show results in the thread and make them easy to try"
+  default_prompt: "Use $show-me to show me this result in the thread."

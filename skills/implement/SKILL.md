@@ -36,7 +36,7 @@ Choose the method: [Diagnosing Bugs](../diagnosing-bugs/SKILL.md) for a defect
 or performance regression, the relevant platform and design skills for
 interface work, and [Writing for Agents](../writing-for-agents/SKILL.md) for
 skills and agent procedures. For a requested or planned before/after UI
-comparison, read Showroom's [capture guidance](../showroom/references/captures.md)
+comparison, read Show Me's [capture guidance](../show-me/references/captures.md)
 and keep a matching real baseline before changing the UI or its state.
 
 ## Build and prove
@@ -108,7 +108,7 @@ request on this PR's scope, through [Merge](../merge/SKILL.md). Coordinate stack
 with the caller and [gh-stack](../gh-stack/SKILL.md). Only a confirmed merge
 lands the change; a closed PR did not.
 
-Use [Showroom](../showroom/SKILL.md) to make the result inspectable, then
+Use [Show Me](../show-me/SKILL.md) to make the result inspectable, then
 return the owner report.
 
 ## Owner report

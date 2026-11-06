@@ -120,7 +120,7 @@ steps after the design's technical uncertainties are checked or explicitly
 bounded.
 
 Verify the real workflow with [verify](../verify/SKILL.md), and use
-[showroom](../showroom/SKILL.md) for demonstrations and access to the integrated
+[show-me](../show-me/SKILL.md) for demonstrations and access to the integrated
 result. Review the complete
 integrated change through [review-fix-loop](../review-fix-loop/SKILL.md), or let
 [pr](../pr/SKILL.md) own that loop when publishing the same scope. Remove

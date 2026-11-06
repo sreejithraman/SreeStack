@@ -1,4 +1,0 @@
-interface:
-  display_name: "Showroom"
-  short_description: "Demonstrate results and make them available to try"
-  default_prompt: "Use $showroom to help me experience and judge this result. Choose demonstrations and access suited to the work and available tools."

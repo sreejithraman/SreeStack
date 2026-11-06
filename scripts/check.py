@@ -23,6 +23,7 @@ REQUIREMENTS = ROOT / "scripts/requirements-checks.txt"
 CHECKS = (
     ("-m", "unittest", "discover", "-s", "scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/chief-of-staff/scripts", "-p", "test_*.py"),
+    ("-m", "unittest", "discover", "-s", "skills/simulator-lifecycle/scripts", "-p", "test_*.py"),
     ("scripts/check_skills.py",),
     ("scripts/check_whitespace.py",),
 )
