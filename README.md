@@ -195,6 +195,7 @@ instructions rather than maintaining another API manual.
 | Run complexity, duplication, or mutation tools | `code-quality` |
 | Show results and make them available to try | `show-me` shows results in the thread and makes them easy to try |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
+| Generate or edit images in any coding agent | [create-image](skills/create-image/SKILL.md), automatically discoverable; API first, then the host's subscription tool |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
 | Publish and monitor | `pr`; `gh-stack` manages dependent layers |
 | Land and clean up | `merge`, then `repo-cleanup` |
