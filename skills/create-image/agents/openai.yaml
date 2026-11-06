@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Image"
+  short_description: "Generate and edit images through the API, then subscription tools"
+  default_prompt: "Use $create-image to generate this image."

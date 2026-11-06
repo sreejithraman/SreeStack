@@ -21,6 +21,13 @@ Local-only skills need just an origin note.
   and [Rakesh Patel](https://x.com/rakeshpatelco/status/2116065801279291422), checked
   2026-10-30; independently written with technical citations to official documentation.
 
+## create-image
+
+- Local: `skills/create-image` (SreeStack), automatically discoverable image
+  generation and editing through a standard-library CLI for the OpenAI Images API,
+  with automatic fallback to a host subscription image tool. Written from official
+  OpenAI documentation.
+
 ## agent-login
 
 - Local: `skills/agent-login` (SreeStack) application login workflow and private alias-based CLI.
