@@ -37,6 +37,10 @@ their callers and use separate stacks for independent work.
 - In T3, link every scoped PR taken over, created, or pushed, using
   [PR's publish step](../pr/SKILL.md#publish). A CLI operation doesn't link its layers
   to the thread.
+- Before `gh stack submit`, or `gh stack link` when it creates PRs, run
+  [PR's review step](../pr/SKILL.md#publish) on each layer against its immediate base.
+  Land through [Merge](../merge/SKILL.md): run
+  `gh stack merge` only from its land step.
 
 ### Worktree capabilities
 

@@ -54,12 +54,11 @@ change**:
    [guardrail](../SKILL.md#writing-for-agents) covers, or the request authorizes it.
    Otherwise use a documented dry run, a disposable fixture, or a real-schema stub, or cite the exact
    source, and report the live effect as unproven.
-5. For an edit under step 2, run Rewrite steps 4, 5, 6, and 7 on the affected paths,
+5. For an edit under step 2, run Rewrite steps 4 through 7 on the affected paths,
    and keep the rest of the file.
 6. For any other edit, run the project checks. If it changes what an agent does, also
-   [try](#run-trials-safely) the affected requests in a fresh session and run
-   [Review Fix Loop](../../review-fix-loop/SKILL.md). A line the user gave word for word
-   skips both.
+   [try](#run-trials-safely) the affected requests in a fresh session. A line the user
+   gave word for word skips the trial.
 
 Done: the proof passed, or you reported that the problem does not hold, and each step
 that applies has a result.
@@ -101,12 +100,11 @@ its job.
    are unavailable, report the gap. Done: every request has a result or a stated gap.
 5. **[Settle what changed](#settle-what-changed).**
 6. **Check it.** Update the project record and any host metadata, such as
-   `agents/openai.yaml`. Run the project checks. Run
-   [Review Fix Loop](../../review-fix-loop/SKILL.md), and give it the old text and the
-   settled list, so it checks each drop. Verify new factual claims against sources.
-7. **Report.** Give what changed, each dropped or moved group and why, each request's result
-   against the final text, and remaining gaps. Mark any result from an earlier draft
-   as stale.
+   `agents/openai.yaml`. Run the project checks. Verify new factual claims against
+   sources.
+7. **Report.** Give what changed, each dropped or moved group and why, where the settled
+   list is, each request's result against the final text, and remaining gaps. Mark any
+   result from an earlier draft as stale.
 
 Claims of equal outcomes or context savings need a
 [controlled comparison](controlled-comparison.md).

@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Own one PR-sized change from spec or ticket through implementation, verification, review, and its finish line. Use when asked to implement a spec, ticket, or feature, to deliver a change as a PR, or to keep pursuing a measurable target until it is met.
+description: Own one PR-sized change from spec or ticket through implementation, verification, and its finish line. Use when asked to implement a spec, ticket, or feature, to deliver a change as a PR, or to keep pursuing a measurable target until it is met.
 ---
 
 # Implement
@@ -94,9 +94,10 @@ points and keep the evidence. An unavailable required check is blocked or
 untested; review can probe risk but cannot supply an unobserved result.
 
 [PR](../pr/SKILL.md) owns preparation, publication, and watching for a PR
-finish line, and [Review Sweep](../review-sweep/SKILL.md) settles CI failures and feedback. For local behavior or procedure changes, use
-[Review Fix Loop](../review-fix-loop/SKILL.md). Reuse matching coverage so the
-same scope is reviewed once. Settle findings through Review Sweep's
+finish line, and [Review Sweep](../review-sweep/SKILL.md) settles CI failures and feedback. A local finish line
+ends at the proof, for the user to try; run
+[Review Fix Loop](../review-fix-loop/SKILL.md) on it only when the assignment asks for review.
+Settle findings through Review Sweep's
 [claim, repair, and check states](../review-sweep/references/finding-schema.md);
 prefer a reproduction where feasible and keep precise source or contract
 arguments where execution is hard. Recheck evidence affected by fixes or base

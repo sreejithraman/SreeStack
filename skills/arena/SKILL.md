@@ -102,9 +102,7 @@ caller checks or experiments exercised. Mark untested runtime claims explicitly.
 
 If verification finds a problem the arena missed, revisit the frame or the
 graft that introduced it. Don't paper over it. For production changes, use
-[verify](../verify/SKILL.md) for the real workflow and
-[review-fix-loop](../review-fix-loop/SKILL.md) for the complete integrated change,
-or let [pr](../pr/SKILL.md) own that review when publishing the same scope.
+[verify](../verify/SKILL.md) for the real workflow.
 
 ## Outputs
 

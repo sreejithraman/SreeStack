@@ -443,7 +443,7 @@ session storage; the chief stays the only publisher.
 
 Automatically discoverable owner for one PR-sized change, written against a
 generic caller. Keeps upstream spec/ticket resolution, TDD at meaningful
-seams, verification, and review. Adds local method selection, a fixed finish
+seams, and verification. Review runs at a PR finish line or on request. Adds local method selection, a fixed finish
 line, measurable-target pursuit that keeps hard targets and rejects
 regressions, invariant escalation through Attack the Premise, and an
 owner-report contract. The session owns the outcome; in a top-level thread, a
@@ -478,7 +478,8 @@ History-changing operations use the shared PR preservation reference to back up
 retained local files affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
-publication does not substitute for that link.
+publication does not substitute for that link. Layers get `pr`’s review step before
+`submit`, or `link` when it creates PRs, and `gh stack merge` runs only from `merge`’s land step.
 
 The entrypoint keeps common calls and first-action guards inline; installation,
 state fields, and exit-code details live with command behavior. Existing design
