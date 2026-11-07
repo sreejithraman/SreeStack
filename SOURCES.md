@@ -971,8 +971,8 @@ settlement rules.
 Indirect-consumer checks use `blast-radius`; React or Next assessments use
 `react-best-practices` and current changed-scope React Doctor diagnostics.
 The shared review brief carries applicable evaluation criteria and evidence,
-including empirical comparison conditions, qualitative judgments, and changes
-to tests, fixtures, and measurement methods.
+including empirical comparison conditions and qualitative judgments. Review checks
+changes to tests, fixtures, and measurement methods.
 Delegated review evidence adds explicit workflow/pass identities, configured
 model metadata, task-specific output paths, supported read-range receipts,
 frozen-source citation checks, and caller-retained original artifacts.
