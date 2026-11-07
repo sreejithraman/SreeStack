@@ -24,7 +24,7 @@ investigating or repairing that class; a retrospective alone remains recommendat
 3. Look for candidates for improvement in these categories.
 
 - **Navigation**: how easy was it for the agent to find the right files? Are there hidden dependencies between files? Would a **navigation pointer** make it easier? _Use when_ the session took a long time to find a piece of information.
-- **Automated checks**: are there automated checks that could catch errors the agent made? Linting, typing, tests, filesystem linters? Read the repo's own check command first (its `package.json`/build-tool `lint`/`check` scripts, its CI workflow), so a check that already exists but sits unwired or silently broken is the finding, not a reinvention. A repo with no **guardrail** (no pre-commit hook and no CI job running its lint/typecheck/test command) is itself a finding: an un-linted repo is a standing missed opportunity, not a neutral default. _Use when_ the agent made a mistake an automated check could have caught, or the repo has no guardrail at all.
+- **Automated checks**: are there automated checks that could catch errors the agent made? Linting, typing, tests, filesystem linters? Read the repo's own check command first (its `package.json`/build-tool `lint`/`check` scripts, its CI workflow), so a check that already exists but sits unwired or silently broken is the finding, not a reinvention. A repo with no **guardrail** (no pre-commit hook and no CI job running its lint/typecheck/test command) is a finding only when the session shows a mistake, omission, or exposure that such a check would have caught. Otherwise, offer a guardrail setup audit as a separate, optional scope. _Use when_ the agent made a mistake an automated check could have caught.
 - **Coding standards**: should the **reviewer agent** be given a new rule to enforce? Should an existing rule be removed or clarified? Classify the violation first: a **mechanical** one (a fixed syntactic pattern, a banned API, an import shape, a file-location rule) gets a deterministic check, full stop: a custom rule in the repo's own linter, a new pre-commit hook, or a new CI job, whichever the repo's language and existing guardrail make cheapest. Default to building the check over writing the rule. Reserve `CODING_STANDARDS.md` for genuine **judgement calls** (cross-file consistency, "matches the surrounding style," anything no guardrail could ever substitute for). _Use when_ the reviewer agent failed to catch a mistake.
 - **Global AGENTS.md**: are there any steering instructions that should be moved to coding standards (or automated checks) instead? _Use when_ the AGENTS.md file is particularly large - in the repo OR the user's global scope.
 - **Tool economy**: did the agent make expensive tool calls that could be streamlined? Is there any custom tooling (CLI's, MCP's) that is particularly token-inefficient? _Use when_ the agent made an expensive tool call.
@@ -35,19 +35,18 @@ investigating or repairing that class; a retrospective alone remains recommendat
 
 ## Reference
 
-### Implementation vs Review
+### Implementation vs review
 
-Remember that all work goes through two stages: implementation and review. The implementation agent has the most **context pressure**. They are responsible for exploration, writing code, and debugging failures.
+Implementation explores, writes code, and debugs. Independent review assesses a
+snapshot: it receives the diff and relevant requirements, can inspect surrounding
+code and contracts, and leaves implementation and fixes to their owner.
+Implementation follows the project's coding standards; review checks that they
+were applied. [pr](../pr/SKILL.md) owns when review runs; a session that stopped
+before then did not skip review.
 
-The review agent receives the diff and relevant requirements. It can inspect surrounding code and contracts to assess the change, while leaving implementation and fixes to their owner.
+### Where guidance belongs
 
-Implementation follows the project's coding standards; independent review checks that they were applied.
-
-### Files
-
-You have access to several files in the repo:
-
-- `CLAUDE.md`/`AGENTS.md`: these files are pushed to the context window of any agent working in this repo. They should be used incredibly sparingly, usually only for **navigation pointers** to other files.
-- `CODING_STANDARDS.md`: consult existing project standards during implementation and review. Add **navigation pointers** to docs folders if the standards file gets more than 1,000 lines long.
-- Docs: use docs as references files, pointed to by other files. Look for existing docs before writing new ones.
-- Skills: use skills for docs (since their description goes into the agent's context window), or for user-invoked commands. Follow the advice in the `writing-for-agents` skill.
+Use [writing-for-agents](../writing-for-agents/SKILL.md) to decide where a
+recommended instruction, standard, or doc belongs and how hosts load it. Consult
+the project's existing coding standards, and look for existing docs before
+proposing new ones.

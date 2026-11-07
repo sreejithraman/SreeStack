@@ -1329,7 +1329,10 @@ Manual-only in both hosts, as upstream. Retains upstream categories, mechanical
 check preference, reference structure, and examples. Cross-skill wording is
 host-neutral; findings carry session evidence and remain recommendations until
 implementation is requested. Review may inspect surrounding contracts, and
-project standards inform both implementation and review.
+project standards inform both implementation and review. `pr` owns review
+timing, and `writing-for-agents` owns where instructions belong and how hosts
+load them. A missing hook or CI guardrail is a finding only when the session
+shows a mistake it would have caught; otherwise retro offers a separate setup audit.
 
 T3 session sources prefer scoped app history; other hosts retain local-log
 inspection. Historical claims are checked against current artifacts.
