@@ -64,7 +64,8 @@ test("repeated submit saves once, then a failed save can be retried", async () =
 The assertions check outgoing payloads at the external boundary and the public
 result. They detect duplicate writes and a missing or broken retry. Choose
 expected behavior independently of the implementation's transition table.
-Add real UI acceptance coverage when the feature has UI entry points.
+When the feature has UI entry points, get real UI acceptance through
+[verify](../verify/SKILL.md), which owns proof through the product.
 
 ## Bad Tests
 
@@ -86,17 +87,17 @@ Red flags:
 - Asserting on internal call counts/order instead of public results or external effects
 - Test breaks when refactoring without behavior change
 - Test name describes HOW not WHAT
-- Verifying through external means instead of interface
+- Verifying outside the agreed seam when the contract is what callers observe
 
 ```typescript
-// BAD: Bypasses interface to verify
+// BAD for a consumer contract: Bypasses the agreed seam to verify
 test("createUser saves to database", async () => {
   await createUser({ name: "Alice" });
   const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
   expect(row).toBeDefined();
 });
 
-// GOOD: Verifies through interface
+// GOOD for a consumer contract: Verifies through the agreed seam
 test("createUser makes user retrievable", async () => {
   const user = await createUser({ name: "Alice" });
   const retrieved = await getUser(user.id);
@@ -104,18 +105,32 @@ test("createUser makes user retrievable", async () => {
 });
 ```
 
-**Tautological tests**: Expected value restates the implementation, so the test passes by construction.
+When the agreed seam or contract is persistence itself, as in a migration, an
+independently read row is the right observation.
+
+**Tautological tests**: The oracle copies the production algorithm or derives from the
+actual result, so it can share the code's mistake. The fault is where the expected value
+comes from, not the shape of the expression. See
+[Test Behavior, Not Implementation](../engineering-principles/references/test-behavior-not-implementation.md).
 
 ```typescript
-// BAD: Expected value is recomputed the way the code computes it
+// BAD: The oracle copies the production sum, so both can miss quantity
 test("calculateTotal sums line items", () => {
-  const items = [{ price: 10 }, { price: 5 }];
+  const items = [{ price: 10, quantity: 2 }, { price: 5, quantity: 1 }];
   const expected = items.reduce((sum, i) => sum + i.price, 0);
   expect(calculateTotal(items)).toBe(expected);
 });
 
-// GOOD: Expected value is an independent, known literal
+// BAD: The oracle is the actual result, so any output passes
 test("calculateTotal sums line items", () => {
-  expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
+  const items = [{ price: 10, quantity: 2 }, { price: 5, quantity: 1 }];
+  const expected = calculateTotal(items);
+  expect(calculateTotal(items)).toBe(expected);
+});
+
+// GOOD: Expected value is an independent worked example
+test("calculateTotal sums line items", () => {
+  const items = [{ price: 10, quantity: 2 }, { price: 5, quantity: 1 }];
+  expect(calculateTotal(items)).toBe(25);
 });
 ```
