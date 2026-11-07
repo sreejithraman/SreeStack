@@ -37,12 +37,13 @@ investigating or repairing that class; a retrospective alone remains recommendat
 
 ### Implementation vs review
 
-Implementation explores, writes code, and debugs. Independent review assesses a
-snapshot: it receives the diff and relevant requirements, can inspect surrounding
-code and contracts, and leaves implementation and fixes to their owner.
-Implementation follows the project's coding standards; review checks that they
-were applied. [pr](../pr/SKILL.md) owns when review runs; a session that stopped
-before then did not skip review.
+The implementer explores, writes code, and debugs, so it carries the most context
+and should carry as few rules as possible. Turn mechanical rules into automated
+checks, which catch the mistake during implementation. Send judgment rules to
+review through the project's coding standards: review receives a diff and has room
+to apply them. Review runs when [pr](../pr/SKILL.md) publishes, not in every
+session, so a rule left only to review catches its mistake later; that is one more
+reason to prefer a check. Keep the root instruction files light.
 
 ### Where guidance belongs
 
