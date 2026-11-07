@@ -5,8 +5,8 @@ description: Use when the user asks to diagnose a failure or reports a bug or un
 
 # Diagnosing Bugs
 
-Build a tight signal for the user's exact symptom, reproduce and minimise it,
-then test causes and repair. Skip a phase only with an explicit reason; the
+Build a tight signal for the user's exact symptom, reproduce it, then test
+causes and repair. Skip a phase only with an explicit reason; the
 artifact-only path below supports diagnosis, not a verified fix.
 
 Resolve glossary paths with [glossary paths](../domain-modeling/references/glossary-paths.md)
@@ -37,9 +37,8 @@ Try these loop forms in roughly this order:
 1. A failing unit, integration, or end-to-end test at a seam that reaches the bug.
 2. Curl or an HTTP script against a running dev server.
 3. A CLI with fixture input and a known-good output comparison.
-4. A browser reproduction asserting visible state, DOM, console, or network.
-   Follow host browser routing; in T3 Code use the collaborative preview and
-   recovery rules before a standalone driver's allowed fallback or explicit request.
+4. A browser reproduction asserting visible state, DOM, console, or network,
+   through the host's browser routing before any standalone driver.
 5. Replay of a captured request, payload, or event log through the affected path.
 6. A throwaway harness with the minimal system and mocked dependencies.
 7. A property or fuzz loop for intermittent wrong output.
@@ -60,15 +59,15 @@ Load the reference matching the evidence needed:
 - Growing memory, abandoned objects, retain cycles, or memory-pressure termination:
   [Apple memory](references/apple-memory.md).
 
-These refine this loop. After establishing cause and repair, use `verify` for
-the final Apple user workflow check.
+These refine this loop. Before launching or controlling a Simulator, follow
+[simulator-lifecycle](../simulator-lifecycle/SKILL.md) and the host's device
+rules. Reach a physical device through the route in the
+[iOS verification guide](../verify/references/ios.md).
 
 ### Make the signal tight
 
 Narrow setup and scope, assert the specific symptom, and pin time, random seeds,
-filesystem, and network where relevant. Aim for seconds rather than minutes.
-For nondeterministic failures, increase and pin the reproduction rate with
-repetition, concurrency, stress, or controlled timing; record the observed rate.
+filesystem, and network where relevant.
 
 For timing and lifecycle failures, capture starting state, event order, and
 active operation identity, including relevant cancellation, replacement, and
@@ -80,9 +79,11 @@ invocation and output. The command must be:
 
 - **Red-capable:** drive the actual bug path and assert the user's exact symptom,
   with a verdict that can turn red on this bug and green after repair.
-- **Deterministic:** the same verdict on repeat, or a pinned, high reproduction
-  rate suitable for debugging a flaky bug.
-- **Fast:** seconds, not minutes.
+- **Deterministic:** the same verdict on repeat. For a flaky failure, raise and
+  pin the reproduction rate with repetition, concurrency, stress, or controlled
+  timing until it is high enough to debug, and record the observed rate.
+- **Short and bounded:** the shortest loop that still reproduces the symptom
+  faithfully, with a fixed end. Launch and memory workloads may take minutes.
 - **Agent-runnable:** unattended, with human participation only through the HITL template.
 
 Establish this signal before forming a theory. Without it or the matching
@@ -106,17 +107,17 @@ Without a matching artifact, stop before hypotheses.
 
 Run the loop repeatedly. Confirm it goes red on the user's failure rather than
 a nearby bug, and retain the exact error, output, or timing as repair evidence.
-For a flaky failure, confirm the reproduction rate is high enough to debug.
 
-Shrink the scenario one input, caller, configuration, datum, or step at a time;
-rerun after each removal. Keep the original scenario for final verification.
-Finish when the failure is reproduced and every remaining element is
-load-bearing: removing it makes the loop green. Proceed only after both
-reproduction and minimisation; the provisional path skips this phase.
+When noise in the scenario hides the cause, shrink it one input, caller,
+configuration, datum, or step at a time, rerunning after each removal, until
+every remaining element is load-bearing: removing it makes the loop green. Keep
+the original scenario for final verification. Proceed once the loop reproduces
+the failure; the provisional path skips this phase.
 
 ## Phase 3: Rank falsifiable hypotheses
 
-Generate 3–5 ranked hypotheses before testing any. For each, name a prediction:
+Before testing any, rank every hypothesis the evidence still fits; compare
+several when more than one fits. For each, name a prediction:
 “If X causes this, changing Y will remove the failure or changing Z will worsen it.”
 Sharpen or discard a hypothesis without a testable prediction.
 
@@ -131,32 +132,33 @@ that distinguish hypotheses. Tag every temporary log with a unique prefix such
 as `[DEBUG-a4f2]` so cleanup can find it. Avoid broad logging.
 
 For performance regressions, establish the baseline with a timing harness,
-profiler, or query plan, then bisect. Measure before fixing; apply the shared
-measurement-validity requirements.
+profiler, or query plan, and measure before fixing; apply the shared
+measurement-validity requirements. Bisect when comparing a known-good and a
+failing revision would distinguish causes the evidence hasn't settled.
 
 ## Phase 5: Fix and add a regression test
 
-Choose a **correct seam**: the test must exercise the real bug pattern at its
-call site, including multiple callers or a triggering chain when required.
-A shallow test that misses the pattern cannot lock down the repair.
+Choose a **correct seam**: the regression test must reach the actual failure
+and its triggering caller chain, including multiple callers when the bug needs
+them. A shallow test that misses the pattern cannot lock down the repair.
+Starting from the Phase 2 repro, run the repair through
+[tdd](../tdd/SKILL.md)'s red → green cycle at that seam. Temporary probes stay
+diagnostic; they are not regression or acceptance tests.
 
 If no correct seam exists, record the architectural limitation for the cleanup
-report. If one exists:
-
-1. Turn the minimised repro into a regression test **before editing the fix**.
-2. Watch the test fail.
-3. Apply the repair.
-4. Watch the test pass.
-
-In either case, rerun the Phase 1 loop against the original, unminimised scenario.
+report. In either case, rerun the Phase 1 loop against the original,
+unminimised scenario.
 
 ## Phase 6: Clean up and report
 
 Finish only when the original repro is green, the regression test passes (or
-its missing seam is documented), and temporary logs and throwaway prototypes
-are removed or the prototypes moved to a clearly marked debug location.
-Search for the unique debug prefix to confirm removal. State the supported
-cause in the result and any commit or PR message.
+its missing seam is documented), a repair that affects a user workflow has a
+passing [verify](../verify/SKILL.md) verdict, and temporary logs and throwaway
+prototypes are removed or the prototypes moved to a clearly marked debug
+location. A green diagnostic loop is evidence, not acceptance; `verify` can
+reuse matching red evidence from this diagnosis. Search for the unique debug
+prefix to confirm removal. State the supported cause in the result and any
+commit or PR message.
 
 When evidence establishes a recurring failure class, pass examples and the
 verified cause to [correct](../correct/SKILL.md). Historical mining and broader

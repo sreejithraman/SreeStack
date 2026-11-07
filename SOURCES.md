@@ -256,8 +256,15 @@ Markdown import baseline is `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. The bund
 shell template remains at `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`; its upstream
 comment-only changes are omitted.
 
-Browser reproductions follow host routing, including T3 collaborative-preview
-selection and recovery, before standalone drivers.
+Browser reproductions follow host routing before standalone drivers. Apple
+Simulator launch and control follow `simulator-lifecycle` and the host's device
+rules; physical devices use `verify`'s iOS device route. Build identity and
+capture choices stay local.
+
+Repairs run through `tdd`'s red → green cycle at a seam that reaches the actual
+failure and its caller chain. Diagnosis keeps the original-scenario rerun and
+causal evidence. A repair that affects a user workflow finishes only with a
+passing `verify` verdict.
 
 Performance claims use `references/measurement-validity.md` for completed work,
 correctness, settings, bottlenecks, plausibility, repeatability, and user relevance.
@@ -273,10 +280,12 @@ Timing and lifecycle reproductions capture starting state, event order, and
 operation identity; invalid-transition repairs use the shared domain principle.
 
 The entrypoint consolidates repeated feedback-loop and cleanup guidance while
-retaining all six diagnosis phases and their gates. Sensitive artifacts pass
-through redaction before inspection output enters the conversation, including
-initial reads. Conditional references, the HITL script, and invocation remain
-unchanged.
+retaining all six diagnosis phases. Minimising, comparing hypotheses, and
+bisecting apply when the causal uncertainty calls for them, and the loop's
+time bar is the shortest faithful bounded run rather than seconds. Sensitive
+artifacts pass through redaction before inspection output enters the conversation, including
+initial reads. Conditional references follow the same conditional gates; the
+HITL script and invocation remain unchanged.
 
 ## engineering-principles
 

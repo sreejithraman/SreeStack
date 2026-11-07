@@ -49,8 +49,8 @@ chooses it for a Simulator investigation. Record its version and temporary app
 wiring, and remove that wiring after the capture. Instruments and `xctrace`
 remain the portable default.
 
-Done when the selected profiler can distinguish at least two ranked
-hypotheses, and a baseline artifact has been saved with its run metadata.
+Done when the selected profiler can distinguish the ranked hypotheses, or
+test the only one, and a baseline artifact has been saved with its run metadata.
 
 ## Read the trace and prove the change
 
