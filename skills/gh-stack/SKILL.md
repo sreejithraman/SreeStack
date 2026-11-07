@@ -16,9 +16,10 @@ their callers and use separate stacks for independent work.
 
 ## Before acting
 
-- Plan new layers with [stack design](references/stack-design.md) before writing
-  code. For an existing stack, inspect `gh stack view --json` and edit the layer
-  that owns the concern; use `git log --all -- <path>` when ownership is unclear.
+- Choose new layers with [stack design](references/stack-design.md), up front when
+  the order is known and otherwise as the work takes shape. For an existing stack,
+  inspect `gh stack view --json` and edit the layer that owns the concern; use
+  `git log --all -- <path>` when ownership is unclear.
 - Check `gh stack --version` and `gh stack <command> --help` before relying on
   newer capabilities. `gh stack help <command>` prints top-level help instead.
   For installation/configuration, use [setup](references/commands.md#setup).
@@ -33,7 +34,7 @@ their callers and use separate stacks for independent work.
 - In T3, link every scoped PR taken over, created, or pushed, using
   [PR's publish step](../pr/SKILL.md#publish). A CLI operation doesn't link its layers
   to the thread.
-- Before `gh stack submit`, or `gh stack link` when it creates PRs, run
+- Before `gh stack submit`, or `gh stack link` when it creates PRs or marks them ready, run
   [PR's review step](../pr/SKILL.md#publish) on each layer against its immediate base.
   Land through [Merge](../merge/SKILL.md): run
   `gh stack merge` only from its land step.
@@ -65,7 +66,7 @@ Use names from the task; branch names are used verbatim, including slashes.
 | Add the next layer from the top | `gh stack add <branch>` |
 | Select a layer or stack | `gh stack checkout <target>` |
 | Navigate | `gh stack up`, `down`, `top`, `bottom`, or `trunk` |
-| Publish PR layers | `gh stack submit --auto` |
+| Publish PR layers ready for review | `gh stack submit --auto --open` |
 | Update branches without creating PRs | `gh stack push` |
 | Replay upper layers after a lower-layer edit | `gh stack rebase --upstack` |
 | Synchronize | `gh stack sync` |
@@ -75,11 +76,15 @@ Stage specific files and commit the owning layer before moving up. After an edit
 below the top, rebase upstack, return to the top, then push. Read the affected
 [command behavior](references/commands.md) for preconditions and partial effects.
 
-`submit --auto` creates drafts; `--open` marks new and existing PRs ready for
-review. Titles/bodies are generated; use `gh pr edit` for custom text. `sync`
-fetches, reconciles, rebases, pushes, and refreshes PR state; pruning needs
-`--prune` when non-interactive. A diverged stack can return exit 0 with
-`Sync aborted`: verify the resulting state instead of declaring synchronization.
+`--open` marks new and existing PRs ready for review; without it, `submit --auto`
+creates drafts. Omit it only when the user asks for drafts. Titles/bodies are
+generated; use `gh pr edit` for custom text. `sync` fetches, reconciles, rebases,
+pushes, and refreshes PR state; under a TTY it also asks to prune and defaults to
+yes, so decline it. Delete branches after a merge through
+[Repo Cleanup](../repo-cleanup/SKILL.md): `sync --prune` alone doesn't compare a
+branch's tip to the PR's merge-time head, so it can delete later commits' only ref.
+A diverged stack can return exit 0 with `Sync aborted`: verify the resulting state
+instead of declaring synchronization.
 
 A merge target scopes the operation: a PR includes every unmerged PR below it;
 a stack number includes the whole unmerged stack. Bare numbers resolve as stack

@@ -479,11 +479,18 @@ retained local files affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
 publication does not substitute for that link. Layers get `pr`’s review step before
-`submit`, or `link` when it creates PRs, and `gh stack merge` runs only from `merge`’s land step.
+`submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
+
+Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
+on request, to match `pr`. Branch deletion after a merge goes through `repo-cleanup`
+rather than `sync --prune`, which doesn't check merge-time heads. Layers split only
+for dependency order and reviewability, and can emerge as the work takes shape;
+tests and docs stay with the behavior they prove, and independent outcomes get
+separate stacks or PRs even inside one feature.
 
 The entrypoint keeps common calls and first-action guards inline; installation,
-state fields, and exit-code details live with command behavior. Existing design
-and recovery references retain specialized semantics. Direct reference reads
+state fields, and exit-code details live with command behavior. Existing recovery
+references retain specialized semantics. Direct reference reads
 also gate newer worktree/catalog behavior against installed capabilities;
 missing path-mode support uses manual owner discovery rather than invented
 flags or automatic upgrades. The description lists triggers only and limits
