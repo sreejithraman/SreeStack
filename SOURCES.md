@@ -1128,6 +1128,7 @@ material unresolved choices.
 The review stage uses `review-fix-loop`.
 Shared behavior-test guidance uses `engineering-principles`; seam selection,
 vertical red/green cycles, specialist examples, mocking, and local pitfalls stay here.
+Each cycle covers one behavior, not upstream's one test; cases of that behavior can go together.
 The event-sequence example checks duplicate submission and failure/retry through
 a public API, inspecting payloads only at the external persistence boundary.
 Cancellation and late-completion scenarios remain conditional on the contract.

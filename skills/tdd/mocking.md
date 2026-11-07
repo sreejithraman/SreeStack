@@ -11,7 +11,7 @@ Don't mock:
 
 - Your own classes/modules
 - Internal collaborators
-- Anything you control
+- Anything else on your side of the system boundary
 
 ## Designing for Mockability
 
