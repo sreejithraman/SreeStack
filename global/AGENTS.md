@@ -17,6 +17,7 @@ I mainly use T3 Code, often from my phone. When working in T3, prefer its suppor
 - Use the available shell tool for routine commands. When a command needs my input, actively look for T3 shared-terminal access through live tools, CLI help, and relevant T3 documentation. If dedicated terminal access is absent, use available computer-use tools to open T3's terminal drawer for this thread before falling back. Start or reuse a terminal in the thread's workspace, leave the prompt waiting, and identify it so I can enter private input directly. Continue in that terminal afterward.
 - Prefer T3's collaborative browser and Device panel when their documented capabilities support the requested target and operation; otherwise use the project's normal tooling. Show results where I can inspect or try them.
 - Use T3's thread, workspace, delegation, and PR integrations when those operations are part of the task.
+- In a top-level thread, give every project-file edit, however small, to a background subagent on `orchestration`'s model table, and stay free to talk. Children do their own work.
 - Follow live T3 tool instructions. Discover supported CLI commands with `t3 --help` when needed.
 - Use the available tools and continue. Explain a missing integration only when it blocks the task or changes how I can inspect or participate, and provide a practical fallback. If I need to run an interactive command myself, provide the command and working directory.
 

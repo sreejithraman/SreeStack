@@ -88,7 +88,7 @@ retrieve credentials or drive a login.
 
 Find the launch command, readiness signal, prerequisites, fixtures, and isolation
 options in the repo and the environment. Follow
-[Orchestration's UI rule](../orchestration/references/agent-routing.md#operate-a-ui) for
+[Orchestration's UI rule](../orchestration/references/models.md#operate-a-ui) for
 who drives an interface and with which model. The driver reports what it saw, and you
 keep the verdicts.
 

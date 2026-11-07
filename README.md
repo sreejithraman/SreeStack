@@ -273,8 +273,8 @@ all use: model selection, briefs, decision requests, holds, and acceptance.
 [Engineering Principles](skills/engineering-principles/SKILL.md) is automatically
 discoverable. Its task-based index links to 24 reference files, one per principle,
 for data and interface design, simplification, state and migration, evidence,
-and execution. Orchestration
-and specialist workflows point to useful guidance for design and implementation.
+and execution. Specialist workflows point to useful guidance for design and
+implementation.
 Review prompts retain their wording and criteria. The principles guide choices;
 the workflow owns its steps and completion criteria. For example, “Design this
 retryable import and explain how
@@ -292,17 +292,20 @@ current operation's result. Simple state can stay simple.
 
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
 from T3's live catalog. Edit
-[model-defaults table](skills/orchestration/references/agent-routing.md#model-defaults)
+[model-defaults table](skills/orchestration/references/models.md#model-defaults)
 to change working/research/review models, source-retrieval routes, effort, and
 additional-review pools.
 The local concurrency ceiling is in Orchestration. This table is the one source
 for skill model defaults; explicit user/project requirements are resolved by
-[agent routing](skills/orchestration/references/agent-routing.md).
+[models](skills/orchestration/references/models.md).
+[Who does the work](skills/orchestration/SKILL.md#who-does-the-work) says when a thread delegates.
 
-Agent routing defines UI operation, UI and implementation tiers, document work,
-escalation, and availability fallbacks; the table owns each selection. The existing agent handles
-routine UI operation, with dedicated operators for substantial work, specialized
-capabilities, independent verification, or repeated difficulty.
+[Models](skills/orchestration/references/models.md) defines UI operation, UI and implementation
+tiers, document work, and raising a row;
+[reuse and recovery](skills/orchestration/references/reuse-and-recovery.md) covers agent reuse,
+owner replacement, and availability fallbacks. The existing agent handles routine UI operation,
+with dedicated operators for substantial work, specialized capabilities, independent
+verification, or repeated difficulty.
 
 Enable and authenticate the providers named in that table in T3 Code. Routing
 resolves their exact instance/model IDs and supported options from the live
@@ -314,8 +317,8 @@ their review references from this stack; provider plugins are not needed.
 
 [Review](skills/review/SKILL.md) assesses a snapshot without fixes.
 [Review Sweep](skills/review-sweep/SKILL.md) settles local findings, PR comments, and
-failing checks the same way, by outcome, and implements accepted fixes with the working
-model selection.
+failing checks the same way, by outcome, and sends accepted fixes through
+[Orchestration](skills/orchestration/SKILL.md#who-does-the-work).
 [Review Fix Loop](skills/review-fix-loop/SKILL.md) owns review coverage, reviewer
 selection, harness review, optional skips, and fix rounds. It uses Orchestration's
 model table and delegation rules. Enable the OpenCode Go subscription routes
@@ -336,24 +339,23 @@ Sample requests and expected results:
   comparison, and synthesis.
 - “Research this YouTube video and X post”: `research` routes retrieval to Gemini
   and Grok respectively, then checks the source evidence before writing a cited note.
-- “Implement this change”: the working policy supplies the model and options;
+- “Implement this change”: the model table supplies the subagent's model and options;
   parallel children have disjoint ownership in the same checkout.
 - “Review and fix this shared-contract change”: Primary, Ponytail, Thermo, and
   optional pool reviewers assess the initial snapshot. The parent settles scope
-  and design, then Adversarial assesses the settled snapshot. Accepted fixes use
-  the working model.
+  and design, then Adversarial assesses the settled snapshot. Accepted fixes go
+  back to the slice's owner.
 - “Review this small fix”: one required Primary plus initial optional pool
   reviewers for contained ordinary work; contained risky work adds a fitting
   lens. An ordinary prose or wording-only edit with no procedure change uses
   parent review.
 - When an additional reviewer is unavailable or fails, the loop records a skip
   and continues. Missing required coverage cannot produce a clean result.
-- A substantive fix returns to the original reviewers for the angles it touches
-  when the host permits continuing them; otherwise new tasks receive the prior
-  evidence. Each pass checks the current snapshot, bounded to affected behavior,
-  prior findings, and relevant proof. Primary's integrated check covers
-  cumulative repairs. Retain earlier coverage only where it still applies. Keep
-  the original base for context.
+- A substantive fix gets a new pass: new tasks on the original reviewers' models
+  for the angles it touches, with the prior evidence. Each pass checks the current
+  snapshot, bounded to affected behavior, prior findings, and relevant proof.
+  Primary's integrated check covers cumulative repairs. Retain earlier coverage
+  only where it still applies. Keep the original base for context.
   A changed snapshot supersedes in-flight review; dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
   goal or swarm work can use ordinary tasks; requested native tracking follows
@@ -361,8 +363,8 @@ Sample requests and expected results:
 
 `pr` writes titles and bodies, publishes one PR, and watches it to ready. `merge` lands a
 finished change: it brings the PR to ready, stops only when a fix changes what you kept,
-shows the result, and finishes resolved GitHub issues through GitHub CLI. `merge` uses `gh-stack` for
-stacks and `repo-cleanup` for completed task resources, including Mac development
+shows the result, and finishes resolved GitHub issues through GitHub CLI. `merge` uses
+`gh-stack` for stacks and `repo-cleanup` for completed task resources, including Mac development
 apps, simulator/emulator test installs, and task-created temporary devices when
 platform tooling is available.
 `handoff` is manual-only: invoke it explicitly and supply the handoff note path
