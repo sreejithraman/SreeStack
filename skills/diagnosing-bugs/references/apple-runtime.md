@@ -17,18 +17,10 @@ and performance conclusions. Simulator does not reproduce every device feature
 or its performance characteristics. See Apple's guidance on
 [running on simulated or physical devices](https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices).
 
-Prefer the project's documented build and run path. When a command-line
-Simulator loop would be tighter, inspect the active toolchain before composing
-commands:
-
-```bash
-xcodebuild -version
-xcrun simctl help
-xcrun simctl list devices available
-xcrun simctl help launch
-```
-
-Treat the locally reported options as the source of truth. Use the exact bundle
+Prefer the project's documented build and run path. Check the active toolchain
+with `xcodebuild -version` and treat locally reported options as the source of
+truth. Acquire, launch, and drive a Simulator or device only through
+`simulator-lifecycle` and the host's device rules. Use the exact bundle
 identifier and artifact produced by the selected scheme. Capture launch output
 only when it distinguishes a hypothesis.
 
@@ -63,8 +55,9 @@ described in Apple's
 [responsiveness guidance](https://developer.apple.com/documentation/xcode/improving-app-responsiveness).
 
 Use a broad Simulator diagnostic bundle only when focused evidence is
-insufficient. Inspect `xcrun simctl help diagnose` first and omit app data
-containers unless they are required for the hypothesis.
+insufficient. Collect it through that same device route, inspecting
+`xcrun simctl help diagnose` first, and omit app data containers unless they
+are required for the hypothesis.
 
 Done when each retained artifact answers a named hypothesis and its app, build,
 target, and time window are known.
