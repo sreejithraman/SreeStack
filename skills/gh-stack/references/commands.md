@@ -94,7 +94,8 @@ first non-merged ancestor, then links them into a Stack on GitHub.
   the title and its body as the PR body. A branch with multiple commits humanizes the branch name
   (hyphens and underscores become spaces). There is no flag for a custom title or body; use
   `gh pr edit` afterwards.
-- `--open` marks new *and existing* PRs ready for review; without it new PRs are drafts.
+- `--open` marks new *and existing* PRs ready for review; without it new PRs are drafts. Ordinary
+  publication is `gh stack submit --auto --open`; omit `--open` only when the user asks for drafts.
 - Requires stacked PRs to be enabled on the repository. If not, `submit` exits **9** when
   non-interactive (under a TTY it offers to create ordinary unstacked PRs instead).
 
@@ -107,10 +108,12 @@ branches managed by another tool. Worktrees alone do not require `link`: local t
   tried as a PR number first and falls back to a branch name.
 - **A numeric first argument is treated as a stack number only when a stack with that number
   exists.** In that case the remaining arguments are appended to the top of that stack and you do
-  not re-list its current PRs: `gh stack link 7 feature-c`. Arguments already in the stack are
+  not re-list its current PRs: `gh stack link --open 7 feature-c`. Arguments already in the stack are
   skipped; arguments belonging to a different stack are rejected.
 - Branch arguments are pushed automatically (non-force, atomic). Missing PRs are created with
   auto-generated titles and correctly chained bases; existing PRs with a wrong base are corrected.
+- `--open` marks new *and existing* PRs ready for review; without it new PRs are drafts and existing
+  PRs keep their state. Pass it when `link` may create PRs, unless the user asks for drafts.
 - Stack membership is **additive only** — `link` never removes a PR from a stack.
 
 ## sync
@@ -130,7 +133,10 @@ The routine command. Steps, in order:
 7. **Sync the stack object** — link open PRs into a stack, additively. Only when two or more PRs
    exist. `sync` never opens PRs; that is `submit`.
 8. **Prune** local branches for merged PRs, only when `--prune` is passed in a non-interactive
-   environment.
+   environment. Under a TTY, plain `sync` asks first and defaults to yes. Pruning selects branches
+   by merged PR state alone and doesn't compare their tips to the PR's merge-time heads, so a merged
+   branch that later got new commits can lose its ref. Leave it off, decline that prompt, and delete
+   merged branches through [Repo Cleanup](../../repo-cleanup/SKILL.md).
 
 Affected clean worktrees are updated automatically. Dirty/busy/unavailable owners stop unsafe
 updates, and pruning skips branches occupied elsewhere. Cascade rollback does not undo prior

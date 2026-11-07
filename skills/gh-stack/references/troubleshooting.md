@@ -57,8 +57,10 @@ gh stack view --json    # merged branch reports "isMerged": true, "state": "MERG
 
 No manual action is needed when the replay succeeds. If it conflicts, follow
 [Rebase conflicts](#rebase-conflicts-exit-3), including the rollback diagnostic before retrying.
-Use `gh stack sync --prune` to also delete local branches for merged PRs; pruning skips branches
-occupied in another worktree.
+Delete merged branches through [Repo Cleanup](../../repo-cleanup/SKILL.md). `gh stack sync --prune`
+alone doesn't make its checks: it skips branches occupied in another worktree, but it doesn't compare
+a branch's tip to the PR's merge-time head, so a merged branch that later got new commits can lose
+its ref.
 
 ## Local and remote stacks have diverged
 
@@ -82,7 +84,7 @@ Two resolution paths:
 
   ```bash
   gh stack unstack                  # removes the grouping; PRs and branches survive
-  gh stack submit --auto
+  gh stack submit --auto            # existing PRs keep their draft or ready state
   ```
 
 Neither path deletes pull requests or branches.
@@ -98,7 +100,7 @@ There is no non-interactive reorder, rename, or removal. `add` run from the wron
 gh stack unstack                       # removes local tracking and the GitHub grouping
 # Rename or drop branches, and rewrite ancestry as needed.
 gh stack init --base main branch-1 branch-2 branch-3
-gh stack submit --auto                 # re-link on GitHub
+gh stack submit --auto                 # re-link on GitHub; existing PRs keep their draft or ready state
 ```
 
 `init` adopts branches that already exist, so the rebuild reuses them rather than creating new ones.
@@ -144,11 +146,13 @@ not use gh-stack's local catalog. Linked worktrees themselves are supported: the
 `<common-dir>/gh-stack` and do not require `link`.
 
 ```bash
-gh stack link branch-a branch-b branch-c        # bottom to top
+gh stack link --open branch-a branch-b branch-c # bottom to top, ready for review
 gh stack link --base develop --open a b c       # non-default trunk, ready for review
-gh stack link 10 20 30                          # by PR number
-gh stack link 7 feature-d                       # append to existing stack #7
+gh stack link 10 20 30                          # by PR number, keeping each PR's state
+gh stack link --open 7 feature-d                # append to existing stack #7
 ```
+
+Omit `--open` only to keep requested drafts: without it, a branch with no PR gets a draft.
 
 Because `link` writes no local state, the local navigation commands (`up`, `down`, `top`, `bottom`)
 will not work on the result. Use `gh stack checkout <stack-number>` if you later want local tracking.
