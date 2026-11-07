@@ -457,10 +457,14 @@ required for a supplied spec.
 
 Automatically discoverable bounded parallel tool that returns to its caller.
 Keeps upstream coverage, races, mixed assignments, declared selection rules,
-self-contained briefs, and disjoint outputs. Orchestration supplies model
-selection, concurrency, recovery, and acceptance; Arena keeps candidate
-synthesis. Cloud placement, upstream model defaults, mandatory fan-out, and
-program or native-goal ownership are omitted.
+disjoint outputs, and the single rerun for a result missing its named revision
+and method. A lost required slice stays required instead of upstream's "proceed
+with N-1". Owns the decision to run work in parallel, with its own independence
+test that keeps cohesive work with one owner. Orchestration supplies delegation
+rights, self-contained briefs, model selection, writer separation, the child
+limit, recovery, and acceptance; Arena keeps candidate synthesis. Cloud placement,
+upstream model defaults, mandatory fan-out, and program or native-goal ownership
+are omitted.
 
 ## gh-stack
 
@@ -1206,7 +1210,9 @@ cases cannot be averaged away.
 - Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
 
 The entrypoint owns who does the work, assignment, dispatch, return, and
-acceptance. `references/models.md` is a lookup: one editable table owns working,
+acceptance. It keeps one owner per slice, separate writer paths, serial git and
+index work, and the child limit, which apply whenever two agents run; `swarm`
+owns the decision to run work in parallel. `references/models.md` is a lookup: one editable table owns working,
 research, source-retrieval, and review model defaults, including effort and
 additional review pools, with row choice, raising a row, and UI operation.
 `references/reuse-and-recovery.md` owns reuse, review passes, owner replacement,

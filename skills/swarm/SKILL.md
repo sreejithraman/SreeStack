@@ -1,63 +1,59 @@
 ---
 name: swarm
-description: Run a bounded parallel assignment and return one consolidated result. Use when asked to swarm work or when a session needs parallel coverage, disjoint implementation, exploration, or a race between approaches.
+description: Use when asked to swarm work, or when a job needs parallel coverage, disjoint implementation, exploration, or a race between approaches.
 ---
 
 # Swarm
 
-Provide parallel work to the calling session. The caller keeps its PR or
-program ownership; this tool ends when its bounded result is returned. Use
-[Orchestration](../orchestration/SKILL.md) for model selection, briefs,
-isolation, concurrency, recovery, and acceptance.
+Run one bounded job in parallel. Start from a job and its evidence bar. Return one combined result.
+You are done when every assignment returned or you reported it lost.
+[Orchestration](../orchestration/SKILL.md) governs who may delegate, briefs, recovery, and
+acceptance.
 
-## Frame
+## Check the fit
 
-Establish the requested result, preserved constraints, completion evidence,
-and return artifact before dispatch. Choose the shape:
+Give independent, ready work to separate children when that adds speed or coverage. Work is
+independent when each worker can finish and be checked against fixed inputs, no worker's finding
+could change another's work before the end, and workers don't contend for accounts, fixtures, ports,
+or devices. Separate files don't prove it.
 
-- **Coverage:** partition into required slices with explicit ownership.
-- **Race:** give independent workers the same outcome and declare the selection
-  rule before starting: first valid pass, rank all, or best result.
-- **Mixed:** compare approaches within slices and then assemble required coverage.
+Keep cohesive work with one owner, and say so in the result. Start a dependent slice after its input
+is accepted. Never split to manage context.
 
-A race winner satisfies the assignment only when it covers the whole brief. A
-losing experiment can finish its worker's assignment without satisfying the
-caller's result. Use [Arena](../arena/SKILL.md) when selecting a base and
-synthesizing competing candidates is the actual task. A target to pursue until
-it is met belongs to an [Implement](../implement/SKILL.md) owner, which runs
-Swarm rounds that select the best result toward it.
+Use [Arena](../arena/SKILL.md) to pick a base and graft the best of competing candidates. A target
+to pursue until met belongs to an [Implement](../implement/SKILL.md) owner, which runs Swarm rounds
+that select the best result toward it.
 
-## Dispatch
+## Assign
 
-Give every worker an Orchestration brief naming its slice or race arm, owned
-writable paths, relevant skills, and return format. Each returns **PASS**,
-**ISSUES**, or **BLOCKED** with artifact/revision, decisive evidence, and
-coverage gaps, reporting every supported issue in its scope rather than only
-the first.
+- **Coverage:** split the job into required slices.
+- **Race:** give workers the same outcome and separate outputs. Before starting, declare the
+  selection rule: first valid pass, rank all, or best result.
+- **Mixed:** race approaches within slices, then assemble the required coverage.
 
-The caller or its named integrating owner serializes shared writes and
-branch/index operations.
+Keep writers apart under [Orchestration's assignment rules](../orchestration/SKILL.md#assign) and
+[child limit](../orchestration/SKILL.md#dispatch). When outputs must land in one place, name one
+child to integrate them. If you are a child yourself, integrate them.
 
-Verification arms get concrete failure questions and suitable empirical checks,
-deterministic tools, or source/contract arguments. Keep what was exercised
-separate from what remains a hypothesis; agreement across workers does not
-establish an unobserved outcome. Requested formal checks follow
-[Verify](../verify/SKILL.md), including model/code correspondence and limits.
+Tell each worker the skills to use. Each returns **PASS**, **ISSUES**, or **BLOCKED** with evidence
+and gaps, reports every supported issue in its scope, and separates what it exercised from
+hypotheses.
 
-Follow live completion and wait rules; a timeout leaves work running. Once a
-race is decided, cancel unneeded workers through the host and reconcile live
-writers before replacing or reusing their outputs.
+## Combine
 
-## Aggregate and return
+Once a race is decided, cancel unneeded workers. A timed-out worker is still running. Reconcile live
+writers before you reuse or replace their outputs, under
+[Replacing work](../orchestration/references/reuse-and-recovery.md#recover-work).
 
-Accept worker results under Orchestration. For coverage, every required slice
-needs an accepted result. For a race, apply the declared rule. A proven issue
-stays an issue even when other workers pass. Resolve conflicting results
-against the artifact, or return the open claim and the check that would settle it.
+A result that lacks the revision and method its brief named doesn't count. Rerun that slice once.
+After a second miss, record a gap. A gap is not a pass. A lost required slice stays required and
+leaves the job unmet.
 
-Verify integration affected by combining outputs. Return one consolidated
-result: accepted outputs, issue one-liners, worker dispositions, evidence,
-gaps, the selection rule, and remaining delivery work for the caller. When
-invoked directly, the user is the caller and you perform its acceptance for
-this bounded assignment. Swarm alone creates no program, native goal,
-recurring schedule, PR publication, or merge grant.
+Apply a race's declared rule; its winner counts only when it covers the whole brief. A proven issue
+stays an issue even when other workers pass. Agreement across workers does not establish an
+unobserved outcome. Settle conflicts against the artifact, or return the open claim and the check
+that would settle it.
+
+Return accepted outputs, one line per issue, each worker's disposition, evidence, gaps, the
+selection rule, and delivery work left for the caller. Swarm grants no program, native goal,
+recurring schedule, PR publication, or merge.
