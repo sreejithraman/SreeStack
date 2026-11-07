@@ -26,8 +26,9 @@ rounds.
 3. **Decide.** Apply [classification](references/classification.md) once per issue, then its
    [continue or stop](references/classification.md#continue-or-stop) test. Only Must-fix and
    Worth-fixing are accepted. Record reasons for rejecting, acknowledging, or deferring.
-4. **Repair and check.** Use the working selection from
-   [agent routing](../orchestration/references/agent-routing.md#choose-working-selection).
+4. **Repair and check.** Follow [Orchestration](../orchestration/SKILL.md#who-does-the-work) for who
+   repairs, and pick the model of any repair you delegate from
+   [the model table](../orchestration/references/models.md#choose-a-model).
    Keep intended behavior inside the authorized scope. A changed product decision is a stop.
    Run the checks accepted fixes affect, including React Doctor diagnostics where they apply.
    Reuse proof while it's valid. Record each issue's repair state and snapshot separately from

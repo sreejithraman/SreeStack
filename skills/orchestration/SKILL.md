@@ -1,25 +1,44 @@
 ---
 name: orchestration
-description: Resolve working-model defaults and coordinate agents in T3 Code. Use before implementation, diagnosis, research, or verification, or when assigning agents and integrating their results.
+description: Use when giving work to another agent, picking its model, or accepting its result.
 ---
 
 # Orchestration
 
-The caller owns the outcome. Give independent, ready work to children when that adds speed
-or coverage, and keep cohesive work with one owner. Read
-[agent routing](references/agent-routing.md#choose-working-selection) before you work or
-dispatch. These steps also apply to a single task that only needs a different model.
+Assign work to other agents and check what comes back. You start with work to delegate and
+end with accepted results. You are done when you inspected each result before you accepted
+it. The caller owns the outcome.
+
+## Who does the work
+
+**In a top-level thread,** give every project-file edit, however small, to a background subagent
+and stay free. In T3 that means `delegate_task`. Pick its model by its job from
+[the model table](references/models.md#choose-a-model), and keep your own. Keep reading, planning,
+answering, and coordinating yourself. Edit yourself only when told to do it yourself, or under the
+repair rule below. If you can't launch a subagent, say so and ask.
+
+**As a child,** do your own work, whatever your model. Delegate further only when your task says
+to.
+
+**Review fixes and other repairs go to the slice's owner first,** even after its turn finished.
+A slice's owner is the agent that wrote it. In T3, `t3_thread_send` to the owner's thread. T3's
+"Fix small review findings yourself; start no delegate for them" bars a new delegate. Resuming the
+owner starts none, so the owner still goes first.
+
+**No owner left** means its thread is gone or can't be resumed. A finished run is not that. If
+its state is unknown, use [recovery](references/reuse-and-recovery.md#recover-work). With no
+owner left, that same T3 rule applies: fix a small review finding yourself, and launch any other
+repair from the model table. Before a repair overlaps the owner's files, reconcile under
+[Replacing work](references/reuse-and-recovery.md#recover-work).
+
+Give independent, ready work to separate children when that adds speed or coverage. Keep
+cohesive work with one owner.
 
 ## Assign
 
-Settle the outcome and proof before you split the work. Use
-[Engineering Principles](../engineering-principles/SKILL.md) for design and implementation
-decisions, and put the references that apply in the brief.
-
-- **Shared work:** give each slice one owner and each active writer paths no other active
-  writer touches. Run git, index, and other colliding work in series.
-- **Dependent work:** start a slice after its input is accepted.
-- **Competing approaches:** set the comparison criteria before dispatch.
+Settle the outcome and proof before you split the work. Give each slice one owner and each active
+writer paths no other active writer touches. Run git, index, and other colliding work in series.
+Start a dependent slice after its input is accepted.
 
 Give each child a self-contained brief:
 
@@ -32,51 +51,50 @@ Give each child a self-contained brief:
 - For verification or measurement: the user outcome, operating context, invariants and
   failure questions, exact revisions, and method.
 
-Give the work a stable identity, separate from execution attempt IDs. Assignment is done
-when every required slice has an owner, usable inputs, and a completion check.
+Assignment is done when every required slice has an owner, usable inputs, and a completion check.
 
-**In-scope follow-up:** send it to the existing owner, after checking which messages it has
-already received or handled. **Scope change:** return it to the caller with its source and
-reason.
+**In-scope follow-up:** send it to the existing owner, whatever its model. **Scope change:** return
+it to the caller with its source and reason.
 
-**Human hold:** record its source, scope, and release condition. It survives retries,
-transfers, and restarts, and only that person lifts it. New evidence can clear an
-agent-reported blocker within the existing grant.
+**Human hold:** record its source, scope, and release condition. It survives retries, transfers,
+and restarts, and only that person lifts it.
 
 ## Dispatch
 
-Follow live host rules. Use a new delegated task unless
-[reuse](references/agent-routing.md#reuse-an-agent) fits.
+Follow live host rules. Use a new task unless [reuse](references/reuse-and-recovery.md#reuse-an-agent)
+fits. When a run fails or its status is unclear, use
+[recovery](references/reuse-and-recovery.md#recover-work).
 
-- **Target:** each child must support the resolved model and options. Use a generic role when
+- **Target:** each child must support the chosen model and options. Use a generic role when
   custom ranks would override them. T3's `role` is not a model preset.
 - **Slash command:** through `delegate_task`, set `role: general` and start `task` with the
   command. Other roles put text before it.
-- **Separate checkout:** use worktree-isolated delegation, confirm its starting revision, and
-  supply uncommitted inputs explicitly.
+- **Separate checkout:** confirm its starting revision and supply uncommitted inputs
+  explicitly.
 - **Limit:** by default 12 children stay active, counting workers and reviewers together. Host
-  or user limits lower this. Start ready work as slots free.
-- **Tracking:** keep each task's request key, ID, selection, owned output, and state.
+  or user limits lower this.
+- **Tracking:** keep each task's request key and ID, so recovery starts no duplicate writer.
 
 ## Return
 
 A child returns its artifact and revision, the evidence it observed, coverage gaps, blockers,
-and open decision requests. Dispatch identity confirms configuration, not which model ran.
+and open decision requests.
 
-When a person must decide or supply something, return a **decision request** apart from the
-progress report: a stable ID, prefixed with your work ID if you have one (`W2-D1`), the exact
-question and its source, the affected work, options with any recommendation, and what
-continues meanwhile.
+**When you are stuck, ask up.** Finish what doesn't depend on the answer, then end your turn
+with the question and a partial report. If it blocks other work, raise it at once, through a
+mid-run route if the host offers one.
 
-A parent forwards the question, meaning intact, through the host's user-input route. It
-settles only when its workflow authorizes that; silence authorizes nothing. The request stays
-open until the person answers or withdraws it, or that parent settles it. Record the outcome
-with its source. Progress or a recommendation leaves it open. A changed question gets a new
-linked ID.
+**As the parent,** answer and resume the child for unaffected work. For a second opinion, launch
+a read-only reviewer. [Replace the owner](references/reuse-and-recovery.md#replace-an-owner)
+only on evidence of repeated failure.
 
-Return decision requests and blockers that affect other work when they arise. Use a mid-run
-route if the host offers one. Otherwise end your turn with a partial report, and the parent
-resumes you for unaffected work.
+**When a person must decide or supply something,** return a **decision request** apart from the
+progress report: an ID, the exact question and its source, the affected work, options with any
+recommendation, and what continues meanwhile.
+
+A parent forwards the question, meaning intact, through the host's user-input route. The request
+stays open until the person answers or withdraws it, or the parent settles it under a workflow
+that authorizes that. Silence, progress, and recommendations settle nothing.
 
 ## Accept
 
@@ -85,21 +103,17 @@ only an artifact you inspected at a named revision, with evidence of the require
 the specified method.
 
 1. Mark every required slice accepted, needing repair, rejected with a reason, or blocked. A
-   dropout stays required. Repairs use the working selection.
+   dropout stays required. Route each repair under [Who does the work](#who-does-the-work).
 2. Verify the integrated result against the original requirements. Reuse a check while its
    revision and scope hold, and rerun the checks integration affected.
 3. Use [review-fix-loop](../review-fix-loop/SKILL.md) for behavior and agent-procedure
-   changes. When [pr](../pr/SKILL.md) will review the same complete scope before publication,
-   let it run that loop once.
-4. Use [show-me](../show-me/SKILL.md) when the user can inspect or try the result.
-5. Track acceptance, delivery state, and handoff delivery separately. A queued handoff with no
-   host receipt is unknown. To recover a failed handoff, keep the verified work and recheck
-   the request, holds, revision, and affected evidence. Then resend only what is missing, to
-   the same recipient, through the host's route.
+   changes. For a change headed to a PR, leave that to [pr](../pr/SKILL.md), which runs the
+   loop when no matching review evidence exists.
+4. An accepted result is not a delivered one. A queued handoff with no host receipt is unknown.
+   To recover a failed handoff, recheck the request, holds, and revision. Then resend only what
+   is missing, to the same recipient.
 
 Finish when every required result is accepted and integrated, or you report the exact gap.
-Return child task IDs and dispositions, artifacts, checks, requested and confirmed model
-settings, open decision requests, and blockers.
+Return each slice's disposition, artifacts, checks, open decision requests, and blockers.
 
-Goals, recurring work, and ordinary top-level threads use their explicitly requested host
-workflows. Ordinary delegation creates none.
+Start goals and recurring work only when explicitly requested.

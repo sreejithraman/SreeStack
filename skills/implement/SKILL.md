@@ -5,10 +5,11 @@ description: Own one PR-sized change from spec or ticket through implementation,
 
 # Implement
 
-Own one cohesive change through its finish line. You are its only owner:
-helpers return to you, and you return one **owner report** to your caller (the
-user, or the session that started you). Scale the process to the change; a
-small local fix needs its relevant checks, not every step below.
+Own the outcome of one cohesive change through its finish line: helpers return
+to you, and you return one **owner report** to your caller (the user, or the
+session that started you). In a top-level thread, a subagent writes the change
+under [Orchestration](../orchestration/SKILL.md#who-does-the-work). A child
+writes it itself. Scale the process to the change; a small local fix needs its relevant checks, not every step below.
 
 ## Resolve the assignment
 
@@ -42,7 +43,7 @@ and keep a matching real baseline before changing the UI or its state.
 ## Build and prove
 
 Use [Orchestration](../orchestration/SKILL.md) for model selection and any
-delegation. Keep cohesive work direct; use [Swarm](../swarm/SKILL.md) for
+delegation. Keep cohesive work with one writer; use [Swarm](../swarm/SKILL.md) for
 bounded parallel coverage, experiments, or disjoint implementation. Pushing,
 rebasing, retargeting, and merging this PR stay with you unless you assign one
 explicitly and serialize it.
@@ -99,7 +100,8 @@ same scope is reviewed once. Settle findings through Review Sweep's
 [claim, repair, and check states](../review-sweep/references/finding-schema.md);
 prefer a reproduction where feasible and keep precise source or contract
 arguments where execution is hard. Recheck evidence affected by fixes or base
-changes. Review repairs and babysitting stay with you.
+changes. Repairs follow Orchestration's
+[repair rule](../orchestration/SKILL.md#who-does-the-work). Babysitting stays with you.
 
 For a pending PR, follow PR's [wait procedure](../pr/references/watch.md#wait):
 a delegated owner returns its pending report and lets the parent watch.

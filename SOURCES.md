@@ -199,7 +199,7 @@ resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
 Alternative-interface proposals use arena's shared brief, rubric, independent
-candidates, and cross-judge, with orchestration's working selection and bounded
+candidates, and cross-judge, with orchestration's model table and bounded
 ownership. The user-requested comparison remains conditional and defaults to
 recommendations; synthesis is requested separately. Candidate counts follow the
 decision rather than a fixed panel of three, and architect can carry a selected
@@ -446,7 +446,8 @@ generic caller. Keeps upstream spec/ticket resolution, TDD at meaningful
 seams, verification, and review. Adds local method selection, a fixed finish
 line, measurable-target pursuit that keeps hard targets and rejects
 regressions, invariant escalation through Attack the Premise, and an
-owner-report contract. Native goal tracking stays optional and explicitly
+owner-report contract. The session owns the outcome; in a top-level thread, a
+subagent writes the change under Orchestration, and a child writes it itself. Native goal tracking stays optional and explicitly
 requested. Publishing and merging follow the request; no issue tracker is
 required for a supplied spec.
 
@@ -982,8 +983,8 @@ other nonignored untracked source.
   assessments to their named model defaults. Impact-based coverage selects one
   Primary for contained work, Primary plus a fitting lens for contained risk, and
   staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
-  Fixes route by what they change to the original reviewers for those angles,
-  under Orchestration's reuse rule; Primary's integrated check covers
+  Fixes route by what they change to new tasks on the original reviewers'
+  models for those angles, under Orchestration's review-pass rule; Primary's integrated check covers
   cumulative repairs; and repeated repairs to an invariant trigger a parent
   design checkpoint. The first independent pass adds one random optional reviewer
   from each provider pool. The loop owns provider-reference
@@ -1025,7 +1026,7 @@ on conflicts, and verify hashes after success or recovery.
 - Local: `skills/review-sweep` (SreeStack). Canonical issues retain workflow/pass,
   source-report relationships, and assignment/model provenance. Acceptance,
   applied repairs, and snapshot-specific checks remain separate; accepted fixes
-  use orchestration's implementation selection.
+  follow orchestration's repair routing.
   Settlement weighs supported exposure and impact, preserving rare material and
   required failures while deferring low-impact work and rejecting hypotheticals.
 
@@ -1204,49 +1205,53 @@ cases cannot be averaged away.
 - [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
 
-Shared T3-oriented assignment, dispatch, and acceptance mechanics live in the
-entrypoint; `references/agent-routing.md` owns selection, reuse, and recovery.
-One editable table there owns working, research, source-retrieval, and review
-model defaults, including effort and additional review pools. The direct-work
-match/delegate gate applies to the working selection. Live host instructions own
-APIs, transport, task lifecycle, permissions, and workspace binding. Local policy
-owns concurrency and bounded recovery, subject to caller-specific failure policy.
+The entrypoint owns who does the work, assignment, dispatch, return, and
+acceptance. `references/models.md` is a lookup: one editable table owns working,
+research, source-retrieval, and review model defaults, including effort and
+additional review pools, with row choice, raising a row, and UI operation.
+`references/reuse-and-recovery.md` owns reuse, review passes, owner replacement,
+recovery, and availability fallbacks. Live host instructions own APIs, transport,
+task lifecycle, permissions, and workspace binding. Local policy owns concurrency
+and bounded recovery, subject to caller-specific failure policy.
 
-Working selection distinguishes source review and research, dedicated UI
-operation, UI building, document writing and revision, then Simple, Standard, or
-Hardest implementation. Hardest
-is rare and requires evidence that Standard is insufficient; its Codex fallback
-is GPT-6 Astra at X-High. Tool semantics come from the live contract.
-The existing agent handles routine UI operation; a dedicated operator is reserved
-for substantial work, specialized capabilities, required independence, or repeated
-operational difficulty, at a tier set by flow complexity and false-pass cost, with
-Verify retaining assertions and verdicts. Listed availability
-fallbacks apply to quota, unavailable providers/models, and provider runtime
-failures while preserving acceptance, review criteria, and explicit selections.
-A user-named model blocks rather than falling back unless the user authorized a
-substitute.
-Selection changes honor host delegation authority; children without permission
-return incomplete work for parent-owned reconciliation and dispatch. The parent
-reports a blocker for a repeat request with no new evidence. Failed
-escalation preserves an active fallback owner and its context.
+The table says what to launch, not who may work. A top-level thread gives every
+project-file edit to a subagent, in the background, and stays free;
+`global/AGENTS.md` carries that rule because not every model loads this skill.
+Children do their own work and delegate only when their task says to. A stuck agent asks up; a parent answers and resumes it, can
+launch a read-only reviewer for a second opinion, and replaces an owner only on
+evidence of repeated failure. A further replacement with no new evidence is a blocker.
+A thread that cannot launch a subagent says so and asks. A slice's owner is the agent that wrote it. Repairs go to that
+owner first, by resuming its thread, because T3's rule bars a new delegate and resuming
+starts none. No owner left means its thread is gone or can't be resumed, not a finished run; T3's
+rule then applies, and a repair it does not cover launches from the table. A lost owner
+follows recovery, not the repeated-failure test.
 
-Names no callers. Briefs carry the original request and accepted
-corrections; work keeps a stable identity across attempts; explicit human holds
-persist until released. New work prefers a retained agent when its context helps
-and it matches the resolved model and effort, workspace, and a host continuation
-that is both supported and permitted; failure recovery and fallback keep
-precedence. An agent that wrote or directed a change is excluded from later
-independent assessment of it. Follow-up reviews prefer the role's original
-reviewer when reuse fits, its outputs are archived, and its context is free of
-same-round peer content; otherwise a new task receives the prior evidence and is
-recorded as a replacement. Children return decision requests with stable IDs that
-stay open until answered or withdrawn. A result is accepted only after
-inspecting its artifact at a named revision; every required slice is accounted
-for. Acceptance, actual delivery state, and handoff delivery stay separate, and
-a failed handoff is resent only to its original recipient. Review Fix Loop owns
-assessment coverage, PR owns that loop when it will review the same scope, and
-Show Me owns demonstrations. Ordinary delegation creates no goals, recurring
-schedules, or ordinary top-level threads.
+Row choice distinguishes source review and research, dedicated UI operation, UI
+building, document writing and revision, then Simple, Standard, or Hardest
+implementation. Hardest is rare and requires evidence that Standard is insufficient;
+its Codex fallback is GPT-6 Astra at X-High. The existing agent handles routine UI
+operation; a dedicated operator is reserved for substantial work, specialized
+capabilities, required independence, or repeated operational difficulty, at a tier
+set by flow complexity and false-pass cost, with Verify retaining assertions and
+verdicts. Listed availability fallbacks apply to quota, unavailable providers/models,
+and provider runtime failures while preserving acceptance, review criteria, and
+explicit choices. A listed fallback is the user's standing permission to switch. A
+user-named model blocks rather than falling back unless the user authorized a substitute.
+
+Names no callers. Briefs carry the original request and accepted corrections;
+explicit human holds persist until released.
+A new assignment prefers a retained agent when its context helps and it matches the
+row's model and effort, workspace, and a host continuation that is both supported and
+permitted. In-scope follow-up stays
+with its owner whatever its model. An agent that wrote or directed a change is excluded
+from later independent assessment of it. The first review pass uses fresh agents on the
+review rows; later passes use a new task on the same model as that reviewer, with its
+outputs archived and same-round peer content kept out. Children return decision requests
+that stay open until answered or withdrawn. A result is accepted only
+after inspecting its artifact at a named revision; every required slice is accounted for.
+Acceptance and delivery stay separate, and a failed handoff is resent only to its original recipient. Review Fix Loop owns assessment
+coverage, and PR runs that loop when no matching review evidence exists. Goals and
+recurring work start only on request.
 
 ## koubou
 

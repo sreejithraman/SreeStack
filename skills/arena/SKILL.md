@@ -20,7 +20,7 @@ Every candidate gets the same prompt, so the prompt is the contract.
    like on *this* task. Share the requirements and criteria with the candidates
    and judge. Set them before seeing candidates.
 3. Pick the runners through [orchestration](../orchestration/SKILL.md). Use its
-   working selection for candidates and primary review selection for the
+   model table for candidates and its primary-review row for the
    cross-judge unless the caller specifies models. Honor a requested candidate
    count. Use at least two candidates for a comparison; add more when they test
    distinct directions. Independent attempts on the same model are useful too.

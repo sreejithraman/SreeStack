@@ -104,9 +104,9 @@ it needs.
 ## 4. Route repairs
 
 Ordinary prose and wording-only fixes use targeted checks. For code or substantive
-instruction fixes, start a new pass that sends each fix to the original reviewer
-for what it changes, under Orchestration's
-[reuse rule](../orchestration/references/agent-routing.md#reuse-an-agent). The pass
+instruction fixes, start a new pass that sends each fix to a new task on the original
+reviewer's model for what it changes, under Orchestration's
+[review-pass rule](../orchestration/references/reuse-and-recovery.md#reuse-an-agent). The pass
 runs the union of those routes over one scope, each focused on the fixes routed to it. Reviewers with
 no routed fix stay out and keep their valid coverage.
 
@@ -140,7 +140,7 @@ Repeat steps 3 and 4 until no selected, routed, or checkpoint work remains.
 
 ## 5. Run the integrated check
 
-With any repairs, the original Primary or an eligible replacement checks every
+With any repairs, a new task on Primary's model checks every
 repair since initial discovery began on the current snapshot: their interactions,
 accumulated state, branches, and layers, the requested behavior, and current
 verification. A Primary assessment already scoped to every repair, with no repair
@@ -162,7 +162,7 @@ code/substantive-instruction pass needs no fixes. Missing required coverage and
 accepted findings block completion.
 
 In the Orchestration handoff, map child tasks to workflow/pass, review assignments,
-criteria, and configured models, and state whether each follow-up reviewer was
-continued or replaced with prior evidence. Include the reviewed base/snapshot,
+criteria, and configured models, and state which reviewer each follow-up task
+follows and the prior evidence it received. Include the reviewed base/snapshot,
 findings/dispositions, coverage/diversity gaps, skipped additional reviews and
 reasons, and provider references used or unavailable.

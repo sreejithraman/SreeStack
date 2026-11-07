@@ -6,7 +6,7 @@ description: Investigate a question against primary sources and record cited fin
 # Research
 
 Own a question and the evidence needed to answer it. Resolve the decision and
-scope. Use [agent routing's General research selection](../orchestration/references/agent-routing.md#model-defaults)
+scope. Use [the General research row](../orchestration/references/models.md#model-defaults)
 for investigation and synthesis.
 
 ## Note storage
@@ -29,7 +29,7 @@ assign additional children only when the brief permits it.
 ## Source routing
 
 Use Gemini for YouTube retrieval and Grok for X posts, with the configured
-selections in [agent routing](../orchestration/references/agent-routing.md#model-defaults).
+rows in [the model table](../orchestration/references/models.md#model-defaults).
 Honor user overrides. Use orchestration for bounded source retrieval; when
 dispatching a researcher, permit these source tasks in its brief. Source
 retrievers work directly and return content or grounded extracts with canonical

@@ -18,12 +18,12 @@ including react-best-practices and React Doctor evidence.
 ## Select reviewers
 
 Map each required assessment to its named review row in
-[model defaults](../../orchestration/references/agent-routing.md#model-defaults).
+[model defaults](../../orchestration/references/models.md#model-defaults).
 In the loop's first independent pass, add one general reviewer from each named
 additional-review pool. These supplement required assessments. Later stages add
 none. Parent-only prose review needs no additional agents.
 
-Resolve candidates through agent routing and record unavailable targets with
+Resolve candidates through the model defaults and record unavailable targets with
 reasons. Within each pool, use a tool-backed uniform random draw among eligible
 models. Use the sole eligible candidate when only one remains; skip an empty
 pool. Record one mapping per loop and retain it through fixes and any superseded
@@ -41,7 +41,7 @@ required reference is incomplete coverage.
 
 ## Handle failures
 
-Use agent routing's recovery for required reviewers at every stage and for
+Use Orchestration's [recovery](../../orchestration/references/reuse-and-recovery.md#recover-work) for required reviewers at every stage and for
 uncertain dispatches. A reviewer that stays unknown after it is an incomplete
 review: a required assessment gets a new one, and an additional review is skipped.
 Additional reviewers override its transient-retry default: on a confirmed quota
