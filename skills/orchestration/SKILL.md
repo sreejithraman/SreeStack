@@ -31,14 +31,12 @@ owner left, that same T3 rule applies: fix a small review finding yourself, and 
 repair from the model table. Before a repair overlaps the owner's files, reconcile under
 [Replacing work](references/reuse-and-recovery.md#recover-work).
 
-Give independent, ready work to separate children when that adds speed or coverage. Keep
-cohesive work with one owner.
+Use [Swarm](../swarm/SKILL.md) to decide whether a job runs in parallel.
 
 ## Assign
 
 Settle the outcome and proof before you split the work. Give each slice one owner and each active
 writer paths no other active writer touches. Run git, index, and other colliding work in series.
-Start a dependent slice after its input is accepted.
 
 Give each child a self-contained brief:
 
