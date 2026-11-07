@@ -1,10 +1,6 @@
 ---
 name: gh-stack
-description: >
-  Manages stacked PRs and splits multi-part work into reviewable branches with gh-stack.
-  Use for stack creation, viewing, edits, push, submit, sync, rebase, merge, or checkout;
-  when asked to split or isolate work for review; whenever a user mentions a stack,
-  branch layers, dependent PRs, or gh stack; or when a stack is checked out.
+description: Use when creating, inspecting, or changing stacked Git branches or dependent PRs with gh-stack.
 metadata:
   author: github
   version: "0.2.0"

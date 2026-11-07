@@ -1,6 +1,6 @@
 ---
 name: correct
-description: Investigate and prevent recurring agent mistakes in a repository. Use when asked to find repeated corrections or turn known failure patterns into architecture changes and enforceable checks.
+description: Use when asked to investigate recurring agent mistakes or prevent a known recurring failure pattern.
 ---
 
 # Correct

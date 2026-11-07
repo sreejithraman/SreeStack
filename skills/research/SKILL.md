@@ -1,6 +1,6 @@
 ---
 name: research
-description: Investigate a question against primary sources and record cited findings. Use when research, documentation or API facts, or background reading are requested.
+description: Use when asked to research a question, look up documentation or API facts, or gather background sources.
 ---
 
 # Research

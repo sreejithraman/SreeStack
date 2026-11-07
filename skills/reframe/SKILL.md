@@ -1,6 +1,6 @@
 ---
 name: reframe
-description: Form a brief when asked to reframe a task, be more ambitious, raise the bar, or improve a prompt, when another workflow needs a clearer outcome, or when planning how to judge an ambitious target, a consequential change, or competing candidates.
+description: Use when asked to reframe a task, raise its ambition, improve a prompt, or define acceptance criteria, or when a workflow needs a brief.
 ---
 
 # Reframe
