@@ -59,9 +59,10 @@ Load the reference matching the evidence needed:
 - Growing memory, abandoned objects, retain cycles, or memory-pressure termination:
   [Apple memory](references/apple-memory.md).
 
-These refine this loop. Before launching or controlling a Simulator or device,
-follow [simulator-lifecycle](../simulator-lifecycle/SKILL.md) and the host's
-device rules.
+These refine this loop. Before launching or controlling a Simulator, follow
+[simulator-lifecycle](../simulator-lifecycle/SKILL.md) and the host's device
+rules. Reach a physical device through the route in the
+[iOS verification guide](../verify/references/ios.md).
 
 ### Make the signal tight
 
@@ -132,7 +133,8 @@ as `[DEBUG-a4f2]` so cleanup can find it. Avoid broad logging.
 
 For performance regressions, establish the baseline with a timing harness,
 profiler, or query plan, and measure before fixing; apply the shared
-measurement-validity requirements. Bisect when a known-good revision exists.
+measurement-validity requirements. Bisect when comparing a known-good and a
+failing revision would distinguish causes the evidence hasn't settled.
 
 ## Phase 5: Fix and add a regression test
 
@@ -150,15 +152,13 @@ unminimised scenario.
 ## Phase 6: Clean up and report
 
 Finish only when the original repro is green, the regression test passes (or
-its missing seam is documented), and temporary logs and throwaway prototypes
-are removed or the prototypes moved to a clearly marked debug location.
-Search for the unique debug prefix to confirm removal. State the supported
-cause in the result and any commit or PR message.
-
-A green diagnostic loop is evidence of cause and repair, not product acceptance.
-When the repair affects a user workflow, hand its proof to
-[verify](../verify/SKILL.md), which can reuse matching red evidence from this
-diagnosis.
+its missing seam is documented), a repair that affects a user workflow has a
+passing [verify](../verify/SKILL.md) verdict, and temporary logs and throwaway
+prototypes are removed or the prototypes moved to a clearly marked debug
+location. A green diagnostic loop is evidence, not acceptance; `verify` can
+reuse matching red evidence from this diagnosis. Search for the unique debug
+prefix to confirm removal. State the supported cause in the result and any
+commit or PR message.
 
 When evidence establishes a recurring failure class, pass examples and the
 verified cause to [correct](../correct/SKILL.md). Historical mining and broader

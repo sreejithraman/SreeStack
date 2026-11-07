@@ -257,12 +257,14 @@ shell template remains at `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`; its upstre
 comment-only changes are omitted.
 
 Browser reproductions follow host routing before standalone drivers. Apple
-Simulator and device launch and control follow `simulator-lifecycle` and the
-host's device rules; build identity and capture choices stay local.
+Simulator launch and control follow `simulator-lifecycle` and the host's device
+rules; physical devices use `verify`'s iOS device route. Build identity and
+capture choices stay local.
 
 Repairs run through `tdd`'s red → green cycle at a seam that reaches the actual
 failure and its caller chain. Diagnosis keeps the original-scenario rerun and
-causal evidence, and hands user-workflow proof to `verify`.
+causal evidence. A repair that affects a user workflow finishes only with a
+passing `verify` verdict.
 
 Performance claims use `references/measurement-validity.md` for completed work,
 correctness, settings, bottlenecks, plausibility, repeatability, and user relevance.
@@ -282,8 +284,8 @@ retaining all six diagnosis phases. Minimising, comparing hypotheses, and
 bisecting apply when the causal uncertainty calls for them, and the loop's
 time bar is the shortest faithful bounded run rather than seconds. Sensitive
 artifacts pass through redaction before inspection output enters the conversation, including
-initial reads. Conditional references, the HITL script, and invocation remain
-unchanged.
+initial reads. Conditional references follow the same conditional gates; the
+HITL script and invocation remain unchanged.
 
 ## engineering-principles
 
