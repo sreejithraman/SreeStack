@@ -1,6 +1,6 @@
 ---
 name: prototype
-description: Build runnable, disposable UI prototypes for web, mobile, or desktop. Use to answer a design question by trying one concept or comparing meaningfully different layouts or interactions before production implementation.
+description: Use when asked to build a UI prototype, or when a UI design decision needs trying the interface before production implementation.
 ---
 
 # Prototype

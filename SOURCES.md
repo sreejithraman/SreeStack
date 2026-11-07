@@ -486,7 +486,8 @@ state fields, and exit-code details live with command behavior. Existing design
 and recovery references retain specialized semantics. Direct reference reads
 also gate newer worktree/catalog behavior against installed capabilities;
 missing path-mode support uses manual owner discovery rather than invented
-flags or automatic upgrades. Discovery and invocation remain unchanged.
+flags or automatic upgrades. The description lists triggers only and limits
+discovery to stacked branches and dependent PRs.
 Numeric merge targets are checked for stack-number precedence before selecting
 the requested PR set.
 
