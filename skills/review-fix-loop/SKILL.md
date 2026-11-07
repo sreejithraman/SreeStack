@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Review and fix a change through independent T3 review rounds. Use before handing off behavior or agent-procedure changes, or when asked to review and fix a branch, PR, or local diff.
+description: Review and fix a change through independent T3 review rounds. Use when asked to review and fix a branch, PR, or local diff.
 ---
 
 # Review Fix Loop
@@ -10,6 +10,9 @@ model defaults, delegation, recovery, and the general handoff.
 [Review](../review/SKILL.md) assesses one snapshot;
 [Review Sweep](../review-sweep/SKILL.md) validates and fixes findings.
 The caller owns commits, publication, replies, and merging.
+
+[PR](../pr/SKILL.md) calls this loop when work is ready to publish, and anyone can ask
+for it. Until then, an agent proves its work and stops for the user to try it.
 
 ## 1. Establish scope and select coverage
 

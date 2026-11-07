@@ -67,8 +67,7 @@ the guard, and prove historical rejection and repaired-path success using the
 shared guidance. Verify legitimate supported paths too; narrowing the accepted
 behavior to hide the failure is not prevention.
 
-Use [orchestration](../orchestration/SKILL.md) for bounded assignments and
-[review-fix-loop](../review-fix-loop/SKILL.md) for behavior or procedure changes.
+Use [orchestration](../orchestration/SKILL.md) for bounded assignments.
 Use [verify](../verify/SKILL.md) when the repair changes a user workflow.
 Requested stacked delivery uses [gh-stack](../gh-stack/SKILL.md).
 Use [Chief of Staff](../chief-of-staff/SKILL.md) for a program of repair PRs and
@@ -78,5 +77,5 @@ The requested finish line governs PR publication and merging.
 Report each class as planned, prevented, partly covered, resolved already, or deferred,
 with its evidence, checks, and remaining exposure. Planning is complete when
 the recommendations have traceable evidence and a usable migration/proof plan.
-Implementation is complete when the selected repairs and checks pass, required
-review is settled, and remaining classes have explicit dispositions.
+Implementation is complete when the selected repairs and checks pass and remaining
+classes have explicit dispositions.

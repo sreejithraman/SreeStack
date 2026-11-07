@@ -104,9 +104,8 @@ the specified method.
    dropout stays required. Route each repair under [Who does the work](#who-does-the-work).
 2. Verify the integrated result against the original requirements. Reuse a check while its
    revision and scope hold, and rerun the checks integration affected.
-3. Use [review-fix-loop](../review-fix-loop/SKILL.md) for behavior and agent-procedure
-   changes. For a change headed to a PR, leave that to [pr](../pr/SKILL.md), which runs the
-   loop when no matching review evidence exists.
+3. Leave review to [pr](../pr/SKILL.md). Run [review-fix-loop](../review-fix-loop/SKILL.md)
+   here only when the request asks for a review.
 4. An accepted result is not a delivered one. A queued handoff with no host receipt is unknown.
    To recover a failed handoff, recheck the request, holds, and revision. Then resend only what
    is missing, to the same recipient.

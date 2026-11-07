@@ -5,7 +5,7 @@ description: Use when the user asks to merge a PR or stack, or to keep a finishe
 
 # Merge
 
-Land a finished change. Start from a PR, a stack, or a reviewed local change the user kept.
+Land a finished change. Start from a PR, a stack, or a local change the user kept.
 Leave it merged and shown, with issues settled and task resources cleaned up. You are done when
 GitHub reports every PR in the set merged, and each issue and cleanup target has a result.
 

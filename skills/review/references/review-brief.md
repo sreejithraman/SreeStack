@@ -21,6 +21,11 @@ For delegated assessments, also apply [Review evidence](review-evidence.md).
   with those exclusions, and each file's complete contents, or none.
 - Relevant repo standards and related instructions: absolute paths.
 - Main risks and realistic sample requests, especially for agent instructions.
+- For a skill change that removes, weakens, or moves guidance: the old text and the
+  settled list, and an instruction to check each drop against them. If the list is
+  missing or older than this diff, rebuild it from the old text using
+  [Settle what changed](../../writing-for-agents/references/working-on-skills.md#settle-what-changed),
+  and mark each group with no recorded decision as open, for review to report.
 
 ## Test evidence
 

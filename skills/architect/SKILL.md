@@ -121,9 +121,7 @@ bounded.
 
 Verify the real workflow with [verify](../verify/SKILL.md), and use
 [show-me](../show-me/SKILL.md) for demonstrations and access to the integrated
-result. Review the complete
-integrated change through [review-fix-loop](../review-fix-loop/SKILL.md), or let
-[pr](../pr/SKILL.md) own that loop when publishing the same scope. Remove
+result. Remove
 temporary stubs and comparison controls from the production result. Preserve
 the chosen design, decisive evidence, and reasons in the project record
 already in scope.
