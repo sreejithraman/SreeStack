@@ -1328,8 +1328,11 @@ whitespace checks without changing their bytes.
 Manual-only in both hosts, as upstream. Retains upstream categories, mechanical
 check preference, reference structure, and examples. Cross-skill wording is
 host-neutral; findings carry session evidence and remain recommendations until
-implementation is requested. Review may inspect surrounding contracts, and
-project standards inform both implementation and review.
+implementation is requested. Review applies the project's coding standards,
+mechanical rules become checks, and `pr` owns review timing. `writing-for-agents`
+owns where instructions belong and how hosts load them. A missing hook or CI
+guardrail is a finding only when the session shows a mistake, omission, or
+exposure it would have caught; otherwise retro offers a separate setup audit.
 
 T3 session sources prefer scoped app history; other hosts retain local-log
 inspection. Historical claims are checked against current artifacts.
