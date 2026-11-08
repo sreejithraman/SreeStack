@@ -92,6 +92,37 @@ class HostsTest(unittest.TestCase):
         time.sleep(1.5)
         self.assertFalse(marker.exists())
 
+    def test_an_interrupted_session_or_check_still_redacts_its_logs(self):
+        secret = "sentinel-not-a-real-secret-7f3a"
+        scripts = Path(hosts.__file__).parent
+        started, marker, out = self.root / "started", self.root / "survivor", self.root / "out"
+        host = f"echo $EVAL_TEST_API_KEY; echo $EVAL_TEST_API_KEY >&2; touch {started}; sleep 1; touch {marker}"
+        calls = {
+            "session": f"hosts.execute(['sh', '-c', {host!r}], cwd='/', env=None, out=out, timeout=30)",
+            "check": ("compare.run_checks(types.SimpleNamespace(host={}), "
+                      f"{{'checks': [{host.replace('$EVAL_TEST_API_KEY', secret)!r}]}}, out, out)"),
+        }
+        for name, call in calls.items():
+            with self.subTest(name):
+                shutil.rmtree(out, ignore_errors=True)
+                started.unlink(missing_ok=True)
+                out.mkdir()
+                program = (f"import sys, types; sys.path.insert(0, {str(scripts)!r}); from pathlib import Path; "
+                           f"import hosts, compare; hosts.GRACE_SECONDS = 0.5; out = Path({str(out)!r}); {call}")
+                env = {**os.environ, "EVAL_TEST_API_KEY": secret}
+                runner = subprocess.Popen([sys.executable, "-c", program], env=env, stderr=subprocess.DEVNULL)
+                deadline = time.monotonic() + 10
+                while not started.exists() and time.monotonic() < deadline:
+                    time.sleep(0.02)
+                runner.send_signal(signal.SIGINT)
+                runner.wait(timeout=10)
+                time.sleep(1.5)
+                self.assertFalse(marker.exists())
+                retained = [path for path in out.rglob("*") if path.is_file()]
+                self.assertTrue(retained)
+                for path in retained:
+                    self.assertNotIn(secret.encode(), path.read_bytes(), path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -417,6 +417,20 @@ class CompareTest(unittest.TestCase):
         for log in logs:
             self.assertEqual(log.read_text(), "KEY=[REDACTED]\n")
 
+    def test_secrets_in_undecodable_work_files_are_redacted(self):
+        class Writer(FakeAgent):
+            def run(self, *, work, prompt, **rest):
+                if prompt.startswith("do "):
+                    (work / "tool-debug.bin").write_bytes(b"\xff\x00KEY=" + os.environ["EVAL_TEST_API_KEY"].encode())
+                return super().run(work=work, prompt=prompt, **rest)
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            self.run_all(Writer())
+        kept = list((self.root / "runs").rglob("tool-debug.bin"))
+        self.assertEqual(len(kept), 12)
+        for path in kept:
+            self.assertEqual(path.read_bytes(), b"\xff\x00KEY=[REDACTED]")
+
 
 if __name__ == "__main__":
     unittest.main()

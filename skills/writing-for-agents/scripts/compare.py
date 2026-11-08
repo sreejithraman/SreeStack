@@ -191,37 +191,44 @@ class Eval:
         return sorted(self.output("runs").glob("*/*/*/result.json"))
 
 
-def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None, out: Path, variant: str):
-    """One fresh session in its own work dir."""
+def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None, out: Path, variant: str,
+                task=None) -> hosts.RunResult:
+    """One fresh session in its own work dir, then the task's checks. Its evidence is kept however it ends."""
     out.mkdir(parents=True)
     scratch = Path(tempfile.mkdtemp(prefix="compare-"))
     work = scratch / "work"
-    if fixture:
-        shutil.copytree(fixture, work)
-    else:
-        work.mkdir()
-    started = time.monotonic()
     try:
-        result = ev.adapter.run(skills=skills, prompt=prompt, work=work, out=out,
-                                settings=ev.host, scratch=scratch, variant=variant)
-    except Exception as error:  # A crashed adapter is a failed cell, kept with its reason.
-        result = hosts.RunResult(status="error", error=f"{type(error).__name__}: {error}")
-    result.wall_seconds = round(time.monotonic() - started, 3)
-    return result, work, scratch
+        if fixture:
+            shutil.copytree(fixture, work)
+        else:
+            work.mkdir()
+        started = time.monotonic()
+        try:
+            result = ev.adapter.run(skills=skills, prompt=prompt, work=work, out=out,
+                                    settings=ev.host, scratch=scratch, variant=variant)
+        except Exception as error:  # A crashed adapter is a failed cell, kept with its reason.
+            result = hosts.RunResult(status="error", error=f"{type(error).__name__}: {error}")
+        result.wall_seconds = round(time.monotonic() - started, 3)
+        if task is not None and result.status == "ok":
+            result.checks = run_checks(ev, task, work, out)
+        return result
+    finally:  # Also on KeyboardInterrupt.
+        keep_work(work, scratch, out)
 
 
 def keep_work(work: Path, scratch: Path, out: Path) -> None:
-    """After the checks: turn symlinks into notes and redact text files, then keep the work dir."""
+    """Turn symlinks in the work dir into notes, keep it in `out`, and redact everything there."""
     if work.exists():
         for path in sorted(work.rglob("*"), reverse=True):
             if path.is_symlink():
                 target = os.readlink(path)
                 path.unlink()
-                path.write_text(redact(f"symlink to {target}\n"))
-            elif path.is_file():
-                hosts.redact_in_place(path)
+                path.write_text(f"symlink to {target}\n")
         shutil.move(str(work), str(out / "work"))
     shutil.rmtree(scratch, ignore_errors=True)
+    for path in out.rglob("*"):
+        if path.is_file():
+            hosts.redact_file(path)
 
 
 def run_checks(ev: Eval, task, work: Path, out: Path) -> list:
@@ -230,10 +237,12 @@ def run_checks(ev: Eval, task, work: Path, out: Path) -> list:
     results = []
     for index, command in enumerate(task.get("checks", [])):
         log = out / f"check-{index}.log"
-        with open(log, "w") as stream:
-            code = hosts.run_group(["sh", "-c", command], cwd=work, env=env, stdout=stream, stderr=stream,
-                                   timeout=ev.host.get("check_timeout_seconds", 120))
-        hosts.redact_file(log)
+        try:
+            with open(log, "w") as stream:
+                code = hosts.run_group(["sh", "-c", command], cwd=work, env=env, stdout=stream, stderr=stream,
+                                       timeout=ev.host.get("check_timeout_seconds", 120))
+        finally:
+            hosts.redact_file(log)
         results.append({"command": command, "exit": "timeout" if code is None else code})
     return results
 
@@ -299,8 +308,7 @@ def calibrate(ev: Eval) -> bool:
     passed = True
     report = []
     for probe_id, tree, prompt, checks in probes:
-        result, work, scratch = run_session(ev, tree, prompt, fixture, base / probe_id, f"calibrate-{probe_id}")
-        keep_work(work, scratch, base / probe_id)
+        result = run_session(ev, tree, prompt, fixture, base / probe_id, f"calibrate-{probe_id}")
         result.save(base / probe_id)
         outcomes = [(False, f"session {result.status}: {result.error}")] if result.status != "ok" else checks(result)
         for ok, what in outcomes:
@@ -343,9 +351,7 @@ def run(ev: Eval, only=None, replace_stale=False) -> None:
         if out.exists():  # An interrupted cell: keep it, start over.
             supersede(ev, out, stamp)
         task = ev.tasks[task_id]
-        result, work, scratch = run_session(ev, ev.variants[variant], task["prompt"], ev.fixture(task), out, variant)
-        result.checks = run_checks(ev, task, work, out) if result.status == "ok" else []
-        keep_work(work, scratch, out)
+        result = run_session(ev, ev.variants[variant], task["prompt"], ev.fixture(task), out, variant, task)
         tree = ev.variants[variant]
         result.save(out, extra={
             "task": task_id, "variant": variant, "repeat": repeat, "identity": ev.identity(),

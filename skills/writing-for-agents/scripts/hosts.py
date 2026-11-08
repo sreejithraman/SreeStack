@@ -42,17 +42,13 @@ def write_atomic(path: Path, text: str) -> None:
 
 
 def redact_file(path: Path) -> None:
-    write_atomic(path, path.read_text(errors="replace"))
-
-
-def redact_in_place(path: Path) -> None:
-    """Redact a text file, keeping its mode. Binary files are left as they are."""
-    try:
-        text = path.read_text()
-    except (UnicodeDecodeError, OSError):
-        return
-    if redact(text) != text:
-        path.write_text(redact(text))
+    """Replace each secret's UTF-8 bytes in any file, whatever its encoding, keeping its mode."""
+    data = path.read_bytes()
+    cleaned = data
+    for value in secret_values():
+        cleaned = cleaned.replace(value.encode(), b"[REDACTED]")
+    if cleaned != data:
+        path.write_bytes(cleaned)
 
 
 def stop_group(process: subprocess.Popen) -> None:
@@ -131,11 +127,13 @@ def skill_names(*directories: Path) -> set:
 
 def execute(command, *, cwd, env, out: Path, timeout) -> tuple:
     """Run a host CLI, keeping its redacted stdout and stderr. Returns (exit code or None on timeout, stdout)."""
-    with open(out / "raw.jsonl", "w") as stdout, open(out / "stderr.log", "w") as stderr:
-        code = run_group(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, timeout=timeout)
-    for name in ("raw.jsonl", "stderr.log"):
-        redact_file(out / name)
-    return code, (out / "raw.jsonl").read_text()
+    try:
+        with open(out / "raw.jsonl", "w") as stdout, open(out / "stderr.log", "w") as stderr:
+            code = run_group(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, timeout=timeout)
+    finally:  # After the group has ended and the streams have closed, also on KeyboardInterrupt.
+        for name in ("raw.jsonl", "stderr.log"):
+            redact_file(out / name)
+    return code, (out / "raw.jsonl").read_text(errors="replace")
 
 
 def events(raw: str):
