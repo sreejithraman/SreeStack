@@ -55,7 +55,7 @@ def run_loader(fixture, preset=None):
     """Evaluate the loader's output in a clean shell; return the variables and stderr."""
     with tempfile.TemporaryDirectory() as directory:
         env_file = Path(directory) / "shared.env"
-        env_file.write_text(fixture)
+        env_file.write_text(fixture, encoding="utf-8")
         environment = {"PATH": os.environ["PATH"], "AGENTS_SHARED_ENV": str(env_file), **(preset or {})}
         result = subprocess.run(
             ["sh", "-c", 'eval "$(sh "$1")" && env -0', "sh", str(LOADER)],
@@ -63,6 +63,51 @@ def run_loader(fixture, preset=None):
         )
     variables = dict(entry.split("=", 1) for entry in result.stdout.decode().split("\0") if entry)
     return variables, result.stderr.decode()
+
+
+class FileEndTest(unittest.TestCase):
+    def test_trailing_whitespace_needs_a_final_newline(self):
+        cases = {
+            "KEY=value ": "value", "KEY= ": "", 'KEY="quoted" ': "quoted", "KEY='quoted'\t": "quoted",
+        }
+        for entry, value in cases.items():
+            with self.subTest(entry):
+                loaded, warnings = run_loader(f"{entry}\n")
+                self.assertEqual((loaded["KEY"], warnings), (value, ""))
+                loaded, warnings = run_loader(f"AFTER=ok\n{entry}")
+                self.assertNotIn("KEY", loaded)
+                self.assertEqual(loaded["AFTER"], "ok")
+                self.assertRegex(warnings, r"^load-env: .*:2: whitespace at end of file[^\n]*\n$")
+
+    def test_duplicate_without_final_newline_keeps_earlier_value(self):
+        loaded, warnings = run_loader("KEY=old\nKEY=new ")
+        self.assertEqual(loaded["KEY"], "old")
+        self.assertRegex(warnings, ":2: ")
+
+    def test_value_without_final_newline_loads(self):
+        loaded, warnings = run_loader("KEY=value")
+        self.assertEqual((loaded["KEY"], warnings), ("value", ""))
+
+
+class NonAsciiTest(unittest.TestCase):
+    LOCALES = ("C", "en_US.UTF-8")
+
+    def test_unquoted_unicode_whitespace_is_skipped(self):
+        for locale in self.LOCALES:
+            for space in ("\u00a0", "\u2003"):
+                for entry in (f"KEY={space}{SECRET}", f"KEY={SECRET}{space}"):
+                    with self.subTest(locale=locale, entry=ascii(entry)):
+                        loaded, warnings = run_loader(f"{entry}\nAFTER=ok\n", {"LC_ALL": locale})
+                        self.assertNotIn("KEY", loaded)
+                        self.assertEqual(loaded["AFTER"], "ok")
+                        self.assertNotIn(SECRET, warnings)
+                        self.assertRegex(warnings, r"^load-env: .*:1: KEY: [^\n]*non-ASCII")
+
+    def test_quoted_unicode_stays_literal(self):
+        for locale in self.LOCALES:
+            with self.subTest(locale):
+                loaded, warnings = run_loader('KEY="\u00a0value\u2003"\n', {"LC_ALL": locale})
+                self.assertEqual((loaded["KEY"], warnings), ("\u00a0value\u2003", ""))
 
 
 class AcceptedEntriesTest(unittest.TestCase):

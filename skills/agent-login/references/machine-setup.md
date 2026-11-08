@@ -104,10 +104,11 @@ belong in a tool argument. Write one `KEY=value` entry per line, not executable
 shell code. Both loaders accept this subset: an optional `export ` prefix,
 optional whitespace around `=`, and a value that is empty, unquoted without
 whitespace, `#` or `$`, single-quoted with no inner `'`, or double-quoted with
-no inner `"` or `$`. The closing quote ends the line. Use no backslashes, and no
-quotes except around a whole value. Either can make dotenv parsers disagree on
-where entries end, so the Claude loader then exports nothing from the file. It
-skips any other unsupported entry. Its warnings name the line, never the value.
+no inner `"` or `$`. The closing quote ends the line. Keys and unquoted values
+are ASCII, and the file ends with a newline. Use no backslashes, and no quotes
+except around a whole value. Either can make dotenv parsers disagree on where
+entries end, so the Claude loader then exports nothing from the file. It skips
+any other unsupported entry. Its warnings name the line, never the value.
 Reading the token from the user's personal vault is personal access: get the
 user's approval for that item under [access](access.md#who-may-use-which-credential),
 or have the user enter the token privately. Have the user enter it privately
