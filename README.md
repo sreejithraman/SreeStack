@@ -254,8 +254,8 @@ the work to PR units, starts one Implement owner per unit from a kickoff
 template, reads their owner reports, watches pending PRs, and routes discoveries
 and shared blockers. It settles reversible decisions that a recorded source or
 your standing approval already answers, and you can reopen any of them; the rest
-come to you, with judgment calls ahead of quick picks. By default, owners merge their PRs once the chief accepts
-them, and the chief can land any PR itself. You can ask for a review-ready stack,
+come to you, with judgment calls ahead of quick picks. By default, each owner lands its accepted PR or stack once the
+chief releases it, and the chief lands only sets that span owners. You can ask for a review-ready stack,
 decide each merge yourself, or stop at a plan, local work, or review. Its command center shows Needs you first and
 Work second, rendered from a checked snapshot of the program record; answers
 go back through chat. Existing trackers stay authoritative. A hosting guide can serve the page at a stable

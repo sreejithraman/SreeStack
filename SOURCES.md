@@ -424,8 +424,8 @@ Orchestration, watches delegated owners' pending PRs, and routes discoveries
 through an explicit disposition table. The chief triages decision requests: it
 resolves reversible, unreserved ones that a recorded source or the user's
 standing approval settles, and the user can reopen any of them. Merged delivery is the local default:
-owners land accepted PRs on the chief's recorded landing release, and the chief
-lands when needed. Landing stays within the agreed program scope and inherited
+owners land their accepted PR or stack on the chief's recorded landing release,
+and the chief lands only sets that span owners. Landing stays within the agreed program scope and inherited
 finish line, with one pending landing per target branch and hold reconciliation
 covering queued merges. A requested stack, user-decided merges, a plan, local work,
 review-only PRs, holds, or project rules narrow that default.

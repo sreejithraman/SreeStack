@@ -84,9 +84,10 @@ Work is **provisional** when it rests on something you don't control: another
 owner's unmerged branch or PR, or a recorded assumption awaiting a decision.
 Your own planned layers are not provisional; Land lands your stack bottom-up
 through Merge. Name the branch or assumption provisional work rests on. It can
-build and prove, and is reviewed only when the caller asks. It turns Land into
-Try, never merges, and never crosses into destructive or outward-facing
-actions. If its base changes, restack and recheck it. If its base is scrapped,
+build and prove, and is reviewed only when the caller asks for review or a PR.
+Provisional work never merges and never crosses into destructive or
+outward-facing actions. Land becomes Try, but a requested PR state, draft or
+review-ready, can still be reached. If its base changes, restack and recheck it. If its base is scrapped,
 offer it for scrap too.
 
 Done when the finish line is stated, required access works or its block is
@@ -152,8 +153,10 @@ reported as a gap, and the user can open what you showed.
 
 - **Try:** stop before review and the PR; run
   [Review Fix Loop](../review-fix-loop/SKILL.md) here only when the request asks
-  for review. Show the result and ask, through the host's question tool: merge,
-  changes, or scrap. `/merge` in this thread means
+  for review. Show the result. When the caller is the user, ask through the
+  host's question tool: merge, changes, or scrap. Otherwise return the Try
+  result and that choice through the caller's recorded route; a chief's
+  acceptance and release stay the landing gate. `/merge` in this thread means
   keep: go to Merge, which runs review, opens the PR, and lands it. Changes go
   back to stage 3. Scrap goes to [Repo Cleanup](../repo-cleanup/SKILL.md).
 - **PR:** PR runs review, publishes, and watches to the requested state.
@@ -162,7 +165,8 @@ reported as a gap, and the user can open what you showed.
   required checks, and passing proof. Land is done when GitHub reports every PR
   merged and the result is shown. A closed PR did not land.
 
-Provisional work stops at Try. An open decision request on this outcome's scope
+Provisional work never merges: Land becomes Try, and a requested draft or
+review-ready PR state is still reached through PR. An open decision request on this outcome's scope
 blocks landing. Coordinate stack changes that affect other layers with the
 caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
 under Orchestration's [who does the work](../orchestration/SKILL.md#who-does-the-work).
