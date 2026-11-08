@@ -1,72 +1,139 @@
 import os
 from pathlib import Path
+import re
+import shutil
 import subprocess
 import tempfile
 import unittest
 
-LOADER = Path(__file__).with_name("load-env.sh")
+SCRIPTS = Path(__file__).parent
+LOADER = SCRIPTS / "load-env.sh"
+MACHINE_SETUP = SCRIPTS.parent / "references/machine-setup.md"
 
-FIXTURE = """\
+ACCEPTED = """\
 # comment
 PLAIN=value
 
-export EXPORTED=from export
-SINGLE_QUOTE=it's "here"
+export EXPORTED='from export'
+SPACED = spaced
+APOSTROPHE="it's here"
+LITERAL='$HOME `date` \\n'
 QUOTED="double quoted"
-SQUOTED='single quoted'
-DOLLAR=$HOME and `date`
+EMPTY=
 CRLF=line\r
-PRESET=from file
-EMPTY_PRESET=from file
-1BAD=skipped
-BAD-KEY=skipped
-no equals sign
+INHERITED="from file"
+DUPLICATE=first
+DUPLICATE=last
+CLAUDE_CODE_SKIPPED=file
+claude_lower=file
 """
 
+SECRET = "s3cret"
+REJECTED = {
+    "INLINE_COMMENT": f'INLINE_COMMENT="{SECRET}" # comment',
+    "UNQUOTED_COMMENT": f"UNQUOTED_COMMENT={SECRET} # comment",
+    "ESCAPED_QUOTE": f'ESCAPED_QUOTE="{SECRET}\\"x"',
+    "ESCAPE": f'ESCAPE="{SECRET}\\nx"',
+    "SUBSTITUTION": f'SUBSTITUTION="{SECRET}$HOME"',
+    "UNQUOTED_SUBSTITUTION": f"UNQUOTED_SUBSTITUTION={SECRET}$HOME",
+    "UNQUOTED_SPACE": f"UNQUOTED_SPACE={SECRET} x",
+    "INNER_QUOTE": f"INNER_QUOTE='{SECRET}'x'",
+    "MULTILINE": f'MULTILINE="{SECRET}\nLEAKED={SECRET}"',
+    "UNTERMINATED": f'UNTERMINATED="{SECRET}',
+}
 
-def load(fixture, preset):
-    """Evaluate the loader's output in a clean shell and return the resulting variables."""
+
+def run_loader(fixture, preset=None):
+    """Evaluate the loader's output in a clean shell; return the variables and stderr."""
     with tempfile.TemporaryDirectory() as directory:
         env_file = Path(directory) / "shared.env"
         env_file.write_text(fixture)
-        environment = {"PATH": os.environ["PATH"], "AGENTS_SHARED_ENV": str(env_file), **preset}
-        output = subprocess.run(
+        environment = {"PATH": os.environ["PATH"], "AGENTS_SHARED_ENV": str(env_file), **(preset or {})}
+        result = subprocess.run(
             ["sh", "-c", 'eval "$(sh "$1")" && env -0', "sh", str(LOADER)],
             env=environment, capture_output=True, check=True,
-        ).stdout.decode()
-    return dict(entry.split("=", 1) for entry in output.split("\0") if entry)
+        )
+    variables = dict(entry.split("=", 1) for entry in result.stdout.decode().split("\0") if entry)
+    return variables, result.stderr.decode()
 
 
-class LoadEnvTest(unittest.TestCase):
+class AcceptedEntriesTest(unittest.TestCase):
     def setUp(self):
-        self.loaded = load(FIXTURE, {"PRESET": "from parent", "EMPTY_PRESET": ""})
+        self.loaded, self.warnings = run_loader(
+            ACCEPTED, {"INHERITED": "from parent", "CLAUDE_CODE_SKIPPED": "from parent"})
+
+    def test_accepts_without_warnings(self):
+        self.assertEqual(self.warnings, "")
 
     def test_values_are_literal(self):
         self.assertEqual(self.loaded["PLAIN"], "value")
-        self.assertEqual(self.loaded["SINGLE_QUOTE"], "it's \"here\"")
-        self.assertEqual(self.loaded["DOLLAR"], "$HOME and `date`")
+        self.assertEqual(self.loaded["APOSTROPHE"], "it's here")
+        self.assertEqual(self.loaded["LITERAL"], "$HOME `date` \\n")
+        self.assertEqual(self.loaded["QUOTED"], "double quoted")
+        self.assertEqual(self.loaded["EMPTY"], "")
         self.assertEqual(self.loaded["CRLF"], "line")
 
-    def test_surrounding_quotes_and_export_prefix(self):
-        self.assertEqual(self.loaded["QUOTED"], "double quoted")
-        self.assertEqual(self.loaded["SQUOTED"], "single quoted")
+    def test_export_prefix_and_whitespace_around_equals(self):
         self.assertEqual(self.loaded["EXPORTED"], "from export")
+        self.assertEqual(self.loaded["SPACED"], "spaced")
 
-    def test_existing_variables_win(self):
-        self.assertEqual(self.loaded["PRESET"], "from parent")
-        self.assertEqual(self.loaded["EMPTY_PRESET"], "")
+    def test_file_wins_and_last_duplicate_wins(self):
+        self.assertEqual(self.loaded["INHERITED"], "from file")
+        self.assertEqual(self.loaded["DUPLICATE"], "last")
 
-    def test_skips_invalid_lines(self):
-        self.assertNotIn("1BAD", self.loaded)
-        self.assertNotIn("BAD-KEY", self.loaded)
-        self.assertFalse(any(key.startswith(("#", "no ")) for key in self.loaded))
+    def test_claude_keys_are_skipped(self):
+        self.assertEqual(self.loaded["CLAUDE_CODE_SKIPPED"], "from parent")
+        self.assertNotIn("claude_lower", self.loaded)
 
     def test_missing_file_prints_nothing(self):
         result = subprocess.run(
             ["sh", str(LOADER)], env={"AGENTS_SHARED_ENV": "/nonexistent/shared.env"},
             capture_output=True, text=True, check=True,
         )
-        self.assertEqual(result.stdout, "")
+        self.assertEqual((result.stdout, result.stderr), ("", ""))
+
+
+class RejectedEntriesTest(unittest.TestCase):
+    def test_each_rejected_form_warns_and_exports_nothing(self):
+        for key, entry in REJECTED.items():
+            with self.subTest(key):
+                loaded, warnings = run_loader(f"{entry}\nAFTER=ok\n")
+                self.assertNotIn(key, loaded)
+                self.assertNotIn("LEAKED", loaded)
+                self.assertNotIn(SECRET, warnings)
+                self.assertRegex(warnings, rf":1: {key}: ")
+                if key != "UNTERMINATED":
+                    self.assertEqual(loaded["AFTER"], "ok")
+
+    def test_invalid_keys_warn_without_exporting(self):
+        loaded, warnings = run_loader("1BAD=x\nBAD-KEY=x\nno equals sign\n")
+        self.assertFalse({"1BAD", "BAD-KEY"} & loaded.keys())
+        self.assertEqual(len(warnings.splitlines()), 3)
+
+
+class SessionStartHookTest(unittest.TestCase):
+    def test_documented_hook_loads_shared_file_from_custom_config_dir(self):
+        hook = re.search(r"```sh\n(line=.*CLAUDE_ENV_FILE.*)\n```", MACHINE_SETUP.read_text()).group(1)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home, config = root / "home", root / "custom-claude"
+            shared = home / ".config/agents/shared.env"
+            shared.parent.mkdir(parents=True)
+            shared.write_text("DEMO=private-marker\n")
+            installed = config / "skills/agent-login/scripts/load-env.sh"
+            installed.parent.mkdir(parents=True)
+            shutil.copy(LOADER, installed)
+            environment = {"PATH": os.environ["PATH"], "HOME": str(home), "CLAUDE_CONFIG_DIR": str(config)}
+            env_file = root / "claude-env"
+            for _ in range(2):
+                subprocess.run(["sh", "-c", hook], env={**environment, "CLAUDE_ENV_FILE": str(env_file)},
+                               check=True)
+            self.assertEqual(len(env_file.read_text().splitlines()), 1)
+            result = subprocess.run(
+                ["sh", "-c", '. "$1" && printf %s "$DEMO"', "sh", str(env_file)],
+                env=environment, capture_output=True, text=True, check=True,
+            )
+        self.assertEqual((result.stdout, result.stderr), ("private-marker", ""))
 
 
 if __name__ == "__main__":

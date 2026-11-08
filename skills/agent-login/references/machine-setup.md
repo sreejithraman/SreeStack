@@ -61,27 +61,32 @@ providers.
 ([Desktop environment setup](https://learn.chatgpt.com/docs/amazon-bedrock#desktop-app-and-ide-extension),
 [Codex `.env` loading](https://github.com/openai/codex/blob/d960b366941bf062adb4d43111e81b64507e8879/codex-rs/arg0/src/lib.rs#L272-L284))
 
-Claude Code does not load `.env` files. Add a SessionStart command hook in
-`~/.claude/settings.json` that appends one line to `CLAUDE_ENV_FILE`; Claude Code
-runs that file before each Bash command. The line evals the bundled
-[loader](../scripts/load-env.sh), which exports the shared file's variables
-without overriding ones already set. The guard keeps a repeated SessionStart from
-adding a duplicate line:
+Claude Code does not load `.env` files. Find its effective config directory:
+`CLAUDE_CONFIG_DIR` if set, else `~/.claude`. Confirm the bundled
+[loader](../scripts/load-env.sh) is installed at
+`<config dir>/skills/agent-login/scripts/load-env.sh`, then add a SessionStart
+command hook to `<config dir>/settings.json` that appends one line to
+`CLAUDE_ENV_FILE`.
+Claude Code runs that file before each Bash command, so the loader rereads the
+shared file every time. Like Codex, file values replace inherited ones, the last
+duplicate wins, and `CLAUDE_*` keys are ignored. The guard keeps a repeated
+SessionStart from adding a duplicate line:
 
 ```sh
-line='eval "$(sh "$HOME/.claude/skills/agent-login/scripts/load-env.sh")"'; [ -z "$CLAUDE_ENV_FILE" ] || grep -qxF "$line" "$CLAUDE_ENV_FILE" 2>/dev/null || printf '%s\n' "$line" >> "$CLAUDE_ENV_FILE"
+line='eval "$(sh "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/agent-login/scripts/load-env.sh")"'; [ -z "$CLAUDE_ENV_FILE" ] || grep -qxF "$line" "$CLAUDE_ENV_FILE" 2>/dev/null || printf '%s\n' "$line" >> "$CLAUDE_ENV_FILE"
 ```
 
-Only new sessions pick it up; running sessions keep their environment.
-([Persist environment variables](https://code.claude.com/docs/en/hooks#persist-environment-variables))
+The hook takes effect in new sessions; running sessions keep their environment.
+([Persist environment variables](https://code.claude.com/docs/en/hooks#persist-environment-variables),
+[config directory](https://code.claude.com/docs/en/claude-directory))
 
 A reusable layout is:
 
 ```text
-~/.config/agents/shared.env   # canonical private agent environment
-~/.codex/.env                # symlink to that file
-<T3 Codex home>/.env         # symlink to that file
-~/.claude/settings.json      # SessionStart hook that loads that file
+~/.config/agents/shared.env        # canonical private agent environment
+~/.codex/.env                      # symlink to that file
+<T3 Codex home>/.env               # symlink to that file
+<Claude config dir>/settings.json  # SessionStart hook that loads that file
 ```
 
 Discover the effective homes; keep their configs and sessions separate. The
@@ -95,7 +100,13 @@ canonical file owner-readable/writable (`0600`), outside repositories.
 Provision `OP_SERVICE_ACCOUNT_TOKEN` and `OP_BIOMETRIC_UNLOCK_ENABLED=false`
 inside the transfer process, using an existing authorized environment or private
 source. Capture outputs and exceptions; neither file contents nor secret values
-belong in a tool argument. Use valid dotenv encoding, not executable shell code.
+belong in a tool argument. Write one `KEY=value` entry per line, not executable
+shell code. Both loaders accept this subset: an optional `export ` prefix,
+optional whitespace around `=`, and a value that is empty, unquoted without
+whitespace or any of `# " ' \ $`, single-quoted with no inner `'`, or
+double-quoted with no inner `" \ $`. Nothing may follow a closing quote, and a
+quoted value stays on one line. The Claude loader warns about any other entry
+and exports nothing for it.
 Reading the token from the user's personal vault is personal access: get the
 user's approval for that item under [access](access.md#who-may-use-which-credential),
 or have the user enter the token privately. Have the user enter it privately
