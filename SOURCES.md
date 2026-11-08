@@ -1234,7 +1234,7 @@ Setup references use the local `setup-sreestack` entry point.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures, and `scripts/eval.mjs` is adapted into `scripts/compare.py` (MIT).
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures, and `scripts/eval.mjs` informed the comparison rules in `scripts/compare.py` (MIT).
 
 A local rewrite around one test: a line stays only if removing it changes what an
 agent does. Keeps the upstream concepts that change behavior: pointers, placement,
@@ -1251,36 +1251,18 @@ covers drift, help quality, call syntax, and usage-derived examples. Working on 
 starts from real runs. Controlled Comparison keeps matched variants, calibration,
 full outcome checks, and normal host integration.
 
-`scripts/compare.py` ports `eval.mjs` to the Python standard library with Claude Code
-and Codex adapters in `scripts/hosts.py`. Every file in the eval dir, the manifest's
-target and plan included, forms one experiment identity; any change makes every
-result stale. Every command first refuses a symlink anywhere in the eval dir,
-output included. Before any paid session it also refuses skill-discovery
-directories in fixtures, unsafe or duplicate names, and inputs that overlap
-output folders. It rejects missing, unplanned, stale, or malformed results, checks that don't match
-the manifest, and non-boolean judge verdicts, keeps failed runs and work dirs as
-evidence, and writes results atomically. Host and check processes run in their own
-process group, which ends with them, on cancellation too; checks get an allowlisted
-environment and a timeout. However a cell ends, one sweep over its folder only
-replaces directory entries, never modifying an existing file: symlinks become
-notes without being followed, files holding secret-looking environment values are
-replaced by copies redacted by bytes, and a file it can't redact becomes a note.
-It only sweeps or moves folders whose identity it recorded; a cell whose scratch,
-work, or output folders were replaced is left untouched and recorded as an error.
-`compare.py --help` lists the accepted limits: checker files outside the eval dir,
-detached sessions, short or JSON-escaped secret values, and Codex login refresh.
-Calibration runs in a task fixture, checks that installed skills don't leak in and
-that each variant's collection loads, and is revoked when a recalibration starts.
-Scoring judges one declared target, lets any failed required case veto, reports
-unavailable telemetry, and never claims equivalence or significance. It drops the
-upstream MISS and WORSE pass rules, regex answer scoring, full-weight token sums,
-and the one-skill-per-version layout. Paid runs stay out of the checks.
-
-The Codex adapter links the real `auth.json` into a disposable `CODEX_HOME` rather
-than copying it, so refresh-token rotation keeps working. Codex may refresh the
-real login through that link, as it does in normal use. The runner never copies,
-replaces, or deletes the login, and fails a session after which the real file is
-no longer a regular file.
+`scripts/compare.py` builds on Claude Code's experimental `claude plugin eval`,
+checked on Claude Code 2.1.318. It wraps the old and new skill trees as identical
+plugins over one copy of the eval cases, always passes `--no-publish`, and stops
+before the new run when the old one is partial. Scoring follows `eval.mjs`'s
+paired comparison with local rules: one declared target, a veto from any failed run
+of a required case, no win on equal results, missing telemetry reported as
+unproven, and no claim of equivalence or significance. It treats a partial run, a missing, failed, or
+skipped run, and results that differ in cases, graders, model, Claude version, or
+ablation as invalid. It drops skill-diet's own harness, its MISS and WORSE pass
+rules, regex answer scoring, token sums, and Codex runs; Codex comparisons use
+dry-run trials. `plugin eval` reports no token counts. Paid runs stay out of the
+checks.
 
 Keeps skill-diet's steps for adding a rule, its level rule, and its counts of 10–15
 requests and three runs. Holds an added rule to the three runs a removal needs, in

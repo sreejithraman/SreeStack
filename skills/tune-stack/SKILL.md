@@ -103,9 +103,10 @@ Choose the cheapest proof that settles the claim:
 - **A deterministic check:** Correct's guard proof, historical rejection plus
   valid-path success. Add a model run only when you also claim agent behavior
   improves.
-- **Any other claim:** a measured run with the
-  [comparison runner](../writing-for-agents/scripts/compare.py), calibrated
-  before the first task.
+- **Any other claim:** a measured run on Claude Code with the
+  [comparison runner](../writing-for-agents/scripts/compare.py) on
+  `claude plugin eval`, calibrated before the first task. On Codex, only
+  dry-run trials exist; mark the measured claim unverified.
 
 Done when the old version, cases, expectations, target, and a passing
 calibration exist, or each missing one is named with what it blocks.

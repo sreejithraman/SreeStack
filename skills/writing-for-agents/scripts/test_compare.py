@@ -1,643 +1,153 @@
 import contextlib
+import copy
 import io
 import json
 import os
 from pathlib import Path
-import re
 import shutil
-import signal
-import subprocess
-import sys
 import tempfile
-import time
 import unittest
 from unittest import mock
 
 import compare
-import hosts
-from hosts import RunResult
 
-SENTINEL = "sentinel-not-a-real-secret-7f3a"
-
-
-class FakeAgent:
-    """Answers calibration probes from the skill tree it is given, and tasks from `behavior`.
-
-    A behavior is one outcome, or a list of outcomes for successive repeats.
-    """
-
-    telemetry_notes = "fake"
-
-    def __init__(self, behavior=None, leak=False, crash=False, answer="ok"):
-        self.behavior = behavior or {}
-        self.leak = leak
-        self.crash = crash
-        self.answer = answer
-        self.sessions = []
-
-    def version(self):
-        return "fake 1"
-
-    def installed_skill_names(self):
-        return {"installed-skill"}
-
-    def run(self, *, skills, prompt, work, out, settings, scratch, variant):
-        self.sessions.append((variant, prompt, sorted(p.name for p in work.iterdir())))
-        names = sorted(p.name for p in skills.iterdir()) if skills else []
-        listing = ", ".join(names + (["installed-skill"] if self.leak else []))
-        canary = re.search(r"calib-canary-\w+", prompt)
-        if prompt.startswith("Use the") and canary:
-            body = (skills / canary.group() / "SKILL.md").read_text()
-            return RunResult(answer=re.search(r"CANARY-\w+", body).group(),
-                             calls=[{"name": "Skill", "skill": canary.group()}])
-        if "NO-SKILL" in prompt:
-            return RunResult(answer=f"NO-SKILL\n{listing}", calls=[])
-        if "echo calib-" in prompt:
-            return RunResult(answer="calib-42", calls=[{"name": "Bash", "command": "echo calib-$((6*7))"}])
-        if prompt.startswith("List the name"):
-            return RunResult(answer=listing, calls=[])
-        if self.crash:
-            raise RuntimeError("host went away")
-        outcome = self.behavior.get((variant, prompt), {})
-        if isinstance(outcome, list):
-            outcome = outcome[sum(1 for s in self.sessions if s[:2] == (variant, prompt)) - 1]
-        if outcome.get("pass", True):
-            (work / "done.txt").write_text("done")
-        return RunResult(answer=self.answer, calls=[{"name": "Bash", "command": self.answer}] * outcome.get("calls", 1),
-                         cost_usd=outcome.get("cost", 0.01), turns=1, tokens={"output": 10})
+FIXTURES = Path(__file__).parent / "fixtures"
+# Real `claude plugin eval --json` results for two versions of one skill. Both pass
+# the codeword case; the new one fails one of two runs of the file case.
+OLD = json.loads((FIXTURES / "old.json").read_text())
+NEW = json.loads((FIXTURES / "new.json").read_text())
 
 
-def write_manifest(root: Path, **changes) -> None:
-    path = root / "manifest.json"
-    manifest = json.loads(path.read_text()) if path.exists() else {
-        "version": 1, "host": {"adapter": "claude", "model": "fake"},
-        "variants": {"old": "variants/old", "new": "variants/new"}, "baseline": "old", "candidate": "new"}
-    manifest.update(changes)
-    path.write_text(json.dumps(manifest))
+def score(old, new, target, *required):
+    return compare.decide(copy.deepcopy(old), copy.deepcopy(new), target, list(required))
 
 
-def make_eval(root: Path, target=None, tasks=None) -> Path:
-    for variant, text in (("old", "old rule"), ("new", "new rule")):
-        skill = root / "variants" / variant / "helper"
-        skill.mkdir(parents=True)
-        (skill / "SKILL.md").write_text(f"---\nname: helper\ndescription: Use when helping.\n---\n\n{text}\n")
-    (root / "fixtures/repo").mkdir(parents=True)
-    (root / "fixtures/repo/README").write_text("fixture")
-    write_manifest(root, repeats=3, target=target or {"metric": "cost_usd", "why": "cheaper at the same quality"},
-                   tasks=tasks or [
-                       {"id": "required", "prompt": "do required", "fixture": "fixtures/repo", "required": True,
-                        "checks": ["test -f done.txt"]},
-                       {"id": "optional", "prompt": "do optional", "fixture": "fixtures/repo",
-                        "checks": ["test -f done.txt"]},
-                   ])
-    return root
+class DecideTest(unittest.TestCase):
+    def test_the_declared_target_decides(self):
+        self.assertEqual(score(OLD, NEW, "score")[1]["decision"], "no win")
+        code, report = score(NEW, OLD, "score")
+        self.assertEqual((code, report["decision"], report["old"], report["new"]), (0, "win", 0.75, 1))
+        code, report = score(OLD, NEW, "turns")
+        self.assertEqual((code, report["decision"], report["old"], report["new"]), (1, "no win", 3.5, 3.75))
+        self.assertEqual(score(NEW, OLD, "turns")[1]["decision"], "win")
+
+    def test_a_failed_run_of_a_required_case_rejects_a_better_candidate(self):
+        weaker = copy.deepcopy(NEW)
+        weaker["aggregates"]["overallScore"] = 0.5
+        self.assertEqual(score(weaker, NEW, "score")[1]["decision"], "win")
+        code, report = score(weaker, NEW, "score", "file")
+        self.assertEqual((code, report["decision"]), (1, "rejected"))
+        self.assertEqual(score(weaker, NEW, "score", "codeword")[1]["decision"], "win")
+
+    def test_equal_results_are_no_win_and_never_equivalence(self):
+        code, report = score(OLD, OLD, "pass_rate")
+        self.assertEqual((code, report["decision"]), (1, "no win"))
+        self.assertIn("no difference is not equivalence", " ".join(report["notes"]))
+
+    def test_missing_cost_is_unproven_not_zero(self):
+        cheaper = copy.deepcopy(OLD)
+        for case in cheaper["cases"]:
+            for run in case["arms"]["with"]:
+                run["costUsd"] /= 10
+        self.assertEqual(score(OLD, cheaper, "cost_usd")[1]["decision"], "win")
+        del cheaper["cases"][0]["arms"]["with"][0]["costUsd"]
+        code, report = score(OLD, cheaper, "cost_usd")
+        self.assertEqual((code, report["decision"]), (1, "unproven"))
+
+    def test_an_incomplete_result_set_is_invalid(self):
+        def broken(change):
+            result = copy.deepcopy(NEW)
+            change(result)
+            return result
+
+        cases = {
+            "partial": lambda r: r.update(partial=True, partialReason="max cost"),
+            "missing run": lambda r: r["cases"][1]["arms"]["with"].pop(),
+            "missing baseline run": lambda r: r["cases"][0]["arms"]["without"].pop(),
+            "errored run": lambda r: r["cases"][0]["arms"]["with"][0].update(error="timeout"),
+            "skipped graders": lambda r: r["cases"][0]["arms"]["with"][0].update(skippedPaidGraders=True),
+            "missing case": lambda r: r["cases"].pop(),
+            "changed grader": lambda r: r["cases"][0]["graders"][0]["config"].update(pattern="X"),
+            "other model": lambda r: r["suite"].update(modelOverride="sonnet"),
+            "no plugin": lambda r: r["suite"].update(plugins=[]),
+            "unknown schema": lambda r: r.update(schemaVersion=2),
+        }
+        for name, change in cases.items():
+            with self.subTest(name):
+                code, report = score(OLD, broken(change), "score")
+                self.assertEqual((code, report["decision"]), (2, "invalid"), report)
+        self.assertEqual(score(OLD, NEW, "score", "absent")[1]["decision"], "invalid")
 
 
-def cheaper():
-    return {("new", p): {"cost": 0.005} for p in ("do required", "do optional")}
-
-
-def one_late_required_failure():
-    behavior = cheaper()
-    behavior[("new", "do required")] = [{"cost": 0.005}, {"cost": 0.005}, {"pass": False, "cost": 0.005}]
-    return behavior
-
-
-class CompareTest(unittest.TestCase):
+class RunTest(unittest.TestCase):
     def setUp(self):
-        self.enterContext(contextlib.redirect_stdout(io.StringIO()))
-        self.root = make_eval(self.directory())
-
-    def directory(self):
-        path = Path(tempfile.mkdtemp()).resolve()
-        self.addCleanup(shutil.rmtree, path)
-        return path
-
-    def evaluate(self, agent):
-        return compare.Eval(self.root, adapter=agent)
-
-    def run_all(self, agent, **options):
-        compare.run(self.evaluate(agent), **options)
-        return compare.score(self.evaluate(agent))
-
-    def judged_eval(self):
-        self.root = make_eval(self.directory(), tasks=[
-            {"id": "prose", "prompt": "write it", "required": True, "judge": "Is it clear?"}])
-        compare.run(self.evaluate(FakeAgent()))
-        judging = compare.blind(self.evaluate(FakeAgent()))
-        return judging, json.loads((judging / "packet.json").read_text())
-
-    def assertRefusedBeforeSessions(self, pattern):
-        agent = FakeAgent()
-        with self.assertRaisesRegex(compare.InvalidEvidence, pattern):
-            compare.run(compare.Eval(self.root, adapter=agent))
-        self.assertEqual(agent.sessions, [])
-
-    # Decisions
-
-    def test_win_when_cheaper_and_every_case_passes(self):
-        report = self.run_all(FakeAgent(cheaper()))
-        self.assertTrue(report["decision"].startswith("win"), report["decision"])
-
-    def test_a_failed_required_case_vetoes_a_cheaper_candidate(self):
-        behavior = {("new", "do required"): {"pass": False, "cost": 0.001},
-                    ("new", "do optional"): {"cost": 0.001}}
-        report = self.run_all(FakeAgent(behavior))
-        self.assertTrue(report["decision"].startswith("reject"), report["decision"])
-        self.assertEqual(report["required_vetoes"], ["required/0", "required/1", "required/2"])
-
-    def test_one_failed_required_repeat_vetoes(self):
-        report = self.run_all(FakeAgent(one_late_required_failure()))
-        self.assertTrue(report["decision"].startswith("reject"), report["decision"])
-        self.assertEqual(report["required_vetoes"], ["required/2"])
-
-    def test_equal_results_are_no_win(self):
-        report = self.run_all(FakeAgent())
-        self.assertTrue(report["decision"].startswith("no win"), report["decision"])
-        self.assertIn("equal", report["decision"])
-
-    def test_equal_pass_rates_are_no_win(self):
-        self.root = make_eval(self.directory(), target={"metric": "pass_rate"})
-        report = self.run_all(FakeAgent())
-        self.assertTrue(report["decision"].startswith("no win"), report["decision"])
-
-    def test_missing_cost_telemetry_is_unproven_not_zero(self):
-        no_cost = {(v, p): {"cost": None} for v in ("old", "new") for p in ("do required", "do optional")}
-        report = self.run_all(FakeAgent(no_cost))
-        self.assertTrue(report["decision"].startswith("unproven"), report["decision"])
-        self.assertEqual(report["unavailable_telemetry"]["cost_usd"], {"old": "6/6 runs", "new": "6/6 runs"})
-        self.assertIsNone(report["summary"]["new"]["cost_usd"])
-
-    def test_a_corrected_failure_wins_when_every_repeat_passes(self):
-        self.root = make_eval(self.directory(), target={"metric": "task_pass", "task": "optional"})
-        report = self.run_all(FakeAgent({("old", "do optional"): {"pass": False}}))
-        self.assertTrue(report["decision"].startswith("win"), report["decision"])
-
-    def test_a_corrected_failure_with_mixed_repeats_is_no_win(self):
-        self.root = make_eval(self.directory(), target={"metric": "task_pass", "task": "optional"})
-        behavior = {("old", "do optional"): {"pass": False}, ("new", "do optional"): [{}, {}, {"pass": False}]}
-        report = self.run_all(FakeAgent(behavior))
-        self.assertEqual(report["tasks"]["optional"], {"old": "0/3", "new": "2/3"})
-        self.assertTrue(report["decision"].startswith("no win"), report["decision"])
-
-    def test_cheaper_with_a_lower_pass_rate_is_a_tradeoff(self):
-        behavior = {("new", "do required"): {"cost": 0.001}, ("new", "do optional"): {"pass": False, "cost": 0.001}}
-        report = self.run_all(FakeAgent(behavior))
-        self.assertTrue(report["decision"].startswith("tradeoff"), report["decision"])
-
-    def test_each_task_alternates_variant_order_across_repeats(self):
-        plan = self.evaluate(FakeAgent()).plan()
-        for task in ("required", "optional"):
-            firsts = [next(v for t, v, r in plan if t == task and r == repeat) for repeat in range(3)]
-            self.assertNotEqual(firsts[0], firsts[1])
-            self.assertNotEqual(firsts[1], firsts[2])
-
-    # Evidence
-
-    def test_score_rejects_an_incomplete_matrix(self):
-        compare.run(self.evaluate(FakeAgent()), only=["required"])
-        with self.assertRaisesRegex(compare.InvalidEvidence, "missing cell optional/old/0"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_changed_inputs_make_results_stale(self):
-        self.run_all(FakeAgent())
-        (self.root / "fixtures/repo/README").write_text("changed fixture")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
-            compare.score(self.evaluate(FakeAgent()))
-        with self.assertRaisesRegex(compare.InvalidEvidence, "earlier experiment"):
-            compare.run(self.evaluate(FakeAgent()))
-        compare.run(self.evaluate(FakeAgent()), replace_stale=True)
-        self.assertTrue(list((self.root / "superseded").rglob("result.json")))
-        compare.score(self.evaluate(FakeAgent()))
-
-    def test_a_changed_checker_script_makes_results_stale(self):
-        (self.root / "checker.sh").write_text("test -f done.txt\n")
-        write_manifest(self.root, tasks=[{"id": "required", "prompt": "do required", "fixture": "fixtures/repo",
-                                          "required": True, "checks": [f"sh {self.root}/checker.sh"]}])
-        self.run_all(FakeAgent())
-        (self.root / "checker.sh").write_text("exit 1\n")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_retargeting_after_the_run_makes_results_stale(self):
-        self.run_all(FakeAgent())
-        write_manifest(self.root, target={"metric": "tool_calls"})
-        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_fewer_repeats_cannot_drop_a_recorded_required_failure(self):
-        self.run_all(FakeAgent(one_late_required_failure()))
-        write_manifest(self.root, repeats=2)
-        with self.assertRaises(compare.InvalidEvidence):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_malformed_results_are_invalid_evidence_with_exit_2(self):
-        self.run_all(FakeAgent())
-        cell = self.root / "runs/required/new/0/result.json"
-        good = json.loads(cell.read_text())
-        cell.write_text('{"identity": "trunc')
-        with contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(compare.main(["score", str(self.root)], adapter=FakeAgent()), 2)
-        cell.write_text(json.dumps({**good, "checks": [{"exit": "0"}]}))
-        with self.assertRaisesRegex(compare.InvalidEvidence, "malformed result"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_results_outside_the_plan_are_invalid(self):
-        self.run_all(FakeAgent())
-        shutil.copytree(self.root / "runs/required/new/0", self.root / "runs/required/new/7")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "outside the plan"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_failed_sessions_keep_their_evidence_and_fixture(self):
-        report = self.run_all(FakeAgent(crash=True))
-        self.assertTrue(report["decision"].startswith("reject"), report["decision"])
-        cell = self.root / "runs/required/new/0"
-        stored = json.loads((cell / "result.json").read_text())
-        self.assertEqual(stored["status"], "error")
-        self.assertIn("host went away", stored["error"])
-        self.assertEqual((cell / "work/README").read_text(), "fixture")
-
-    def test_a_hung_check_times_out_as_a_failed_check(self):
-        write_manifest(self.root, host={"adapter": "claude", "model": "fake", "check_timeout_seconds": 0.2},
-                       tasks=[{"id": "slow", "prompt": "do it", "required": True, "checks": ["sleep 30"]}],
-                       repeats=1)
-        with mock.patch("hosts.GRACE_SECONDS", 0.2):
-            report = self.run_all(FakeAgent())
-        stored = json.loads((self.root / "runs/slow/new/0/result.json").read_text())
-        self.assertEqual(stored["checks"][0]["exit"], "timeout")
-        self.assertTrue(report["decision"].startswith("reject"), report["decision"])
-
-    # Refusals before any session
-
-    def test_symlinks_in_a_fixture_or_variant_are_refused(self):
-        os.symlink("/etc/hosts", self.root / "fixtures/repo/hosts")
-        self.assertRefusedBeforeSessions("symlink not allowed")
-        os.unlink(self.root / "fixtures/repo/hosts")
-        os.symlink(self.root / "fixtures", self.root / "variants/new/linked")
-        self.assertRefusedBeforeSessions("symlink not allowed")
-
-    def test_unsafe_names_are_refused(self):
-        for name in ("../escape", "/tmp/abs", ".hidden"):
-            write_manifest(self.root, tasks=[{"id": name, "prompt": "p"}])
-            with self.assertRaisesRegex(compare.InvalidEvidence, "unsafe task id"):
-                self.evaluate(FakeAgent())
-        write_manifest(self.root, tasks=[{"id": "ok", "prompt": "p"}],
-                       variants={"old": "variants/old", "../new": "variants/new"})
-        with self.assertRaisesRegex(compare.InvalidEvidence, "unsafe variant name"):
-            self.evaluate(FakeAgent())
-
-    def test_outputs_cannot_leave_the_eval_dir(self):
-        outside = self.directory()
-        os.symlink(outside, self.root / "runs")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "symlink not allowed"):
-            compare.run(self.evaluate(FakeAgent()))
-        self.assertEqual(list(outside.iterdir()), [])
-
-    def test_duplicate_task_ids_are_refused(self):
-        write_manifest(self.root, tasks=[{"id": "same", "prompt": "a", "required": True},
-                                         {"id": "same", "prompt": "b"}])
-        with self.assertRaisesRegex(compare.InvalidEvidence, "unique"):
-            self.evaluate(FakeAgent())
-
-    def test_fixtures_holding_skill_directories_are_refused(self):
-        for directory in (".claude/skills/extra", ".agents", "deep/.codex"):
-            (self.root / "fixtures/repo" / directory).mkdir(parents=True)
-            with self.assertRaisesRegex(compare.InvalidEvidence, "skill discovery"):
-                self.evaluate(FakeAgent())
-            shutil.rmtree(self.root / "fixtures/repo" / directory.split("/")[0])
-
-    # Calibration
-
-    def test_calibration_runs_in_a_real_task_fixture(self):
-        agent = FakeAgent()
-        self.assertTrue(compare.calibrate(self.evaluate(agent)))
-        self.assertTrue(agent.sessions)
-        self.assertTrue(all(contents == ["README"] for _, _, contents in agent.sessions))
-
-    def test_a_leaking_host_fails_calibration_and_blocks_the_run(self):
-        with self.assertRaisesRegex(compare.InvalidEvidence, "calibration failed"):
-            compare.run(self.evaluate(FakeAgent(leak=True)))
-        self.assertFalse((self.root / "runs").exists())
-
-    def test_a_failed_recalibration_revokes_the_earlier_pass(self):
-        self.assertTrue(compare.calibrate(self.evaluate(FakeAgent())))
-        self.assertFalse(compare.calibrate(self.evaluate(FakeAgent(leak=True))))
-        with self.assertRaisesRegex(compare.InvalidEvidence, "calibration failed"):
-            compare.run(self.evaluate(FakeAgent(leak=True)))
-        self.assertFalse((self.root / "runs").exists())
-
-    def test_score_needs_calibration_of_this_experiment(self):
-        self.run_all(FakeAgent())
-        (self.root / "calibration/passed.json").write_text(json.dumps({"identity": "another experiment"}))
-        with self.assertRaisesRegex(compare.InvalidEvidence, "no passing calibration"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    # Judging
-
-    def test_judged_tasks_need_current_blind_verdicts(self):
-        judging, packet = self.judged_eval()
-        self.assertNotIn("variant", json.dumps(packet))
-        (judging / "verdicts.json").unlink(missing_ok=True)
-        with self.assertRaisesRegex(compare.InvalidEvidence, "no current judge verdict"):
-            compare.score(self.evaluate(FakeAgent()))
-        (judging / "verdicts.json").write_text(json.dumps({item["id"]: {"pass": True} for item in packet}))
-        report = compare.score(self.evaluate(FakeAgent()))
-        self.assertEqual(report["tasks"]["prose"], {"old": "3/3", "new": "3/3"})
-
-    def test_a_verdict_must_be_a_json_boolean(self):
-        judging, packet = self.judged_eval()
-        for verdict in ("false", 0, None):
-            (judging / "verdicts.json").write_text(json.dumps({item["id"]: {"pass": verdict} for item in packet}))
-            with self.assertRaisesRegex(compare.InvalidEvidence, "JSON boolean"):
-                compare.score(self.evaluate(FakeAgent()))
-
-    # Secrets
-
-    def test_checks_get_an_allowlisted_environment_and_evidence_is_redacted(self):
-        write_manifest(self.root, repeats=1, tasks=[{
-            "id": "env", "prompt": "p", "required": True,
-            "checks": [f'env > "$EVAL_OUT/env.txt"; echo "HOME=$HOME"; echo {SENTINEL}']}])
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            self.run_all(FakeAgent(answer=f"leaked {SENTINEL}"))
-        cell = self.root / "runs/env/new/0"
-        names = {line.split("=", 1)[0] for line in (cell / "env.txt").read_text().splitlines()}
-        self.assertLessEqual(names, {"PATH", "LANG", "TMPDIR", "HOME", "EVAL_WORK", "EVAL_OUT", "PWD", "SHLVL", "_"})
-        self.assertRegex((cell / "check-0.log").read_text(), r"HOME=\S+/work\n")
-        for path in cell.rglob("*"):
-            if path.is_file():
-                self.assertNotIn(SENTINEL, path.read_text(errors="replace"), path)
-        self.assertIn("[REDACTED]", (cell / "answer.txt").read_text())
-        self.assertIn("[REDACTED]", (cell / "check-0.log").read_text())
-
-    def test_a_nested_runs_symlink_blocks_replace_stale_and_outside_data_stays(self):
-        outside = self.directory()
-        (outside / "old/0").mkdir(parents=True)
-        (outside / "old/0/result.json").write_text(json.dumps({"identity": "earlier"}))
-        (outside / "old/0/important.txt").write_text("keep me")
-        (self.root / "runs").mkdir()
-        os.symlink(outside, self.root / "runs/required")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "symlink not allowed"):
-            compare.run(self.evaluate(FakeAgent()), replace_stale=True)
-        self.assertEqual((outside / "old/0/important.txt").read_text(), "keep me")
-        self.assertFalse((self.root / "superseded").exists())
-
-    def test_inputs_cannot_overlap_the_runner_output(self):
-        shutil.copytree(self.root / "variants/new", self.root / "judging/new")
-        write_manifest(self.root, variants={"old": "variants/old", "new": "judging/new"})
-        with self.assertRaisesRegex(compare.InvalidEvidence, "overlaps the runner's output"):
-            self.evaluate(FakeAgent())
-        write_manifest(self.root, variants={"old": "variants/old", "new": "variants/new"},
-                       tasks=[{"id": "t", "prompt": "p", "fixture": "."}])
-        with self.assertRaisesRegex(compare.InvalidEvidence, "overlaps the runner's output"):
-            self.evaluate(FakeAgent())
-
-    def test_dropped_check_evidence_is_invalid_through_the_cli(self):
-        behavior = {("new", "do required"): {"pass": False, "cost": 0.001}, ("new", "do optional"): {"cost": 0.001}}
-        self.run_all(FakeAgent(behavior))
-        for repeat in range(3):
-            cell = self.root / f"runs/required/new/{repeat}/result.json"
-            cell.write_text(json.dumps({**json.loads(cell.read_text()), "checks": []}))
-        with contextlib.redirect_stderr(io.StringIO()) as errors:
-            self.assertEqual(compare.main(["score", str(self.root)], adapter=FakeAgent()), 2)
-        self.assertIn("don't match the manifest's checks", errors.getvalue())
-
-    def test_a_malformed_calibration_record_is_invalid_through_the_cli(self):
-        self.run_all(FakeAgent())
-        (self.root / "calibration/passed.json").write_text("[]")
-        with contextlib.redirect_stderr(io.StringIO()) as errors:
-            self.assertEqual(compare.main(["score", str(self.root)], adapter=FakeAgent()), 2)
-        self.assertIn("malformed record", errors.getvalue())
-
-    def test_secrets_a_host_writes_into_kept_work_are_redacted(self):
-        class Writer(FakeAgent):
-            def run(self, *, work, prompt, **rest):
-                if prompt.startswith("do "):
-                    (work / "tool-debug.log").write_text(f"KEY={os.environ['EVAL_TEST_API_KEY']}\n")
-                return super().run(work=work, prompt=prompt, **rest)
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            self.run_all(Writer())
-        logs = list((self.root / "runs").rglob("tool-debug.log"))
-        self.assertTrue(logs)
-        for log in logs:
-            self.assertEqual(log.read_text(), "KEY=[REDACTED]\n")
-
-    def test_secrets_in_undecodable_work_files_are_redacted(self):
-        class Writer(FakeAgent):
-            def run(self, *, work, prompt, **rest):
-                if prompt.startswith("do "):
-                    (work / "tool-debug.bin").write_bytes(b"\xff\x00KEY=" + os.environ["EVAL_TEST_API_KEY"].encode())
-                return super().run(work=work, prompt=prompt, **rest)
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            self.run_all(Writer())
-        kept = list((self.root / "runs").rglob("tool-debug.bin"))
-        self.assertEqual(len(kept), 12)
-        for path in kept:
-            self.assertEqual(path.read_bytes(), b"\xff\x00KEY=[REDACTED]")
-
-    def test_a_read_only_binary_work_file_is_redacted_and_keeps_its_mode(self):
-        class Writer(FakeAgent):
-            def run(self, *, work, prompt, **rest):
-                if prompt.startswith("do "):
-                    path = work / "tool-debug.bin"
-                    path.write_bytes(b"\xff\x00KEY=" + os.environ["EVAL_TEST_API_KEY"].encode())
-                    path.chmod(0o444)
-                return super().run(work=work, prompt=prompt, **rest)
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            self.run_all(Writer())
-        kept = list((self.root / "runs").rglob("tool-debug.bin"))
-        self.assertEqual(len(kept), 12)
-        for path in kept:
-            self.assertEqual(path.read_bytes(), b"\xff\x00KEY=[REDACTED]")
-            self.assertEqual(path.stat().st_mode & 0o777, 0o444)
-
-    def test_a_link_a_check_leaves_in_its_output_is_not_followed(self):
-        original = self.root / "fixtures/repo/important.txt"
-        original.write_bytes(f"keep this exact data: {SENTINEL}".encode())
-        write_manifest(self.root, repeats=1, tasks=[{
-            "id": "link", "prompt": "do it", "fixture": "fixtures/repo", "required": True,
-            "checks": [f'ln -s {original} "$EVAL_OUT/diagnostic-link"']}])
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            compare.run(self.evaluate(FakeAgent()))
-        self.assertEqual(original.read_bytes(), f"keep this exact data: {SENTINEL}".encode())
-        for variant in ("old", "new"):
-            note = self.root / f"runs/link/{variant}/0/diagnostic-link"
-            self.assertFalse(note.is_symlink())
-            self.assertTrue(note.read_text().startswith("symlink to "))
-        compare.score(self.evaluate(FakeAgent()))
-
-    def test_a_file_that_cannot_be_redacted_is_removed_and_the_sweep_continues(self):
-        class Writer(FakeAgent):
-            def run(self, *, work, prompt, **rest):
-                if prompt.startswith("do "):
-                    for name in ("a-stuck.bin", "z-later.txt"):
-                        (work / name).write_text(f"KEY={os.environ['EVAL_TEST_API_KEY']}")
-                return super().run(work=work, prompt=prompt, **rest)
-
-        rewrite = hosts._rewrite
-
-        def stuck(path, data):
-            if path.name == "a-stuck.bin":
-                raise OSError("simulated failure")
-            rewrite(path, data)
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}), mock.patch("hosts._rewrite", stuck):
-            self.run_all(Writer())
-        for cell in (self.root / "runs").glob("*/*/*"):
-            self.assertEqual((cell / "work/a-stuck.bin").read_text(), "removed: could not redact\n")
-            self.assertEqual((cell / "work/z-later.txt").read_text(), "KEY=[REDACTED]")
-
-    def test_an_interrupted_session_keeps_its_work_redacted_and_stops_the_host(self):
-        started, survivor, out = self.root / "started", self.root / "survivor", self.root / "out"
-        host = (f'echo "$EVAL_TEST_API_KEY"; echo "$EVAL_TEST_API_KEY" > leak.txt; touch {started}; '
-                f'sleep 1; touch {survivor}')
-        program = f"""
-import sys, types
-from pathlib import Path
-sys.path.insert(0, {str(Path(compare.__file__).parent)!r})
-import compare, hosts
-hosts.GRACE_SECONDS = 0.5
-
-class Host:
-    def run(self, *, work, out, **rest):
-        hosts.execute(["sh", "-c", {host!r}], cwd=work, env=None, out=out, timeout=30)
-
-ev = types.SimpleNamespace(adapter=Host(), host={{}}, dir=Path({str(self.root)!r}))
-compare.run_session(ev, None, "p", Path({str(self.root / "fixtures/repo")!r}), Path({str(out)!r}), "v")
-"""
-        env = {**os.environ, "EVAL_TEST_API_KEY": SENTINEL}
-        runner = subprocess.Popen([sys.executable, "-c", program], env=env, stderr=subprocess.DEVNULL)
-        deadline = time.monotonic() + 10
-        while not started.exists() and time.monotonic() < deadline:
-            time.sleep(0.02)
-        runner.send_signal(signal.SIGINT)
-        runner.wait(timeout=10)
-        time.sleep(1.5)
-        self.assertFalse(survivor.exists())
-        self.assertEqual((out / "work/README").read_text(), "fixture")
-        self.assertEqual((out / "work/leak.txt").read_text(), "[REDACTED]\n")
-        retained = [path for path in out.rglob("*") if path.is_file()]
-        for path in retained:
-            self.assertNotIn(SENTINEL.encode(), path.read_bytes(), path)
-
-    def outside_victim(self):
-        """A file and folder outside the eval dir holding the sentinel, with distinctive modes."""
-        outside = self.directory()
-        victim = outside / "important.txt"
-        victim.write_bytes(f"keep this exact data: {SENTINEL}".encode())
-        victim.chmod(0o640)
-        outside.chmod(0o555)
-        self.addCleanup(outside.chmod, 0o755)
-        return outside, victim
-
-    def assertUntouched(self, outside, victim):
-        self.assertEqual(victim.read_bytes(), f"keep this exact data: {SENTINEL}".encode())
-        self.assertEqual(victim.stat().st_mode & 0o777, 0o640)
-        self.assertEqual(outside.stat().st_mode & 0o777, 0o555)
-        self.assertEqual(sorted(p.name for p in outside.iterdir()), ["important.txt"])
-
-    def test_a_hard_link_into_the_output_never_changes_the_outside_file(self):
-        outside, victim = self.outside_victim()
-
-        class Linker(FakeAgent):
-            def run(self, *, out, prompt, **rest):
-                if prompt.startswith("do "):
-                    os.link(victim, out / "diagnostic-hardlink")
-                return super().run(out=out, prompt=prompt, **rest)
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            compare.run(self.evaluate(Linker()))
-        self.assertUntouched(outside, victim)
-        kept = list((self.root / "runs").rglob("diagnostic-hardlink"))
-        self.assertEqual(len(kept), 12)
-        for path in kept:
-            self.assertEqual(path.read_text(), "keep this exact data: [REDACTED]")
-            self.assertNotEqual(path.stat().st_ino, victim.stat().st_ino)
-
-    def assertTamperedCells(self, count):
-        cells = list((self.root / "runs").glob("*/*/*/result.json"))
-        self.assertEqual(len(cells), count)
-        for cell in cells:
-            stored = json.loads(cell.read_text())
-            self.assertEqual((stored["status"], stored["error"], stored["checks"]),
-                             ("error", "owned directory was replaced", []))
-            self.assertEqual([p for p in cell.parent.rglob("*") if p.is_symlink()], [])
-
-    def test_a_work_dir_replaced_by_a_link_is_never_traversed(self):
-        outside, victim = self.outside_victim()
-
-        class Relinker(FakeAgent):
-            def run(self, *, work, prompt, **rest):
-                result = super().run(work=work, prompt=prompt, **rest)
-                if prompt.startswith("do "):
-                    shutil.rmtree(work)
-                    work.symlink_to(outside, target_is_directory=True)
-                return result
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            compare.run(self.evaluate(Relinker()))
-        self.assertUntouched(outside, victim)
-        self.assertTamperedCells(12)
-        self.assertTrue(compare.score(self.evaluate(FakeAgent()))["decision"].startswith("reject"))
-
-    def outside_work(self):
-        """An outside folder holding a real work dir with the sentinel, all with distinctive modes."""
-        outside = self.directory()
-        victim = outside / "work/important.txt"
-        victim.parent.mkdir()
-        victim.write_bytes(f"keep this exact data: {SENTINEL}".encode())
-        victim.chmod(0o640)
-        victim.parent.chmod(0o555)
-        self.addCleanup(victim.parent.chmod, 0o755)
-        return victim
-
-    def assertWorkUntouched(self, victim):
-        self.assertEqual(victim.read_bytes(), f"keep this exact data: {SENTINEL}".encode())
-        self.assertEqual(victim.stat().st_mode & 0o777, 0o640)
-        self.assertEqual(victim.parent.stat().st_mode & 0o777, 0o555)
-        self.assertEqual(sorted(p.name for p in victim.parent.parent.rglob("*")), ["important.txt", "work"])
-
-    def test_a_scratch_dir_swapped_for_a_link_is_never_swept_or_moved(self):
-        victim = self.outside_work()
-        write_manifest(self.root, repeats=1, tasks=[{"id": "swap", "prompt": "do it", "fixture": "fixtures/repo",
-                                                     "required": True, "checks": ["test -f done.txt"]}])
-        case = self
-
-        class Swapper(FakeAgent):
-            def run(self, *, scratch, prompt, **rest):
-                result = super().run(scratch=scratch, prompt=prompt, **rest)
-                if prompt.startswith("do "):
-                    displaced = scratch.with_name(scratch.name + "-displaced")
-                    scratch.rename(displaced)
-                    case.addCleanup(shutil.rmtree, displaced)
-                    scratch.symlink_to(victim.parent.parent, target_is_directory=True)
-                    case.addCleanup(scratch.unlink, missing_ok=True)
-                return result
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            compare.run(self.evaluate(Swapper()))
-        self.assertWorkUntouched(victim)
-        self.assertTamperedCells(2)
-
-    def test_an_output_dir_swapped_for_a_link_is_never_swept(self):
-        victim = self.outside_work()
-        write_manifest(self.root, repeats=1, tasks=[{"id": "swap", "prompt": "do it", "fixture": "fixtures/repo",
-                                                     "required": True, "checks": ["test -f done.txt"]}])
-
-        class Swapper(FakeAgent):
-            def run(self, *, out, prompt, **rest):
-                result = super().run(out=out, prompt=prompt, **rest)
-                if prompt.startswith("do "):
-                    shutil.rmtree(out)
-                    out.symlink_to(victim.parent.parent, target_is_directory=True)
-                return result
-
-        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
-            compare.run(self.evaluate(Swapper()))
-        self.assertWorkUntouched(victim)
-        self.assertTamperedCells(2)
+        self.root = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, self.root)
+        for version in ("old", "new"):
+            (self.root / version / "greeter").mkdir(parents=True)
+            (self.root / version / "greeter" / "SKILL.md").write_text(f"---\nname: greeter\n---\n{version}\n")
+        (self.root / "evals" / "codeword").mkdir(parents=True)
+        (self.root / "evals" / "codeword" / "prompt.md").write_text("What is the codeword?\n")
+        (self.root / "evals" / "results").mkdir()
+        bin_dir = self.root / "bin"
+        bin_dir.mkdir()
+        # A stand-in CLI: records its arguments and the plugin it got, then writes a fixture result.
+        (bin_dir / "claude").write_text(f"""#!/usr/bin/env python3
+import json, pathlib, shutil, sys
+args = sys.argv[1:]
+plugin = pathlib.Path(args[2])
+log = pathlib.Path({str(self.root / "calls.jsonl")!r})
+with log.open("a") as f:
+    f.write(json.dumps({{"args": args,
+        "manifest": json.loads((plugin / ".claude-plugin/plugin.json").read_text()),
+        "files": sorted(str(p.relative_to(plugin)) for p in plugin.rglob("*") if p.is_file())}}) + "\\n")
+fixture = {str(FIXTURES)!r} + ("/old.json" if "old" in str(plugin) else "/new.json")
+shutil.copy(fixture, args[args.index("--json") + 1])
+""")
+        (bin_dir / "claude").chmod(0o755)
+        self.enterContext(mock.patch.dict(os.environ, {"PATH": f"{bin_dir}:{os.environ['PATH']}"}))
+
+    def compare(self, *extra, tree=""):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = compare.main(["run", str(self.root / "old" / tree), str(self.root / "new" / tree),
+                                 "--evals", str(self.root / "evals"), "--out", str(self.root / "out"), *extra])
+        return code, json.loads(out.getvalue())
+
+    def calls(self):
+        return [json.loads(line) for line in (self.root / "calls.jsonl").read_text().splitlines()]
+
+    def test_each_tree_runs_as_the_same_plugin_without_publishing(self):
+        code, report = self.compare("--target", "score", "--", "--model", "haiku")
+        self.assertEqual((code, report["decision"]), (1, "no win"))
+        calls = self.calls()
+        self.assertEqual(len(calls), 2)
+        for call in calls:
+            self.assertEqual(call["args"][:2], ["plugin", "eval"])
+            self.assertIn("--no-publish", call["args"])
+            self.assertEqual(call["args"][-2:], ["--model", "haiku"])
+            self.assertEqual(call["manifest"]["name"], compare.PLUGIN_NAME)
+            self.assertEqual(call["files"], [".claude-plugin/plugin.json", "evals/codeword/prompt.md",
+                                             "skills/greeter/SKILL.md"])
+        old_skill = self.root / "out" / "old" / "plugin" / "skills" / "greeter" / "SKILL.md"
+        self.assertIn("old", old_skill.read_text())
+
+    def test_one_skill_folder_becomes_the_plugin_skill(self):
+        self.compare("--target", "score", tree="greeter")
+        self.assertEqual(self.calls()[1]["files"], [".claude-plugin/plugin.json", "evals/codeword/prompt.md",
+                                                    "skills/greeter/SKILL.md"])
+        self.assertTrue((self.root / "out" / "new" / "plugin" / "skills" / "greeter" / "SKILL.md").is_file())
+
+    def test_publishing_and_output_flags_stay_with_the_runner(self):
+        for flag in ("--publish-report", "--json=x.json", "--output-dir"):
+            with self.subTest(flag), self.assertRaises(SystemExit):
+                self.compare("--target", "score", "--", flag)
+        self.assertFalse((self.root / "calls.jsonl").exists())
+
+    def test_a_partial_baseline_stops_before_the_candidate_runs(self):
+        with mock.patch.object(compare, "evaluate", return_value={**OLD, "partial": True}) as evaluate:
+            code, report = self.compare("--target", "score")
+        self.assertEqual((code, report["decision"], evaluate.call_count), (2, "invalid", 1))
 
 
 if __name__ == "__main__":
