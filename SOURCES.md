@@ -550,7 +550,9 @@ can't predict, highest stakes first, and lists the rest in one Assuming block.
 Always asks decisions that risk data loss, private data, security, or can't be
 undone. Opens on settling the decisions that change the result rather than an
 exhaustive interview. Keeps safe, local discovery going while answers are
-pending. The user's substantive answers are the confirmation, with no separate
+pending. An answer that picks a direction settles it without a request to
+justify it, and a recommendable detail that is easy to change later goes under
+Assuming. The user's substantive answers are the confirmation, with no separate
 approval round; it returns the decisions and one Assuming block to its caller,
 and decisions it had to ask stay open until answered. The description lists
 triggers only.

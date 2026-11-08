@@ -16,6 +16,8 @@ You own the conversation, the record, which capability to use next, and the
 stop. Each linked skill owns its own procedure and returns to you. Shaping builds
 nothing for production: [Implement](../implement/SKILL.md) or
 [Chief of Staff](../chief-of-staff/SKILL.md) does that after you stop.
+Invoking Shape with an idea asks you to shape it, not build it; only an explicit
+ask to build or implement is a build request.
 
 ## The record
 
@@ -41,8 +43,8 @@ decision changes it.
 ## 1. Ground and frame
 
 Read the idea, the sources it names, and the code and records it touches. When
-the outcome, proof, and scope are already clear, say so and offer Implement
-instead of shaping. Otherwise form the first brief with Reframe and open the
+the outcome, proof, and scope are already clear, say so and offer Implement with
+the request as its brief; open no record. Otherwise form the first brief with Reframe and open the
 record as Draft.
 
 Done when the desired change, its sources, and the next uncertainty are explicit,
@@ -56,7 +58,7 @@ Take the open question that would change the outcome most, and route it:
 | --- | --- |
 | A choice only the user can make | [Grilling](../grilling/SKILL.md) |
 | A fact | Look it up, or [Research](../research/SKILL.md) for a cited answer |
-| Seeing it | [Stage 3](#3-try-a-direction-when-seeing-helps) |
+| Seeing it, including a feel such as "less cluttered" | [Stage 3](#3-try-a-direction-when-seeing-helps), before abstract preference questions |
 | Agreed terms, or a decision worth an ADR | [Domain Modeling](../domain-modeling/SKILL.md) |
 | A consequential interface or ownership design | [Architect](../architect/SKILL.md), design only |
 
@@ -81,10 +83,13 @@ verdict and the prototype's disposition are in the record.
 ## 4. Settle ready work
 
 Every intended outcome needs its proof, covered code, preserved behavior, out of
-scope, inputs and access, decisions and assumptions, and a finish line with its
-reason. Propose the finish line by applying Implement's
-[finish-line policy](../implement/SKILL.md#2-state-the-finish-line-and-prepare)
-to the brief, and record a line the user requested as requested. A settled brief
+scope, inputs and access, decisions and assumptions, and one finish-line field:
+the line the user requested, or else a line marked proposed with its reason,
+from Implement's
+[finish-line policy](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
+A question only trying the built thing can answer, such as a visual direction,
+doesn't block Settled: record it as the question Try will answer, and propose
+Try. A settled brief
 is not Land by itself; the execution owner states its finish line when it starts.
 
 For one outcome, reconcile the brief with Reframe. For several, turn the same
@@ -100,7 +105,7 @@ was learned. When something outside the conversation blocks settling, leave the
 record as Draft with the exact gap and what it blocks.
 
 Done when the record is Settled and every outcome has each field above, with no
-open choice that would change one.
+open choice that would change one other than a recorded Try question.
 
 ## 5. Show and route
 

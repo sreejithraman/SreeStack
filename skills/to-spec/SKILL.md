@@ -63,8 +63,8 @@ One entry per settled outcome:
   changes or must preserve.
 - **Out of scope:** what this outcome excludes.
 - **Assumptions:** what it rests on that nobody confirmed.
-- **Finish line:** the one the user requested, or none requested, with the
-  shaping rationale if one was recorded.
+- **Finish line:** the line the user requested, or else a line marked proposed,
+  with its reason.
 
 ## User Stories
 

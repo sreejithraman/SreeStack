@@ -7,7 +7,7 @@ Settle the decisions that change the result, one round of questions at a time. M
 
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled — the questions you can ask _now_ without guessing at answers you haven't heard yet.
 
-Ask a frontier decision only when it would change the outcome and you can't tell what the user would choose. Always ask one that risks data loss, exposes private data, weakens security, or can't be undone. Put the rest in one **Assuming** block after the questions, one line each. Ask the questions in one round, highest stakes first: number each question and give your recommended answer. Then wait for the user's answers before the next round.
+Ask a frontier decision only when it would change the outcome and you can't tell what the user would choose. Always ask one that risks data loss, exposes private data, weakens security, or can't be undone. Put the rest in one **Assuming** block after the questions, one line each, including any detail you can recommend that is easy to change later. An answer that picks a direction settles that decision; don't ask the user to justify it. Ask the questions in one round, highest stakes first: number each question and give your recommended answer. Then wait for the user's answers before the next round.
 
 Each question should be formatted like so:
 
