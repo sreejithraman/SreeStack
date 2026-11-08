@@ -43,10 +43,10 @@ Read the request and the sources it names. Fix the evidence window, the hosts
 and models in it, the improvement the user wants, and what this request allows.
 For sessions and metrics, use the definitions and log cautions in
 [evidence](references/evidence.md); report each window with its denominator and
-missing records. For a new model release, run a regression check, not an improvement
-hypothesis: keep the skill text fixed, pick the cases whose rules assume
-something the old model could not do, and compare each model against its own
-baseline. Report the regressions found, or "none found on N cases", never
+missing records. For a new model release, run a regression check, not an
+improvement hypothesis: keep the skill text fixed, pick the cases whose rules
+assume something the old model could not do, and compare each model against its
+own baseline. Report the regressions found, or "none found on N cases", never
 equivalence. A skill edit follows only from a regression, as a normal
 hypothesis.
 
@@ -67,10 +67,11 @@ Check each candidate against the current version: an old failure that it
 already prevents is resolved, not a hypothesis. A rule in the text is not proof
 the behavior is fixed. When the logs can't show whether the failure still
 happens, reproduce it on the current version with the cheapest proof from
-[stage 3](#3-baseline), such as a dry-run trial, before selecting or dropping it. Rank the live ones by
-impact and current exposure, and pick one. A hypothesis needs cited incidents,
-the current path that still allows the failure, and a win a check or a blind
-judge can observe. Show the user the ranked rest.
+[stage 3](#3-baseline), such as a dry-run trial, before selecting or dropping
+it. Rank the live ones by impact and current exposure, and pick one. A
+hypothesis needs cited incidents, the current path that still allows the
+failure, and a win a check or a blind judge can observe. Show the user the
+ranked rest.
 
 Done when one hypothesis has its evidence, current exposure, and observable
 win, or, for a retrospective request, the ranked recommendations and the
