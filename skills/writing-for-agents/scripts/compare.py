@@ -24,12 +24,23 @@ Usage:
   }
 
 A variant path is a directory of skill folders, or null for no skills. Paths are
-relative to <eval-dir>, and names match [A-Za-z0-9][A-Za-z0-9._-]*. Everything in
-<eval-dir> except the runner's output is the experiment: changing any file, the
-target or the plan makes every result stale. The runner refuses anything unusual
-before a paid session: symlinks, skill directories inside a fixture, duplicate or
-unsafe names. Checks get only PATH, LANG, TMPDIR, HOME (the work dir), EVAL_WORK
-and EVAL_OUT. Retained evidence has secret-looking environment values redacted.
+relative to <eval-dir>, outside the runner's output (runs, superseded, calibration,
+judging, score.json), and names match [A-Za-z0-9][A-Za-z0-9._-]*. Everything else
+in <eval-dir> is the experiment: changing any file, the target or the plan makes
+every result stale. Every command first refuses a symlink anywhere in <eval-dir>,
+then skill directories inside a fixture and duplicate or unsafe names. Checks get
+only PATH, LANG, TMPDIR, HOME (the work dir), EVAL_WORK and EVAL_OUT. Before any
+evidence is kept, values of environment variables named like KEY, TOKEN, SECRET,
+PASSWORD or AUTH are redacted from it, and symlinks in kept work become notes.
+
+Accepted limits:
+  - Keep checks self-contained in <eval-dir>. A change to a file outside it, such as
+    a checker script elsewhere, is not detected and leaves results looking current.
+  - A process that starts its own session escapes the cleanup of the host's group.
+  - Secret values shorter than 8 characters, or JSON-escaped inside result.json,
+    are not redacted.
+  - Codex may refresh its login through the linked auth.json, as in normal use. The
+    runner never copies, replaces or deletes it.
 """
 
 import argparse
@@ -76,19 +87,19 @@ def require(condition, message: str) -> None:
         raise InvalidEvidence(message)
 
 
-def tree_hash(root: Path, skip=()) -> str:
-    """Hash file contents under root. Any symlink is refused."""
+def tree_hash(root: Path, skip=(), files=True) -> str:
+    """Hash file contents under root, or with files=False only walk it. Any symlink is refused."""
     require(not root.is_symlink(), f"symlink not allowed: {root}")
     digest = hashlib.sha256()
-    for directory, folders, files in os.walk(root):
+    for directory, folders, names in os.walk(root):
         here = Path(directory)
         if here == root:
             folders[:] = [f for f in folders if f not in skip]
-            files = [f for f in files if f not in skip]
+            names = [f for f in names if f not in skip]
         folders.sort()
-        for name in folders + sorted(files):
+        for name in folders + sorted(names):
             require(not (here / name).is_symlink(), f"symlink not allowed: {here / name}")
-        for name in sorted(files):
+        for name in sorted(names) if files else []:
             path = here / name
             relative = path.relative_to(root).as_posix()
             digest.update(f"{relative} {os.access(path, os.X_OK)} {sha256(path.read_bytes())}\n".encode())
@@ -103,6 +114,7 @@ class Eval:
         except (KeyError, TypeError, AttributeError, ValueError) as error:
             raise InvalidEvidence(f"manifest.json: {type(error).__name__}: {error}") from None
         self._identity = None
+        tree_hash(self.dir, files=False)
 
     def _load(self, manifest, adapter) -> None:
         require(manifest["version"] == 1, 'manifest.json needs "version": 1')
@@ -142,6 +154,8 @@ class Eval:
 
     def input_dir(self, relative: str) -> Path:
         path = self.inside(self.dir / relative)
+        parts = path.resolve().relative_to(self.dir).parts
+        require(parts and parts[0] not in OUTPUTS, f"{relative} overlaps the runner's output")
         require(path.is_dir() and not path.is_symlink(), f"{path} must be a directory, not a symlink")
         return path
 
@@ -197,7 +211,15 @@ def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None
 
 
 def keep_work(work: Path, scratch: Path, out: Path) -> None:
+    """After the checks: turn symlinks into notes and redact text files, then keep the work dir."""
     if work.exists():
+        for path in sorted(work.rglob("*"), reverse=True):
+            if path.is_symlink():
+                target = os.readlink(path)
+                path.unlink()
+                path.write_text(redact(f"symlink to {target}\n"))
+            elif path.is_file():
+                hosts.redact_in_place(path)
         shutil.move(str(work), str(out / "work"))
     shutil.rmtree(scratch, ignore_errors=True)
 
@@ -222,7 +244,11 @@ def listed_names(answer: str) -> set:
 
 def calibrated(ev: Eval) -> bool:
     marker = ev.output("calibration", "passed.json")
-    return marker.exists() and read_json(marker).get("identity") == ev.identity()
+    if not marker.exists():
+        return False
+    record = read_json(marker)
+    require(isinstance(record, dict) and isinstance(record.get("identity"), str), f"{marker}: malformed record")
+    return record["identity"] == ev.identity()
 
 
 def calibrate(ev: Eval) -> bool:
@@ -290,6 +316,8 @@ def calibrate(ev: Eval) -> bool:
 
 
 def supersede(ev: Eval, folder: Path, stamp: str) -> None:
+    runs = (ev.dir / "runs").resolve()
+    require(not folder.is_symlink() and folder.resolve().is_relative_to(runs), f"{folder} is not inside {runs}")
     kept = ev.output("superseded", stamp, folder.relative_to(ev.dir / "runs"))
     kept.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(folder), str(kept))
@@ -343,6 +371,9 @@ def load_cell(ev: Eval, task_id, variant, repeat) -> dict:
              and all(data.get(k) is None or isinstance(data[k], number) for k in ("cost_usd", "turns"))
              and isinstance(data.get("wall_seconds"), number))
     require(valid, f"{path}: malformed result")
+    expected = [redact(c) for c in ev.tasks[task_id].get("checks", [])] if data["status"] == "ok" else []
+    require([c.get("command") for c in data["checks"]] == expected and all(set(c) == {"command", "exit"}
+            for c in data["checks"]), f"{path}: checks don't match the manifest's checks for {task_id}")
     return data
 
 

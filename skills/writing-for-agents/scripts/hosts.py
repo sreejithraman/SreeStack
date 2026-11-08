@@ -45,6 +45,16 @@ def redact_file(path: Path) -> None:
     write_atomic(path, path.read_text(errors="replace"))
 
 
+def redact_in_place(path: Path) -> None:
+    """Redact a text file, keeping its mode. Binary files are left as they are."""
+    try:
+        text = path.read_text()
+    except (UnicodeDecodeError, OSError):
+        return
+    if redact(text) != text:
+        path.write_text(redact(text))
+
+
 def stop_group(process: subprocess.Popen) -> None:
     """End every process in the session's group: TERM, then KILL after a grace period."""
     def alive():
@@ -71,12 +81,12 @@ def run_group(command, *, cwd, env, stdout, stderr, timeout):
     process = subprocess.Popen(command, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=stdout,
                                stderr=stderr, start_new_session=True)
     try:
-        code = process.wait(timeout=timeout)
+        return process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
-        code = None
-    stop_group(process)
-    process.wait()
-    return code
+        return None
+    finally:  # Also on KeyboardInterrupt and other exceptions.
+        stop_group(process)
+        process.wait()
 
 
 @dataclass

@@ -284,7 +284,7 @@ class CompareTest(unittest.TestCase):
     def test_outputs_cannot_leave_the_eval_dir(self):
         outside = self.directory()
         os.symlink(outside, self.root / "runs")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "leaves"):
+        with self.assertRaisesRegex(compare.InvalidEvidence, "symlink not allowed"):
             compare.run(self.evaluate(FakeAgent()))
         self.assertEqual(list(outside.iterdir()), [])
 
@@ -363,6 +363,59 @@ class CompareTest(unittest.TestCase):
                 self.assertNotIn(SENTINEL, path.read_text(errors="replace"), path)
         self.assertIn("[REDACTED]", (cell / "answer.txt").read_text())
         self.assertIn("[REDACTED]", (cell / "check-0.log").read_text())
+
+    def test_a_nested_runs_symlink_blocks_replace_stale_and_outside_data_stays(self):
+        outside = self.directory()
+        (outside / "old/0").mkdir(parents=True)
+        (outside / "old/0/result.json").write_text(json.dumps({"identity": "earlier"}))
+        (outside / "old/0/important.txt").write_text("keep me")
+        (self.root / "runs").mkdir()
+        os.symlink(outside, self.root / "runs/required")
+        with self.assertRaisesRegex(compare.InvalidEvidence, "symlink not allowed"):
+            compare.run(self.evaluate(FakeAgent()), replace_stale=True)
+        self.assertEqual((outside / "old/0/important.txt").read_text(), "keep me")
+        self.assertFalse((self.root / "superseded").exists())
+
+    def test_inputs_cannot_overlap_the_runner_output(self):
+        shutil.copytree(self.root / "variants/new", self.root / "judging/new")
+        write_manifest(self.root, variants={"old": "variants/old", "new": "judging/new"})
+        with self.assertRaisesRegex(compare.InvalidEvidence, "overlaps the runner's output"):
+            self.evaluate(FakeAgent())
+        write_manifest(self.root, variants={"old": "variants/old", "new": "variants/new"},
+                       tasks=[{"id": "t", "prompt": "p", "fixture": "."}])
+        with self.assertRaisesRegex(compare.InvalidEvidence, "overlaps the runner's output"):
+            self.evaluate(FakeAgent())
+
+    def test_dropped_check_evidence_is_invalid_through_the_cli(self):
+        behavior = {("new", "do required"): {"pass": False, "cost": 0.001}, ("new", "do optional"): {"cost": 0.001}}
+        self.run_all(FakeAgent(behavior))
+        for repeat in range(3):
+            cell = self.root / f"runs/required/new/{repeat}/result.json"
+            cell.write_text(json.dumps({**json.loads(cell.read_text()), "checks": []}))
+        with contextlib.redirect_stderr(io.StringIO()) as errors:
+            self.assertEqual(compare.main(["score", str(self.root)], adapter=FakeAgent()), 2)
+        self.assertIn("don't match the manifest's checks", errors.getvalue())
+
+    def test_a_malformed_calibration_record_is_invalid_through_the_cli(self):
+        self.run_all(FakeAgent())
+        (self.root / "calibration/passed.json").write_text("[]")
+        with contextlib.redirect_stderr(io.StringIO()) as errors:
+            self.assertEqual(compare.main(["score", str(self.root)], adapter=FakeAgent()), 2)
+        self.assertIn("malformed record", errors.getvalue())
+
+    def test_secrets_a_host_writes_into_kept_work_are_redacted(self):
+        class Writer(FakeAgent):
+            def run(self, *, work, prompt, **rest):
+                if prompt.startswith("do "):
+                    (work / "tool-debug.log").write_text(f"KEY={os.environ['EVAL_TEST_API_KEY']}\n")
+                return super().run(work=work, prompt=prompt, **rest)
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            self.run_all(Writer())
+        logs = list((self.root / "runs").rglob("tool-debug.log"))
+        self.assertTrue(logs)
+        for log in logs:
+            self.assertEqual(log.read_text(), "KEY=[REDACTED]\n")
 
 
 if __name__ == "__main__":

@@ -18,11 +18,13 @@ needs it. A fresh-session try while working on a skill is not a controlled compa
    [guardrail](../SKILL.md#writing-for-agents) covers.
    On Claude Code or Codex, write the variants, tasks, checks, and one declared target into a
    manifest for [`compare.py`](../scripts/compare.py), which runs steps 4–8; its
-   `--help` gives the format. It starts paid sessions, so run it only for an authorized
-   comparison.
+   `--help` gives the format and its accepted limits. Keep checks self-contained in the
+   eval dir, because it can't see changes outside it. It starts paid sessions, so run
+   it only for an authorized comparison.
 4. **Isolate and calibrate.** Load the exact skill copy, apart from installed skills,
-   memory, and user rules, using disposable profiles so real configuration and logins
-   stay untouched. Prove it with three probes: a disposable skill's random
+   memory, and user rules, using disposable profiles so real configuration stays
+   untouched. Codex may refresh its login normally; the runner never copies, replaces,
+   or deletes it. Prove it with three probes: a disposable skill's random
    instruction takes effect and its read is logged; the same request without the skill
    shows neither; a harmless command is logged with its known result. Recalibrate after
    any runtime change.

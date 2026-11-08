@@ -2,6 +2,9 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
+import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -73,6 +76,21 @@ class HostsTest(unittest.TestCase):
         self.assertEqual(result.status, "error")
         self.assertIn("replaced the login link", result.error)
         self.assertEqual(login.read_text(), '{"token": "old"}')
+
+    def test_an_interrupted_runner_still_ends_the_host_group(self):
+        marker, started = self.root / "survivor", self.root / "started"
+        program = (f"import sys; sys.path.insert(0, {str(Path(hosts.__file__).parent)!r}); import hosts; "
+                   "hosts.GRACE_SECONDS = 0.5; "
+                   f"hosts.run_group(['sh', '-c', 'touch {started}; sleep 1; touch {marker}'], cwd='/', env=None, "
+                   "stdout=None, stderr=None, timeout=30)")
+        runner = subprocess.Popen([sys.executable, "-c", program], stderr=subprocess.DEVNULL)
+        deadline = time.monotonic() + 10
+        while not started.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        runner.send_signal(signal.SIGINT)
+        runner.wait(timeout=10)
+        time.sleep(1.5)
+        self.assertFalse(marker.exists())
 
 
 if __name__ == "__main__":

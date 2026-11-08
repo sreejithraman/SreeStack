@@ -1254,13 +1254,17 @@ full outcome checks, and normal host integration.
 `scripts/compare.py` ports `eval.mjs` to the Python standard library with Claude Code
 and Codex adapters in `scripts/hosts.py`. Every file in the eval dir, the manifest's
 target and plan included, forms one experiment identity; any change makes every
-result stale. Before any paid session it refuses symlinks, skill-discovery
-directories in fixtures, unsafe or duplicate names, and outputs that leave the eval
-dir. It rejects missing, unplanned, stale, or malformed results and non-boolean
-judge verdicts, keeps failed runs and work dirs as evidence, and writes results
-atomically. Host and check processes run in their own process group, which ends
-with them; checks get an allowlisted environment and a timeout. Retained evidence
-has secret-looking environment values redacted. Calibration runs in a task
+result stale. Every command first refuses a symlink anywhere in the eval dir,
+output included. Before any paid session it also refuses skill-discovery
+directories in fixtures, unsafe or duplicate names, and inputs that overlap
+output folders. It rejects missing, unplanned, stale, or malformed results, checks that don't match
+the manifest, and non-boolean judge verdicts, keeps failed runs and work dirs as
+evidence, and writes results atomically. Host and check processes run in their own
+process group, which ends with them, on cancellation too; checks get an allowlisted
+environment and a timeout. Retained evidence, kept work included, has
+secret-looking environment values redacted. `compare.py --help` lists the accepted
+limits: checker files outside the eval dir, detached sessions, short or
+JSON-escaped secret values, and Codex login refresh. Calibration runs in a task
 fixture, checks that installed skills don't leak in and that each variant's
 collection loads, and is revoked when a recalibration starts. Scoring judges one
 declared target, lets any failed required case veto, reports unavailable
