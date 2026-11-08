@@ -87,7 +87,10 @@ through Merge. Name the branch or assumption provisional work rests on. It can
 build and prove, and is reviewed only when the caller asks for review or a PR.
 Provisional work never merges and never crosses into destructive or
 outward-facing actions. Land becomes Try, but a requested PR state, draft or
-review-ready, can still be reached. If its base changes, restack and recheck it. If its base is scrapped,
+review-ready, can still be reached. Publish a provisional PR with the
+**Provisional** section from PR's [body guide](../pr/references/pr-body.md);
+that section is where its status lives, and you remove it only after its
+condition is met and affected proof is refreshed. If its base changes, restack and recheck it. If its base is scrapped,
 offer it for scrap too.
 
 Done when the finish line is stated, required access works or its block is
@@ -166,7 +169,8 @@ reported as a gap, and the user can open what you showed.
   merged and the result is shown. A closed PR did not land.
 
 Provisional work never merges: Land becomes Try, and a requested draft or
-review-ready PR state is still reached through PR. An open decision request on this outcome's scope
+review-ready PR state is still reached through PR, with its body's
+**Provisional** section open until the condition clears. An open decision request on this outcome's scope
 blocks landing. Coordinate stack changes that affect other layers with the
 caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
 under Orchestration's [who does the work](../orchestration/SKILL.md#who-does-the-work).

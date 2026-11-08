@@ -210,7 +210,8 @@ Name one lander for each merge set and record it:
   act, [transfer ownership](#start-pr-owners) first.
 - **You:** when the set spans several owners, confirm its owners have stopped
   writing, then land it through [Merge](../merge/SKILL.md) and
-  [gh-stack](../gh-stack/SKILL.md). Invoke Merge as a caller that keeps its own
+  [gh-stack](../gh-stack/SKILL.md); Merge stops on any PR in the set with an open
+  Provisional section. Invoke Merge as a caller that keeps its own
   repair owner for the PR, and resume that owner, or
   [transfer ownership](#start-pr-owners) if it cannot act, for any readiness gap
   Merge returns before landing.

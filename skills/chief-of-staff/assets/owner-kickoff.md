@@ -10,7 +10,7 @@ Delivery: <one PR | a planned stack | your call by reviewability>.
 
 Repository and base: <repo> at <base>. Owned branches: <branches>. Owned paths: <paths>.
 Inputs available at that base: <dependencies>. Uncommitted inputs: <paths, or none>.
-Provisional assumptions: <another owner's unmerged branch or PR, or a recorded assumption, and the decision it waits on, or none>. Your own planned layers are not provisional. Provisional work never merges: Land becomes Try, and a requested draft or review-ready PR state can still be reached.
+Provisional assumptions: <another owner's unmerged branch or PR, or a recorded assumption, and the decision it waits on, or none>. Your own planned layers are not provisional. Provisional work never merges: Land becomes Try, and a requested draft or review-ready PR state can still be reached. Publish such a PR with a Provisional section in its body, per PR's body guide; that section holds its status until the condition clears and proof is refreshed.
 
 Finish line: <Land (merged) | Try (built, proved, and shown; stop before review and the PR) | review-ready PR | draft PR>.
 Merge authority: <absolute link to program record's scope and finish-line entry>, under <absolute path to Chief of Staff's Establish the program section>. Within that scope, the current chief's recorded landing release is the merge request for your PR or stack.

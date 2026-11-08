@@ -50,6 +50,10 @@ limits.
    A head you didn't verify holds commits nobody reviewed. Read them, then go back to step 2. It
    counts as verified once the evidence above covers it.
 
+   Read each PR's body. An open **Provisional** section, as
+   [PR body](../pr/references/pr-body.md) describes, is a stop: report it and what clears it.
+   A merge request alone never clears it.
+
    Closing links that would close unfinished issues block landing. After repairs or restacking,
    recheck every affected layer. Before local history changes, apply
    [Preserve local files](../pr/references/preserve-local-files.md). Land the set only when all of
