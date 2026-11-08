@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -103,6 +105,7 @@ with log.open("a") as f:
         "files": sorted(str(p.relative_to(plugin)) for p in plugin.rglob("*") if p.is_file())}}) + "\\n")
 fixture = {str(FIXTURES)!r} + ("/old.json" if "old" in str(plugin) else "/new.json")
 shutil.copy(fixture, args[args.index("--json") + 1])
+print("Wrote result")
 """)
         (bin_dir / "claude").chmod(0o755)
         self.enterContext(mock.patch.dict(os.environ, {"PATH": f"{bin_dir}:{os.environ['PATH']}"}))
@@ -131,6 +134,14 @@ shutil.copy(fixture, args[args.index("--json") + 1])
                                              "skills/greeter/SKILL.md"])
         old_skill = self.root / "out" / "old" / "plugin" / "skills" / "greeter" / "SKILL.md"
         self.assertIn("old", old_skill.read_text())
+
+    def test_stdout_holds_only_the_decision(self):
+        result = subprocess.run([sys.executable, compare.__file__, "run", str(self.root / "old"),
+                                 str(self.root / "new"), "--evals", str(self.root / "evals"),
+                                 "--out", str(self.root / "out"), "--target", "score"],
+                                capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout)["decision"], "no win", result.stderr)
+        self.assertIn("Wrote result", result.stderr)
 
     def test_one_skill_folder_becomes_the_plugin_skill(self):
         self.compare("--target", "score", tree="greeter")

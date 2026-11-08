@@ -139,7 +139,7 @@ def wrap(skills: Path, evals: Path, plugin: Path) -> None:
 def evaluate(plugin: Path, result: Path, eval_args: list[str]) -> dict | None:
     command = ["claude", "plugin", "eval", str(plugin), "--no-publish", "--trust-plugin",
                "--json", str(result), "--output-dir", str(plugin.parent / "results"), *eval_args]
-    code = subprocess.run(command).returncode
+    code = subprocess.run(command, stdout=sys.stderr).returncode
     if code not in (0, 1) or not result.is_file():
         print(f"claude plugin eval exited {code} for {plugin.parent.name}", file=sys.stderr)
     return json.loads(result.read_text()) if result.is_file() else None
