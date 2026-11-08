@@ -7,57 +7,82 @@
 #
 # Supported entries, one per line: KEY=value, with an optional `export ` prefix
 # and optional whitespace around `=`. A value is empty, unquoted without
-# whitespace or any of # " ' \ $, single-quoted with no inner ', or
-# double-quoted with no inner " \ $. Nothing may follow a closing quote. Other
-# entries export nothing and print a warning that names the key, not the value.
+# whitespace or any of # $, single-quoted with no inner ', or double-quoted with
+# no inner " or $. The closing quote ends the line.
+#
+# A backslash, or a quote anywhere but around a whole value, can make dotenv
+# parsers disagree on where entries end, so such a line exports nothing from the
+# whole file. Any other unsupported entry is skipped. Each warning names the
+# line, and the key when it is known, never the value.
 file="${AGENTS_SHARED_ENV:-$HOME/.config/agents/shared.env}"
 [ -r "$file" ] || exit 0
 
 warn() {
-  printf 'load-env: %s:%s: %s; not exported\n' "$file" "$number" "$1" >&2
+  printf 'load-env: %s:%s: %s\n' "$file" "$number" "$1" >&2
 }
 
-number=0
-open_quote=
-while IFS= read -r line || [ -n "$line" ]; do
-  number=$((number + 1))
-  if [ -n "$open_quote" ]; then
-    case "$line" in *"$open_quote"*) open_quote= ;; esac
-    continue
-  fi
-  line="${line#"${line%%[![:space:]]*}"}"
-  line="${line%"${line##*[![:space:]]}"}"
-  case "$line" in '' | '#'*) continue ;; esac
-  case "$line" in export[[:space:]]*)
-    line="${line#export}"
-    line="${line#"${line%%[![:space:]]*}"}" ;;
+# Calls "$1" with each line that is neither blank nor a comment, trimmed.
+each_entry() {
+  number=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    number=$((number + 1))
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    case "$line" in '' | '#'*) continue ;; esac
+    "$1" "$line"
+  done < "$file"
+}
+
+# Sets key and value from an entry; fails when it has no `=`.
+split_entry() {
+  entry="$1"
+  case "$entry" in export[[:space:]]*)
+    entry="${entry#export}"
+    entry="${entry#"${entry%%[![:space:]]*}"}" ;;
   esac
-  case "$line" in *=*) ;; *) warn "not a KEY=value entry"; continue ;; esac
-  key="${line%%=*}"
+  case "$entry" in *=*) ;; *) return 1 ;; esac
+  key="${entry%%=*}"
   key="${key%"${key##*[![:space:]]}"}"
-  case "$key" in
-    '' | [0-9]* | *[!A-Za-z0-9_]*) warn "invalid key"; continue ;;
-    [Cc][Ll][Aa][Uu][Dd][Ee]_*) continue ;;
-  esac
-  value="${line#*=}"
+  value="${entry#*=}"
   value="${value#"${value%%[![:space:]]*}"}"
+}
+
+has_clear_boundary() {
+  case "$1" in *\\*) return 1 ;; *[\"\']*) ;; *) return 0 ;; esac
+  split_entry "$1" || return 1
+  case "$key" in *[\"\']*) return 1 ;; esac
+  quote="${value%"${value#?}"}"
+  case "$quote" in \" | \') ;; *) return 1 ;; esac
+  inner="${value#?}"
+  case "$inner" in *"$quote") inner="${inner%?}" ;; *) return 1 ;; esac
+  case "$inner" in *"$quote"*) return 1 ;; esac
+}
+
+require_clear_boundary() {
+  has_clear_boundary "$1" && return
+  warn "backslash or quote outside a whole value; nothing exported from this file"
+  exit 0
+}
+
+export_entry() {
+  if ! split_entry "$1"; then warn "not a KEY=value entry; not exported"; return; fi
+  case "$key" in
+    '' | [0-9]* | *[!A-Za-z0-9_]*) warn "invalid key; not exported"; return ;;
+    [Cc][Ll][Aa][Uu][Dd][Ee]_*) return ;;
+  esac
   case "$value" in
-    [\"\']*)
-      quote="${value%"${value#?}"}"
-      inner="${value#?}"
-      case "$inner" in
-        *"$quote") inner="${inner%?}" ;;
-        *"$quote"*) warn "$key: text after closing quote"; continue ;;
-        *) open_quote="$quote"; warn "$key: unterminated or multiline quote"; continue ;;
-      esac
-      case "$quote$inner" in
-        *"$quote"*"$quote"*) warn "$key: inner quote"; continue ;;
-        \"*[\\\$]*) warn "$key: escape or substitution in double quotes"; continue ;;
-      esac
-      value="$inner" ;;
-    *[[:space:]\#\"\'\\\$]*) warn "$key: unquoted value with whitespace, #, quote, \\ or \$"; continue ;;
+    \"*)
+      value="${value#?}"
+      value="${value%?}"
+      case "$value" in *\$*) warn "$key: \$ in double quotes; not exported"; return ;; esac ;;
+    \'*)
+      value="${value#?}"
+      value="${value%?}" ;;
+    *[[:space:]\#\$]*) warn "$key: unquoted value with whitespace, # or \$; not exported"; return ;;
   esac
   quoted=$(printf '%s' "$value" | sed "s/'/'\\\\''/g")
   printf "export %s='%s'\n" "$key" "$quoted"
-done < "$file"
-if [ -n "$open_quote" ]; then warn "quote never closed; later lines skipped"; fi
+}
+
+each_entry require_clear_boundary
+each_entry export_entry

@@ -12,12 +12,13 @@ MACHINE_SETUP = SCRIPTS.parent / "references/machine-setup.md"
 
 ACCEPTED = """\
 # comment
+# a comment's \\ "quotes" and backslashes are ignored
 PLAIN=value
 
 export EXPORTED='from export'
 SPACED = spaced
 APOSTROPHE="it's here"
-LITERAL='$HOME `date` \\n'
+LITERAL='$HOME `date`'
 QUOTED="double quoted"
 EMPTY=
 CRLF=line\r
@@ -29,17 +30,24 @@ claude_lower=file
 """
 
 SECRET = "s3cret"
-REJECTED = {
-    "INLINE_COMMENT": f'INLINE_COMMENT="{SECRET}" # comment',
+SKIPPED_ENTRIES = {
     "UNQUOTED_COMMENT": f"UNQUOTED_COMMENT={SECRET} # comment",
-    "ESCAPED_QUOTE": f'ESCAPED_QUOTE="{SECRET}\\"x"',
-    "ESCAPE": f'ESCAPE="{SECRET}\\nx"',
     "SUBSTITUTION": f'SUBSTITUTION="{SECRET}$HOME"',
     "UNQUOTED_SUBSTITUTION": f"UNQUOTED_SUBSTITUTION={SECRET}$HOME",
     "UNQUOTED_SPACE": f"UNQUOTED_SPACE={SECRET} x",
-    "INNER_QUOTE": f"INNER_QUOTE='{SECRET}'x'",
-    "MULTILINE": f'MULTILINE="{SECRET}\nLEAKED={SECRET}"',
-    "UNTERMINATED": f'UNTERMINATED="{SECRET}',
+}
+# Each form can move entry boundaries; its first line is the one reported.
+UNCLEAR_BOUNDARIES = {
+    "inline comment after quote": f'KEY="{SECRET}" # comment',
+    "escaped quote": f'KEY="{SECRET}\\"x"',
+    "escape": f'KEY="{SECRET}\\nx"',
+    "inner quote": f"KEY='{SECRET}'x'",
+    "unterminated": f'KEY="{SECRET}',
+    "multiline": f'KEY="{SECRET}\nSMUGGLED=evil"',
+    "escaped quote on continuation": f'KEY="begin\nescaped=\\"\nSMUGGLED=evil\nend{SECRET}"',
+    "filtered key": f'CLAUDE_SECRET="begin\nSMUGGLED=evil\nend{SECRET}"',
+    "invalid key": f'BAD-KEY="begin\nSMUGGLED=evil\nend{SECRET}"',
+    "backslash before single closing quote": f"KEY='{SECRET}\\'",
 }
 
 
@@ -68,7 +76,7 @@ class AcceptedEntriesTest(unittest.TestCase):
     def test_values_are_literal(self):
         self.assertEqual(self.loaded["PLAIN"], "value")
         self.assertEqual(self.loaded["APOSTROPHE"], "it's here")
-        self.assertEqual(self.loaded["LITERAL"], "$HOME `date` \\n")
+        self.assertEqual(self.loaded["LITERAL"], "$HOME `date`")
         self.assertEqual(self.loaded["QUOTED"], "double quoted")
         self.assertEqual(self.loaded["EMPTY"], "")
         self.assertEqual(self.loaded["CRLF"], "line")
@@ -94,16 +102,22 @@ class AcceptedEntriesTest(unittest.TestCase):
 
 
 class RejectedEntriesTest(unittest.TestCase):
-    def test_each_rejected_form_warns_and_exports_nothing(self):
-        for key, entry in REJECTED.items():
+    def test_unsupported_entries_are_skipped(self):
+        for key, entry in SKIPPED_ENTRIES.items():
             with self.subTest(key):
                 loaded, warnings = run_loader(f"{entry}\nAFTER=ok\n")
                 self.assertNotIn(key, loaded)
-                self.assertNotIn("LEAKED", loaded)
+                self.assertEqual(loaded["AFTER"], "ok")
                 self.assertNotIn(SECRET, warnings)
-                self.assertRegex(warnings, rf":1: {key}: ")
-                if key != "UNTERMINATED":
-                    self.assertEqual(loaded["AFTER"], "ok")
+                self.assertRegex(warnings, rf"^load-env: .*:1: {key}: ")
+
+    def test_unclear_boundaries_export_nothing_from_the_file(self):
+        for name, entry in UNCLEAR_BOUNDARIES.items():
+            with self.subTest(name):
+                loaded, warnings = run_loader(f"BEFORE=ok\n{entry}\nOP_SERVICE_ACCOUNT_TOKEN=marker\n")
+                self.assertFalse({"BEFORE", "KEY", "SMUGGLED", "OP_SERVICE_ACCOUNT_TOKEN"} & loaded.keys())
+                self.assertNotIn(SECRET, warnings)
+                self.assertRegex(warnings, r"^load-env: .*:2: [^\n]*nothing exported[^\n]*\n$")
 
     def test_invalid_keys_warn_without_exporting(self):
         loaded, warnings = run_loader("1BAD=x\nBAD-KEY=x\nno equals sign\n")
