@@ -6,9 +6,9 @@ description: Use when signing into applications, setting up or diagnosing agent 
 # Agent Login
 
 Pick the route that matches the task. Each route ends at its own finish line.
-Fix a prerequisite the current task needs, such as provisioning a missing
-runtime token, through its route. Start an application login after setup or
-credential work only when the user asks for it.
+A missing prerequisite ends the route as a named block. Start machine setup,
+including provisioning a runtime token, or an application login only when the
+user asks for it.
 
 ## Rules for every route
 
@@ -21,9 +21,10 @@ credential work only when the user asks for it.
   providers need an approved private delivery procedure.
 - Keep values inside the consumer, outside chat, agent tool arguments, logs,
   and verification artifacts. Apply the user's capture policy.
-- Send a credential only to exact approved origins, including identity
-  providers and redirects. Remote origins require HTTPS; HTTP is allowed only
-  for approved loopback test origins.
+- Send a credential only to exact approved destinations, including identity
+  providers and redirects. Use an encrypted transport for remote destinations,
+  such as HTTPS for web origins. Plain HTTP is allowed only for approved
+  loopback test origins.
 - A login approval covers credential use, not later application actions. A login
   or credential task does not authorize token creation or grant changes.
 - Report provider authentication, delivery, and login as separate results. Each
@@ -42,8 +43,9 @@ prompts for Touch ID, onboard an application account, or check login readiness.
   Installation and private mappings are in [command setup](references/cli-setup.md).
 
 Machine setup is done when each affected runtime authenticates as the designated
-identity. Account onboarding is done when [account setup](references/setup.md)
-records a verified login or names the missing prerequisite.
+identity. Account onboarding includes its proof login, which
+[account setup](references/setup.md) owns. It is done when that login is
+verified or a missing prerequisite other than the login itself is named.
 
 ## Credential use, storage, or item management
 
@@ -56,8 +58,9 @@ it checks runtime authentication and leads to
 
 It is done when one of these is true:
 
-- The consumer produces its intended result with the credential delivered
-  privately.
+- The consumer authenticates or accepts the privately delivered credential.
+  Product and test results belong to the work that asked for the credential;
+  use [verify](../verify/SKILL.md) for product assertions.
 - The requested item state, such as saved fields or an archived or deleted
   item, checks out in the designated vault under the scoped service account.
 - The missing prerequisite is named, such as a missing runtime token or missing

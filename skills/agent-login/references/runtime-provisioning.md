@@ -27,10 +27,11 @@ masking is not isolation, and other projects using that provider inherit access.
 [provider environment merge](https://github.com/pingdotgg/t3code/blob/2cbc24fcae2b5649d7b60b68da72053a37fa82d5/apps/server/src/provider/ProviderInstanceEnvironment.ts))
 
 For a shared local file, Codex supports `~/.codex/.env` followed by an app restart.
-Codex CLIs can also load `.env` from their own `CODEX_HOME`, including symlinks.
-Probe the installed version on each host before relying on it. Codex support
-does not establish environment-file support for other T3 providers.
 ([Desktop environment setup](https://learn.chatgpt.com/docs/amazon-bedrock#desktop-app-and-ide-extension))
+Recent Codex CLIs have also been observed loading `.env` from their own
+`CODEX_HOME`, including symlinks. This is undocumented, so probe the installed
+version on each host before relying on it. It does not establish
+environment-file support for other T3 providers.
 
 A reusable layout is:
 
