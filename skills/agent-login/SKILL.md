@@ -6,7 +6,9 @@ description: Use when signing into applications, setting up or diagnosing agent 
 # Agent Login
 
 Pick the route that matches the task. Each route ends at its own finish line.
-Start another route only when the user asks for it.
+Fix a prerequisite the current task needs, such as provisioning a missing
+runtime token, through its route. Start an application login after setup or
+credential work only when the user asks for it.
 
 ## Rules for every route
 
@@ -18,7 +20,10 @@ Start another route only when the user asks for it.
   1Password, use its [access gate](references/1password.md#access). Other
   providers need an approved private delivery procedure.
 - Keep values inside the consumer, outside chat, agent tool arguments, logs,
-  and verification artifacts.
+  and verification artifacts. Apply the user's capture policy.
+- Send a credential only to exact approved origins, including identity
+  providers and redirects. Remote origins require HTTPS; HTTP is allowed only
+  for approved loopback test origins.
 - A login approval covers credential use, not later application actions. A login
   or credential task does not authorize token creation or grant changes.
 - Report provider authentication, delivery, and login as separate results. Each
@@ -40,14 +45,23 @@ Machine setup is done when each affected runtime authenticates as the designated
 identity. Account onboarding is done when [account setup](references/setup.md)
 records a verified login or names the missing prerequisite.
 
-## Credential use or storage
+## Credential use, storage, or item management
 
 Use this route when a command, API, test harness, or subprocess needs a
-credential, or when a value must be saved. Follow
+credential, when a value must be saved, or when items in the designated
+writable agent vault must be created, updated, archived, or deleted. For
+1Password, start at [use approved credentials](references/1password.md#use-approved-credentials);
+it checks runtime authentication and leads to
 [credential delivery and storage](references/credential-delivery.md).
 
-It is done when the consumer produces its intended result with the credential
-delivered privately, or when the saved fields check out in the designated vault.
+It is done when one of these is true:
+
+- The consumer produces its intended result with the credential delivered
+  privately.
+- The requested item state, such as saved fields or an archived or deleted
+  item, checks out in the designated vault under the scoped service account.
+- The missing prerequisite is named, such as a missing runtime token or missing
+  scope.
 
 ## UI login
 
@@ -65,10 +79,7 @@ automatic login; a login assertion starts from its required signed-out state.
    approved project consumer can supply another supported path. Ordinary typing
    tools take literal values and cannot do private delivery. If delivery is
    unavailable, report the missing integration and continue after user sign-in.
-2. Match exact origins, including identity providers and redirects. Remote
-   origins require HTTPS; HTTP is allowed only for approved loopback test
-   origins. Apply the user's capture policy.
-3. Treat filling or submission as delivery results. Use the original session to
+2. Treat filling or submission as delivery results. Use the original session to
    confirm authenticated state and the intended account and role.
 
 It is done when the original session shows the intended account and role and

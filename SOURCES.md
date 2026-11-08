@@ -30,7 +30,7 @@ Local-only skills need just an origin note.
 
 ## agent-login
 
-- Local: `skills/agent-login` (SreeStack) task routes for machine setup, credential use, and application login, plus a private alias-based CLI.
+- Local: `skills/agent-login` (SreeStack) task routes for machine setup, credential use and item management, and application login, plus a private alias-based CLI.
 - [openclaw/openclaw / skills/1password](https://github.com/openclaw/openclaw/tree/a229456f487f713315fc799767a97990f407bea6/skills/1password) — `SKILL.md`, `references/get-started.md`, and `references/cli-examples.md`; adaptation baseline commit `a229456f487f713315fc799767a97990f407bea6`. MIT notice in `licenses/openclaw.txt`.
 
 One automatically discoverable skill owns application sign-in and approved
