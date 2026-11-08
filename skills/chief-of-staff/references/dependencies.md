@@ -42,7 +42,8 @@ Implement defines [provisional work](../../implement/SKILL.md#2-state-the-finish
 it rests on another owner's unmerged branch or PR, or on a recorded assumption
 awaiting a decision. It can build, prove, and be shown. It is reviewed only when
 a PR state was requested, never merges, and never takes destructive or
-outward-facing steps. Land becomes Try while it lasts. An owner's own planned
+outward-facing steps on its own; Implement says what the user's scrap allows.
+Land becomes Try while it lasts. An owner's own planned
 layers are not provisional.
 
 For each provisional outcome, record the branch, PR, or assumption it rests on,
