@@ -12,11 +12,20 @@ from urllib.parse import urlsplit
 
 
 STATES = {
-    "planned": "Planned", "building": "Building", "in-review": "In review",
-    "mergeable": "Ready to merge", "merged": "Merged", "done": "Done", "closed": "Closed",
-    "cancelled": "Cancelled", "unknown": "Unknown",
+    "planned": "Planned", "building": "Building", "shown": "To try", "in-review": "In review",
+    "ready": "Ready", "landed": "Landed", "done": "Done", "scrapped": "Scrapped", "unknown": "Unknown",
 }
-TERMINAL = {"merged", "done", "closed", "cancelled"}
+TERMINAL = {"landed", "done", "scrapped"}
+ACTIVE = {"building", "shown", "in-review", "ready"}
+PR_STATES = {"in-review", "ready"}
+FINISH_LINES = {"land": "Land", "try": "Try", "pr-review": "Review-ready PR", "pr-draft": "Draft PR"}
+READY_LABELS = {"land": "Ready to land", "pr-review": "Review-ready", "pr-draft": "Draft open"}
+LAYER_STATES = {
+    "local": "Local", "draft": "Draft", "open": "In review", "ready": "Ready",
+    "merged": "Merged", "closed": "Closed without merge",
+}
+PHASES = ("start", "access", "proof", "acceptance", "landing")
+HALTING = {"start", "access", "proof"}  # The others let building continue.
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
 
@@ -67,6 +76,204 @@ def links(value, path):
         url(item.get("url"), f"{path}[{index}].url")
 
 
+def one_of(value, choices, path):
+    text(value, path)
+    if value not in choices:
+        raise ValueError(f"{path} must be one of {', '.join(choices)}")
+    return value
+
+
+def effective_finish(row):
+    return row.get("effectiveFinishLine", row.get("finishLine"))
+
+
+def owned_by_another(row, other):
+    return not (row.get("owner") and row.get("owner") == other.get("owner"))
+
+
+def validate_layers(row, path, layers):
+    for index, layer in enumerate(records(row.get("layers", []), f"{path}.layers")):
+        identity = text(layer.get("id"), f"{path}.layers[{index}].id")
+        where = f"{path}.layers[{identity}]"
+        if identity in layers:
+            raise ValueError(f"layer {identity} appears more than once; layer IDs are unique across the program")
+        layers[identity] = (layer, row)
+        text(layer.get("branch"), f"{where}.branch")
+        status = one_of(layer.get("status"), LAYER_STATES, f"{where}.status")
+        if (status == "local") == ("url" in layer):
+            raise ValueError(f"{where}: a local layer has no url, and a published layer needs its PR url")
+        if "url" in layer:
+            url(layer["url"], f"{where}.url")
+        for key in ("head", "base", "stackedOn"):
+            if key in layer:
+                text(layer[key], f"{where}.{key}")
+        if status == "merged" and "provisional" in row:
+            raise ValueError(f"{where}: provisional work never merges; clear the condition before recording a merge")
+
+
+def validate_work(row, layers):
+    path = f"work[{row['id']}]"
+    for key in ("title", "repo"):
+        text(row.get(key), f"{path}.{key}")
+    state = one_of(row.get("state"), STATES, f"{path}.state")
+    kind = one_of(row.get("kind"), ("outcome", "follow-up", "support"), f"{path}.kind")
+    timestamp(row.get("updatedAt"), f"{path}.updatedAt")
+    for key in ("description", "owner", "blocked", "origin", "unknownReason"):
+        if key in row:
+            text(row[key], f"{path}.{key}")
+    for key in ("url", "stackedOn"):
+        if key in row:
+            raise ValueError(f"{path}.{key}: record each PR and its stack parent on the outcome's layers")
+    if "unknownReason" in row and state != "unknown":
+        raise ValueError(f"{path}.unknownReason applies only to unknown state")
+    if "sessionUrl" in row:
+        url(row["sessionUrl"], f"{path}.sessionUrl")
+    for key in ("tickets", "evidence"):
+        links(row.get(key, []), f"{path}.{key}")
+    for index, result in enumerate(records(row.get("results", []), f"{path}.results")):
+        links([result], f"{path}.results[{index}]")
+        if "access" in result:
+            text(result["access"], f"{path}.results[{index}].access")
+    if "required" in row and not isinstance(row["required"], bool):
+        raise ValueError(f"{path}.required must be a boolean")
+    if state in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
+        raise ValueError(f"{path}: terminal work cannot retain active blockers; keep history in the program record")
+    if state in ACTIVE and "owner" not in row:
+        raise ValueError(f"{path}: {state} work needs its owner")
+
+    if kind == "support":
+        for key in ("finishLine", "effectiveFinishLine", "layers", "provisional"):
+            if key in row:
+                raise ValueError(f"{path}.{key}: support work has no finish line or layers; give a repository change its own outcome")
+        if state not in {"planned", "building", "done", "scrapped", "unknown"}:
+            raise ValueError(f"{path}: support work uses planned, building, done, scrapped, or unknown")
+        return
+    finish = one_of(row.get("finishLine"), FINISH_LINES, f"{path}.finishLine")
+    if state == "done":
+        raise ValueError(f"{path}: an outcome ends landed, at its shown Try, or at its PR state, not done")
+    if "provisional" in row:
+        provisional = row["provisional"]
+        if not isinstance(provisional, dict):
+            raise ValueError(f"{path}.provisional must be an object")
+        for key in ("basis", "clears"):
+            text(provisional.get(key), f"{path}.provisional.{key}")
+        strings(provisional.get("on", []), f"{path}.provisional.on")
+        if finish == "land" and row.get("effectiveFinishLine") != "try":
+            raise ValueError(f"{path}: provisional work never merges; set effectiveFinishLine to try")
+    if "effectiveFinishLine" in row and not (
+            "provisional" in row and finish == "land" and row["effectiveFinishLine"] == "try"):
+        raise ValueError(f"{path}.effectiveFinishLine is only Try, for provisional work whose finish line is Land")
+    validate_layers(row, path, layers)
+    effective = effective_finish(row)
+    published = [layer for layer in row.get("layers", []) if "url" in layer]
+    if effective == "try" and published:
+        raise ValueError(f"{path}: Try stops before the PR; a published layer needs a PR or Land finish line")
+    if state == "shown" and (effective != "try" or not row.get("results")):
+        raise ValueError(f"{path}: shown is a Try result, and needs results the user can open")
+    if state in PR_STATES and not published:
+        raise ValueError(f"{path}: {state} needs a published layer")
+    if state == "landed" and (effective != "land" or not row.get("layers")
+                              or any(layer["status"] != "merged" for layer in row["layers"])):
+        raise ValueError(f"{path}: landed needs a Land finish line and every layer merged")
+
+
+def validate_edges(work, by_id, layers):
+    for row in work:
+        path = f"work[{row['id']}]"
+        for dependency in strings(row.get("blockedBy", []), f"{path}.blockedBy"):
+            if dependency not in by_id:
+                raise ValueError(f"{path}.blockedBy references missing work {dependency}")
+        for identity in row.get("provisional", {}).get("on", []):
+            if identity == row["id"] or identity not in by_id:
+                raise ValueError(f"{path}.provisional.on must name other work; a decision names what it blocks")
+            if by_id.get(identity, {}).get("state") == "scrapped":
+                raise ValueError(f"{path} rests on scrapped {identity}; offer it for scrap or record its new base")
+    for identity, (layer, row) in layers.items():
+        if "stackedOn" not in layer:
+            continue
+        where = f"work[{row['id']}].layers[{identity}].stackedOn"
+        if layer["stackedOn"] == identity or layer["stackedOn"] not in layers:
+            raise ValueError(f"{where} must name another layer")
+        parent, parent_row = layers[layer["stackedOn"]]
+        if layer["status"] not in {"merged", "closed"} and parent["status"] == "closed":
+            raise ValueError(f"{where} names closed {parent['id']}; record the restack or its blocker")
+        if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
+                and owned_by_another(row, parent_row)
+                and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
+            raise ValueError(f"{where}: {parent['id']} is another owner's unmerged layer; mark this outcome provisional on {parent_row['id']}")
+
+    def depends_on(row):
+        found = list(row.get("blockedBy", []))
+        found += row.get("provisional", {}).get("on", [])
+        found += [layers[layer["stackedOn"]][1]["id"] for layer in row.get("layers", []) if "stackedOn" in layer]
+        return [identity for identity in found if identity != row["id"]]
+
+    check_cycles({identity: depends_on(row) for identity, row in by_id.items()}, "work dependency")
+    check_cycles({identity: [layer["stackedOn"]] if "stackedOn" in layer else [] for identity, (layer, _) in layers.items()}, "stack")
+
+
+def check_cycles(graph, name):
+    visiting, visited = set(), set()
+
+    def visit(identity):
+        if identity in visiting:
+            raise ValueError(f"{name} cycle includes {identity}")
+        if identity in visited:
+            return
+        visiting.add(identity)
+        for neighbour in graph[identity]:
+            visit(neighbour)
+        visiting.remove(identity)
+        visited.add(identity)
+
+    for identity in graph:
+        visit(identity)
+
+
+def validate_need(row, by_id):
+    path = f"needs[{row['id']}]"
+    text(row.get("ask"), f"{path}.ask")
+    status = one_of(row.get("status"), ("open", "answered", "resolved"), f"{path}.status")
+    if status != "open":
+        text(row.get("answer"), f"{path}.answer")
+    if status == "resolved":
+        text(row.get("basis"), f"{path}.basis")
+    elif "basis" in row:
+        raise ValueError(f"{path}.basis applies only to resolved decisions")
+    for key in ("recommendation", "answer", "meanwhile"):
+        if key in row:
+            text(row[key], f"{path}.{key}")
+    if row.get("weight", "judgment") not in {"quick", "judgment"}:
+        raise ValueError(f"{path}.weight must be quick or judgment")
+    strings(row.get("context", []), f"{path}.context")
+    blocked = set()
+    for index, entry in enumerate(records(row.get("blocks", []), f"{path}.blocks")):
+        identity = text(entry.get("id"), f"{path}.blocks[{index}].id")
+        phase = one_of(entry.get("phase"), PHASES, f"{path}.blocks[{index}].phase")
+        if identity not in by_id:
+            raise ValueError(f"{path}.blocks references missing work {identity}")
+        if identity in blocked:
+            raise ValueError(f"{path}.blocks names {identity} twice; record the earliest phase it blocks")
+        blocked.add(identity)
+        if status == "open" and by_id[identity]["state"] in TERMINAL:
+            raise ValueError(f"{path}: an open decision cannot block terminal work")
+        if status == "open" and phase == "start" and by_id[identity]["state"] != "planned":
+            raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
+    for option in records(row.get("options", []), f"{path}.options"):
+        for key in ("label", "effect"):
+            text(option.get(key), f"{path}.options.{key}")
+        if "recommended" in option and not isinstance(option["recommended"], bool):
+            raise ValueError(f"{path}.options.recommended must be a boolean")
+    recommended = sum(option.get("recommended", False) for option in row.get("options", []))
+    if recommended > 1:
+        raise ValueError(f"{path}: only one option can be recommended")
+    if row.get("options") and row.get("recommendation") and not recommended:
+        raise ValueError(f"{path}: mark the recommended option to attach its recommendation")
+    if row.get("weight") == "quick" and (len(row.get("options", [])) < 2 or not recommended):
+        raise ValueError(f"{path}: quick needs at least two options with one recommended")
+    links(row.get("links", []), f"{path}.links")
+
+
 def validate(state):
     if not isinstance(state, dict):
         raise ValueError("state must be an object")
@@ -85,98 +292,12 @@ def validate(state):
         if len(ids) != len(set(ids)):
             raise ValueError(f"{name} contains duplicate IDs")
     by_id = {row["id"]: row for row in work}
+    layers = {}
     for row in work:
-        path = f"work[{row['id']}]"
-        for key in ("title", "repo"):
-            text(row.get(key), f"{path}.{key}")
-        text(row.get("state"), f"{path}.state")
-        if row.get("state") not in STATES:
-            raise ValueError(f"{path}.state must be one of {', '.join(STATES)}")
-        text(row.get("kind"), f"{path}.kind")
-        if row.get("kind") not in {"pr", "follow-up", "support"}:
-            raise ValueError(f"{path}.kind must be pr, follow-up, or support")
-        if row["kind"] == "pr" and row["state"] == "done":
-            raise ValueError(f"{path}: PRs must use merged or mergeable, not done")
-        if row["kind"] != "pr" and row["state"] in {"mergeable", "merged", "closed"}:
-            raise ValueError(f"{path}: {row['state']} requires kind pr; promote a follow-up or support change to a PR row")
-        if row["state"] in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
-            raise ValueError(f"{path}: terminal work cannot retain active blockers; keep history in the program record")
-        timestamp(row.get("updatedAt"), f"{path}.updatedAt")
-        for key in ("description", "owner", "blocked", "origin", "unknownReason"):
-            if key in row:
-                text(row[key], f"{path}.{key}")
-        if "unknownReason" in row and row["state"] != "unknown":
-            raise ValueError(f"{path}.unknownReason applies only to unknown state")
-        if "url" in row and row["kind"] != "pr":
-            raise ValueError(f"{path}.url is for a PR row; use tickets or evidence, or promote the row to a PR")
-        for key in ("url", "sessionUrl"):
-            if key in row:
-                url(row[key], f"{path}.{key}")
-        for key in ("tickets", "evidence"):
-            links(row.get(key, []), f"{path}.{key}")
-        if "required" in row and not isinstance(row["required"], bool):
-            raise ValueError(f"{path}.required must be a boolean")
-        if "stackedOn" in row:
-            parent = text(row["stackedOn"], f"{path}.stackedOn")
-            if row["kind"] != "pr" or parent == row["id"] or by_id.get(parent, {}).get("kind") != "pr":
-                raise ValueError(f"{path}.stackedOn must name another PR row")
-            if row["state"] not in TERMINAL and by_id[parent]["state"] in {"closed", "cancelled"}:
-                raise ValueError(f"{path}.stackedOn names {by_id[parent]['state']} {parent}; record the restack or its blocker")
-        for dependency in strings(row.get("blockedBy", []), f"{path}.blockedBy"):
-            if dependency not in by_id:
-                raise ValueError(f"{path}.blockedBy references missing work {dependency}")
-    visiting, visited = set(), set()
-
-    def visit(identity):
-        if identity in visiting:
-            raise ValueError(f"work dependency or stack cycle includes {identity}")
-        if identity in visited:
-            return
-        visiting.add(identity)
-        row = by_id[identity]
-        for dependency in row.get("blockedBy", []) + ([row["stackedOn"]] if "stackedOn" in row else []):
-            visit(dependency)
-        visiting.remove(identity)
-        visited.add(identity)
-
-    for identity in by_id:
-        visit(identity)
+        validate_work(row, layers)
+    validate_edges(work, by_id, layers)
     for row in needs:
-        path = f"needs[{row['id']}]"
-        text(row.get("ask"), f"{path}.ask")
-        text(row.get("status"), f"{path}.status")
-        if row.get("status") not in {"open", "answered", "resolved"}:
-            raise ValueError(f"{path}.status must be open, answered, or resolved")
-        if row["status"] != "open":
-            text(row.get("answer"), f"{path}.answer")
-        if row["status"] == "resolved":
-            text(row.get("basis"), f"{path}.basis")
-        elif "basis" in row:
-            raise ValueError(f"{path}.basis applies only to resolved decisions")
-        for key in ("recommendation", "answer"):
-            if key in row:
-                text(row[key], f"{path}.{key}")
-        if row.get("weight", "judgment") not in {"quick", "judgment"}:
-            raise ValueError(f"{path}.weight must be quick or judgment")
-        strings(row.get("context", []), f"{path}.context")
-        for identity in strings(row.get("blocks", []), f"{path}.blocks"):
-            if identity not in by_id:
-                raise ValueError(f"{path}.blocks references missing work {identity}")
-        if row["status"] == "open" and any(by_id[identity]["state"] in TERMINAL for identity in row.get("blocks", [])):
-            raise ValueError(f"{path}: an open decision cannot block terminal work")
-        for option in records(row.get("options", []), f"{path}.options"):
-            for key in ("label", "effect"):
-                text(option.get(key), f"{path}.options.{key}")
-            if "recommended" in option and not isinstance(option["recommended"], bool):
-                raise ValueError(f"{path}.options.recommended must be a boolean")
-        recommended = sum(option.get("recommended", False) for option in row.get("options", []))
-        if recommended > 1:
-            raise ValueError(f"{path}: only one option can be recommended")
-        if row.get("options") and row.get("recommendation") and not recommended:
-            raise ValueError(f"{path}: mark the recommended option to attach its recommendation")
-        if row.get("weight") == "quick" and (len(row.get("options", [])) < 2 or not recommended):
-            raise ValueError(f"{path}: quick needs at least two options with one recommended")
-        links(row.get("links", []), f"{path}.links")
+        validate_need(row, by_id)
     for row in revisits:
         for key in ("title", "tradeoff", "revisit"):
             text(row.get(key), f"revisits[{row['id']}].{key}")
@@ -185,14 +306,15 @@ def validate(state):
     return state
 
 
-STAGE_ORDER = ("planned", "building", "in-review", "merged", "done", "unknown", "closed", "cancelled")
+STAGE_ORDER = ("planned", "building", "shown", "in-review", "landed", "done", "unknown", "scrapped")
 ICONS = {
-    "planned": "circle-dashed", "building": "hammer", "in-review": "scan-eye",
-    "mergeable": "circle-check", "merged": "git-merge", "done": "check-check",
-    "closed": "circle-x", "cancelled": "ban", "unknown": "circle-question-mark",
-    "blocked": "triangle-alert", "copy": "copy", "copied": "check", "decision": "message-circle-question-mark",
-    "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
+    "planned": "circle-dashed", "building": "hammer", "shown": "hand", "in-review": "scan-eye",
+    "ready": "circle-check", "landed": "git-merge", "done": "check-check",
+    "scrapped": "ban", "unknown": "circle-question-mark", "provisional": "git-branch",
+    "blocked": "triangle-alert", "waits": "hourglass", "copy": "copy", "copied": "check",
+    "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
     "recommended": "star", "pr": "git-pull-request", "finish": "flag", "snapshot": "clock", "tradeoff": "scale",
+    "result": "external-link",
 }
 
 
@@ -218,6 +340,10 @@ def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def hexed(identity):
+    return identity.encode().hex()
+
+
 def when(value, age=False):
     return f'<time datetime="{e(value)}"{" data-age" if age else ""}>{e(value)}</time>'
 
@@ -232,14 +358,8 @@ def revision(need):
 
 
 def display_stage(row):
-    """The stage a row reads under; a mergeable PR stays in review and adds a readiness badge."""
-    return "in-review" if row["state"] == "mergeable" else row["state"]
-
-
-def state_label(row):
-    if row["state"] == "closed":
-        return "Closed without merge"
-    return STATES[display_stage(row)]
+    """The stage a row reads under; a ready outcome stays in review and adds a readiness badge."""
+    return "in-review" if row["state"] == "ready" else row["state"]
 
 
 def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", alert=""):
@@ -278,7 +398,7 @@ def choice(row, option, index, state):
     content += f'</p><p class="choice-effect">{e(option["effect"])}</p>'
     if recommended and row.get("recommendation"):
         content += f'<p class="choice-rationale">{e(row["recommendation"])}</p>'
-    status_id = f'prompt-{row["id"].encode().hex()}-{index}'
+    status_id = f'prompt-{hexed(row["id"])}-{index}'
     return content + f'</div>{copy_control(prompt, status_id, "Copy prompt: " + option["label"], "Copy prompt")}</li>'
 
 
@@ -300,7 +420,11 @@ def batch_view(quick, state):
 
 
 def card_id(kind, row):
-    return f'{kind}-{row["id"].encode().hex()}'
+    return f'{kind}-{hexed(row["id"])}'
+
+
+def blocked_work(row):
+    return ", ".join(f'{entry["id"]} {entry["phase"]}' for entry in row["blocks"])
 
 
 def decision_label(row):
@@ -311,7 +435,7 @@ def decision_label(row):
     }.get(row["status"], ("Quick pick", "quick") if row.get("weight") == "quick" else ("Decision", "decision"))
     content = f'<span class="need-id{" settled" if settled else ""}">{icon(mark)}{name} {e(row["id"])}</span>'
     if row.get("blocks"):
-        content += f'<span>{"Affected" if settled else "Blocks"} {e(", ".join(row["blocks"]))}</span>'
+        content += f'<span>{"Affected" if settled else "Blocks"} {e(blocked_work(row))}</span>'
     return content
 
 
@@ -327,11 +451,13 @@ def need_card(row, state, selected=False):
     content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["ask"])}</h3>'
     if row.get("context"):
         content += '<ul class="context">' + "".join(f"<li>{e(item)}</li>" for item in row["context"]) + "</ul>"
+    if row["status"] == "open" and row.get("meanwhile"):
+        content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {e(row["meanwhile"])}</p>'
     if row["status"] == "answered":
         content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{e(row["answer"])}</p></div>'
     elif row["status"] == "resolved":
         content += f'<div class="answer"><p class="answer-label">Chief\'s call</p><p>{e(row["answer"])}</p><p class="answer-label">Basis</p><p>{e(row["basis"])}</p></div>'
-        reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{row["id"].encode().hex()}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
+        reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
         content += f'<div class="reopen">{reopen}</div>'
     elif row.get("options"):
         content += '<ul class="options">' + "".join(choice(row, option, index, state) for index, option in enumerate(row["options"])) + "</ul>"
@@ -387,21 +513,81 @@ def needs_view(state, judgment, quick, resolved, answered):
     return f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
 
 
-def pending_parent(row, by_id):
-    """The unmerged PR an active stacked row lands after."""
-    parent = by_id.get(row.get("stackedOn"))
-    return parent if parent and row["state"] not in TERMINAL and parent["state"] != "merged" else None
+class Program:
+    """Lookups the work board needs across outcomes, layers, and decisions."""
+
+    def __init__(self, state):
+        self.needs = state["needs"]
+        self.by_id = {row["id"]: row for row in state["work"]}
+        self.layers = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
+
+    def foreign_parents(self, row):
+        """Unmerged layers of other outcomes that this active outcome's layers stack on."""
+        if row["state"] in TERMINAL:
+            return []
+        parents = [self.layers[layer["stackedOn"]] for layer in row.get("layers", []) if "stackedOn" in layer]
+        return [(layer, owner) for layer, owner in parents if owner is not row and layer["status"] != "merged"]
+
+    def blockers(self, row):
+        """(halts, kind, identity, text) for each open blocker; waits let building continue."""
+        items = []
+        for need in self.needs:
+            entry = next((entry for entry in need.get("blocks", []) if entry["id"] == row["id"]), None)
+            if need["status"] == "open" and entry:
+                items.append((entry["phase"] in HALTING, f'Decision · blocks {entry["phase"]}', need["id"], need["ask"]))
+        items += [(True, STATES[self.by_id[identity]["state"]], identity, self.by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
+        if row.get("blocked"):
+            items.append((True, "Other", "", row["blocked"]))
+        for _, parent in self.foreign_parents(row):
+            if self.halted(parent):
+                items.append((True, "Blocked base", parent["id"], parent["title"]))
+        return items
+
+    def halted(self, row):
+        return any(halts for halts, *_ in self.blockers(row))
 
 
-def blockers(row, needs, by_id):
-    items = [("Decision", need["id"], need["ask"]) for need in needs if need["status"] == "open" and row["id"] in need.get("blocks", [])]
-    items += [(STATES[by_id[identity]["state"]], identity, by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
-    if row.get("blocked"):
-        items.append(("Other", "", row["blocked"]))
-    parent = pending_parent(row, by_id)
-    if parent and blockers(parent, needs, by_id):
-        items.append(("Blocked parent", parent["id"], parent["title"]))
-    return items
+def state_badges(row, program):
+    primary = display_stage(row)
+    content = f'<span class="state {e(primary)}">{icon(primary)}{e(STATES[primary])}</span>'
+    if row["state"] == "ready":
+        content += f'<span class="state ready">{icon("ready")}{e(READY_LABELS[effective_finish(row)])}</span>'
+    if "provisional" in row:
+        content += f'<span class="state provisional">{icon("provisional")}Provisional</span>'
+    if program.halted(row):
+        content += f'<span class="state blocked">{icon("blocked")}Blocked</span>'
+    return content
+
+
+def finish_line(row):
+    if "finishLine" not in row:
+        return ""
+    value = FINISH_LINES[row["finishLine"]]
+    if "effectiveFinishLine" in row:
+        value += f' → {FINISH_LINES[row["effectiveFinishLine"]]} while provisional'
+    return f'<p class="finish">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(value)}</span></p>'
+
+
+def provisional_note(row):
+    if "provisional" not in row:
+        return ""
+    provisional = row["provisional"]
+    return (
+        f'<div class="provisional-note"><p class="note-label">{icon("provisional")}Provisional</p>'
+        f'<p><strong>Rests on</strong> {e(provisional["basis"])}</p><p><strong>Clears when</strong> {e(provisional["clears"])}</p>'
+        '<p class="note-rule">It never lands while provisional.</p></div>'
+    )
+
+
+def results_view(row):
+    if not row.get("results"):
+        return ""
+    items = "".join(
+        f'<li>{link(result["label"], result["url"], "result-link", "result")}'
+        + (f'<span class="result-access">{e(result["access"])}</span>' if result.get("access") else "") + "</li>"
+        for result in row["results"]
+    )
+    return f'<div class="results"><p class="note-label">Results</p><ul>{items}</ul></div>'
 
 
 def pr_link(target):
@@ -409,37 +595,51 @@ def pr_link(target):
     return link(f"PR #{match[1]}" if match else "Open PR", target, "pr-link", "pr")
 
 
-def work_card(row, needs, by_id):
-    reasons = blockers(row, needs, by_id)
-    heading_id = "work-" + row["id"].encode().hex()
-    content = f'<article class="card work" id="{card_id("work-card", row)}" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">'
-    primary = display_stage(row)
-    content += f'<span class="state {e(primary)}">{icon(primary)}{e(state_label(row))}</span>'
-    if row["state"] == "mergeable":
-        content += f'<span class="state mergeable">{icon("mergeable")}{e(STATES["mergeable"])}</span>'
-    if reasons:
-        content += f'<span class="state blocked">{icon("blocked")}Blocked</span>'
-    content += "</p></div>"
-    tags = {"support": "Support", "follow-up": "Follow-up"}.get(row["kind"], "")
-    tags = [tags] if tags else []
+def layers_view(row, program):
+    if not row.get("layers"):
+        return ""
+    items = ""
+    for layer in row["layers"]:
+        items += f'<li class="layer" id="layer-{hexed(layer["id"])}"><div class="layer-name"><code>{e(layer["branch"])}</code><span class="layer-meta">{e(layer["id"])} · {e(LAYER_STATES[layer["status"]])}'
+        if "stackedOn" in layer:
+            parent, parent_row = program.layers[layer["stackedOn"]]
+            items += f' · on {e(parent["id"])}' + (f' ({e(parent_row["id"])})' if parent_row is not row else "")
+        items += "</span></div>"
+        if "url" in layer:
+            items += pr_link(layer["url"])
+        items += "</li>"
+    label = "Layer" if len(row["layers"]) == 1 else f'{len(row["layers"])} layers, bottom first'
+    return f'<div class="layers"><p class="note-label">{e(label)}</p><ol>{items}</ol></div>'
+
+
+def blocker_list(items, label, mark, cls):
+    if not items:
+        return ""
+    content = f'<div class="{cls}"><p class="blocker-label">{icon(mark)}{e(label)}</p><ul>'
+    for kind, identity, text_value in items:
+        prefix = f'<span class="blocker-id">{e(identity)}</span> ' if identity else ""
+        content += f'<li>{prefix}<span class="blocker-kind">{e(kind)}</span> {e(text_value)}</li>'
+    return content + "</ul></div>"
+
+
+def work_card(row, program):
+    reasons = program.blockers(row)
+    heading_id = "work-" + hexed(row["id"])
+    content = f'<article class="card work" id="{card_id("work-card", row)}" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">{state_badges(row, program)}</p></div>'
+    tags = [{"support": "Support", "follow-up": "Follow-up"}[row["kind"]]] if row["kind"] != "outcome" else []
     if row.get("required") is False:
         tags.append("Proposed · outside committed scope")
-    parent = pending_parent(row, by_id)
-    if parent:
-        tags.append(f'Lands after {parent["id"]}')
     if tags or row.get("tickets"):
         content += '<p class="tags">' + "".join(f'<span class="tag">{e(tag)}</span>' for tag in tags) + "".join(link(t["label"], t["url"], "ticket") for t in row.get("tickets", [])) + "</p>"
     content += f'<h4 id="{heading_id}" class="work-title">{e(row["title"])}</h4>'
     if row.get("description"):
         content += f'<p class="work-description">{e(row["description"])}</p>'
+    content += finish_line(row)
     if row.get("unknownReason"):
         content += f'<p class="state-note">{icon("unknown")}{e(row["unknownReason"])}</p>'
-    if reasons:
-        content += f'<div class="blocker"><p class="blocker-label">{icon("blocked")}Blocked by</p><ul>'
-        for kind, identity, text_value in reasons:
-            prefix = f'<span class="blocker-id">{e(identity)}</span> ' if identity else ""
-            content += f'<li>{prefix}<span class="blocker-kind">{e(kind)}</span> {e(text_value)}</li>'
-        content += "</ul></div>"
+    content += blocker_list([item[1:] for item in reasons if item[0]], "Blocked by", "blocked", "blocker")
+    content += blocker_list([item[1:] for item in reasons if not item[0]], "Waits on", "waits", "blocker waits")
+    content += results_view(row) + provisional_note(row) + layers_view(row, program)
     if row.get("origin") or row.get("evidence"):
         content += '<details class="work-context"><summary class="section-toggle" id="' + card_id("toggle-evidence", row) + '">Evidence and history</summary><div class="section-body">'
         if row.get("origin"):
@@ -453,20 +653,24 @@ def work_card(row, needs, by_id):
     elif row.get("sessionUrl"):
         content += f'<p class="owner">{link("Owner session", row["sessionUrl"])}</p>'
     content += f'<p class="observation">Checked {when(row["updatedAt"])}</p></div>'
-    if row.get("url"):
-        content += pr_link(row["url"])
     return content + "</div></article>"
 
 
+def plural(count, word):
+    return f'{count} {word}{"" if count == 1 else "s"}'
+
+
 def overview(work):
-    total = len(work)
-    merged = sum(row["state"] == "merged" for row in work)
+    outcomes = [row for row in work if row["kind"] != "support"]
+    landed = sum(row["state"] == "landed" for row in outcomes)
+    support = len(work) - len(outcomes)
     counts = [(key, sum(display_stage(row) == key for row in work)) for key in STAGE_ORDER]
     counts = [(key, count) for key, count in counts if count]
     summary = ", ".join(f"{count} {STATES[key].lower()}" for key, count in counts)
     bar = "".join(f'<span class="segment {e(key)}" style="flex-grow:{count}"></span>' for key, count in counts)
+    tally = f'{plural(len(outcomes), "outcome")} · {landed} landed' + (f' · {plural(support, "support task")}' if support else "")
     return (
-        f'<div class="overview"><p class="work-count">{total} work item{"" if total == 1 else "s"} · {merged} merged</p>'
+        f'<div class="overview"><p class="work-count">{tally}</p>'
         f'<div class="progress" role="img" aria-label="{e(summary or "No work")}">{bar}</div>'
         "</div>"
     )
@@ -479,7 +683,7 @@ def render(state):
     quick = [row for row in open_needs if row.get("weight") == "quick"]
     resolved = [row for row in state["needs"] if row["status"] == "resolved"]
     answered = [row for row in state["needs"] if row["status"] == "answered"]
-    by_id = {row["id"]: row for row in state["work"]}
+    program = Program(state)
 
     needs_html = needs_view(state, judgment, quick, resolved, answered)
 
@@ -487,9 +691,9 @@ def render(state):
     for key in STAGE_ORDER:
         rows = [row for row in state["work"] if display_stage(row) == key]
         if rows:
-            blocked = sum(bool(blockers(row, state["needs"], by_id)) for row in rows)
+            blocked = sum(program.halted(row) for row in rows)
             alert = f'<span class="state blocked"><span class="sr-only">, </span>{icon("blocked")}{blocked} blocked</span>' if blocked else ""
-            cards = "".join(work_card(row, state["needs"], by_id) for row in rows)
+            cards = "".join(work_card(row, program) for row in rows)
             stages += collapsible(f"stage-{key}", STATES[key], len(rows), f'<div class="section-body stage-cards">{cards}</div>', level=3, state=key, mark=icon(key), alert=alert)
     work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded in this snapshot.</p>'
 
