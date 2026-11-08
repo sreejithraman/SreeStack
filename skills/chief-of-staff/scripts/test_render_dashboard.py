@@ -457,6 +457,20 @@ class DashboardTests(unittest.TestCase):
         base['layers'][0]['status'] = 'merged'
         self.assertNotIn('Closed base', self.card(render(self.state), 'W2'))
 
+    def test_finished_edges_and_finished_work_do_not_rest_on_a_scrapped_base(self):
+        self.state['needs'] = []
+        self.work('W1')['state'] = 'scrapped'
+        self.work('W2')['state'] = 'scrapped'
+        for status in ('merged', 'closed'):
+            self.work('W4').update(owner='Retry owner', finishLine='land', state='building', layers=[
+                {'id': 'W4-L1', 'branch': 'export-progress', 'status': status, 'url': 'https://example.com/exports/pull/70', 'stackedOn': 'W1-L2'}])
+            with self.subTest(layer=status):
+                html = render(self.state)
+                self.assertEqual(self.badges(html, 'W4'), ['building'])
+                self.assertNotRegex(self.card(html, 'W4'), '(Scrapped|Closed|Blocked) base|Blocked by')
+                self.assertEqual(self.badges(html, 'W2'), ['scrapped', 'provisional'])
+                self.assertNotRegex(self.card(html, 'W2'), '(Scrapped|Closed|Blocked) base|Blocked by')
+
     def test_same_owner_work_on_a_scrapped_outcome_waits_on_an_open_halting_need(self):
         self.state['needs'] = []
         self.state['work'] = [self.work('W4'), self.work('W1')]

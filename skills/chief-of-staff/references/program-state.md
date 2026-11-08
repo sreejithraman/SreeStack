@@ -207,13 +207,13 @@ type Revisit = {
 ```
 
 The renderer rejects a snapshot that claims more than the record supports:
-provisional work that merged, keeps Land, or claims ready on any finish line; a Try finish line
-with a published PR; a shown Try with nothing to open; a ready outcome with a
-layer short of its finish line; a landed outcome with an unmerged layer; active
-work with no owner; a layer on another owner's unmerged layer without a
-provisional mark; active work on a dead base, or a live layer on a closed
-one, without a halting Need; a `start` Need on work that started; and dangling or cyclic
-edges, including work blocked by itself.
+provisional work that merged, keeps Land, or claims ready on any finish line; a
+Try finish line with a published PR; a shown Try with nothing to open; a ready
+outcome with a layer short of its finish line; a landed outcome with an unmerged
+layer; active work with no owner; a layer on another owner's unmerged layer
+without a provisional mark; active work on a dead base, or a live layer on a
+closed one, without a halting Need; a `start` Need on work that started; and
+dangling or cyclic edges, including work blocked by itself.
 
 Write each `description` from the outcome's scope, not its title or the owner's
 next step. Store returned T3 thread links verbatim and use only real ticket, PR,
