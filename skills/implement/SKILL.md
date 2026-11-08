@@ -7,7 +7,8 @@ description: Use when asked to implement a spec, ticket, task, or feature, to de
 
 Carry one outcome to its finish line. Start from a brief, spec, task, ticket, or
 clear request. Leave merged work for **Land**, something to try for **Try**, and
-an owner report for your caller: the user, or the session that started you. You
+an owner report for your caller: the session that started you, or the user in a
+top-level thread. You
 are done when the finish line's gates pass, the user can open what you showed,
 and the report is delivered.
 
@@ -15,8 +16,9 @@ You own the outcome, the finish line, the order of handoffs, integration, scope,
 and the report. Each linked skill owns its own procedure. Helpers return to you.
 In a top-level thread, a subagent writes the change under Orchestration's
 [who does the work](../orchestration/SKILL.md#who-does-the-work); a child writes
-it itself. Scale each stage to the change: a small local fix needs its relevant
-checks, not every handoff below.
+it itself. Scale building and proof to the change: a small local fix needs its
+relevant checks, not every handoff below. Land's merge requirements always
+apply in full.
 
 ## 1. Resolve one outcome
 
@@ -35,8 +37,10 @@ One outcome ships as one PR or as a planned stack from you. Split PRs by
 reviewability, never to manage context. Several tickets can share a PR when they
 form one reviewable change. When the work turns out to be several outcomes that
 need coordinating, promote it: offer [Chief of Staff](../chief-of-staff/SKILL.md)
-to a user caller, or return the proposed outcomes to a session caller. Keep
-working on what stays in scope. Several layers alone are no reason to promote.
+to a user caller, or return the proposed outcomes to a session caller. While you
+wait, keep building any outcome the user clearly asked for that stands alone;
+if none does, stop at the offer. Never start the other outcomes. Several layers
+alone are no reason to promote.
 
 Done when the outcome, covered code, preserved behavior, proof, inputs, caller,
 and holds are known.
@@ -72,11 +76,14 @@ Prepare before work runs unattended:
 When something is missing, record the exact block: what is missing, who can
 supply it, and what it blocks. Continue with the work that doesn't need it.
 
-Work built on an unmerged base or a recorded assumption is **provisional**. Name
-the branch or assumption it rests on. Provisional work can build, prove, and be
-reviewed, but it turns Land into Try, never merges, and never crosses into
-destructive or outward-facing actions. If its base changes, restack and recheck
-it. If its base is scrapped, offer it for scrap too.
+Work is **provisional** when it rests on something you don't control: another
+owner's unmerged branch or PR, or a recorded assumption awaiting a decision.
+Your own planned layers are not provisional; Land lands your stack bottom-up
+through Merge. Name the branch or assumption provisional work rests on. It can
+build and prove, and is reviewed only when the caller asks. It turns Land into
+Try, never merges, and never crosses into destructive or outward-facing
+actions. If its base changes, restack and recheck it. If its base is scrapped,
+offer it for scrap too.
 
 Done when the finish line is stated, required access works or its block is
 recorded, needed baselines exist, and every provisional assumption is named.
@@ -85,8 +92,9 @@ recorded, needed baselines exist, and every provisional assumption is named.
 
 Choose the method by the work: [Diagnosing Bugs](../diagnosing-bugs/SKILL.md)
 for a defect or performance regression, [TDD](../tdd/SKILL.md) for features and
-repairs at meaningful behavior seams, the platform and design skills for
-interface work, [Writing for Agents](../writing-for-agents/SKILL.md) for skills
+repairs at meaningful behavior seams, [UI Design](../ui-design/SKILL.md) and
+the platform skill, such as [SwiftUI](../swiftui/SKILL.md) or
+[UIKit](../uikit/SKILL.md), for interface work, [Writing for Agents](../writing-for-agents/SKILL.md) for skills
 and agent instructions, and
 [Engineering Principles](../engineering-principles/SKILL.md) for consequential
 design choices. Check small units as they become usable, and strengthen checks
@@ -145,10 +153,10 @@ reported as a gap, and the user can open what you showed.
   keep: go to Merge, which runs review, opens the PR, and lands it. Changes go
   back to stage 3. Scrap goes to [Repo Cleanup](../repo-cleanup/SKILL.md).
 - **PR:** PR runs review, publishes, and watches to the requested state.
-- **Land:** go to Merge. Until hard gates exist, Merge's requirements are the
-  gate: review of the current head, required checks, and passing proof. Land is
-  done when GitHub reports every PR merged and the result is shown. A closed PR
-  did not land.
+- **Land:** go to Merge; a stack lands bottom-up as one merge set. Until hard
+  gates exist, Merge's requirements are the gate: review of the current head,
+  required checks, and passing proof. Land is done when GitHub reports every PR
+  merged and the result is shown. A closed PR did not land.
 
 Provisional work stops at Try. An open decision request on this outcome's scope
 blocks landing. Coordinate stack changes that affect other layers with the
