@@ -201,6 +201,7 @@ instructions rather than maintaining another API manual.
 | Publish and watch | `pr`; `gh-stack` manages dependent layers |
 | Land and clean up | `merge`, then `repo-cleanup` |
 | Transfer context or improve the environment | Explicit `handoff` or `retro` |
+| Improve the stack's skills and checks from evidence | [tune-stack](skills/tune-stack/SKILL.md), started by you; chains `retro` and `correct`, and proves each change against the old version |
 
 [SEO](skills/seo/SKILL.md) is automatically discoverable for website search work.
 For example, “Find why our public product pages aren't indexed and fix it”
@@ -399,6 +400,13 @@ goal-state tools.
 
 The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
 to the agent environment. Invoke it explicitly; it returns recommendations.
+[Tune Stack](skills/tune-stack/SKILL.md) improves SreeStack's own skills and
+checks from session logs, run metrics, or a new model release. Invoke it
+explicitly. A retrospective request returns recommendations; otherwise it
+picks one hypothesis, proves the candidate against the old version with
+`writing-for-agents`' comparison runner on `claude plugin eval`, and builds it
+through `implement` to Try.
+It lands only when you say Land.
 The [correct skill](skills/correct/SKILL.md) investigates repeated agent mistakes
 in a repository and connects each live failure class to a structural repair or
 enforceable guard. It supports planning and authorized implementation and stays
@@ -649,7 +657,7 @@ uses and adapts:
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Benji Taylor / Stageshow](https://github.com/benjitaylor/skills) — product UI illustrations, animated demos, and the bundled React kit and examples.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including implementation, chief-of-staff coordination, and the Standards and Spec review rules.
-- [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods adapted into `writing-for-agents`.
+- [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods, including comparison rules, adapted into `writing-for-agents`.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Felix Rieseberg](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad](https://www.youtube.com/watch?v=RbfQayMNtJc) — outcome, depth, range, and verification ideas informing Reframe and goal execution; instructions are independently written.

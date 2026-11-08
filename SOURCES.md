@@ -1234,7 +1234,7 @@ Setup references use the local `setup-sreestack` entry point.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures (MIT).
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures, and `scripts/eval.mjs` informed the comparison rules in `scripts/compare.py` (MIT).
 
 A local rewrite around one test: a line stays only if removing it changes what an
 agent does. Keeps the upstream concepts that change behavior: pointers, placement,
@@ -1249,8 +1249,21 @@ Existing invocation choices are preserved.
 Rewrites start fresh, then settle old rules by the failure they prevent. Tool guidance
 covers drift, help quality, call syntax, and usage-derived examples. Working on Skills
 starts from real runs. Controlled Comparison keeps matched variants, calibration,
-full outcome checks, and normal host integration; no runner or provider adapter is
-bundled.
+full outcome checks, and normal host integration.
+
+`scripts/compare.py` builds on Claude Code's experimental `claude plugin eval`,
+checked on Claude Code 2.1.318. It wraps the old and new skill trees as identical
+plugins over one copy of the eval cases, always passes `--no-publish`, and stops
+before the new run when the old one is partial. Scoring follows `eval.mjs`'s
+paired comparison with local rules: one declared target, a veto from any failed run
+of a required case, no win on equal results, missing telemetry reported as
+unproven, and no claim of equivalence or significance. It treats a partial run, a missing, failed,
+aborted, or skipped run, and results that differ in cases, case settings, model,
+Claude version, or ablation as invalid. The whole old suite runs before the new
+one. It drops skill-diet's own harness, its MISS and WORSE pass
+rules, regex answer scoring, token sums, and Codex runs; Codex comparisons use
+dry-run trials. `plugin eval` reports no token counts. Paid runs stay out of the
+checks.
 
 Keeps skill-diet's steps for adding a rule, its level rule, and its counts of 10–15
 requests and three runs. Holds an added rule to the three runs a removal needs, in
@@ -1394,6 +1407,13 @@ inspection. Historical claims are checked against current artifacts.
 Repository-wide recurring failure prevention belongs to `correct`; retro reports
 the session evidence and routes further investigation only within the user's scope.
 
+
+## tune-stack
+
+- Local: `skills/tune-stack` (SreeStack), a user-started workflow that improves
+  SreeStack skills and checks from evidence and proves each change against the
+  old version. It chains `retro` and `correct`, and uses `writing-for-agents`'
+  comparison runner and `implement`.
 
 ## Shared global instructions
 

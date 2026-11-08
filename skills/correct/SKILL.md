@@ -74,6 +74,9 @@ Use [Chief of Staff](../chief-of-staff/SKILL.md) for several repair outcomes and
 [Swarm](../swarm/SKILL.md) for bounded parallel investigation or implementation.
 The requested finish line governs PR publication and merging.
 
+When the user asks to prove that a repair improves agent behavior, beyond its
+guard proof, hand the class to [Tune Stack](../tune-stack/SKILL.md).
+
 Report each class as planned, prevented, partly covered, resolved already, or deferred,
 with its evidence, checks, and remaining exposure. Planning is complete when
 the recommendations have traceable evidence and a usable migration/proof plan.

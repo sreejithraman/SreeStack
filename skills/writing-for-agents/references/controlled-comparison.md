@@ -16,17 +16,30 @@ needs it. A fresh-session try while working on a skill is not a controlled compa
    a handoff. Define observable end states and mark required cases before
    any run. Use disposable fixtures for anything a
    [guardrail](../SKILL.md#writing-for-agents) covers.
+   On Claude Code, write each task as a
+   [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) case with
+   deterministic graders where they can decide, then run
+   [`compare.py`](../scripts/compare.py) with one declared target and the required
+   cases. It runs the old and new skill trees as identical plugins, each with a
+   no-skill baseline arm, and decides by step 8; its `--help` gives targets and
+   limits. It starts paid sessions, so run it only for an authorized comparison. On
+   Codex, use [dry-run trials](working-on-skills.md#run-trials-safely) and mark
+   measured claims unverified.
 4. **Isolate and calibrate.** Load the exact skill copy, apart from installed skills,
-   memory, and user rules, using disposable profiles so real configuration and logins
-   stay untouched. Prove it with three probes: a disposable skill's random
+   memory, and user rules, using disposable profiles so real configuration stays
+   untouched. `plugin eval` gives each run a temporary home and sandboxes shell
+   tools, but not hooks or MCP servers. Prove it with three probes: a disposable skill's random
    instruction takes effect and its read is logged; the same request without the skill
    shows neither; a harmless command is logged with its known result. Recalibrate after
    any runtime change.
 5. **Run repeats.** Pilot two tasks to check the scoring. Then run each task 3 times per
    variant in fresh sessions with alternating order, and add runs where results vary.
+   `compare.py` runs the whole old suite before the new one instead; report that
+   order as a limit. Repeats and the baseline arm still apply.
 6. **Record each session.** Keep task, variant, skill and fixture hashes, settings,
    versions, the transcript, ordered tool calls, token usage, and elapsed time. Treat
-   missing telemetry as a gap, not a zero. Keep failed trials. Reuse a result only if
+   missing telemetry as a gap, not a zero: `plugin eval` reports no token counts and
+   keeps transcripts only with `--keep-temp`. Keep failed trials. Reuse a result only if
    its task, fixture, variant, settings, and checks all match. Clean up only what the
    session created, and keep retained evidence.
 7. **Judge the outcome.** Inspect end states and the full call sequence. Prove each
