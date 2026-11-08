@@ -9,8 +9,9 @@ disable-model-invocation: true
 Turn a rough idea into ready work through conversation and evidence. Start from
 the user's idea and the sources they point to. Leave one settled brief, or one
 spec when the idea holds several outcomes, in a record the user can open. You
-are done when every decision that changes the outcome is settled and the brief
-or spec is usable, or the user drops the idea and the record says why.
+are done when every decision that changes the outcome is settled, except one
+recorded as the question Try will answer, and the brief or spec is usable, or
+the user drops the idea and the record says why.
 
 You own the conversation, the record, which capability to use next, and the
 stop. Each linked skill owns its own procedure and returns to you. Shaping builds
@@ -44,11 +45,12 @@ decision changes it.
 
 Read the idea, the sources it names, and the code and records it touches. When
 the outcome, proof, and scope are already clear, say so and offer Implement with
-the request as its brief; open no record. Otherwise form the first brief with Reframe and open the
-record as Draft.
+the request as its brief; open no record. Otherwise form the first brief with
+Reframe and open the record as Draft.
 
 Done when the desired change, its sources, and the next uncertainty are explicit,
-and the record's path is in the thread.
+and the record's path is in the thread. For a clear idea, done when the user has
+the offer.
 
 ## 2. Resolve what matters
 
@@ -84,21 +86,21 @@ verdict and the prototype's disposition are in the record.
 
 Every intended outcome needs its proof, covered code, preserved behavior, out of
 scope, inputs and access, decisions and assumptions, and one finish-line field:
-the line the user requested, or else a line marked proposed with its reason,
-from Implement's
+the line the user requested, or else a line marked proposed with its reason, from
+Implement's
 [finish-line policy](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
 A question only trying the built thing can answer, such as a visual direction,
 doesn't block Settled: record it as the question Try will answer, and propose
-Try. A settled brief
-is not Land by itself; the execution owner states its finish line when it starts.
+Try. A settled brief is not Land by itself; the execution owner states its finish
+line when it starts.
 
 For one outcome, reconcile the brief with Reframe. For several, turn the same
 record into one spec with [To Spec](../to-spec/SKILL.md). Splitting the spec into
 tasks stays with the chief.
 
-Before you mark the record Settled, show the whole record and let the user
-correct it. Their substantive answers count as acceptance; ask no separate
-approval.
+Mark the record Settled without a separate approval. Showing the settled
+record with the offer or handoff in stage 5 is the user's chance to correct it;
+a correction reopens the record as Draft.
 
 When the user drops the idea, mark the record Dropped with the reason and what
 was learned. When something outside the conversation blocks settling, leave the
