@@ -11,7 +11,8 @@ Usage:
   {
     "version": 1,
     "host": {"adapter": "claude" | "codex", "model": "...", "effort": "low",
-             "timeout_seconds": 600, "permission_mode": "acceptEdits", "max_budget_usd": 1},
+             "timeout_seconds": 600, "check_timeout_seconds": 120,
+             "permission_mode": "acceptEdits", "max_budget_usd": 1},
     "variants": {"old": "variants/old", "new": "variants/new", "none": null},
     "baseline": "old", "candidate": "new", "repeats": 3,
     "target": {"metric": "pass_rate" | "task_pass" | "cost_usd" | "turns" | "tool_calls"
@@ -23,9 +24,12 @@ Usage:
   }
 
 A variant path is a directory of skill folders, or null for no skills. Paths are
-relative to <eval-dir>. Checks get EVAL_WORK and EVAL_OUT. Every input is hashed,
-and a result counts only while its hashes match. Work dirs move into the evidence
-folder after the checks; nothing here deletes a fixture or a result.
+relative to <eval-dir>, and names match [A-Za-z0-9][A-Za-z0-9._-]*. Everything in
+<eval-dir> except the runner's output is the experiment: changing any file, the
+target or the plan makes every result stale. The runner refuses anything unusual
+before a paid session: symlinks, skill directories inside a fixture, duplicate or
+unsafe names. Checks get only PATH, LANG, TMPDIR, HOME (the work dir), EVAL_WORK
+and EVAL_OUT. Retained evidence has secret-looking environment values redacted.
 """
 
 import argparse
@@ -36,83 +40,123 @@ from pathlib import Path
 import random
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
 
 import hosts
+from hosts import InvalidEvidence, redact, write_atomic
 
 HARNESS = [Path(__file__).resolve(), Path(hosts.__file__).resolve()]
+NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+OUTPUTS = {"runs", "superseded", "calibration", "judging", "score.json"}
+DISCOVERY = {".claude", ".agents", ".codex"}
 LOWER_IS_BETTER = {"cost_usd", "turns", "tool_calls", "wall_seconds"}
-
-
-class InvalidEvidence(Exception):
-    pass
+TARGETS = {"pass_rate", "task_pass"} | LOWER_IS_BETTER
+STATUSES = {"ok", "error", "timeout"}
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def tree_hash(path: Path | None) -> str | None:
-    if path is None:
-        return None
-    if not path.exists():
-        raise InvalidEvidence(f"missing input: {path}")
-    digest = hashlib.sha256()
-    for item in sorted(path.rglob("*")):
-        relative = item.relative_to(path).as_posix()
-        if item.is_symlink():
-            digest.update(f"L {relative} {os.readlink(item)}\n".encode())
-        elif item.is_file():
-            digest.update(f"F {relative} {os.access(item, os.X_OK)} {sha256(item.read_bytes())}\n".encode())
-    return digest.hexdigest()
-
-
 def canonical(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def read_json(path: Path):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError) as error:
+        raise InvalidEvidence(f"{path}: {error}") from None
+
+
+def require(condition, message: str) -> None:
+    if not condition:
+        raise InvalidEvidence(message)
+
+
+def tree_hash(root: Path, skip=()) -> str:
+    """Hash file contents under root. Any symlink is refused."""
+    require(not root.is_symlink(), f"symlink not allowed: {root}")
+    digest = hashlib.sha256()
+    for directory, folders, files in os.walk(root):
+        here = Path(directory)
+        if here == root:
+            folders[:] = [f for f in folders if f not in skip]
+            files = [f for f in files if f not in skip]
+        folders.sort()
+        for name in folders + sorted(files):
+            require(not (here / name).is_symlink(), f"symlink not allowed: {here / name}")
+        for name in sorted(files):
+            path = here / name
+            relative = path.relative_to(root).as_posix()
+            digest.update(f"{relative} {os.access(path, os.X_OK)} {sha256(path.read_bytes())}\n".encode())
+    return digest.hexdigest()
 
 
 class Eval:
     def __init__(self, directory: Path, adapter=None):
         self.dir = directory.resolve()
-        self.manifest = json.loads((self.dir / "manifest.json").read_text())
-        if self.manifest.get("version") != 1:
-            raise InvalidEvidence("manifest.json needs \"version\": 1")
-        self.host = self.manifest["host"]
-        self.adapter = adapter or hosts.ADAPTERS[self.host["adapter"]]()
-        self.variants = {name: (self.dir / path if path else None)
-                         for name, path in self.manifest["variants"].items()}
-        for role in ("baseline", "candidate"):
-            if self.manifest[role] not in self.variants:
-                raise InvalidEvidence(f"{role} {self.manifest[role]!r} is not a variant")
-        self.tasks = {task["id"]: task for task in self.manifest["tasks"]}
-        self.repeats = int(self.manifest.get("repeats", 3))
-        self.target = self.manifest["target"]
-        self._hashes = None
+        try:
+            self._load(read_json(self.dir / "manifest.json"), adapter)
+        except (KeyError, TypeError, AttributeError, ValueError) as error:
+            raise InvalidEvidence(f"manifest.json: {type(error).__name__}: {error}") from None
+        self._identity = None
 
-    def hashes(self) -> dict:
-        if self._hashes is None:
-            self._hashes = {
+    def _load(self, manifest, adapter) -> None:
+        require(manifest["version"] == 1, 'manifest.json needs "version": 1')
+        self.manifest = manifest
+        self.host = manifest["host"]
+        require(isinstance(self.host["model"], str), "host.model must be a string")
+        self.adapter = adapter or hosts.ADAPTERS[self.host["adapter"]]()
+        self.variants = {}
+        for name, path in manifest["variants"].items():
+            require(NAME.match(name), f"unsafe variant name {name!r}")
+            self.variants[name] = None if path is None else self.input_dir(path)
+        ids = [task["id"] for task in manifest["tasks"]]
+        require(ids and len(ids) == len(set(ids)), "task ids must be present and unique")
+        self.tasks = {}
+        for task in manifest["tasks"]:
+            require(NAME.match(task["id"]), f"unsafe task id {task['id']!r}")
+            require(isinstance(task["prompt"], str), f"task {task['id']} needs a prompt")
+            require(all(isinstance(c, str) for c in task.get("checks", [])), f"task {task['id']}: checks are strings")
+            if task.get("fixture"):
+                fixture = self.input_dir(task["fixture"])
+                found = [p for p in fixture.rglob("*") if p.name in DISCOVERY]
+                require(not found, f"fixture holds skill discovery directories: {', '.join(map(str, found))}")
+            self.tasks[task["id"]] = task
+        for role in ("baseline", "candidate"):
+            require(manifest[role] in self.variants, f"{role} {manifest[role]!r} is not a variant")
+        require(manifest["baseline"] != manifest["candidate"], "baseline and candidate must differ")
+        self.repeats = manifest.get("repeats", 3)
+        require(isinstance(self.repeats, int) and self.repeats >= 1, "repeats must be a positive integer")
+        self.target = manifest["target"]
+        metric = self.target["metric"]
+        require(metric in TARGETS or metric.startswith("tokens."), f"unknown target metric {metric}")
+        require(metric != "task_pass" or self.target.get("task") in self.tasks, "task_pass needs a planned task")
+
+    def inside(self, path: Path) -> Path:
+        require(path.resolve().is_relative_to(self.dir), f"{path} leaves {self.dir}")
+        return path
+
+    def input_dir(self, relative: str) -> Path:
+        path = self.inside(self.dir / relative)
+        require(path.is_dir() and not path.is_symlink(), f"{path} must be a directory, not a symlink")
+        return path
+
+    def identity(self) -> str:
+        """The experiment: harness, host version, and every input file in the eval dir."""
+        if self._identity is None:
+            self._identity = sha256(canonical({
                 "harness": sha256(b"".join(path.read_bytes() for path in HARNESS)),
                 "host_version": self.adapter.version(),
-                "settings": sha256(canonical(self.host).encode()),
-                "variants": {name: tree_hash(path) for name, path in self.variants.items()},
-                "fixtures": {task_id: tree_hash(self.fixture(task))
-                             for task_id, task in self.tasks.items()},
-            }
-        return self._hashes
+                "inputs": tree_hash(self.dir, skip=OUTPUTS),
+            }).encode())
+        return self._identity
 
     def fixture(self, task) -> Path | None:
         return self.dir / task["fixture"] if task.get("fixture") else None
-
-    def input_hash(self, task_id: str, variant: str) -> str:
-        hashes = self.hashes()
-        return sha256(canonical({
-            "task": self.tasks[task_id], "fixture": hashes["fixtures"][task_id], "variant": hashes["variants"][variant],
-            "settings": self.host, "host_version": hashes["host_version"], "harness": hashes["harness"],
-        }).encode())
 
     def plan(self, only=None) -> list:
         """Every planned cell, with the variant order rotated per task and repeat."""
@@ -123,25 +167,23 @@ class Eval:
                 if only and task_id not in only:
                     continue
                 shift = (repeat + index) % len(names)
-                for variant in names[shift:] + names[:shift]:
-                    cells.append((task_id, variant, repeat))
+                cells += [(task_id, variant, repeat) for variant in names[shift:] + names[:shift]]
         return cells
 
-    def cell_dir(self, task_id, variant, repeat) -> Path:
-        return self.dir / "runs" / task_id / variant / str(repeat)
+    def output(self, *parts) -> Path:
+        return self.inside(self.dir.joinpath(*map(str, parts)))
 
-    def calibration_key(self) -> str:
-        hashes = self.hashes()
-        return sha256(canonical({key: hashes[key] for key in ("harness", "host_version", "settings", "variants")}).encode())[:16]
+    def recorded(self) -> list:
+        return sorted(self.output("runs").glob("*/*/*/result.json"))
 
 
 def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None, out: Path, variant: str):
-    """One fresh session in its own work dir. The work dir ends inside `out`."""
-    out.mkdir(parents=True, exist_ok=True)
+    """One fresh session in its own work dir."""
+    out.mkdir(parents=True)
     scratch = Path(tempfile.mkdtemp(prefix="compare-"))
     work = scratch / "work"
     if fixture:
-        shutil.copytree(fixture, work, symlinks=True)
+        shutil.copytree(fixture, work)
     else:
         work.mkdir()
     started = time.monotonic()
@@ -160,13 +202,17 @@ def keep_work(work: Path, scratch: Path, out: Path) -> None:
     shutil.rmtree(scratch, ignore_errors=True)
 
 
-def run_checks(task, work: Path, out: Path) -> list:
+def run_checks(ev: Eval, task, work: Path, out: Path) -> list:
+    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LANG": os.environ.get("LANG", "C.UTF-8"),
+           "TMPDIR": tempfile.gettempdir(), "HOME": str(work), "EVAL_WORK": str(work), "EVAL_OUT": str(out)}
     results = []
-    env = {**os.environ, "EVAL_WORK": str(work), "EVAL_OUT": str(out)}
     for index, command in enumerate(task.get("checks", [])):
-        done = subprocess.run(["sh", "-c", command], cwd=work, env=env, capture_output=True, text=True)
-        (out / f"check-{index}.log").write_text(done.stdout + done.stderr)
-        results.append({"command": command, "exit": done.returncode})
+        log = out / f"check-{index}.log"
+        with open(log, "w") as stream:
+            code = hosts.run_group(["sh", "-c", command], cwd=work, env=env, stdout=stream, stderr=stream,
+                                   timeout=ev.host.get("check_timeout_seconds", 120))
+        hosts.redact_file(log)
+        results.append({"command": command, "exit": "timeout" if code is None else code})
     return results
 
 
@@ -174,12 +220,18 @@ def listed_names(answer: str) -> set:
     return set(re.findall(r"[\w:.-]+", answer))
 
 
+def calibrated(ev: Eval) -> bool:
+    marker = ev.output("calibration", "passed.json")
+    return marker.exists() and read_json(marker).get("identity") == ev.identity()
+
+
 def calibrate(ev: Eval) -> bool:
-    """Probe isolation with a disposable canary, then load each variant's collection normally."""
-    key = ev.calibration_key()
-    base = ev.dir / "calibration" / key
-    if base.exists():
-        base = base.with_name(f"{key}-{int(time.time())}")
+    """Probe isolation in a real task fixture with a canary, then load each variant's collection."""
+    ev.identity()
+    marker = ev.output("calibration", "passed.json")
+    marker.unlink(missing_ok=True)
+    base = ev.output("calibration", time.strftime("%Y%m%dT%H%M%S") + f"-{random.randrange(16**4):04x}")
+    fixture = ev.fixture(next(iter(ev.tasks.values())))
     canary_name = f"calib-canary-{random.randrange(16**6):06x}"
     code = f"CANARY-{random.randrange(16**8):08x}"
     canary_tree = base / "canary-tree"
@@ -221,7 +273,7 @@ def calibrate(ev: Eval) -> bool:
     passed = True
     report = []
     for probe_id, tree, prompt, checks in probes:
-        result, work, scratch = run_session(ev, tree, prompt, None, base / probe_id, f"calibrate-{probe_id}")
+        result, work, scratch = run_session(ev, tree, prompt, fixture, base / probe_id, f"calibrate-{probe_id}")
         keep_work(work, scratch, base / probe_id)
         result.save(base / probe_id)
         outcomes = [(False, f"session {result.status}: {result.error}")] if result.status != "ok" else checks(result)
@@ -229,52 +281,73 @@ def calibrate(ev: Eval) -> bool:
             passed &= bool(ok)
             report.append({"probe": probe_id, "pass": bool(ok), "check": what})
             print(f"{'PASS' if ok else 'FAIL'} {probe_id}: {what}")
-    (base / "calibration.json").write_text(json.dumps(
-        {"key": key, "pass": passed, "hashes": ev.hashes(), "probes": report}, indent=2))
+    write_atomic(base / "calibration.json", json.dumps(
+        {"identity": ev.identity(), "pass": passed, "probes": report}, indent=2))
     if passed:
-        (ev.dir / "calibration" / f"{key}.pass").write_text(str(base))
+        write_atomic(marker, json.dumps({"identity": ev.identity(), "evidence": str(base)}))
     print(f"calibration {'passed' if passed else 'failed'}; evidence in {base}")
     return passed
 
 
+def supersede(ev: Eval, folder: Path, stamp: str) -> None:
+    kept = ev.output("superseded", stamp, folder.relative_to(ev.dir / "runs"))
+    kept.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(folder), str(kept))
+
+
 def run(ev: Eval, only=None, replace_stale=False) -> None:
-    cells = ev.plan(only)
-    todo, stale = [], []
-    for cell in cells:
-        stored = ev.cell_dir(*cell) / "result.json"
-        if not stored.exists():
-            todo.append(cell)
-        elif json.loads(stored.read_text())["input_hash"] != ev.input_hash(cell[0], cell[1]):
-            stale.append(cell)
+    ev.identity()
+    for task_id in only or []:
+        require(task_id in ev.tasks, f"unknown task {task_id}")
+    stale = [path.parent for path in ev.recorded() if read_json(path).get("identity") != ev.identity()]
     if stale and not replace_stale:
-        raise InvalidEvidence("results with changed inputs: " + ", ".join("/".join(map(str, c)) for c in stale)
-                              + ". Rerun with --replace-stale to keep them under superseded/ and run again.")
-    print(f"{len(todo) + len(stale)} sessions to run; {len(cells) - len(todo) - len(stale)} reused with matching hashes")
-    if not todo and not stale:
-        return
-    if not (ev.dir / "calibration" / f"{ev.calibration_key()}.pass").exists() and not calibrate(ev):
-        raise InvalidEvidence("calibration failed; fix the adapter or host settings first")
+        raise InvalidEvidence(f"{len(stale)} results belong to an earlier experiment (inputs, plan or target "
+                              "changed). Use a fresh eval dir, or --replace-stale to move them to superseded/.")
     stamp = time.strftime("%Y%m%dT%H%M%S")
-    for cell in stale:
-        kept = ev.dir / "superseded" / stamp / Path(*map(str, cell))
-        kept.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(ev.cell_dir(*cell)), str(kept))
-    for task_id, variant, repeat in [c for c in cells if c in todo or c in stale]:
+    for folder in stale:
+        supersede(ev, folder, stamp)
+    todo = [cell for cell in ev.plan(only) if not ev.output("runs", *cell, "result.json").exists()]
+    print(f"{len(todo)} sessions to run")
+    if todo and not calibrated(ev) and not calibrate(ev):
+        raise InvalidEvidence("calibration failed; fix the adapter or host settings first")
+    for task_id, variant, repeat in todo:
+        out = ev.output("runs", task_id, variant, repeat)
+        if out.exists():  # An interrupted cell: keep it, start over.
+            supersede(ev, out, stamp)
         task = ev.tasks[task_id]
-        out = ev.cell_dir(task_id, variant, repeat)
         result, work, scratch = run_session(ev, ev.variants[variant], task["prompt"], ev.fixture(task), out, variant)
-        result.checks = run_checks(task, work, out) if result.status == "ok" else []
+        result.checks = run_checks(ev, task, work, out) if result.status == "ok" else []
         keep_work(work, scratch, out)
+        tree = ev.variants[variant]
         result.save(out, extra={
-            "task": task_id, "variant": variant, "repeat": repeat, "input_hash": ev.input_hash(task_id, variant),
-            "inputs": {"model": ev.host.get("model"), "effort": ev.host.get("effort"), **ev.hashes(),
-                       "variant_hash": ev.hashes()["variants"][variant]},
+            "task": task_id, "variant": variant, "repeat": repeat, "identity": ev.identity(),
+            "inputs": {"model": ev.host.get("model"), "effort": ev.host.get("effort"),
+                       "host_version": ev.adapter.version(), "variant_hash": tree and tree_hash(tree)},
         })
         print(task_id, variant, repeat, result.status, f"{result.wall_seconds:.0f}s")
 
 
+def load_cell(ev: Eval, task_id, variant, repeat) -> dict:
+    path = ev.output("runs", task_id, variant, repeat, "result.json")
+    require(path.exists(), f"missing cell {task_id}/{variant}/{repeat}")
+    data = read_json(path)
+    require(isinstance(data, dict) and data.get("identity") == ev.identity(),
+            f"stale cell {task_id}/{variant}/{repeat}: it belongs to an earlier experiment")
+    number = (int, float)
+    valid = (data.get("status") in STATUSES and isinstance(data.get("answer"), str)
+             and isinstance(data.get("checks"), list)
+             and all(isinstance(c, dict) and (c.get("exit") == "timeout" or type(c.get("exit")) is int)
+                     for c in data["checks"])
+             and (data.get("calls") is None or isinstance(data["calls"], list))
+             and (data.get("tokens") is None or isinstance(data["tokens"], dict))
+             and all(data.get(k) is None or isinstance(data[k], number) for k in ("cost_usd", "turns"))
+             and isinstance(data.get("wall_seconds"), number))
+    require(valid, f"{path}: malformed result")
+    return data
+
+
 def blind(ev: Eval) -> Path:
-    judging = ev.dir / "judging"
+    judging = ev.output("judging")
     items, key = [], {}
     for task_id, variant, repeat in ev.plan():
         task = ev.tasks[task_id]
@@ -283,36 +356,31 @@ def blind(ev: Eval) -> Path:
         stored = load_cell(ev, task_id, variant, repeat)
         blind_id = f"item-{random.randrange(16**8):08x}"
         items.append({"id": blind_id, "task": task["prompt"], "criteria": task["judge"], "answer": stored["answer"]})
-        key[blind_id] = {"task": task_id, "variant": variant, "repeat": repeat, "input_hash": stored["input_hash"]}
+        key[blind_id] = {"task": task_id, "variant": variant, "repeat": repeat, "identity": ev.identity()}
     random.shuffle(items)
     judging.mkdir(exist_ok=True)
-    (judging / "packet.json").write_text(json.dumps(items, indent=2))
-    (judging / "key.json").write_text(json.dumps(key, indent=2))
+    write_atomic(judging / "packet.json", json.dumps(items, indent=2))
+    write_atomic(judging / "key.json", json.dumps(key, indent=2))
     print(f"Give a fresh judge only {judging / 'packet.json'}. It writes {judging / 'verdicts.json'} "
           'as {"<id>": {"pass": true, "reason": "..."}}. Keep key.json from the judge.')
     return judging
 
 
-def load_cell(ev: Eval, task_id, variant, repeat) -> dict:
-    stored = ev.cell_dir(task_id, variant, repeat) / "result.json"
-    if not stored.exists():
-        raise InvalidEvidence(f"missing cell {task_id}/{variant}/{repeat}")
-    data = json.loads(stored.read_text())
-    if data["input_hash"] != ev.input_hash(task_id, variant):
-        raise InvalidEvidence(f"stale cell {task_id}/{variant}/{repeat}: its inputs changed")
-    return data
-
-
 def judge_verdicts(ev: Eval) -> dict:
-    judging = ev.dir / "judging"
+    judging = ev.output("judging")
     if not (judging / "key.json").exists():
         return {}
-    key = json.loads((judging / "key.json").read_text())
-    verdicts = json.loads((judging / "verdicts.json").read_text()) if (judging / "verdicts.json").exists() else {}
+    key = read_json(judging / "key.json")
+    verdicts = read_json(judging / "verdicts.json") if (judging / "verdicts.json").exists() else {}
+    require(isinstance(key, dict) and isinstance(verdicts, dict), "judging files must hold JSON objects")
     mapped = {}
-    for blind_id, cell in key.items():
-        if blind_id in verdicts and cell["input_hash"] == ev.input_hash(cell["task"], cell["variant"]):
-            mapped[(cell["task"], cell["variant"], cell["repeat"])] = bool(verdicts[blind_id]["pass"])
+    for blind_id, verdict in verdicts.items():
+        require(isinstance(verdict, dict) and type(verdict.get("pass")) is bool,
+                f"verdict {blind_id}: pass must be a JSON boolean")
+        cell = key.get(blind_id)
+        require(isinstance(cell, dict), f"verdict {blind_id} is not in key.json")
+        if cell.get("identity") == ev.identity():
+            mapped[(cell["task"], cell["variant"], cell["repeat"])] = verdict["pass"]
     return mapped
 
 
@@ -330,10 +398,16 @@ def mean(values):
 
 def score(ev: Eval) -> dict:
     """Verify the whole matrix, then judge the declared target. Never claims equivalence or significance."""
-    problems, cells = [], {}
-    for task_id, variant, repeat in ev.plan():
+    planned = ev.plan()
+    unplanned = sorted({str(p.parent.relative_to(ev.dir)) for p in ev.recorded()}
+                       - {str(Path("runs", *map(str, cell))) for cell in planned})
+    problems = [] if calibrated(ev) else ["no passing calibration for this experiment"]
+    if unplanned:
+        problems.append(f"results outside the plan: {', '.join(unplanned)}")
+    cells = {}
+    for cell in planned:
         try:
-            cells[(task_id, variant, repeat)] = load_cell(ev, task_id, variant, repeat)
+            cells[cell] = load_cell(ev, *cell)
         except InvalidEvidence as error:
             problems.append(str(error))
     verdicts = judge_verdicts(ev)
@@ -343,10 +417,7 @@ def score(ev: Eval) -> dict:
             problems.append(f"no current judge verdict for {task_id}/{variant}/{repeat}")
         cell["pass"] = (cell["status"] == "ok" and all(c["exit"] == 0 for c in cell["checks"])
                         and (not judged or verdicts.get((task_id, variant, repeat), False)))
-    if not (ev.dir / "calibration" / f"{ev.calibration_key()}.pass").exists():
-        problems.append("no passing calibration for these hashes")
-    if problems:
-        raise InvalidEvidence("; ".join(problems))
+    require(not problems, "; ".join(problems))
 
     baseline, candidate = ev.manifest["baseline"], ev.manifest["candidate"]
     by_variant = {name: [c for (t, v, r), c in cells.items() if v == name] for name in ev.variants}
@@ -375,8 +446,6 @@ def score(ev: Eval) -> dict:
                 for name in (baseline, candidate)}
         improved = all(rows[candidate]) and sum(rows[candidate]) > sum(rows[baseline])
         equal = sum(rows[candidate]) == sum(rows[baseline])
-    elif target not in metrics:
-        raise InvalidEvidence(f"unknown target metric {target}")
     elif old.get(target) is None or new.get(target) is None:
         improved = equal = False
     else:
@@ -390,7 +459,7 @@ def score(ev: Eval) -> dict:
 
     if vetoes:
         decision = "reject: a required case failed for the candidate"
-    elif target in unavailable or (target != "task_pass" and old.get(target) is None):
+    elif target != "task_pass" and (old.get(target) is None or new.get(target) is None):
         decision = f"unproven: {target} telemetry is unavailable"
     elif not improved:
         decision = "no win: the candidate did not beat the baseline on the target" + (" (equal results)" if equal else "")
@@ -405,7 +474,7 @@ def score(ev: Eval) -> dict:
             "telemetry_notes": ev.adapter.telemetry_notes}
 
 
-def main(argv=None) -> int:
+def main(argv=None, adapter=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", choices=["plan", "calibrate", "run", "blind", "score"])
     parser.add_argument("eval_dir", type=Path)
@@ -413,7 +482,8 @@ def main(argv=None) -> int:
     parser.add_argument("--replace-stale", action="store_true")
     args = parser.parse_args(argv)
     try:
-        ev = Eval(args.eval_dir)
+        ev = Eval(args.eval_dir, adapter)
+        ev.identity()  # Refuse symlinks and unreadable inputs before anything runs.
         if args.command == "plan":
             cells = ev.plan(args.tasks and args.tasks.split(","))
             print(f"{len(cells)} sessions: {len(ev.variants)} variants x {len(ev.tasks)} tasks x {ev.repeats} repeats")
@@ -427,11 +497,11 @@ def main(argv=None) -> int:
             blind(ev)
         else:
             report = score(ev)
-            (ev.dir / "score.json").write_text(json.dumps(report, indent=2))
-            print(json.dumps(report, indent=2))
+            write_atomic(ev.output("score.json"), json.dumps(report, indent=2))
+            print(redact(json.dumps(report, indent=2)))
             return 0 if report["decision"].startswith("win") else 1
-    except InvalidEvidence as error:
-        print(f"invalid: {error}", file=sys.stderr)
+    except (InvalidEvidence, KeyError, TypeError, ValueError) as error:
+        print(f"invalid: {type(error).__name__}: {error}", file=sys.stderr)
         return 2
     return 0
 

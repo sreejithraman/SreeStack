@@ -1252,14 +1252,27 @@ starts from real runs. Controlled Comparison keeps matched variants, calibration
 full outcome checks, and normal host integration.
 
 `scripts/compare.py` ports `eval.mjs` to the Python standard library with Claude Code
-and Codex adapters in `scripts/hosts.py`. It reads a versioned manifest, hashes every
-input, rejects a missing cell or a result whose inputs changed, keeps failed runs and
-work dirs as evidence, and takes blind judge verdicts. Calibration also checks that
-installed skills don't leak in and that each variant's collection loads. Scoring
-judges one declared target, lets any failed required case veto, reports
-unavailable telemetry, and never claims equivalence or significance. It drops the
-upstream MISS and WORSE pass rules, regex answer scoring, full-weight token sums, and
-the one-skill-per-version layout. Paid runs stay out of the checks.
+and Codex adapters in `scripts/hosts.py`. Every file in the eval dir, the manifest's
+target and plan included, forms one experiment identity; any change makes every
+result stale. Before any paid session it refuses symlinks, skill-discovery
+directories in fixtures, unsafe or duplicate names, and outputs that leave the eval
+dir. It rejects missing, unplanned, stale, or malformed results and non-boolean
+judge verdicts, keeps failed runs and work dirs as evidence, and writes results
+atomically. Host and check processes run in their own process group, which ends
+with them; checks get an allowlisted environment and a timeout. Retained evidence
+has secret-looking environment values redacted. Calibration runs in a task
+fixture, checks that installed skills don't leak in and that each variant's
+collection loads, and is revoked when a recalibration starts. Scoring judges one
+declared target, lets any failed required case veto, reports unavailable
+telemetry, and never claims equivalence or significance. It drops the upstream
+MISS and WORSE pass rules, regex answer scoring, full-weight token sums, and the
+one-skill-per-version layout. Paid runs stay out of the checks.
+
+The Codex adapter links the real `auth.json` into a disposable `CODEX_HOME` rather
+than copying it, so refresh-token rotation keeps working. Codex may refresh the
+real login through that link, as it does in normal use. The runner never copies,
+replaces, or deletes the login, and fails a session after which the real file is
+no longer a regular file.
 
 Keeps skill-diet's steps for adding a rule, its level rule, and its counts of 10–15
 requests and three runs. Holds an added rule to the three runs a removal needs, in

@@ -1,9 +1,9 @@
 """Host adapters for compare.py: one isolated, non-interactive session per call.
 
 Each adapter loads exactly the given skill tree, hides installed skills, plugins,
-and user instructions, keeps the user's login untouched, and keeps raw output in
-the cell's evidence folder. Flags were checked against `claude --help` 2.1.318 and
-`codex exec --help` 0.166.0.
+and user instructions, and keeps raw output, redacted, in the cell's evidence
+folder. The runner never copies, replaces or deletes a real login. Flags were
+checked against `claude --help` 2.1.318 and `codex exec --help` 0.166.0.
 """
 
 from dataclasses import asdict, dataclass, field
@@ -12,7 +12,71 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
+import time
+
+GRACE_SECONDS = 5
+SECRET_NAME = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|AUTH", re.I)
+
+
+class InvalidEvidence(Exception):
+    pass
+
+
+def secret_values() -> list:
+    """Values of inherited variables whose names look secret, longest first. Short values would mangle text."""
+    return sorted({v for k, v in os.environ.items() if SECRET_NAME.search(k) and len(v) >= 8}, key=len, reverse=True)
+
+
+def redact(text: str) -> str:
+    for value in secret_values():
+        text = text.replace(value, "[REDACTED]")
+    return text
+
+
+def write_atomic(path: Path, text: str) -> None:
+    draft = path.with_name(f".{path.name}.partial")
+    draft.write_text(redact(text))
+    os.replace(draft, path)
+
+
+def redact_file(path: Path) -> None:
+    write_atomic(path, path.read_text(errors="replace"))
+
+
+def stop_group(process: subprocess.Popen) -> None:
+    """End every process in the session's group: TERM, then KILL after a grace period."""
+    def alive():
+        process.poll()
+        try:
+            os.killpg(process.pid, 0)
+            return True
+        except (ProcessLookupError, PermissionError):  # macOS says EPERM once only zombies remain.
+            return False
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(process.pid, sig)
+        except (ProcessLookupError, PermissionError):
+            return
+        deadline = time.monotonic() + GRACE_SECONDS
+        while time.monotonic() < deadline:
+            if not alive():
+                return
+            time.sleep(0.02)
+
+
+def run_group(command, *, cwd, env, stdout, stderr, timeout):
+    """Run in its own process group, which ends with it. Returns the exit code, or None on timeout."""
+    process = subprocess.Popen(command, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=stdout,
+                               stderr=stderr, start_new_session=True)
+    try:
+        code = process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        code = None
+    stop_group(process)
+    process.wait()
+    return code
 
 
 @dataclass
@@ -35,8 +99,8 @@ class RunResult:
                    or marker in (call.get("command") or "") for call in self.calls or [])
 
     def save(self, out: Path, extra=None) -> None:
-        (out / "answer.txt").write_text(self.answer)
-        (out / "result.json").write_text(json.dumps({**(extra or {}), **asdict(self)}, indent=2))
+        write_atomic(out / "answer.txt", self.answer)
+        write_atomic(out / "result.json", json.dumps({**(extra or {}), **asdict(self)}, indent=2))
 
 
 def frontmatter(skill: Path) -> str:
@@ -56,15 +120,12 @@ def skill_names(*directories: Path) -> set:
 
 
 def execute(command, *, cwd, env, out: Path, timeout) -> tuple:
-    """Run a host CLI, keeping its raw stdout and stderr. Returns (returncode or None on timeout, stdout)."""
+    """Run a host CLI, keeping its redacted stdout and stderr. Returns (exit code or None on timeout, stdout)."""
     with open(out / "raw.jsonl", "w") as stdout, open(out / "stderr.log", "w") as stderr:
-        try:
-            done = subprocess.run(command, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
-                                  stdout=stdout, stderr=stderr, timeout=timeout)
-            code = done.returncode
-        except subprocess.TimeoutExpired:
-            code = None
-    return code, (out / "raw.jsonl").read_text(errors="replace")
+        code = run_group(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, timeout=timeout)
+    for name in ("raw.jsonl", "stderr.log"):
+        redact_file(out / name)
+    return code, (out / "raw.jsonl").read_text()
 
 
 def events(raw: str):
@@ -99,7 +160,7 @@ class Claude:
         if settings.get("max_budget_usd"):
             command += ["--max-budget-usd", str(settings["max_budget_usd"])]
         if skills is not None:
-            shutil.copytree(skills, work / ".claude/skills", symlinks=True, dirs_exist_ok=True)
+            shutil.copytree(skills, work / ".claude/skills")
         code, raw = execute([*command, "--", prompt], cwd=work, env=dict(os.environ), out=out,
                             timeout=settings.get("timeout_seconds", 600))
         result = RunResult(calls=[])
@@ -133,7 +194,13 @@ class Claude:
 
 
 class Codex:
-    """`codex exec --json` with a disposable HOME and CODEX_HOME that links only the login."""
+    """`codex exec --json` with a disposable HOME and CODEX_HOME that links only the login.
+
+    A link, not a copy, so refresh-token rotation keeps working: Codex may refresh the
+    real login through it, as it does in normal use. The runner itself never copies,
+    replaces or deletes that file, and checks after each session that it is still a
+    regular file.
+    """
 
     telemetry_notes = ("Codex reports no cost. tokens.* sum turn.completed usage: input_tokens includes "
                        "cached_input_tokens and output_tokens includes reasoning_output_tokens, as in the "
@@ -148,16 +215,22 @@ class Codex:
     def installed_skill_names(self) -> set:
         return skill_names(Path.home() / ".agents/skills", self.codex_home() / "skills")
 
+    @staticmethod
+    def regular(path: Path) -> bool:
+        return path.is_file() and not path.is_symlink()
+
     def run(self, *, skills, prompt, work, out, settings, scratch, variant) -> RunResult:
         home, codex_home = scratch / "home", scratch / "codex-home"
         codex_home.mkdir(parents=True)
         (home / ".agents/skills").mkdir(parents=True)
-        # Links, not copies: a token refresh then writes through to the real login.
+        login = self.codex_home() / "auth.json"
+        if not self.regular(login):
+            raise InvalidEvidence(f"{login} must be a regular file; log in with `codex login`")
         for name in ("auth.json", "auth.lock"):
             if (self.codex_home() / name).exists():
                 (codex_home / name).symlink_to(self.codex_home() / name)
         if skills is not None:
-            shutil.copytree(skills, home / ".agents/skills", symlinks=True, dirs_exist_ok=True)
+            shutil.copytree(skills, home / ".agents/skills", dirs_exist_ok=True)
         command = ["codex", "exec", "--json", "--ephemeral", "--skip-git-repo-check", "--ignore-rules",
                    "--disable", "plugins", "--disable", "apps", "--disable", "hooks",
                    "-s", settings.get("sandbox", "workspace-write"), "-m", settings["model"], "-C", str(work)]
@@ -189,11 +262,10 @@ class Codex:
                 failure = json.dumps(event)[:500]
         result.tokens = usage or None
         result.turns = None  # Codex exec reports no model-request count.
-        for name in ("auth.json", "auth.lock"):
-            link = codex_home / name
-            if link.exists() and not link.is_symlink():
-                failure = (failure or "") + f" Codex replaced the {name} link, so the real login may need `codex login`."
-                link.unlink()
+        if not self.regular(login):
+            failure = (failure or "") + f" {login} is no longer a regular file; check it before the next run."
+        elif not (codex_home / "auth.json").is_symlink():
+            failure = (failure or "") + " Codex replaced the login link, so the real login may need `codex login`."
         if code is None:
             result.status, result.error = "timeout", "the session hit timeout_seconds"
         elif code != 0 or failure or not usage:

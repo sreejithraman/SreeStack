@@ -1,25 +1,33 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import re
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 import compare
 from hosts import RunResult
 
+SENTINEL = "sentinel-not-a-real-secret-7f3a"
+
 
 class FakeAgent:
-    """Answers calibration probes from the skill tree it is given, and tasks from `behavior`."""
+    """Answers calibration probes from the skill tree it is given, and tasks from `behavior`.
+
+    A behavior is one outcome, or a list of outcomes for successive repeats.
+    """
 
     telemetry_notes = "fake"
 
-    def __init__(self, behavior=None, leak=False, crash=False):
+    def __init__(self, behavior=None, leak=False, crash=False, answer="ok"):
         self.behavior = behavior or {}
         self.leak = leak
         self.crash = crash
+        self.answer = answer
         self.sessions = []
 
     def version(self):
@@ -29,7 +37,7 @@ class FakeAgent:
         return {"installed-skill"}
 
     def run(self, *, skills, prompt, work, out, settings, scratch, variant):
-        self.sessions.append((variant, prompt))
+        self.sessions.append((variant, prompt, sorted(p.name for p in work.iterdir())))
         names = sorted(p.name for p in skills.iterdir()) if skills else []
         listing = ", ".join(names + (["installed-skill"] if self.leak else []))
         canary = re.search(r"calib-canary-\w+", prompt)
@@ -46,10 +54,21 @@ class FakeAgent:
         if self.crash:
             raise RuntimeError("host went away")
         outcome = self.behavior.get((variant, prompt), {})
+        if isinstance(outcome, list):
+            outcome = outcome[sum(1 for s in self.sessions if s[:2] == (variant, prompt)) - 1]
         if outcome.get("pass", True):
             (work / "done.txt").write_text("done")
-        return RunResult(answer="ok", calls=[{"name": "Bash"}] * outcome.get("calls", 1),
+        return RunResult(answer=self.answer, calls=[{"name": "Bash", "command": self.answer}] * outcome.get("calls", 1),
                          cost_usd=outcome.get("cost", 0.01), turns=1, tokens={"output": 10})
+
+
+def write_manifest(root: Path, **changes) -> None:
+    path = root / "manifest.json"
+    manifest = json.loads(path.read_text()) if path.exists() else {
+        "version": 1, "host": {"adapter": "claude", "model": "fake"},
+        "variants": {"old": "variants/old", "new": "variants/new"}, "baseline": "old", "candidate": "new"}
+    manifest.update(changes)
+    path.write_text(json.dumps(manifest))
 
 
 def make_eval(root: Path, target=None, tasks=None) -> Path:
@@ -59,19 +78,24 @@ def make_eval(root: Path, target=None, tasks=None) -> Path:
         (skill / "SKILL.md").write_text(f"---\nname: helper\ndescription: Use when helping.\n---\n\n{text}\n")
     (root / "fixtures/repo").mkdir(parents=True)
     (root / "fixtures/repo/README").write_text("fixture")
-    (root / "manifest.json").write_text(json.dumps({
-        "version": 1,
-        "host": {"adapter": "claude", "model": "fake"},
-        "variants": {"old": "variants/old", "new": "variants/new"},
-        "baseline": "old", "candidate": "new", "repeats": 3,
-        "target": target or {"metric": "cost_usd", "why": "cheaper at the same quality"},
-        "tasks": tasks or [
-            {"id": "required", "prompt": "do required", "fixture": "fixtures/repo", "required": True,
-             "checks": ["test -f done.txt"]},
-            {"id": "optional", "prompt": "do optional", "fixture": "fixtures/repo", "checks": ["test -f done.txt"]},
-        ],
-    }))
+    write_manifest(root, repeats=3, target=target or {"metric": "cost_usd", "why": "cheaper at the same quality"},
+                   tasks=tasks or [
+                       {"id": "required", "prompt": "do required", "fixture": "fixtures/repo", "required": True,
+                        "checks": ["test -f done.txt"]},
+                       {"id": "optional", "prompt": "do optional", "fixture": "fixtures/repo",
+                        "checks": ["test -f done.txt"]},
+                   ])
     return root
+
+
+def cheaper():
+    return {("new", p): {"cost": 0.005} for p in ("do required", "do optional")}
+
+
+def one_late_required_failure():
+    behavior = cheaper()
+    behavior[("new", "do required")] = [{"cost": 0.005}, {"cost": 0.005}, {"pass": False, "cost": 0.005}]
+    return behavior
 
 
 class CompareTest(unittest.TestCase):
@@ -80,7 +104,7 @@ class CompareTest(unittest.TestCase):
         self.root = make_eval(self.directory())
 
     def directory(self):
-        path = Path(tempfile.mkdtemp())
+        path = Path(tempfile.mkdtemp()).resolve()
         self.addCleanup(shutil.rmtree, path)
         return path
 
@@ -91,26 +115,24 @@ class CompareTest(unittest.TestCase):
         compare.run(self.evaluate(agent), **options)
         return compare.score(self.evaluate(agent))
 
+    def judged_eval(self):
+        self.root = make_eval(self.directory(), tasks=[
+            {"id": "prose", "prompt": "write it", "required": True, "judge": "Is it clear?"}])
+        compare.run(self.evaluate(FakeAgent()))
+        judging = compare.blind(self.evaluate(FakeAgent()))
+        return judging, json.loads((judging / "packet.json").read_text())
+
+    def assertRefusedBeforeSessions(self, pattern):
+        agent = FakeAgent()
+        with self.assertRaisesRegex(compare.InvalidEvidence, pattern):
+            compare.run(compare.Eval(self.root, adapter=agent))
+        self.assertEqual(agent.sessions, [])
+
+    # Decisions
+
     def test_win_when_cheaper_and_every_case_passes(self):
-        cheaper = {("new", p): {"cost": 0.005} for p in ("do required", "do optional")}
-        report = self.run_all(FakeAgent(cheaper))
+        report = self.run_all(FakeAgent(cheaper()))
         self.assertTrue(report["decision"].startswith("win"), report["decision"])
-
-    def test_score_rejects_an_incomplete_matrix(self):
-        compare.run(self.evaluate(FakeAgent()), only=["required"])
-        with self.assertRaisesRegex(compare.InvalidEvidence, "missing cell optional/old/0"):
-            compare.score(self.evaluate(FakeAgent()))
-
-    def test_changed_inputs_make_results_stale(self):
-        self.run_all(FakeAgent())
-        (self.root / "fixtures/repo/README").write_text("changed fixture")
-        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
-            compare.score(self.evaluate(FakeAgent()))
-        with self.assertRaisesRegex(compare.InvalidEvidence, "changed inputs"):
-            compare.run(self.evaluate(FakeAgent()))
-        compare.run(self.evaluate(FakeAgent()), replace_stale=True)
-        self.assertTrue(list((self.root / "superseded").rglob("result.json")))
-        compare.score(self.evaluate(FakeAgent()))
 
     def test_a_failed_required_case_vetoes_a_cheaper_candidate(self):
         behavior = {("new", "do required"): {"pass": False, "cost": 0.001},
@@ -118,6 +140,11 @@ class CompareTest(unittest.TestCase):
         report = self.run_all(FakeAgent(behavior))
         self.assertTrue(report["decision"].startswith("reject"), report["decision"])
         self.assertEqual(report["required_vetoes"], ["required/0", "required/1", "required/2"])
+
+    def test_one_failed_required_repeat_vetoes(self):
+        report = self.run_all(FakeAgent(one_late_required_failure()))
+        self.assertTrue(report["decision"].startswith("reject"), report["decision"])
+        self.assertEqual(report["required_vetoes"], ["required/2"])
 
     def test_equal_results_are_no_win(self):
         report = self.run_all(FakeAgent())
@@ -136,20 +163,85 @@ class CompareTest(unittest.TestCase):
         self.assertEqual(report["unavailable_telemetry"]["cost_usd"], {"old": "6/6 runs", "new": "6/6 runs"})
         self.assertIsNone(report["summary"]["new"]["cost_usd"])
 
-    def test_a_corrected_failure_wins_only_when_every_repeat_passes(self):
+    def test_a_corrected_failure_wins_when_every_repeat_passes(self):
         self.root = make_eval(self.directory(), target={"metric": "task_pass", "task": "optional"})
         report = self.run_all(FakeAgent({("old", "do optional"): {"pass": False}}))
         self.assertTrue(report["decision"].startswith("win"), report["decision"])
+
+    def test_a_corrected_failure_with_mixed_repeats_is_no_win(self):
+        self.root = make_eval(self.directory(), target={"metric": "task_pass", "task": "optional"})
+        behavior = {("old", "do optional"): {"pass": False}, ("new", "do optional"): [{}, {}, {"pass": False}]}
+        report = self.run_all(FakeAgent(behavior))
+        self.assertEqual(report["tasks"]["optional"], {"old": "0/3", "new": "2/3"})
+        self.assertTrue(report["decision"].startswith("no win"), report["decision"])
 
     def test_cheaper_with_a_lower_pass_rate_is_a_tradeoff(self):
         behavior = {("new", "do required"): {"cost": 0.001}, ("new", "do optional"): {"pass": False, "cost": 0.001}}
         report = self.run_all(FakeAgent(behavior))
         self.assertTrue(report["decision"].startswith("tradeoff"), report["decision"])
 
-    def test_variant_order_alternates(self):
+    def test_each_task_alternates_variant_order_across_repeats(self):
         plan = self.evaluate(FakeAgent()).plan()
-        firsts = [plan[i][1] for i in range(0, len(plan), 2)]
-        self.assertEqual(set(firsts), {"old", "new"})
+        for task in ("required", "optional"):
+            firsts = [next(v for t, v, r in plan if t == task and r == repeat) for repeat in range(3)]
+            self.assertNotEqual(firsts[0], firsts[1])
+            self.assertNotEqual(firsts[1], firsts[2])
+
+    # Evidence
+
+    def test_score_rejects_an_incomplete_matrix(self):
+        compare.run(self.evaluate(FakeAgent()), only=["required"])
+        with self.assertRaisesRegex(compare.InvalidEvidence, "missing cell optional/old/0"):
+            compare.score(self.evaluate(FakeAgent()))
+
+    def test_changed_inputs_make_results_stale(self):
+        self.run_all(FakeAgent())
+        (self.root / "fixtures/repo/README").write_text("changed fixture")
+        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
+            compare.score(self.evaluate(FakeAgent()))
+        with self.assertRaisesRegex(compare.InvalidEvidence, "earlier experiment"):
+            compare.run(self.evaluate(FakeAgent()))
+        compare.run(self.evaluate(FakeAgent()), replace_stale=True)
+        self.assertTrue(list((self.root / "superseded").rglob("result.json")))
+        compare.score(self.evaluate(FakeAgent()))
+
+    def test_a_changed_checker_script_makes_results_stale(self):
+        (self.root / "checker.sh").write_text("test -f done.txt\n")
+        write_manifest(self.root, tasks=[{"id": "required", "prompt": "do required", "fixture": "fixtures/repo",
+                                          "required": True, "checks": [f"sh {self.root}/checker.sh"]}])
+        self.run_all(FakeAgent())
+        (self.root / "checker.sh").write_text("exit 1\n")
+        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
+            compare.score(self.evaluate(FakeAgent()))
+
+    def test_retargeting_after_the_run_makes_results_stale(self):
+        self.run_all(FakeAgent())
+        write_manifest(self.root, target={"metric": "tool_calls"})
+        with self.assertRaisesRegex(compare.InvalidEvidence, "stale cell"):
+            compare.score(self.evaluate(FakeAgent()))
+
+    def test_fewer_repeats_cannot_drop_a_recorded_required_failure(self):
+        self.run_all(FakeAgent(one_late_required_failure()))
+        write_manifest(self.root, repeats=2)
+        with self.assertRaises(compare.InvalidEvidence):
+            compare.score(self.evaluate(FakeAgent()))
+
+    def test_malformed_results_are_invalid_evidence_with_exit_2(self):
+        self.run_all(FakeAgent())
+        cell = self.root / "runs/required/new/0/result.json"
+        good = json.loads(cell.read_text())
+        cell.write_text('{"identity": "trunc')
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(compare.main(["score", str(self.root)], adapter=FakeAgent()), 2)
+        cell.write_text(json.dumps({**good, "checks": [{"exit": "0"}]}))
+        with self.assertRaisesRegex(compare.InvalidEvidence, "malformed result"):
+            compare.score(self.evaluate(FakeAgent()))
+
+    def test_results_outside_the_plan_are_invalid(self):
+        self.run_all(FakeAgent())
+        shutil.copytree(self.root / "runs/required/new/0", self.root / "runs/required/new/7")
+        with self.assertRaisesRegex(compare.InvalidEvidence, "outside the plan"):
+            compare.score(self.evaluate(FakeAgent()))
 
     def test_failed_sessions_keep_their_evidence_and_fixture(self):
         report = self.run_all(FakeAgent(crash=True))
@@ -160,23 +252,117 @@ class CompareTest(unittest.TestCase):
         self.assertIn("host went away", stored["error"])
         self.assertEqual((cell / "work/README").read_text(), "fixture")
 
+    def test_a_hung_check_times_out_as_a_failed_check(self):
+        write_manifest(self.root, host={"adapter": "claude", "model": "fake", "check_timeout_seconds": 0.2},
+                       tasks=[{"id": "slow", "prompt": "do it", "required": True, "checks": ["sleep 30"]}],
+                       repeats=1)
+        with mock.patch("hosts.GRACE_SECONDS", 0.2):
+            report = self.run_all(FakeAgent())
+        stored = json.loads((self.root / "runs/slow/new/0/result.json").read_text())
+        self.assertEqual(stored["checks"][0]["exit"], "timeout")
+        self.assertTrue(report["decision"].startswith("reject"), report["decision"])
+
+    # Refusals before any session
+
+    def test_symlinks_in_a_fixture_or_variant_are_refused(self):
+        os.symlink("/etc/hosts", self.root / "fixtures/repo/hosts")
+        self.assertRefusedBeforeSessions("symlink not allowed")
+        os.unlink(self.root / "fixtures/repo/hosts")
+        os.symlink(self.root / "fixtures", self.root / "variants/new/linked")
+        self.assertRefusedBeforeSessions("symlink not allowed")
+
+    def test_unsafe_names_are_refused(self):
+        for name in ("../escape", "/tmp/abs", ".hidden"):
+            write_manifest(self.root, tasks=[{"id": name, "prompt": "p"}])
+            with self.assertRaisesRegex(compare.InvalidEvidence, "unsafe task id"):
+                self.evaluate(FakeAgent())
+        write_manifest(self.root, tasks=[{"id": "ok", "prompt": "p"}],
+                       variants={"old": "variants/old", "../new": "variants/new"})
+        with self.assertRaisesRegex(compare.InvalidEvidence, "unsafe variant name"):
+            self.evaluate(FakeAgent())
+
+    def test_outputs_cannot_leave_the_eval_dir(self):
+        outside = self.directory()
+        os.symlink(outside, self.root / "runs")
+        with self.assertRaisesRegex(compare.InvalidEvidence, "leaves"):
+            compare.run(self.evaluate(FakeAgent()))
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_duplicate_task_ids_are_refused(self):
+        write_manifest(self.root, tasks=[{"id": "same", "prompt": "a", "required": True},
+                                         {"id": "same", "prompt": "b"}])
+        with self.assertRaisesRegex(compare.InvalidEvidence, "unique"):
+            self.evaluate(FakeAgent())
+
+    def test_fixtures_holding_skill_directories_are_refused(self):
+        for directory in (".claude/skills/extra", ".agents", "deep/.codex"):
+            (self.root / "fixtures/repo" / directory).mkdir(parents=True)
+            with self.assertRaisesRegex(compare.InvalidEvidence, "skill discovery"):
+                self.evaluate(FakeAgent())
+            shutil.rmtree(self.root / "fixtures/repo" / directory.split("/")[0])
+
+    # Calibration
+
+    def test_calibration_runs_in_a_real_task_fixture(self):
+        agent = FakeAgent()
+        self.assertTrue(compare.calibrate(self.evaluate(agent)))
+        self.assertTrue(agent.sessions)
+        self.assertTrue(all(contents == ["README"] for _, _, contents in agent.sessions))
+
     def test_a_leaking_host_fails_calibration_and_blocks_the_run(self):
         with self.assertRaisesRegex(compare.InvalidEvidence, "calibration failed"):
             compare.run(self.evaluate(FakeAgent(leak=True)))
         self.assertFalse((self.root / "runs").exists())
 
+    def test_a_failed_recalibration_revokes_the_earlier_pass(self):
+        self.assertTrue(compare.calibrate(self.evaluate(FakeAgent())))
+        self.assertFalse(compare.calibrate(self.evaluate(FakeAgent(leak=True))))
+        with self.assertRaisesRegex(compare.InvalidEvidence, "calibration failed"):
+            compare.run(self.evaluate(FakeAgent(leak=True)))
+        self.assertFalse((self.root / "runs").exists())
+
+    def test_score_needs_calibration_of_this_experiment(self):
+        self.run_all(FakeAgent())
+        (self.root / "calibration/passed.json").write_text(json.dumps({"identity": "another experiment"}))
+        with self.assertRaisesRegex(compare.InvalidEvidence, "no passing calibration"):
+            compare.score(self.evaluate(FakeAgent()))
+
+    # Judging
+
     def test_judged_tasks_need_current_blind_verdicts(self):
-        self.root = make_eval(self.directory(), tasks=[
-            {"id": "prose", "prompt": "write it", "required": True, "judge": "Is it clear?"}])
-        compare.run(self.evaluate(FakeAgent()))
+        judging, packet = self.judged_eval()
+        self.assertNotIn("variant", json.dumps(packet))
+        (judging / "verdicts.json").unlink(missing_ok=True)
         with self.assertRaisesRegex(compare.InvalidEvidence, "no current judge verdict"):
             compare.score(self.evaluate(FakeAgent()))
-        judging = compare.blind(self.evaluate(FakeAgent()))
-        packet = json.loads((judging / "packet.json").read_text())
-        self.assertNotIn("variant", json.dumps(packet))
         (judging / "verdicts.json").write_text(json.dumps({item["id"]: {"pass": True} for item in packet}))
         report = compare.score(self.evaluate(FakeAgent()))
         self.assertEqual(report["tasks"]["prose"], {"old": "3/3", "new": "3/3"})
+
+    def test_a_verdict_must_be_a_json_boolean(self):
+        judging, packet = self.judged_eval()
+        for verdict in ("false", 0, None):
+            (judging / "verdicts.json").write_text(json.dumps({item["id"]: {"pass": verdict} for item in packet}))
+            with self.assertRaisesRegex(compare.InvalidEvidence, "JSON boolean"):
+                compare.score(self.evaluate(FakeAgent()))
+
+    # Secrets
+
+    def test_checks_get_an_allowlisted_environment_and_evidence_is_redacted(self):
+        write_manifest(self.root, repeats=1, tasks=[{
+            "id": "env", "prompt": "p", "required": True,
+            "checks": [f'env > "$EVAL_OUT/env.txt"; echo "HOME=$HOME"; echo {SENTINEL}']}])
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            self.run_all(FakeAgent(answer=f"leaked {SENTINEL}"))
+        cell = self.root / "runs/env/new/0"
+        names = {line.split("=", 1)[0] for line in (cell / "env.txt").read_text().splitlines()}
+        self.assertLessEqual(names, {"PATH", "LANG", "TMPDIR", "HOME", "EVAL_WORK", "EVAL_OUT", "PWD", "SHLVL", "_"})
+        self.assertRegex((cell / "check-0.log").read_text(), r"HOME=\S+/work\n")
+        for path in cell.rglob("*"):
+            if path.is_file():
+                self.assertNotIn(SENTINEL, path.read_text(errors="replace"), path)
+        self.assertIn("[REDACTED]", (cell / "answer.txt").read_text())
+        self.assertIn("[REDACTED]", (cell / "check-0.log").read_text())
 
 
 if __name__ == "__main__":
