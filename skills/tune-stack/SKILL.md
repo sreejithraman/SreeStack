@@ -22,15 +22,20 @@ comparison, and [Implement](../implement/SKILL.md) builds and delivers.
 
 ## What invoking it allows
 
-- **A bare retrospective request,** such as "what went wrong in last week's
-  sessions", ends at [stage 2](#2-select) with ranked recommendations.
+- **A retrospective request** asks about past runs and asks for no change, such
+  as "what went wrong last week" or "is review worth its cost". It ends at
+  [stage 2](#2-select) with ranked recommendations and an offer to test the top
+  one. Save recommendations the user doesn't take up with Snip Snap only when
+  the user asks.
 - **Any other request** allows choosing one hypothesis, running its comparison,
   and building the change through Implement to **Try**. Land only when the user
   says Land. Publish a PR or merge only when the user asks.
 - **Overnight replays** of stack workflows run only when the user asks for them.
 
-Product bug hunting is a separate chore source. Use only its evidence that the
-stack missed bugs.
+Product bug hunting is a separate chore source: [Verify](../verify/SKILL.md)'s
+exploratory and edge-data checks, [Diagnosing Bugs](../diagnosing-bugs/SKILL.md)
+for failures, confirmed bugs saved with Snip Snap, and fixes through Implement.
+Use only its evidence that the stack missed bugs.
 
 ## 1. Ground
 
@@ -38,9 +43,12 @@ Read the request and the sources it names. Fix the evidence window, the hosts
 and models in it, the improvement the user wants, and what this request allows.
 For sessions and metrics, use the definitions and log cautions in
 [evidence](references/evidence.md); report each window with its denominator and
-missing records. For a new model release, pick the cases whose rules assume
-something the old model could not do, and plan to compare the new model against
-its own baseline. Changing the model is its own comparison.
+missing records. For a new model release, run a regression check, not an improvement
+hypothesis: keep the skill text fixed, pick the cases whose rules assume
+something the old model could not do, and compare each model against its own
+baseline. Report the regressions found, or "none found on N cases", never
+equivalence. A skill edit follows only from a regression, as a normal
+hypothesis.
 
 Done when the source, window, models, desired improvement, and authority are
 stated in the thread.
@@ -55,14 +63,18 @@ Find candidates and route each kind to its owner:
 | The same failure in two or more independent incidents | Correct, for the class, its exposure, and its guard |
 | A skill or instruction that reads wrong or carries no-ops | Writing for Agents' audit |
 
-Check each candidate against the current text: an old failure that the current
-version already prevents is resolved, not a hypothesis. Rank the live ones by
+Check each candidate against the current version: an old failure that it
+already prevents is resolved, not a hypothesis. A rule in the text is not proof
+the behavior is fixed. When the logs can't show whether the failure still
+happens, reproduce it on the current version with the cheapest proof from
+[stage 3](#3-baseline), such as a dry-run trial, before selecting or dropping it. Rank the live ones by
 impact and current exposure, and pick one. A hypothesis needs cited incidents,
 the current path that still allows the failure, and a win a check or a blind
 judge can observe. Show the user the ranked rest.
 
 Done when one hypothesis has its evidence, current exposure, and observable
-win, or, for a bare retrospective, the ranked recommendations are delivered.
+win, or, for a retrospective request, the ranked recommendations and the
+offer are delivered.
 
 ## 3. Baseline
 

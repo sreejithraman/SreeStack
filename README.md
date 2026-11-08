@@ -402,7 +402,7 @@ The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvemen
 to the agent environment. Invoke it explicitly; it returns recommendations.
 [Tune Stack](skills/tune-stack/SKILL.md) improves SreeStack's own skills and
 checks from session logs, run metrics, or a new model release. Invoke it
-explicitly. A bare retrospective request returns recommendations; otherwise it
+explicitly. A retrospective request returns recommendations; otherwise it
 picks one hypothesis, proves the candidate against the old version with
 `writing-for-agents`' comparison runner, and builds it through `implement` to Try.
 It lands only when you say Land.
