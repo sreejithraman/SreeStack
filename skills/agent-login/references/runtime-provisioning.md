@@ -26,12 +26,13 @@ masking is not isolation, and other projects using that provider inherit access.
 ([Environment UI](https://github.com/pingdotgg/t3code/blob/2cbc24fcae2b5649d7b60b68da72053a37fa82d5/apps/web/src/components/settings/ProviderInstanceCard.tsx),
 [provider environment merge](https://github.com/pingdotgg/t3code/blob/2cbc24fcae2b5649d7b60b68da72053a37fa82d5/apps/server/src/provider/ProviderInstanceEnvironment.ts))
 
-For a shared local file, Codex supports `~/.codex/.env` followed by an app restart.
-([Desktop environment setup](https://learn.chatgpt.com/docs/amazon-bedrock#desktop-app-and-ide-extension))
-Recent Codex CLIs have also been observed loading `.env` from their own
-`CODEX_HOME`, including symlinks. This is undocumented, so probe the installed
-version on each host before relying on it. It does not establish
-environment-file support for other T3 providers.
+For a shared local file, Codex loads `.env` from its `CODEX_HOME` (default
+`~/.codex`) at startup, following symlinks. It ignores `CODEX_*` keys in that
+file. Restart the app or CLI after a change; a running process keeps its earlier
+environment. This does not establish environment-file support for other T3
+providers.
+([Desktop environment setup](https://learn.chatgpt.com/docs/amazon-bedrock#desktop-app-and-ide-extension),
+[Codex `.env` loading](https://github.com/openai/codex/blob/d960b366941bf062adb4d43111e81b64507e8879/codex-rs/arg0/src/lib.rs#L272-L284))
 
 A reusable layout is:
 

@@ -44,9 +44,7 @@ administration is separate from consumer tasks. Replaces upstream
 secret-printing examples with process-local reads and stdin writes. Adds shared
 private environment-file provisioning for local Codex runtimes, preserving
 unrelated agent variables, host-specific Touch ID diagnosis, and
-provisioning-source-specific runtime checks. A live check with Codex CLI
-0.160.0 found that the desktop app's bundled CLI and T3's installed CLI each
-loaded `.env` from their own `CODEX_HOME`, including symlinks. Omits OpenClaw install metadata,
+provisioning-source-specific runtime checks. Omits OpenClaw install metadata,
 gateway-specific IPC assumptions, and tmux/session-export workflows. API claims
 link to official documentation; installation, private account mappings, and
 development checks live in `references/cli-setup.md`. README.md provides
