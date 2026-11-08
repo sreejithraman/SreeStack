@@ -17,11 +17,9 @@ temporary worktree. Confirm discovery in a new agent session and `op` on `PATH`.
 
 ## Create the vault and service account
 
-Use a custom vault that holds only credentials meant for agent use, such as test
-logins or sandbox API keys. Create a service account with `read_items` for that
-vault, and add `write_items` when the user asks for automatic item management,
-including deletion. The [access boundary](access.md#access-boundary) lists what
-those grants allow and which vaults are ineligible.
+Create the dedicated vault and service account the
+[access boundary](access.md#access-boundary) describes, with the grants the user
+requested. Typical vault contents are test logins or sandbox API keys.
 
 The agent can create the vault and service account with `op` when that
 administration is authorized. Check installed help first. Service-account
@@ -41,10 +39,9 @@ printing only a boolean. A working T3 session does not establish access in the
 Codex desktop app. GUI apps may not inherit terminal exports, and existing
 processes keep their earlier environment.
 
-Service-account authentication needs the token and no `op signin`. A desktop
-authorization prompt on this path is a provisioning failure. Repair the affected
-runtime instead of asking a remote user to touch the Mac.
-([CLI service-account authentication](https://www.1password.dev/service-accounts/use-with-1password-cli))
+A desktop authorization prompt on the
+[service-account route](access.md#authenticate) is a provisioning failure.
+Repair the affected runtime instead of asking a remote user to touch the Mac.
 
 ## Choose the token source
 

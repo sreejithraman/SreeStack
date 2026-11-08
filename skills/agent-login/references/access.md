@@ -53,10 +53,11 @@ Then confirm the identity with `op whoami` before reading or writing. For the
 service account, match it to the designated identity and the user-confirmed
 vault grants; a token's presence alone does not prove scope.
 
-Automatic access stays on its scoped service account. A missing token or a
-Touch ID prompt on this path means the runtime needs
-[machine setup](machine-setup.md); name that block instead of attempting desktop
-sign-in or falling back to a personal account. Check the affected host's command
+Automatic access stays on its scoped service account and never falls back to
+personal access. A missing token or a Touch ID prompt on this path means the
+runtime needs machine setup; do not attempt desktop sign-in. Outside a requested
+machine setup, name that block. Inside one, continue in
+[machine setup](machine-setup.md). Check the affected host's command
 environment even when another host works. With a token present, capture
 authentication errors privately and report the cause without revealing
 credentials. Missing or denied access names the specific runtime or scope gap.

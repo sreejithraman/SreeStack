@@ -12,11 +12,15 @@ A missing prerequisite ends the route as a named block.
 
 - Read [access](references/access.md) before any authenticated operation. It
   decides who may use which credential and how to confirm the agent's identity.
-- Start machine setup or an application login only when the user asks for it.
-  Vault creation, service-account grants, token storage and rotation, and host
-  configuration need an explicit setup request. A login or credential task
-  authorizes none of them, and no reads of personal credentials.
-- Keep values inside the consumer, outside chat, agent tool arguments, logs,
+- Setup or credential work does not continue into an application login
+  unasked. A login that the user or a calling workflow, such as verify, asks
+  for counts as a request.
+- Machine setup and other administration need an explicit user request. That
+  covers vault creation, service-account grants, token storage and rotation,
+  and host configuration. A login or credential task creates no tokens, changes
+  no grants, and reads personal credentials only as access approves.
+- Keep values inside the consumer. Keep them out of chat, agent tool arguments,
+  logs, source code, project files such as tracked `.env` files and fixtures,
   and verification artifacts. Apply the user's capture policy.
 - Send a credential only to exact approved destinations, including identity
   providers and redirects. Use an encrypted transport for remote destinations,

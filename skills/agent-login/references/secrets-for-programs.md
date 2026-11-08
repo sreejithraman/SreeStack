@@ -1,9 +1,10 @@
 # Secrets for programs
 
-Use this after [access](access.md) has confirmed the service-account identity.
-It covers delivering a credential to a command, API client, or test harness, and
-creating, updating, archiving, or deleting items in the designated writable
-agent vault.
+Use this after [access](access.md) has confirmed the identity: the scoped
+service account for automatic access and agent-vault writes, or the approved
+personal account for an expressly approved personal credential. It covers
+delivering a credential to a command, API client, or test harness, and creating,
+updating, archiving, or deleting items in the designated writable agent vault.
 
 ## Find the field
 
@@ -15,8 +16,8 @@ for field and OTP references. Retrieve approved OTPs immediately before use.
 
 ## Deliver to a command
 
-With the scoped token already provisioned, pass exact references to the
-existing consumer. For a POSIX shell:
+Pass exact references to the existing consumer under the confirmed
+authentication route. For a POSIX shell with the scoped service account:
 
 ```sh
 TEST_LOGIN_USERNAME='op://VAULT_ID/ITEM_ID/username' \
@@ -27,7 +28,8 @@ op run -- env -u OP_SERVICE_ACCOUNT_TOKEN node ./scripts/verify-login.mjs
 Substitute approved references and the actual project runner. The runner reads
 values inside its process. Remove unrelated inherited `op://` references before
 `op run`; it resolves those too. Review each reference and interpolation when
-using `--env-file`.
+using `--env-file`. For an approved personal credential, use the personal
+route's environment from access and select the account with `--account`.
 
 Keep output masking on and shell tracing off. Masking does not protect
 transformed output, files, or browser artifacts, and same-user processes may read
@@ -44,8 +46,8 @@ project that needs them.
 
 ## Manage items
 
-Use the scoped service account for writes in the user-designated writable agent
-vault. Confirm the destination vault and account identity before writing, and
+Write only with the scoped service account, in the user-designated writable
+agent vault. Confirm the destination vault and account identity before writing, and
 match an existing item's identity before updating, archiving, or deleting it.
 
 To save or update, capture newly generated or already-authorized source
