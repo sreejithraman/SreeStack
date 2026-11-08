@@ -16,6 +16,10 @@ needs it. A fresh-session try while working on a skill is not a controlled compa
    a handoff. Define observable end states and mark required cases before
    any run. Use disposable fixtures for anything a
    [guardrail](../SKILL.md#writing-for-agents) covers.
+   On Claude Code or Codex, write the variants, tasks, checks, and one declared target into a
+   manifest for [`compare.py`](../scripts/compare.py), which runs steps 4–8; its
+   `--help` gives the format. It starts paid sessions, so run it only for an authorized
+   comparison.
 4. **Isolate and calibrate.** Load the exact skill copy, apart from installed skills,
    memory, and user rules, using disposable profiles so real configuration and logins
    stay untouched. Prove it with three probes: a disposable skill's random

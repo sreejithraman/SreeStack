@@ -649,7 +649,7 @@ uses and adapts:
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Benji Taylor / Stageshow](https://github.com/benjitaylor/skills) — product UI illustrations, animated demos, and the bundled React kit and examples.
 - [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including implementation, chief-of-staff coordination, and the Standards and Spec review rules.
-- [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods adapted into `writing-for-agents`.
+- [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods, and the comparison runner, adapted into `writing-for-agents`.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
 - [Felix Rieseberg](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) and [Ray Amjad](https://www.youtube.com/watch?v=RbfQayMNtJc) — outcome, depth, range, and verification ideas informing Reframe and goal execution; instructions are independently written.

@@ -38,6 +38,7 @@ class CheckRunnerTests(unittest.TestCase):
             "skills/create-image/scripts/test_fixture.py": PASSING_TEST,
             "skills/pr/scripts/test_fixture.py": PASSING_TEST,
             "skills/simulator-lifecycle/scripts/test_fixture.py": PASSING_TEST,
+            "skills/writing-for-agents/scripts/test_fixture.py": PASSING_TEST,
         }.items():
             self.write(name, content)
         shutil.copyfile(SCRIPTS / "check.py", self.repo / "scripts/check.py")

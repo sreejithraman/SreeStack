@@ -1234,7 +1234,7 @@ Setup references use the local `setup-sreestack` entry point.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures (MIT).
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures, and `scripts/eval.mjs` is adapted into `scripts/compare.py` (MIT).
 
 A local rewrite around one test: a line stays only if removing it changes what an
 agent does. Keeps the upstream concepts that change behavior: pointers, placement,
@@ -1249,8 +1249,17 @@ Existing invocation choices are preserved.
 Rewrites start fresh, then settle old rules by the failure they prevent. Tool guidance
 covers drift, help quality, call syntax, and usage-derived examples. Working on Skills
 starts from real runs. Controlled Comparison keeps matched variants, calibration,
-full outcome checks, and normal host integration; no runner or provider adapter is
-bundled.
+full outcome checks, and normal host integration.
+
+`scripts/compare.py` ports `eval.mjs` to the Python standard library with Claude Code
+and Codex adapters in `scripts/hosts.py`. It reads a versioned manifest, hashes every
+input, rejects a missing cell or a result whose inputs changed, keeps failed runs and
+work dirs as evidence, and takes blind judge verdicts. Calibration also checks that
+installed skills don't leak in and that each variant's collection loads. Scoring
+judges one declared target, lets any failed required case veto, reports
+unavailable telemetry, and never claims equivalence or significance. It drops the
+upstream MISS and WORSE pass rules, regex answer scoring, full-weight token sums, and
+the one-skill-per-version layout. Paid runs stay out of the checks.
 
 Keeps skill-diet's steps for adding a rule, its level rule, and its counts of 10–15
 requests and three runs. Holds an added rule to the three runs a removal needs, in
