@@ -1,22 +1,47 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed."
+description: "Turn the settled conversation into a spec in its shaping record, and publish it to the issue tracker when you ask."
 disable-model-invocation: true
 ---
 
-This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
+# To Spec
 
-Use the issue tracker supplied by the user or project configuration. If a required choice remains unknown, ask the user to supply it or run `/setup-sreestack`.
+Write down what the conversation settled as one spec an execution owner can
+start from. Start from a conversation or shaping record whose outcomes are
+settled. Leave the spec in that record, and in the issue tracker only when the
+user asks. You are done when every settled outcome is in the spec with its
+proof, covered code, exclusions, assumptions, and requested finish line, and
+the user can open it.
+
+This is synthesis, not an interview. Take each decision from the conversation,
+the record, and the code, and don't ask it again. Ask only for a missing decision
+that would change the spec and that nothing settled answers. Group those into
+one round under [Grilling](../grilling/SKILL.md)'s rules.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect any ADRs in the area you're touching.
+1. **Read what is settled.** Read the record, the conversation, and enough of
+   the code to name what each outcome covers. Use the project's domain glossary
+   vocabulary throughout the spec, and respect any ADRs in the area you're
+   touching.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
+2. **Settle the test seams.** Reuse seams the conversation or record already
+   settled. Otherwise sketch them: prefer existing seams to new ones, use the
+   highest seam possible, and propose any new seam at the highest point you
+   can. The fewer seams across the codebase, the better; the ideal number is
+   one. Check new seams with the user in the same round as any other missing
+   decision.
 
-Check with the user that these seams match their expectations.
+3. **Write the spec into the record.** Replace the brief in the shaping record
+   with the spec, so one copy exists. Without a shaping record, reuse an
+   existing spec or task record, or keep a task-owned draft outside the repo and
+   link its path. Use the template below.
 
-3. Write the spec using the template below, then publish it to the project issue tracker.
+4. **Publish only on request.** When the user asks to publish, use the issue
+   tracker the user or project configuration supplies. If a required choice
+   remains unknown, ask the user to supply it or run `/setup-sreestack`. Then
+   replace the spec in the record with a link to the issue, which is now the
+   authoritative copy.
 
 <spec-template>
 
@@ -28,17 +53,31 @@ The problem that the user is facing, from the user's perspective.
 
 The solution to the problem, from the user's perspective.
 
+## Outcomes
+
+One entry per settled outcome:
+
+- **Outcome:** the change and who it serves.
+- **Proof:** each claim's independent expected result and how to run it, or the
+  qualitative criteria and judge.
+- **Covers:** the modules, and paths where they pin down scope, that the outcome
+  changes or must preserve.
+- **Out of scope:** what this outcome excludes.
+- **Assumptions:** what it rests on that nobody confirmed.
+- **Finish line:** the one the user requested, or none requested, with the
+  shaping rationale if one was recorded.
+
 ## User Stories
 
-A LONG, numbered list of user stories. Each user story should be in the format of:
+A numbered list of user stories covering the settled behavior: one per distinct
+actor and need, and none the settled coverage lacks. Each user story should be in
+the format of:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 
 <user-story-example>
 1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending
 </user-story-example>
-
-This list of user stories should be extremely extensive and cover all aspects of the feature.
 
 ## Implementation Decisions
 
@@ -52,7 +91,8 @@ A list of implementation decisions that were made. This can include:
 - API contracts
 - Specific interactions
 
-Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
+Name modules and interfaces. Give file or directory paths where they pin down
+scope; leave out line numbers and code snippets, which go stale.
 
 Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
 
@@ -61,12 +101,12 @@ Exception: if a prototype produced a snippet that encodes a decision more precis
 A list of testing decisions that were made. Include:
 
 - A description of what makes a good test (only test external behavior, not implementation details)
-- Which modules will be tested
+- The seams from step 2, and which modules will be tested
 - Prior art for the tests (i.e. similar types of tests in the codebase)
 
 ## Out of Scope
 
-A description of the things that are out of scope for this spec.
+What the whole spec excludes, beyond each outcome's own exclusions.
 
 ## Further Notes
 

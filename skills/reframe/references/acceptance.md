@@ -7,10 +7,11 @@ the task owner accepts the integrated result.
 
 ## Start with enough to act
 
-Establish three things in the existing brief, task record, or temporary plan:
+Establish four things in the existing brief, task record, or temporary plan:
 
 - **Outcome:** what should improve and what finish line the user requested.
-- **Constraints:** what relevant behavior, obligations, and scope must hold.
+- **Scope:** the code the outcome covers and what is out of scope.
+- **Constraints:** what relevant behavior and obligations must hold.
 - **Evaluation:** how the result will be judged and by whom. For behavior, name
   each claim's independent expected result and how to run it.
   [Verify](../../verify/SKILL.md) blocks a claim that lacks either.
