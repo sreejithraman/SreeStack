@@ -1404,6 +1404,13 @@ Repository-wide recurring failure prevention belongs to `correct`; retro reports
 the session evidence and routes further investigation only within the user's scope.
 
 
+## tune-stack
+
+- Local: `skills/tune-stack` (SreeStack), a user-started workflow that improves
+  SreeStack skills and checks from evidence and proves each change against the
+  old version. It chains `retro` and `correct`, and uses `writing-for-agents`'
+  comparison runner and `implement`.
+
 ## Shared global instructions
 
 - [unclebob/ub-mode / SKILL.md](https://github.com/unclebob/ub-mode/blob/57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f/SKILL.md) — conceptual input checked at revision `57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f` on 2026-10-25; no upstream prose or code copied.

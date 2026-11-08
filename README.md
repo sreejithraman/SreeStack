@@ -201,6 +201,7 @@ instructions rather than maintaining another API manual.
 | Publish and watch | `pr`; `gh-stack` manages dependent layers |
 | Land and clean up | `merge`, then `repo-cleanup` |
 | Transfer context or improve the environment | Explicit `handoff` or `retro` |
+| Improve the stack's skills and checks from evidence | [tune-stack](skills/tune-stack/SKILL.md), started by you; chains `retro` and `correct`, and proves each change against the old version |
 
 [SEO](skills/seo/SKILL.md) is automatically discoverable for website search work.
 For example, “Find why our public product pages aren't indexed and fix it”
@@ -399,6 +400,12 @@ goal-state tools.
 
 The [retro skill](skills/retro/SKILL.md) reviews a coding session for improvements
 to the agent environment. Invoke it explicitly; it returns recommendations.
+[Tune Stack](skills/tune-stack/SKILL.md) improves SreeStack's own skills and
+checks from session logs, run metrics, or a new model release. Invoke it
+explicitly. A bare retrospective request returns recommendations; otherwise it
+picks one hypothesis, proves the candidate against the old version with
+`writing-for-agents`' comparison runner, and builds it through `implement` to Try.
+It lands only when you say Land.
 The [correct skill](skills/correct/SKILL.md) investigates repeated agent mistakes
 in a repository and connects each live failure class to a structural repair or
 enforceable guard. It supports planning and authorized implementation and stays

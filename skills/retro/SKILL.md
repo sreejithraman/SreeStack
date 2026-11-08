@@ -32,6 +32,7 @@ investigating or repairing that class; a retrospective alone remains recommendat
 - **Information access**: look for opportunities to increase the agent's access to information. Teeing dev server logs, readonly access to third-party services. _Use when_ a crucial piece of information was not available to the agent.
 
 4. Present these candidates to the user, in order of severity, with the session evidence and proposed change for each. A retrospective produces recommendations; implement them only when the user has requested those changes.
+   When the user asks to prove a recommendation against the old version, hand it to [Tune Stack](../tune-stack/SKILL.md).
 
 ## Reference
 

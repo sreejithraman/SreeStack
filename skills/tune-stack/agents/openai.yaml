@@ -1,0 +1,6 @@
+interface:
+  display_name: "Tune Stack"
+  short_description: "Improve the stack from evidence, proving each change"
+  default_prompt: "Use $tune-stack to improve the stack from recent session evidence."
+policy:
+  allow_implicit_invocation: false
