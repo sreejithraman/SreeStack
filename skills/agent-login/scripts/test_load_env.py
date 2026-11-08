@@ -55,7 +55,7 @@ def run_loader(fixture, preset=None):
     """Evaluate the loader's output in a clean shell; return the variables and stderr."""
     with tempfile.TemporaryDirectory() as directory:
         env_file = Path(directory) / "shared.env"
-        env_file.write_text(fixture, encoding="utf-8")
+        env_file.write_bytes(fixture if isinstance(fixture, bytes) else fixture.encode())
         environment = {"PATH": os.environ["PATH"], "AGENTS_SHARED_ENV": str(env_file), **(preset or {})}
         result = subprocess.run(
             ["sh", "-c", 'eval "$(sh "$1")" && env -0', "sh", str(LOADER)],
@@ -168,6 +168,28 @@ class RejectedEntriesTest(unittest.TestCase):
         loaded, warnings = run_loader("1BAD=x\nBAD-KEY=x\nno equals sign\n")
         self.assertFalse({"1BAD", "BAD-KEY"} & loaded.keys())
         self.assertEqual(len(warnings.splitlines()), 3)
+
+
+class FileEncodingTest(unittest.TestCase):
+    def test_files_that_are_not_utf8_text_export_nothing(self):
+        secret = SECRET.encode()
+        cases = {
+            "invalid byte in double quotes": b'KEY="' + secret + b'\xff"',
+            "invalid byte in single quotes": b"KEY='" + secret + b"\xff'",
+            "truncated sequence": b'KEY="' + secret + b'\xc3("',
+            "above U+10FFFF": b'KEY="' + secret + b'\xf4\x90\x80\x80"',
+            "NUL byte": b"KEY=" + secret + b"\x00value",
+        }
+        for name, entry in cases.items():
+            with self.subTest(name):
+                loaded, warnings = run_loader(b"BEFORE=ok\n" + entry + b"\nAFTER=ok\n")
+                self.assertFalse({"BEFORE", "KEY", "AFTER"} & loaded.keys())
+                self.assertNotIn(SECRET, warnings)
+                self.assertRegex(warnings, r"^load-env: [^\n]*not UTF-8 text without NUL bytes[^\n]*\n$")
+
+    def test_quoted_utf8_loads(self):
+        loaded, warnings = run_loader('BEFORE=ok\nKEY="caf\u00e9"\n'.encode())
+        self.assertEqual((loaded["BEFORE"], loaded["KEY"], warnings), ("ok", "caf\u00e9", ""))
 
 
 class SessionStartHookTest(unittest.TestCase):

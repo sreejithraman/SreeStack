@@ -13,12 +13,21 @@
 #
 # A backslash, or a quote anywhere but around a whole value, can make dotenv
 # parsers disagree on where entries end, so such a line exports nothing from the
-# whole file. Any other unsupported entry is skipped. Each warning names the
-# line, and the key when it is known, never the value.
+# whole file, as does a file that is not UTF-8 text without NUL bytes. Any other
+# unsupported entry is skipped. Warnings never include a value.
 LC_ALL=C
 export LC_ALL
 file="${AGENTS_SHARED_ENV:-$HOME/.config/agents/shared.env}"
 [ -r "$file" ] || exit 0
+
+# macOS iconv accepts lead bytes F5-FF and code points above U+10FFFF, which
+# tr and sed reject here.
+if [ "$(tr -d '\000\365-\377' < "$file" | wc -c)" -ne "$(wc -c < "$file")" ] ||
+  [ -n "$(sed -n "/$(printf '\364[\220-\277]')/=" "$file")" ] ||
+  ! iconv -f UTF-8 -t UTF-8 < "$file" > /dev/null 2>&1; then
+  printf 'load-env: %s: not UTF-8 text without NUL bytes; nothing exported\n' "$file" >&2
+  exit 0
+fi
 
 warn() {
   printf 'load-env: %s:%s: %s\n' "$file" "$number" "$1" >&2
