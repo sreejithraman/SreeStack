@@ -65,8 +65,8 @@ saved-work lifecycle.
 ## snipsnap-do-chores
 
 - Local: `skills/snipsnap-do-chores` (SreeStack). Selects saved mechanical work
-  through Snip Snap; Implement owns one PR-sized batch, Chief of Staff
-  coordinates several PRs, and Swarm supplies bounded parallel work.
+  through Snip Snap; Implement owns one outcome, Chief of Staff
+  coordinates several outcomes, and Swarm supplies bounded parallel work.
 
 ## animate
 
@@ -454,15 +454,26 @@ session storage; the chief stays the only publisher.
 - [cursor/plugins / pstack/skills/figure-it-out](https://github.com/cursor/plugins/tree/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/figure-it-out) and [poteto-mode/playbooks/autonomous-run.md](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/poteto-mode/playbooks/autonomous-run.md) — measurable-target pursuit, baseline `88d47514b82e7c44f00f2b2a72ff6dd12158038c`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Conceptual input: DeepSeek source and revision recorded under [chief-of-staff](#chief-of-staff); no code or prose copied.
 
-Automatically discoverable owner for one PR-sized change, written against a
-generic caller. Keeps upstream spec/ticket resolution, TDD at meaningful
-seams, and verification. Review runs at a PR finish line or on request. Adds local method selection, a fixed finish
-line, measurable-target pursuit that keeps hard targets and rejects
-regressions, invariant escalation through Attack the Premise, and an
-owner-report contract. The session owns the outcome; in a top-level thread, a
-subagent writes the change under Orchestration, and a child writes it itself. Native goal tracking stays optional and explicitly
-requested. Publishing and merging follow the request; no issue tracker is
-required for a supplied spec.
+Automatically discoverable workflow that carries one outcome, as one PR or a
+planned stack from the same owner, to its finish line, written against a generic
+caller. Keeps upstream spec/ticket resolution, asking on an ambiguous ticket,
+TDD at meaningful seams, and verification; no tracker is required for a supplied
+spec. Upstream's unconditional review-then-commit ending is replaced by finish
+lines: it picks **Land** for settled, reversible work and **Try** otherwise,
+states the pick so the user can override it, and keeps an explicitly requested
+PR state. Land selected under that policy is the merge request Merge needs;
+outline approval grants no landing; holds, caller finish lines, and destructive
+or outward-facing actions stop it. Try stops before review and the PR. Under a
+chief, the owner lands its own PR or stack on the chief's release.
+Adds preflight through Agent Login, Show Me baselines and showing at each stop,
+provisional work that stops at Try, the upstream pstack measurable-target
+pursuit that keeps hard targets and rejects regressions (its host-specific wake
+loop and broad side-fix authority are omitted), invariant escalation through
+Attack the Premise, follow-up routing with separate finish lines, promotion to
+Chief of Staff for several outcomes, adoption without a second writer, and an
+outcome-based owner report with early partial reports. In a top-level thread, a
+subagent writes the change under Orchestration, and a child writes it itself.
+Native goal tracking stays optional and explicitly requested.
 
 ## swarm
 
@@ -1076,7 +1087,7 @@ and keeps useful human assertions. Feature directories are created with the firs
 recipe. Scoped updates and glossary migration
 preserve their requested scope. Project workflow guidance
 uses current local review, PR, stack, merge, acceptance, and delegation owners;
-host settings and installation remain separate. Program ownership uses `chief-of-staff`, one PR-sized change uses `implement`,
+host settings and installation remain separate. Program ownership uses `chief-of-staff`, one outcome uses `implement`,
 and bounded parallel work uses `swarm`. Native tracking follows explicit requests. Agent defaults link the shared
 orchestration policy rather than duplicating host rank settings. Existing commands and standards
 are linked rather than duplicated. Active instruction files are selected by the

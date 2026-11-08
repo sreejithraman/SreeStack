@@ -23,7 +23,7 @@ settled brief. Set the **finish line** and who may land:
 
 | The user or project asks for | Finish line | Landing |
 | --- | --- | --- |
-| Nothing specific | Merged | Each owner lands its accepted PR; you land when needed |
+| Nothing specific | Merged | Each owner lands its accepted PR or stack; you land sets that span owners |
 | A stack | Stacked review-ready PRs | None until a later merge request |
 | User-decided merges | Merged, as the user approves | Each landing waits on the user's answer |
 | A plan, local work, or review-only PRs | That line | None |
@@ -200,16 +200,16 @@ answer grants that set at those heads.
 
 Name one lander for each merge set and record it:
 
-- **Owner:** for a single-PR merge set, record a **landing release** from the
-  current chief naming the owner, PR, accepted head/base, and any resources
-  dependents still need, then resume that owner with it. The record is authoritative;
-  immediately before submitting a merge, the owner re-reads it to confirm the
-  current chief, active release, and absence of affecting decisions or holds,
-  and matches the forge's head/base to the release. A mismatch returns to you
-  for reconciliation.
-- **You:** when the set spans several owners, its owner cannot act, or sequencing
-  calls for one lander, confirm its owners have stopped writing, then land it
-  through [Merge](../merge/SKILL.md) and
+- **Owner:** for a merge set within one owner's outcome, record a **landing
+  release** from the current chief naming the owner, each PR with its accepted
+  head/base, and any resources dependents still need, then resume that owner
+  with it. The record is authoritative; immediately before submitting a merge,
+  the owner re-reads it to confirm the current chief, active release, and
+  absence of affecting decisions or holds, and matches the forge's head/base to
+  the release. A mismatch returns to you for reconciliation. If the owner cannot
+  act, [transfer ownership](#start-pr-owners) first.
+- **You:** when the set spans several owners, confirm its owners have stopped
+  writing, then land it through [Merge](../merge/SKILL.md) and
   [gh-stack](../gh-stack/SKILL.md). Invoke Merge as a caller that keeps its own
   repair owner for the PR, and resume that owner, or
   [transfer ownership](#start-pr-owners) if it cannot act, for any readiness gap

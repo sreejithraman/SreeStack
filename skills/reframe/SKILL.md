@@ -65,8 +65,8 @@ continues execution; do not start another copy of its workflow.
 For a direct reframing request, return the brief in chat unless another format
 or destination was requested. If the user also requested execution, continue
 through the authorized workflow with that brief. Use
-[Implement](../implement/SKILL.md) for one PR-sized change,
-[Chief of Staff](../chief-of-staff/SKILL.md) for a program of PRs, and
+[Implement](../implement/SKILL.md) for one outcome, as one PR or a planned stack,
+[Chief of Staff](../chief-of-staff/SKILL.md) for several outcomes, and
 [Swarm](../swarm/SKILL.md) for a bounded parallel assignment when useful.
 Reframing alone authorizes no implementation, native goal,
 schedule, or external action.

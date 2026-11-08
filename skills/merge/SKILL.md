@@ -9,7 +9,8 @@ Land a finished change. Start from a PR, a stack, or a local change the user kep
 Leave it merged and shown, with issues settled and task resources cleaned up. You are done when
 GitHub reports every PR in the set merged, and each issue and cleanup target has a result.
 
-A merge request authorizes landing the scoped work, closing fully resolved issues, and cleaning
+A workflow's **Land** finish line, picked under its policy, is a merge request too. A merge
+request authorizes landing the scoped work, closing fully resolved issues, and cleaning
 up task-owned temporary resources. It also covers fixes that
 [continue](../review-sweep/references/classification.md#continue-or-stop). Honor the user's
 limits.

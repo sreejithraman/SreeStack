@@ -185,7 +185,7 @@ instructions rather than maintaining another API manual.
 | Explain simply, including for a PM or junior engineer | [explain](skills/explain/SKILL.md) |
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
-| Own one PR-sized change | [implement](skills/implement/SKILL.md), using the relevant platform/domain methods |
+| Carry one outcome to its finish line | [implement](skills/implement/SKILL.md), using the relevant platform/domain methods |
 | Coordinate a program of PRs | [chief-of-staff](skills/chief-of-staff/SKILL.md), with one owner session per PR |
 | Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
 | Run bounded parallel work | [swarm](skills/swarm/SKILL.md), returning results to its caller |
@@ -238,14 +238,16 @@ It needs the task context and relevant evidence; investigation may need the
 project's tools. Reframing alone ends with the brief. When another workflow
 calls it, Reframe returns the brief to that owner, which continues execution.
 
-[Implement](skills/implement/SKILL.md) owns one cohesive change through its
-finish line and returns an owner report to whoever started it. For example,
-“Implement this ticket and open a PR” covers implementation, verification,
-review, publication, and CI through readiness; landing needs a merge request.
-It also pursues measurable targets: “Reduce search p95 to 200 ms while
-preserving results and resource limits” keeps a correct 300 ms improvement as
-progress and continues toward 200 ms. Separate improvements go back to the
-caller, or to Snip Snap when the user started it directly.
+[Implement](skills/implement/SKILL.md) carries one outcome, as one PR or a
+planned stack, to its finish line and returns an owner report to whoever
+started it. It picks **Land** for settled, reversible work and merges once
+review, checks, and proof pass; otherwise it picks **Try**, proves and shows the
+result, and stops before review for you to merge, change, or scrap it. It states
+the pick up front so you can override it, and “open a PR” stops at the PR. It
+also pursues measurable targets: “Reduce search p95 to 200 ms while preserving
+results and resource limits” keeps a correct 300 ms improvement as progress and
+continues toward 200 ms. Work outside the outcome becomes a follow-up with its
+own finish line, or a snip when unrelated.
 
 [Chief of Staff](skills/chief-of-staff/SKILL.md) runs a program of PRs. It maps
 the work to PR units, starts one Implement owner per unit from a kickoff
