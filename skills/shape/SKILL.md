@@ -113,13 +113,13 @@ open choice that would change one other than a recorded Try question.
 
 ## 5. Show and route
 
-Show the record with Show Me. When the user already asked to build, hand the
-record to Implement for one outcome or to Chief of Staff for a spec, without
-asking again. Otherwise offer that step. Publish to a tracker only when the user
-asks.
+Show the record with Show Me; with no record, restate the request as a brief in
+the thread. When the user already asked to build, hand that record or brief to
+Implement for one outcome or to Chief of Staff for a spec, without asking again.
+Otherwise offer that step. Publish to a tracker only when the user asks.
 
 After a handoff, the execution owner carries the conversation, including a Try
-result. Keep the record as its input; don't restart shaping or copy the record.
+result. Keep the record or brief as its input; don't restart shaping or copy it.
 
-Done when the user can open the final record, and the next owner has it or the
-user has seen the offer.
+Done when the user can open the record or brief, and the next owner has it or
+the user has seen the offer.
