@@ -953,6 +953,13 @@ configured selections. Assigned researchers own synthesis; their briefs permit
 needed source tasks, whose retrievers work directly. Parents check source
 evidence and access gaps before acceptance.
 
+## shape
+
+- Local: `skills/shape` (SreeStack), a user-started workflow that turns a rough
+  idea into a settled brief, or one spec for several outcomes, through
+  conversation. It chains `reframe`, `grilling`, `prototype`, `show-me`, and
+  `to-spec`.
+
 ## reframe
 
 - Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) (article checked 2026-11-02) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc) (checked 2026-10-18).
@@ -1191,8 +1198,8 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 
 - [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Writes the spec into the shaping record, or an existing or task-owned draft
-record, and publishes to the tracker only when the user asks. Publishing
+Writes the spec into the shaping record, the one `shape` keeps or one chosen by
+its record rule, and publishes to the tracker only when the user asks. Publishing
 uses supplied or project-configured tracker information, without a readiness
 label, and leaves a link to the issue in the record. Unresolved required choices
 can be supplied directly or through the manual setup skill. Synthesizes without

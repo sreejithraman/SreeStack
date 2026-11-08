@@ -33,9 +33,8 @@ one round under [Grilling](../grilling/SKILL.md)'s rules.
    decision.
 
 3. **Write the spec into the record.** Replace the brief in the shaping record
-   with the spec, so one copy exists. Without a shaping record, reuse an
-   existing spec or task record, or keep a task-owned draft outside the repo and
-   link its path. Use the template below.
+   with the spec, so one copy exists. Without a shaping record, choose its home
+   by Shape's [record rule](../shape/SKILL.md#the-record). Use the template below.
 
 4. **Publish only on request.** When the user asks to publish, use the issue
    tracker the user or project configuration supplies. If a required choice

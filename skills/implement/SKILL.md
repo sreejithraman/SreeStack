@@ -28,6 +28,8 @@ checks. A brief supplements its sources and adds no requirements. Reuse a
 settled brief. Use [Reframe](../reframe/SKILL.md) only for what is unsettled:
 the outcome, its proof, preserved behavior, or the finish line. Ask when a ticket
 reference is ambiguous; a supplied spec needs no tracker.
+When the user is your caller and the direction is too rough to build, offer
+[Shape](../shape/SKILL.md).
 
 Before changing anything, resolve the repository, base, branches, available
 inputs, and the behavior to preserve. Record the code the outcome covers; scope

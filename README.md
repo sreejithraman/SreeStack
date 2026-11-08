@@ -177,6 +177,7 @@ instructions rather than maintaining another API manual.
 | Task | Owner |
 | --- | --- |
 | Clarify requirements or architecture | `grilling`, `domain-modeling`, `codebase-design`; optional manual planning commands |
+| Shape a rough idea into ready work | [shape](skills/shape/SKILL.md), started by you; chains `reframe`, `grilling`, `prototype`, `show-me`, and `to-spec` |
 | Form or improve a task brief | `reframe`, requested directly or used by the responsible workflow |
 | Write or maintain skills and agent instructions | [writing-for-agents](skills/writing-for-agents/SKILL.md) |
 | Choose engineering approaches | `engineering-principles`; workflows retain their procedures and checks |
@@ -237,6 +238,15 @@ prompt to receive a copyable version of that brief.
 It needs the task context and relevant evidence; investigation may need the
 project's tools. Reframing alone ends with the brief. When another workflow
 calls it, Reframe returns the brief to that owner, which continues execution.
+
+[Shape](skills/shape/SKILL.md) turns a rough idea into ready work through
+conversation. Start it with `/shape` in Claude Code or `$shape` in Codex. It keeps
+one record, a draft outside the repo unless an existing spec or task record
+fits, and uses Grilling for your decisions, Prototype and Show Me when seeing an
+option would decide it, and To Spec when the idea holds several outcomes. It
+ends with a settled brief or spec, or a dropped idea and the reason. If you
+already asked to build, it hands the record to Implement or Chief of Staff;
+otherwise it offers that step. It publishes to a tracker only when you ask.
 
 [Implement](skills/implement/SKILL.md) carries one outcome, as one PR or a
 planned stack, to its finish line and returns an owner report to whoever
