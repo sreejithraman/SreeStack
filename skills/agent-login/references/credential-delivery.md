@@ -6,7 +6,7 @@ are unnecessary for a field read. Consult installed `op read --help` and
 [secret reference syntax](https://www.1password.dev/cli/secret-reference-syntax)
 for field and OTP references. Retrieve approved OTPs immediately before use.
 
-For application UI entry, use [application login](../SKILL.md).
+For application UI entry, use the [UI login route](../SKILL.md#ui-login).
 
 ## Commands and test harnesses
 

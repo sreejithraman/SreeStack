@@ -30,7 +30,7 @@ Local-only skills need just an origin note.
 
 ## agent-login
 
-- Local: `skills/agent-login` (SreeStack) application login workflow and private alias-based CLI.
+- Local: `skills/agent-login` (SreeStack) task routes for machine setup, credential use, and application login, plus a private alias-based CLI.
 - [openclaw/openclaw / skills/1password](https://github.com/openclaw/openclaw/tree/a229456f487f713315fc799767a97990f407bea6/skills/1password) — `SKILL.md`, `references/get-started.md`, and `references/cli-examples.md`; adaptation baseline commit `a229456f487f713315fc799767a97990f407bea6`. MIT notice in `licenses/openclaw.txt`.
 
 One automatically discoverable skill owns application sign-in and approved
@@ -44,7 +44,9 @@ administration is separate from consumer tasks. Replaces upstream
 secret-printing examples with process-local reads and stdin writes. Adds shared
 private environment-file provisioning for local Codex runtimes, preserving
 unrelated agent variables, host-specific Touch ID diagnosis, and
-provisioning-source-specific runtime checks. Omits OpenClaw install metadata,
+provisioning-source-specific runtime checks. A live check with Codex CLI
+0.160.0 found that the desktop app's bundled CLI and T3's installed CLI each
+loaded `.env` from their own `CODEX_HOME`, including symlinks. Omits OpenClaw install metadata,
 gateway-specific IPC assumptions, and tmux/session-export workflows. API claims
 link to official documentation; installation, private account mappings, and
 development checks live in `references/cli-setup.md`. README.md provides
