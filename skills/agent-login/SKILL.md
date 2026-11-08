@@ -13,8 +13,8 @@ A missing prerequisite ends the route as a named block.
 - Read [access](references/access.md) before any authenticated operation. It
   decides who may use which credential and how to confirm the agent's identity.
 - Setup or credential work does not continue into an application login
-  unasked. A login that the user or a calling workflow, such as verify, asks
-  for counts as a request.
+  unasked, except onboarding's own proof login. A login that the user or a
+  calling workflow, such as verify, asks for counts as a request.
 - Machine setup and other administration need an explicit user request. That
   covers vault creation, service-account grants, token storage and rotation,
   and host configuration. A login or credential task creates no tokens, changes

@@ -81,7 +81,10 @@ Provision `OP_SERVICE_ACCOUNT_TOKEN` and `OP_BIOMETRIC_UNLOCK_ENABLED=false`
 inside the transfer process, using an existing authorized environment or private
 source. Capture outputs and exceptions; neither file contents nor secret values
 belong in a tool argument. Use valid dotenv encoding, not executable shell code.
-Have the user enter the token privately if no protected transfer path exists.
+Reading the token from the user's personal vault is personal access: get the
+user's approval for that item under [access](access.md#who-may-use-which-credential),
+or have the user enter the token privately. Have the user enter it privately
+too if no protected transfer path exists.
 The biometric setting disables desktop integration for automatic access;
 approved personal access sets its own invocation environment.
 ([Desktop integration toggle](https://www.1password.dev/cli/app-integration#optional-set-the-biometric-unlock-environment-variable))
