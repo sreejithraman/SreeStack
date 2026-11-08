@@ -12,13 +12,17 @@ EXIT_CODES = {"ready": 0, "merged": 0, "blocked": 2, "pending": 3}
 PASSING_CONCLUSIONS = {"SUCCESS", "NEUTRAL", "SKIPPED"}
 PENDING_STATUS_STATES = {"PENDING", "EXPECTED"}
 PR_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/pull/(\d+)")
+PROVISIONAL_HEADING = "## Provisional"
+PROVISIONAL_BLOCKER = (f"the body has an open '{PROVISIONAL_HEADING}' section; "
+                       "it must not merge until that section is removed")
+FENCE = re.compile(r"^ {0,3}(```|~~~)")
 
 # baseRefOid stops at the PR's last sync with its base, so read the branch's live tip instead.
 SUMMARY_QUERY = """
 query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
-      number url state isDraft isInMergeQueue mergeable mergeStateStatus reviewDecision
+      number url state isDraft isInMergeQueue mergeable mergeStateStatus reviewDecision body
       headRefName headRefOid baseRefName
       baseRef { target { oid } }
       autoMergeRequest { enabledAt }
@@ -169,6 +173,17 @@ def read_summary(gh, pr):
     return pull_request_pages(gh, SUMMARY_QUERY, pr)[0]
 
 
+def is_provisional(body):
+    """Find the provisional marker outside code fences; the body itself is never reported."""
+    in_fence = False
+    for line in (body or "").splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and line.rstrip() == PROVISIONAL_HEADING:
+            return True
+    return False
+
+
 def checks_page(pull_request):
     rollup = pull_request["commits"]["nodes"][0]["commit"]["statusCheckRollup"]
     return rollup["page"] if rollup else {"nodes": []}
@@ -231,6 +246,7 @@ def read_state(gh, pr):
             "expects_checks": bool(checks) or has_workflows(gh, pr, summary["headRefOid"]),
         }
         if read_summary(gh, pr) == summary:
+            state["provisional"] = is_provisional(summary.pop("body"))
             return state
     raise ReadError(f"#{pr['number']} kept changing during the read")
 
@@ -282,6 +298,8 @@ def assess(state, expected_head=None):
         return {"status": "blocked" if blockers else "merged", "blockers": blockers,
                 "pending": [], "to_settle": []}
 
+    if state.get("provisional"):
+        blockers.append(PROVISIONAL_BLOCKER)
     if summary["isDraft"]:
         blockers.append("the PR is a draft")
     if summary["reviewDecision"] == "CHANGES_REQUESTED":

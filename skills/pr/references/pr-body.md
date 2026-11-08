@@ -10,10 +10,11 @@ a fix. For stacks, name the immediate base, link adjacent PRs when available,
 and distinguish this layer's effect from dependent work.
 
 A **provisional** PR rests on another owner's unmerged PR or on a recorded
-assumption awaiting a decision. Give its body a short **Provisional** section
-naming that PR or assumption and what clears it: that PR merged, or the decision
-made, then the affected proof refreshed. The section is the PR's no-merge
-status. Its owner removes it only after both happen.
+assumption awaiting a decision. Give its body a short section under the exact
+heading `## Provisional`, naming that PR or assumption and what clears it: that
+PR merged, or the decision made, then the affected proof refreshed. The heading
+is the PR's no-merge status, and [`pr_state`](watch.md#read-the-state) blocks on
+it. Its owner removes the section only after both happen.
 
 ## Summary
 

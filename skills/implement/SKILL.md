@@ -170,9 +170,9 @@ reported as a gap, and the user can open what you showed.
 
 Provisional work never merges: Land becomes Try, and a requested draft or
 review-ready PR state is still reached through PR, with its body's
-**Provisional** section open until the condition clears. An open decision request on this outcome's scope
-blocks landing. Coordinate stack changes that affect other layers with the
-caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
+**Provisional** section open until the condition clears. An open decision
+request on this outcome's scope blocks landing. Coordinate stack changes that
+affect other layers with the caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
 under Orchestration's [who does the work](../orchestration/SKILL.md#who-does-the-work).
 
 **Under a chief,** stop at readiness and return it for acceptance. Land only on

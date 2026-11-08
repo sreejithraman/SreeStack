@@ -25,8 +25,10 @@ limits.
    conflicts, and commits you didn't push all go through
    [continue or stop](../review-sweep/references/classification.md#continue-or-stop). Fixes that
    continue get one line in your report. A wake resumes this step, because the merge request
-   still stands. On a stop, cancel any armed landing and confirm it's cancelled, with
-   `gh pr merge --disable-auto` or, for a queue, the `dequeuePullRequest` mutation. Then leave the
+   still stands. An open `## Provisional` section, which `pr_state` reports as a blocker, is a
+   stop; a merge request alone never clears it. On a stop, cancel any armed landing and confirm
+   it's cancelled, with `gh pr merge --disable-auto` or, for a queue, the `dequeuePullRequest`
+   mutation. Then leave the
    PR open and use [Show Me](../show-me/SKILL.md) to show the user what happened, including
    anything that landed first.
 
@@ -49,10 +51,6 @@ limits.
 
    A head you didn't verify holds commits nobody reviewed. Read them, then go back to step 2. It
    counts as verified once the evidence above covers it.
-
-   Read each PR's body. An open **Provisional** section, as
-   [PR body](../pr/references/pr-body.md) describes, is a stop: report it and what clears it.
-   A merge request alone never clears it.
 
    Closing links that would close unfinished issues block landing. After repairs or restacking,
    recheck every affected layer. Before local history changes, apply

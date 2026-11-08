@@ -20,7 +20,7 @@ def summary(**changes):
         "mergeStateStatus": "CLEAN", "reviewDecision": None, "headRefName": "agent/x",
         "headRefOid": HEAD, "baseRefName": "main", "baseRef": base_tip("b"), "mergeCommit": None,
         "comments": {"totalCount": 0}, "reviews": {"totalCount": 0},
-        "reviewThreads": {"totalCount": 0}, "reviewRequests": {"nodes": []},
+        "reviewThreads": {"totalCount": 0}, "reviewRequests": {"nodes": []}, "body": "",
         **changes,
     }
 
@@ -266,6 +266,38 @@ class Readiness(unittest.TestCase):
                 code, result = run(FakeGitHub(), "--head", other)
                 self.assertEqual(code, 2)
                 self.assertIn("the head moved", result["blockers"][0])
+
+
+PROVISIONAL_BODY = ("## Summary\nAdds the list.\n\n## Provisional\n"
+                    "Rests on secret-plan #12; clears when it merges.\n")
+
+
+class Provisional(unittest.TestCase):
+    def test_ready_pr_with_the_heading_is_blocked_without_its_text(self):
+        code, result = run(FakeGitHub([summary(body=PROVISIONAL_BODY)]))
+        self.assertEqual((code, result["status"]), (2, "blocked"))
+        self.assertEqual(result["blockers"], [pr_state.PROVISIONAL_BLOCKER])
+        self.assertNotIn("secret-plan", json.dumps(result))
+
+    def test_armed_or_queued_pr_with_the_heading_is_blocked_not_pending(self):
+        for armed in ({"isInMergeQueue": True},
+                      {"autoMergeRequest": {"enabledAt": "2026-11-08T09:00:00Z"}}):
+            with self.subTest(armed=armed):
+                code, result = run(FakeGitHub([summary(body=PROVISIONAL_BODY, **armed)]))
+                self.assertEqual((code, result["status"]), (2, "blocked"))
+                self.assertIn(pr_state.PROVISIONAL_BLOCKER, result["blockers"])
+
+    def test_pr_without_the_heading_is_unaffected(self):
+        for body in ("## Summary\nNo provisional work here.\n",
+                     "## Provisional notes\n", "```\n## Provisional\n```\n", None):
+            with self.subTest(body=body):
+                code, result = run(FakeGitHub([summary(body=body)]))
+                self.assertEqual((code, result["status"], result["blockers"]), (0, "ready", []))
+
+    def test_body_edit_during_the_read_is_reread(self):
+        github = FakeGitHub([summary(), summary(body=PROVISIONAL_BODY),
+                             summary(body=PROVISIONAL_BODY)])
+        self.assertEqual(run(github)[1]["status"], "blocked")
 
 
 class Feedback(unittest.TestCase):
