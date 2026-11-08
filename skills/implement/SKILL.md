@@ -86,11 +86,14 @@ Your own planned layers are not provisional; Land lands your stack bottom-up
 through Merge. Name the branch or assumption provisional work rests on. It can
 build and prove, and is reviewed only when the caller asks for review or a PR.
 Provisional work never merges and never crosses into destructive or
-outward-facing actions. Land becomes Try, but a requested PR state, draft or
-review-ready, can still be reached. Publish a provisional PR with the
-**Provisional** section from PR's [body guide](../pr/references/pr-body.md);
-that section is where its status lives, and you remove it only after its
-condition is met and affected proof is refreshed. If its base changes, restack and recheck it. If its base is scrapped,
+outward-facing actions on your own initiative. The user's explicit scrap of this
+outcome allows only its scoped cleanup through Repo Cleanup: its branch, PR, and
+worktree; work built on it still gets its own choice. Land becomes Try, but a
+requested PR state, draft or review-ready, can still be reached. Publish a
+provisional PR with the **Provisional** section from PR's
+[body guide](../pr/references/pr-body.md); that section is where its status
+lives, and you remove it only after its condition is met and affected proof is
+refreshed. If its base changes, restack and recheck it. If its base is scrapped,
 offer it for scrap too.
 
 Done when the finish line is stated, required access works or its block is

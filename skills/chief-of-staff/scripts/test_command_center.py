@@ -412,6 +412,16 @@ class CommandCenterCase(unittest.TestCase):
     def work(self, state, identity):
         return next(row for row in state["work"] if row["id"] == identity)
 
+    def outcome(self, identity, stage, **fields):
+        """A self-contained outcome row, with the published layer its stage needs."""
+        row = {"id": identity, "title": f"Work {identity}", "repo": "example/exports", "kind": "outcome",
+               "finishLine": "land", "state": stage, "owner": f"Owner {identity}", "updatedAt": "2026-11-02T16:00:00Z"}
+        if stage in ("in-review", "ready", "landed"):
+            status = {"landed": "merged", "ready": "ready"}.get(stage, "open")
+            row["layers"] = [{"id": f"{identity}-L1", "branch": f"branch-{identity}", "status": status,
+                              "url": f"https://example.com/exports/pull/{len(identity)}"}]
+        return row | fields
+
 
 class PublicationTests(CommandCenterCase):
     def test_checks_the_same_url_every_twenty_seconds_while_visible(self):
@@ -605,7 +615,7 @@ class ViewTests(CommandCenterCase):
         def finish_planned(state):
             state["work"] = [row for row in state["work"] if row["state"] != "planned"]
             for need in state["needs"]:
-                need["blocks"] = [identity for identity in need.get("blocks", []) if identity != "W4"]
+                need["blocks"] = [entry for entry in need.get("blocks", []) if entry["id"] != "W4"]
         self.host.publish(self.changed(finish_planned))
         page.advance(CHECK_INTERVAL)
         self.assertEqual(page.run("document.querySelectorAll('.collapsible.planned').length"), 0)
@@ -673,10 +683,8 @@ class ViewTests(CommandCenterCase):
 class ScrollTests(CommandCenterCase):
     def long_state(self):
         def lengthen(state):
-            for index in range(5, 40):
-                row = copy.deepcopy(self.work(state, "W2"))
-                row.update(id=f"W{index}", title=f"Extra work {index}", state=("building", "planned", "in-review")[index % 3], blockedBy=[])
-                state["work"].append(row)
+            for index in range(10, 45):
+                state["work"].append(self.outcome(f"W{index}", ("building", "planned", "in-review")[index % 3], title=f"Extra work {index}"))
         self.state = self.changed(lengthen)
         self.host.publish(self.state)
 
@@ -696,9 +704,7 @@ class ScrollTests(CommandCenterCase):
 
         def add_above(state):
             for index in range(50, 54):
-                row = copy.deepcopy(self.work(state, "W2"))
-                row.update(id=f"W{index}", title=f"New work {index}", state="planned")
-                state["work"].insert(0, row)
+                state["work"].insert(0, self.outcome(f"W{index}", "planned", title=f"New work {index}"))
         self.host.publish(self.changed(add_above))
         page.advance(CHECK_INTERVAL)
         self.assertIn("New work 50", page.text())
@@ -736,7 +742,7 @@ class ScrollTests(CommandCenterCase):
         self.long_state()
         page = self.open_page(PHONE)
         self.read_in_work(page, "W35")
-        self.host.publish(self.changed(lambda state: state.update(work=[dict(self.work(state, "W2"), blockedBy=[])], needs=[], revisits=[])))
+        self.host.publish(self.changed(lambda state: state.update(work=[self.outcome("W2", "building")], needs=[], revisits=[])))
         page.advance(CHECK_INTERVAL)
         self.assertEqual(page.run("document.querySelectorAll('.work').length"), 1)
         self.assertLessEqual(page.run("scrollY + innerHeight"), page.run("document.documentElement.scrollHeight"))
@@ -784,7 +790,7 @@ class ScrollTests(CommandCenterCase):
         page.click("#toggle-stage-planned")
         self.read_in_work(page, "W20", top=120)
         before = page.top_of(self.card("W20"))
-        self.host.publish(self.changed(lambda state: self.work(state, "W22").update(state="in-review")))
+        self.host.publish(self.changed(lambda state: self.work(state, "W22").update(self.outcome("W22", "in-review"))))
         page.advance(CHECK_INTERVAL)
         self.assertIn("in-review", self.lane_of(page, "W22"))
         self.assertAlmostEqual(page.top_of(self.card("W20")), before, delta=1)
@@ -810,20 +816,20 @@ class ScrollTests(CommandCenterCase):
         page.click("#work-tab")
         page.run("document.querySelector('.stage-board').scrollLeft = 300")
         page.keep_quiet()
-        lane = ".stage-board .collapsible.merged"
+        lane = ".stage-board .collapsible.landed"
         before = page.run(f"document.querySelector('{lane}').getBoundingClientRect().left")
-        self.host.publish(self.changed(lambda state: state["work"].append(dict(copy.deepcopy(self.work(state, "W2")), id="X9", state="unknown", unknownReason="Forge unavailable", blockedBy=[]))))
+        self.host.publish(self.changed(lambda state: state["work"].append(self.outcome("X9", "unknown", unknownReason="Forge unavailable"))))
         page.advance(CHECK_INTERVAL)
-        self.assertEqual(page.run("document.querySelectorAll('.work').length"), 9)
+        self.assertEqual(page.run("document.querySelectorAll('.work').length"), 11)
         self.assertGreater(page.run("document.querySelector('.stage-board').scrollLeft"), 0)
         self.assertAlmostEqual(page.run(f"document.querySelector('{lane}').getBoundingClientRect().left"), before, delta=1)
         page.reload()
         self.assertAlmostEqual(page.run(f"document.querySelector('{lane}').getBoundingClientRect().left"), before, delta=1)
 
     def wide_board(self):
-        self.state["work"] += [dict(copy.deepcopy(self.work(self.state, "W3")), id=f"X{index}", state=state, blockedBy=[])
-                               for index, state in enumerate(("done", "cancelled"))]
-        self.state["work"].append(dict(copy.deepcopy(self.work(self.state, "W2")), id="X2", state="closed", blockedBy=[]))
+        self.state["work"] += [dict(copy.deepcopy(self.work(self.state, "W3")), id=f"X{index}", state=state)
+                               for index, state in enumerate(("done", "scrapped"))]
+        self.state["work"].append(self.outcome("X2", "scrapped"))
         self.host.publish(self.state)
 
     def test_board_position_survives_updates_and_reloads_from_the_other_tab(self):
@@ -872,10 +878,92 @@ class ScrollTests(CommandCenterCase):
         watched = page.run("[...document.querySelectorAll('.collapsible.in-review .work')].find(card => card.getBoundingClientRect().top > 0).id")
         before = page.top_of("#" + watched)
         identity = bytes.fromhex(mover.removeprefix("work-card-")).decode()
-        self.host.publish(self.changed(lambda state: self.work(state, identity).update(state="merged", kind="pr", url="https://example.test/pull/9")))
+        landed = {"state": "landed", "layers": [{"id": f"{identity}-L1", "branch": "landed", "status": "merged", "url": "https://example.test/pull/9"}]}
+        self.host.publish(self.changed(lambda state: self.work(state, identity).update(landed)))
         page.advance(CHECK_INTERVAL)
-        self.assertIn("merged", page.run(f"document.getElementById({json.dumps(mover)}).closest('.collapsible').className"))
+        self.assertIn("landed", page.run(f"document.getElementById({json.dumps(mover)}).closest('.collapsible').className"))
         self.assertAlmostEqual(page.top_of("#" + watched), before, delta=1)
+
+
+class MorningViewTests(CommandCenterCase):
+    def card(self, identity):
+        return f"#work-card-{identity.encode().hex()}"
+
+    def card_text(self, page, identity):
+        return page.run(f"document.querySelector({json.dumps(self.card(identity))}).innerText")
+
+    def test_phone_work_view_fits_and_shows_results_layers_and_provisional_state(self):
+        page = self.open_page(PHONE)
+        page.click("#work-tab")
+        self.assertLessEqual(page.run("document.scrollingElement.scrollWidth"), PHONE[0])
+        outside = page.run("[...document.querySelectorAll('.work, .layer, .results, .provisional-note, .blocker')]"
+                           ".filter(node => node.getBoundingClientRect().right > innerWidth + .5).length")
+        self.assertEqual(outside, 0)
+        try_card = self.card_text(page, "W5")
+        self.assertIn("Preview build", try_card)
+        self.assertIn("Tailnet only. Stays up until you choose.", try_card)
+        self.assertIn("Waits on", try_card)
+        self.assertNotIn("Blocked", try_card)
+        provisional = self.card_text(page, "W2")
+        self.assertIn("It never lands while provisional.", provisional)
+        self.assertIn("on W1-L2 (W1)", provisional)
+        targets = page.run("[...document.querySelectorAll('.work .pr-link, .work .result-link')].map(link => link.getBoundingClientRect().height)")
+        self.assertEqual(len(targets), 5)
+        self.assertTrue(all(height >= 44 for height in targets), targets)
+
+    def test_phone_decision_cards_say_what_they_block_and_copy_one_try_choice(self):
+        page = self.open_page(PHONE)
+        self.assertLessEqual(page.run("document.scrollingElement.scrollWidth"), PHONE[0])
+        first = page.run("document.querySelector('.need').innerText")
+        self.assertIn("Blocks W6 acceptance", first)
+        self.assertIn("W6 builds on keeping the entry", first)
+        target = "decision-" + "W5-T".encode().hex()
+        labels = page.run(f"[...document.querySelectorAll('#{target} .options .copy-prompt')].map(button => button.getAttribute('aria-label'))")
+        self.assertEqual(labels, ["Copy prompt: Merge", "Copy prompt: Changes", "Copy prompt: Scrap"])
+        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
+        page.click(f"#{target} .options li:last-child .copy-prompt")
+        page.run("clock.settled()")
+        copied = page.run("window.copied").splitlines()
+        self.assertTrue(copied[0].startswith('Decision "W5-T" (revision '))
+        self.assertEqual(copied[-1], 'I choose option 3: "Scrap"')
+
+    def test_update_keeps_a_focused_layer_link_in_place_as_the_program_grows(self):
+        page = self.open_page(PHONE)
+        page.click("#work-tab")
+        link = 'a[href="https://example.com/exports/pull/44"]'
+        page.bring_into_view(self.card("W1"), 120)
+        page.run(f"document.querySelector({json.dumps(link)}).focus({{preventScroll: true}})")
+        before = page.top_of(link)
+        page.keep_quiet()
+
+        def grow(state):
+            self.work(state, "W1")["layers"].append({"id": "W1-L3", "branch": "export-retry-docs", "status": "open",
+                                                     "url": "https://example.com/exports/pull/45", "stackedOn": "W1-L2"})
+            state["work"].insert(0, self.outcome("W9", "planned", title="Newly planned outcome"))
+        self.host.publish(self.changed(grow))
+        page.advance(CHECK_INTERVAL)
+        self.assertIn("Newly planned outcome", page.text())
+        self.assertIn("3 layers, bottom first", self.card_text(page, "W1"))
+        self.assertEqual(page.run("document.activeElement.getAttribute('href')"), "https://example.com/exports/pull/44")
+        self.assertAlmostEqual(page.top_of(link), before, delta=1)
+
+    def test_phone_follows_a_kept_try_into_review(self):
+        page = self.open_page(PHONE)
+        page.click("#work-tab")
+        page.bring_into_view(self.card("W5"), 0)
+        page.keep_quiet()
+        before = page.top_of(self.card("W5"))
+
+        def keep(state):
+            self.work(state, "W5").update(finishLine="land", state="in-review", layers=[
+                {"id": "W5-L1", "branch": "export-history", "status": "open", "url": "https://example.com/exports/pull/50"}])
+            next(need for need in state["needs"] if need["id"] == "W5-T").update(status="answered", answer="Merge")
+        self.host.publish(self.changed(keep))
+        page.advance(CHECK_INTERVAL)
+        self.assertIn("in-review", page.run(f"document.querySelector({json.dumps(self.card('W5'))}).closest('.collapsible').className"))
+        self.assertIn("PR #50", self.card_text(page, "W5"))
+        self.assertAlmostEqual(page.top_of(self.card("W5")), before, delta=1)
+        self.assertEqual(page.selected_tab(), "work-tab")
 
 
 class FailureTests(CommandCenterCase):

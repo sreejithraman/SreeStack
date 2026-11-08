@@ -1,4 +1,4 @@
 interface:
   display_name: "Chief of Staff"
-  short_description: "Coordinate PR owners and the larger program"
-  default_prompt: "Use $chief-of-staff to coordinate this program through one owner session per PR and maintain its command center."
+  short_description: "Carry several outcomes through Implement owners"
+  default_prompt: "Use $chief-of-staff to carry these outcomes to their finish lines through Implement owners and keep the command center current."

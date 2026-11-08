@@ -407,7 +407,7 @@ round cap is added.
 
 ## chief-of-staff
 
-- Local: `skills/chief-of-staff` (SreeStack). Original PR-program workflow and
+- Local: `skills/chief-of-staff` (SreeStack). Original program workflow and
   dashboard implementation, informed by the user-supplied `chief-of-staff.zip`
   (attachment `0b05f3ba-72ce-4fe1-b35e-e1f0a28adff3`, reviewed 2026-11-02).
 - [mattpocock/skills / skills/in-progress/chief-of-staff](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/in-progress/chief-of-staff) and [skills/engineering/implement-spec](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/implement-spec) — adaptation baseline `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`. MIT notice in `licenses/mattpocock-skills.txt`.
@@ -417,36 +417,51 @@ round cap is added.
 - [DeepSeek / dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) — conceptual input reviewed at `8c32a9dc5d72c033816c6a8110b37f40cf94fba4`: `docs/000-philosophy.md`, `docs/001-domain.md`, `docs/003-execution.md`, `docs/004-prompts.md`, and the `prompts/` role, dispatch, work, reply, handoff, scope, communication, and delivery instructions. Informs Chief of Staff, Implement, Orchestration, and Show Me; no code or prose copied.
 - [Lucide Icons](https://lucide.dev/guide/lucide/getting-started) — external browser dependency, version `1.67.0`, loaded asynchronously from `https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js` with SHA-384 integrity and no referrer. No Lucide source assets or license text are vendored. [Upstream package license](https://cdn.jsdelivr.net/npm/lucide@1.67.0/LICENSE) covers ISC and applicable Feather MIT notices.
 
-Automatically discoverable program owner. One Implement owner per PR unit,
-started from `assets/owner-kickoff.md` with an explicit return route and report
-file; the chief reads owner reports, accepts units under
-Orchestration, watches delegated owners' pending PRs, and routes discoveries
-through an explicit disposition table. The chief triages decision requests: it
-resolves reversible, unreserved ones that a recorded source or the user's
-standing approval settles, and the user can reopen any of them. Merged delivery is the local default:
-owners land their accepted PR or stack on the chief's recorded landing release,
-and the chief lands only sets that span owners. Landing stays within the agreed program scope and inherited
-finish line, with one pending landing per target branch and hold reconciliation
-covering queued merges. A requested stack, user-decided merges, a plan, local work,
-review-only PRs, holds, or project rules narrow that default.
-`references/task-graphs.md` keeps the upstream frontier scheduling, adds
-verification at the dependent's base, and linearizes fork-and-join inputs into
-reviewable stacks. Existing trackers stay authoritative; there is no mandatory
-wiki, Linear, Slack, cloud runtime, or recurring schedule.
+Automatically discoverable program owner. It carries several outcomes, each
+through one Implement owner that delivers one PR or its own planned stack. Input
+is any set of work, and a spec is optional. To Tasks splits a body of work and
+owns readiness, including its provisional start for a decision with a reversible
+recommended option. Owners start from `assets/owner-kickoff.md` with an explicit
+return route and report file; a running Implement session is adopted, never
+duplicated. The chief reads Implement's owner report fields, accepts outcomes
+under Orchestration, watches delegated owners' pending PRs, and routes
+discoveries through an explicit disposition table.
+
+Each outcome takes Implement's Land, Try, or PR finish line. Land picked under
+that policy authorizes merging within the agreed program scope, with Merge's
+requirements as the gate; the chief's landing release decides when. Owners land
+their own outcome on release, and the chief lands only sets that span owners,
+with one recorded lander, one pending landing per target branch including queued
+merges, and withdrawal recorded before notifying. Provisional work, on another
+owner's unmerged layer or an open decision's recommended option, builds and is
+shown but never lands. A shown Try waits for the user's merge, changes, or scrap
+choice, one outcome at a time unless the user names a set, after seeing the
+effect on dependents. The chief triages decision requests: it resolves
+reversible, unreserved ones that a recorded source or the user's standing
+approval settles, and the user can reopen any of them. Holds, project rules, and
+a calling workflow's finish line narrow the default. `references/dependencies.md`
+keeps the upstream frontier scheduling, adds verification at the dependent's
+base and provisional bases, and linearizes fork-and-join inputs into reviewable
+stacks. Existing trackers stay authoritative; there is no mandatory wiki,
+Linear, Slack, cloud runtime, or recurring schedule.
 
 The original command center renders a checked JSON snapshot of the program
 record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
-Needs you before Work, collapsible sections, per-row observation times, copyable decision prompts
-that name one recorded option, judgment calls ahead of quick picks with a batch prompt, reopenable
-chief-resolved decisions, and accepted tradeoffs. Below 900px it stays one
-column; wider, Needs you is a dual-pane inbox and Work a board of stage lanes. It
-replaces the supplied archive's Claude artifact database and integrations; no
-archive code or prose is copied. Validation rejects non-PR merge states and
-terminal rows with active blockers. Delivery is hosted only;
-`references/hosting.md` serves the page through Show Me's web sharing,
-including Tailscale Serve. A hosted page polls its own URL and swaps in a newer
-published digest without a server push, keeping the viewer's place per URL in
-session storage; the chief stays the only publisher.
+Needs you before Work, collapsible sections, per-row observation times, copyable
+decision prompts that name one recorded option, judgment calls ahead of quick
+picks with a batch prompt, reopenable chief-resolved decisions, and accepted
+tradeoffs. Each work row is one outcome, follow-up, or support task, counted once,
+with its finish line, results to open, provisional condition, owner, and PR
+layers; each decision names the outcomes it blocks and the phase each waits at.
+Below 900px it stays one column; wider, Needs you is a dual-pane inbox and Work a
+board of stage lanes. It replaces the supplied archive's Claude artifact database
+and integrations; no archive code or prose is copied. Validation rejects
+provisional landings, PRs on a Try, stacks on another owner's unmerged layer
+without a provisional mark, and terminal rows with active blockers. Delivery is
+hosted only; `references/hosting.md` serves the page through Show Me's web
+sharing, including Tailscale Serve. A hosted page polls its own URL and swaps in
+a newer published digest without a server push, keeping the viewer's place per
+URL in session storage; the chief stays the only publisher.
 
 ## implement
 
@@ -1186,7 +1201,8 @@ happens only on request and stays user-approved. Uses supplied or project-config
 information, with no labels.
 
 Each task delivers one result. This skill owns the parallelism test and the ready rule, which the
-tracker seeds and `chief-of-staff` point to. A shared resource becomes a note under Inputs, and
+tracker seeds and `chief-of-staff` point to. The ready rule allows a provisional start on an open
+decision's reversible recommended option; acceptance and landing wait for the answer. A shared resource becomes a note under Inputs, and
 blocking edges mean one task needs another's output or decision.
 
 Setup references use the local `setup-sreestack` entry point.
