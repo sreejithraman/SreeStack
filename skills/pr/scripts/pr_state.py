@@ -15,7 +15,6 @@ PR_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/pull/(\d+)")
 PROVISIONAL_HEADING = "## Provisional"
 PROVISIONAL_BLOCKER = (f"the body has an open '{PROVISIONAL_HEADING}' section; "
                        "it must not merge until that section is removed")
-FENCE = re.compile(r"^ {0,3}(```|~~~)")
 
 # baseRefOid stops at the PR's last sync with its base, so read the branch's live tip instead.
 SUMMARY_QUERY = """
@@ -174,14 +173,8 @@ def read_summary(gh, pr):
 
 
 def is_provisional(body):
-    """Find the provisional marker outside code fences; the body itself is never reported."""
-    in_fence = False
-    for line in (body or "").splitlines():
-        if FENCE.match(line):
-            in_fence = not in_fence
-        elif not in_fence and line.rstrip() == PROVISIONAL_HEADING:
-            return True
-    return False
+    """Match the marker on any line, code examples included, so no layout can hide it."""
+    return any(line.rstrip() == PROVISIONAL_HEADING for line in (body or "").splitlines())
 
 
 def checks_page(pull_request):

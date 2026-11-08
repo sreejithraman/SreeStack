@@ -287,9 +287,17 @@ class Provisional(unittest.TestCase):
                 self.assertEqual((code, result["status"]), (2, "blocked"))
                 self.assertIn(pr_state.PROVISIONAL_BLOCKER, result["blockers"])
 
+    def test_heading_blocks_wherever_it_appears(self):
+        nested_fences = ("````markdown\n```python\nexample()\n````\n\n"
+                         "## Provisional\nHeld until the dependency merges.\n")
+        for body in ("```\n## Provisional\n```\n", nested_fences, "## Provisional \r\n"):
+            with self.subTest(body=body):
+                code, result = run(FakeGitHub([summary(body=body)]))
+                self.assertEqual((code, result["blockers"]), (2, [pr_state.PROVISIONAL_BLOCKER]))
+
     def test_pr_without_the_heading_is_unaffected(self):
-        for body in ("## Summary\nNo provisional work here.\n",
-                     "## Provisional notes\n", "```\n## Provisional\n```\n", None):
+        for body in ("## Summary\nNo provisional work here.\n", "##Provisional\n",
+                     "## Provisional notes\n", None):
             with self.subTest(body=body):
                 code, result = run(FakeGitHub([summary(body=body)]))
                 self.assertEqual((code, result["status"], result["blockers"]), (0, "ready", []))
