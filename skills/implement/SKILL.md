@@ -35,12 +35,16 @@ decisions use that list.
 
 One outcome ships as one PR or as a planned stack from you. Split PRs by
 reviewability, never to manage context. Several tickets can share a PR when they
-form one reviewable change. When the work turns out to be several outcomes that
-need coordinating, promote it: offer [Chief of Staff](../chief-of-staff/SKILL.md)
-to a user caller, or return the proposed outcomes to a session caller. While you
-wait, keep building any outcome the user clearly asked for that stands alone;
-if none does, stop at the offer. Never start the other outcomes. Several layers
-alone are no reason to promote.
+form one reviewable change. Several layers alone are no reason to promote.
+
+When the work is several outcomes that need coordinating, promote it. A session
+caller gets the proposed outcomes back. A user caller gets an offer of
+[Chief of Staff](../chief-of-staff/SKILL.md):
+
+- **The request itself is several outcomes:** offer Chief of Staff and wait for
+  the answer. Start none of them.
+- **The work grew from one requested outcome:** keep building that outcome while
+  the offer waits. Start none of the new ones.
 
 Done when the outcome, covered code, preserved behavior, proof, inputs, caller,
 and holds are known.
