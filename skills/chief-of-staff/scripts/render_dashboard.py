@@ -20,6 +20,8 @@ ACTIVE = {"building", "shown", "in-review", "ready"}
 PR_STATES = {"in-review", "ready"}
 FINISH_LINES = {"land": "Land", "try": "Try", "pr-review": "Review-ready PR", "pr-draft": "Draft PR"}
 READY_LABELS = {"land": "Ready to land", "pr-review": "Review-ready", "pr-draft": "Draft open"}
+READY_LAYERS = {"land": ({"ready", "merged"}, "ready or merged"), "pr-review": ({"ready", "merged"}, "ready or merged"),
+                "pr-draft": ({"draft", "merged"}, "a draft or merged")}
 LAYER_STATES = {
     "local": "Local", "draft": "Draft", "open": "In review", "ready": "Ready",
     "merged": "Merged", "closed": "Closed without merge",
@@ -166,8 +168,14 @@ def validate_work(row, layers):
     validate_layers(row, path, layers)
     effective = effective_finish(row)
     published = [layer for layer in row.get("layers", []) if "url" in layer]
-    if effective == "try" and published:
+    if finish == "try" and published:
         raise ValueError(f"{path}: Try stops before the PR; a published layer needs a PR or Land finish line")
+    if state == "ready":
+        if effective == "try":
+            raise ValueError(f"{path}: provisional work is never ready to land; keep it in review until its condition clears")
+        allowed, wording = READY_LAYERS[effective]
+        if not row.get("layers") or any(layer["status"] not in allowed for layer in row["layers"]):
+            raise ValueError(f"{path}: ready needs every layer {wording} for its finish line")
     if state == "shown" and (effective != "try" or not row.get("results")):
         raise ValueError(f"{path}: shown is a Try result, and needs results the user can open")
     if state in PR_STATES and not published:
@@ -177,7 +185,13 @@ def validate_work(row, layers):
         raise ValueError(f"{path}: landed needs a Land finish line and every layer merged")
 
 
-def validate_edges(work, by_id, layers):
+def halted_by_need(needs):
+    """IDs of work an open Need holds at a phase that stops its work."""
+    return {entry["id"] for need in needs if need["status"] == "open"
+            for entry in need.get("blocks", []) if entry["phase"] in HALTING}
+
+
+def validate_edges(work, by_id, layers, halted):
     for row in work:
         path = f"work[{row['id']}]"
         for dependency in strings(row.get("blockedBy", []), f"{path}.blockedBy"):
@@ -186,8 +200,8 @@ def validate_edges(work, by_id, layers):
         for identity in row.get("provisional", {}).get("on", []):
             if identity == row["id"] or identity not in by_id:
                 raise ValueError(f"{path}.provisional.on must name other work; a decision names what it blocks")
-            if by_id.get(identity, {}).get("state") == "scrapped":
-                raise ValueError(f"{path} rests on scrapped {identity}; offer it for scrap or record its new base")
+            if by_id[identity]["state"] == "scrapped" and row["id"] not in halted:
+                raise ValueError(f"{path} rests on scrapped {identity}; halt it with its scrap-or-rebase Need or record its new base")
     for identity, (layer, row) in layers.items():
         if "stackedOn" not in layer:
             continue
@@ -195,8 +209,8 @@ def validate_edges(work, by_id, layers):
         if layer["stackedOn"] == identity or layer["stackedOn"] not in layers:
             raise ValueError(f"{where} must name another layer")
         parent, parent_row = layers[layer["stackedOn"]]
-        if layer["status"] not in {"merged", "closed"} and parent["status"] == "closed":
-            raise ValueError(f"{where} names closed {parent['id']}; record the restack or its blocker")
+        if layer["status"] not in {"merged", "closed"} and parent["status"] == "closed" and row["id"] not in halted:
+            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its Need")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
@@ -205,8 +219,8 @@ def validate_edges(work, by_id, layers):
     def depends_on(row):
         found = list(row.get("blockedBy", []))
         found += row.get("provisional", {}).get("on", [])
-        found += [layers[layer["stackedOn"]][1]["id"] for layer in row.get("layers", []) if "stackedOn" in layer]
-        return [identity for identity in found if identity != row["id"]]
+        parents = [layers[layer["stackedOn"]][1] for layer in row.get("layers", []) if "stackedOn" in layer]
+        return found + [parent["id"] for parent in parents if parent is not row]
 
     check_cycles({identity: depends_on(row) for identity, row in by_id.items()}, "work dependency")
     check_cycles({identity: [layer["stackedOn"]] if "stackedOn" in layer else [] for identity, (layer, _) in layers.items()}, "stack")
@@ -295,9 +309,9 @@ def validate(state):
     layers = {}
     for row in work:
         validate_work(row, layers)
-    validate_edges(work, by_id, layers)
     for row in needs:
         validate_need(row, by_id)
+    validate_edges(work, by_id, layers, halted_by_need(needs))
     for row in revisits:
         for key in ("title", "tradeoff", "revisit"):
             text(row.get(key), f"revisits[{row['id']}].{key}")
@@ -538,8 +552,15 @@ class Program:
         items += [(True, STATES[self.by_id[identity]["state"]], identity, self.by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
         if row.get("blocked"):
             items.append((True, "Other", "", row["blocked"]))
+        for identity in row.get("provisional", {}).get("on", []):
+            if self.by_id[identity]["state"] == "scrapped":
+                items.append((True, "Scrapped base", identity, self.by_id[identity]["title"]))
+        for layer in row.get("layers", []):
+            parent, parent_row = self.layers.get(layer.get("stackedOn"), ({}, None))
+            if parent.get("status") == "closed" and layer["status"] not in {"merged", "closed"}:
+                items.append((True, "Closed base", parent["id"], parent_row["title"]))
         for _, parent in self.foreign_parents(row):
-            if self.halted(parent):
+            if parent["state"] != "scrapped" and self.halted(parent):
                 items.append((True, "Blocked base", parent["id"], parent["title"]))
         return items
 

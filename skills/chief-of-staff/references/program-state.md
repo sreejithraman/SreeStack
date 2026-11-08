@@ -97,8 +97,9 @@ layers. Outcome states:
 - `shown`: a Try result built, proved, and shown, waiting for the user's merge,
   changes, or scrap choice. It needs `results`.
 - `in-review`: a PR is open while review or CI continues.
-- `ready`: every layer at readiness for its finish line: ready to land, review
-  ready, or a draft open. Shown under In review with a readiness badge.
+- `ready`: every layer at readiness for its finish line: ready or merged for
+  Land or a review-ready PR, a draft or merged for a draft PR. Provisional work
+  is never ready. Shown under In review with a readiness badge.
 - `landed`: every layer confirmed merged. `scrapped`: the user scrapped it, or it
   was declined or made obsolete; the record says which.
 - `done`: completed support work. An outcome never uses `done`.
@@ -107,6 +108,12 @@ layers. Outcome states:
 [dependency rule](dependencies.md#dependencies); drop an edge once it is. A
 layer's `stackedOn` names the layer below it. When that layer belongs to another
 owner's outcome and is unmerged, the dependent is provisional on that outcome.
+An outcome that was published before it became provisional, through a later
+decision or adoption onto another owner's PR, keeps its PR layers; only a Try
+finish line forbids them. When a base is scrapped or its PR closed, the
+dependent stays on it only while an open Need, such as its scrap-or-rebase
+choice, halts it at `start`, `access`, or `proof`; the card shows the base as
+its blocker.
 Before marking a row terminal, clear its active blockers and open Needs; history
 stays in the record. Unresolved work stays visible even after its owner failed
 or its PR was abandoned.
@@ -164,7 +171,7 @@ type Work = {
   state: "planned" | "building" | "shown" | "in-review" | "ready"
     | "landed" | "done" | "scrapped" | "unknown";
   finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // required unless support
-  effectiveFinishLine?: "try"; // required when provisional work's finish line is land
+  effectiveFinishLine?: "try"; // required when provisional work's finish line is land; it keeps any PR it already has
   owner?: string; sessionUrl?: string; // owner required while building, shown, in review, or ready
   provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
   layers?: Layer[]; // bottom first; not on support
@@ -192,10 +199,13 @@ type Revisit = {
 ```
 
 The renderer rejects a snapshot that claims more than the record supports:
-provisional work that merged or keeps Land, a Try with a published PR, a shown
-Try with nothing to open, a landed outcome with an unmerged layer, active work
-with no owner, a layer on another owner's unmerged layer without a provisional
-mark, a `start` Need on work that started, and dangling or cyclic edges.
+provisional work that merged, keeps Land, or claims ready; a Try finish line
+with a published PR; a shown Try with nothing to open; a ready outcome with a
+layer short of its finish line; a landed outcome with an unmerged layer; active
+work with no owner; a layer on another owner's unmerged layer without a
+provisional mark; work continuing on a scrapped or closed base without a
+halting Need; a `start` Need on work that started; and dangling or cyclic
+edges, including work blocked by itself.
 
 Write each `description` from the outcome's scope, not its title or the owner's
 next step. Store returned T3 thread links verbatim and use only real ticket, PR,

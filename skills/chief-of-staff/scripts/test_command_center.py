@@ -417,7 +417,7 @@ class CommandCenterCase(unittest.TestCase):
         row = {"id": identity, "title": f"Work {identity}", "repo": "example/exports", "kind": "outcome",
                "finishLine": "land", "state": stage, "owner": f"Owner {identity}", "updatedAt": "2026-11-02T16:00:00Z"}
         if stage in ("in-review", "ready", "landed"):
-            status = "merged" if stage == "landed" else "open"
+            status = {"landed": "merged", "ready": "ready"}.get(stage, "open")
             row["layers"] = [{"id": f"{identity}-L1", "branch": f"branch-{identity}", "status": status,
                               "url": f"https://example.com/exports/pull/{len(identity)}"}]
         return row | fields

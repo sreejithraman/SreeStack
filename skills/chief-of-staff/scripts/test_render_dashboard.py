@@ -170,6 +170,7 @@ class DashboardTests(unittest.TestCase):
             ("blockedBy references missing work W9", case(lambda s: self.work("W4", s).update(blockedBy=["W9"]))),
             ("blocks references missing work W9", case(lambda s: s["needs"][0]["blocks"].append({"id": "W9", "phase": "landing"}))),
             ("dependency cycle includes", case(lambda s: self.work("W1", s).update(blockedBy=["W2"]))),
+            ("dependency cycle includes W4", case(lambda s: self.work("W4", s).update(blockedBy=["W4"]))),
             ("more than once", case(lambda s: self.work("W5", s)["layers"][0].update(id="W1-L1"))),
             ("must name another layer", case(lambda s: self.work("W1", s)["layers"][1].update(stackedOn="W9-L1"))),
             ("stack cycle includes", case(lambda s: self.work("W1", s)["layers"][0].update(stackedOn="W1-L2"))),
@@ -347,6 +348,8 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.badges(html, 'W1'), ['in-review', 'ready'])
         self.assertIn('In review Review-ready', self.card(html, 'W1'))
         self.work('W1')['finishLine'] = 'pr-draft'
+        for layer in self.work('W1')['layers']:
+            layer['status'] = 'draft'
         self.assertIn('In review Draft open', self.card(render(self.state), 'W1'))
 
     def test_try_without_a_pr_shows_its_results_and_stops_before_the_pr(self):
@@ -406,6 +409,29 @@ class DashboardTests(unittest.TestCase):
         html = render(self.state)
         self.assertIn("Provisional Rests on W1-L2, the Retry owner's unmerged cancellation layer. Clears when W1 lands and this outcome's proof is refreshed on the new base. It never lands while provisional.", self.card(html, 'W2'))
 
+    def test_published_land_outcome_keeps_its_pr_when_it_becomes_provisional(self):
+        later = self.work('W1')
+        later.update(effectiveFinishLine='try', provisional={'basis': "W1-D3's recommended option: three retries.", 'clears': 'W1-D3 is answered.'})
+        self.state['needs'].append({'id': 'W1-D3', 'ask': 'How long between retries?', 'status': 'open',
+                                    'blocks': [{'id': 'W1', 'phase': 'acceptance'}]})
+        adopted = self.work('W2')
+        adopted.update(state='in-review')
+        adopted['layers'][0].update(status='open', url='https://example.com/exports/pull/46')
+        html = render(self.state)
+        self.assertEqual(self.badges(html, 'W1'), ['in-review', 'provisional'])
+        self.assertIn('PR #42', self.card(html, 'W1'))
+        self.assertIn('Finish line Land → Try while provisional', self.card(html, 'W1'))
+        self.assertEqual(self.badges(html, 'W2'), ['in-review', 'provisional'])
+        self.assertIn('PR #46', self.card(html, 'W2'))
+        later['state'] = 'ready'
+        later['layers'][1]['status'] = 'ready'
+        self.assertInvalid(self.state, 'provisional work is never ready to land')
+        later['state'] = 'in-review'
+        self.assertIn('PR #42', render(self.state))
+        unrequested = self.work('W5')['layers'][0]
+        unrequested.update(status='open', url='https://example.com/exports/pull/50')
+        self.assertInvalid(self.state, 'Try stops before the PR')
+
     def test_same_owner_follow_up_on_its_own_unmerged_layer_is_not_provisional(self):
         follow_up = self.work('W4')
         follow_up.update(owner='Retry owner', state='building', layers=[{'id': 'W4-L1', 'branch': 'export-progress', 'status': 'local', 'stackedOn': 'W1-L2'}])
@@ -415,12 +441,26 @@ class DashboardTests(unittest.TestCase):
         self.assertInvalid(self.state, "another owner's unmerged layer; mark this outcome provisional on W1")
 
     def test_provisional_base_changes_are_recorded_before_rendering(self):
-        state = copy.deepcopy(self.state)
-        self.work('W1', state).update(state='scrapped')
-        state['needs'] = [need for need in state['needs'] if need['id'] != 'W1-D2']
-        self.assertInvalid(state, 'rests on scrapped W1')
-        self.work('W1')['layers'][1].update(status='closed')
-        self.assertInvalid(self.state, 'names closed W1-L2; record the restack')
+        choice = {'id': 'W2-S', 'ask': 'Scrap or rebase the retry status API?', 'status': 'open',
+                  'options': [{'label': 'Scrap', 'effect': 'Remove W2.'}, {'label': 'Rebase', 'effect': 'Rebuild W2 on main.'}]}
+        scrapped = copy.deepcopy(self.state)
+        self.work('W1', scrapped).update(state='scrapped')
+        scrapped['needs'] = [need for need in scrapped['needs'] if need['id'] != 'W1-D2']
+        self.assertInvalid(scrapped, 'rests on scrapped W1')
+        scrapped['needs'].append(dict(choice, blocks=[{'id': 'W2', 'phase': 'acceptance'}]))
+        self.assertInvalid(scrapped, 'rests on scrapped W1')
+        scrapped['needs'][-1]['blocks'] = [{'id': 'W2', 'phase': 'proof'}]
+        html = render(scrapped)
+        self.assertEqual(self.badges(html, 'W2'), ['building', 'provisional', 'blocked'])
+        self.assertIn('W1 Scrapped base Retry interrupted export jobs', self.card(html, 'W2'))
+
+        closed = copy.deepcopy(self.state)
+        self.work('W1', closed)['layers'][1].update(status='closed')
+        self.assertInvalid(closed, 'names closed W1-L2; record the restack')
+        closed['needs'].append(dict(choice, blocks=[{'id': 'W2', 'phase': 'proof'}]))
+        html = render(closed)
+        self.assertIn('W1-L2 Closed base Retry interrupted export jobs', self.card(html, 'W2'))
+        self.assertEqual(self.badges(html, 'W2'), ['building', 'provisional', 'blocked'])
         self.work('W1')['layers'][1].update(status='merged')
         self.work('W1')['layers'][0].update(status='merged')
         self.work('W1')['state'] = 'landed'
@@ -486,7 +526,7 @@ class DashboardTests(unittest.TestCase):
             if stage == 'shown':
                 row.update(finishLine='try', results=[{'label': 'Open', 'url': 'https://example.com/try'}])
             if stage in ('ready', 'in-review'):
-                row['layers'] = [dict(published, id=f'L-{stage}')]
+                row['layers'] = [dict(published, id=f'L-{stage}', status='ready' if stage == 'ready' else 'open')]
             if stage == 'landed':
                 row['layers'] = [dict(published, id='L-landed', status='merged')]
             if stage == 'unknown':
@@ -503,6 +543,7 @@ class DashboardTests(unittest.TestCase):
         self.state['needs'] = []
         self.state['work'] = [self.work('W1')]
         self.work('W1')['state'] = 'ready'
+        self.work('W1')['layers'][1]['status'] = 'ready'
         before = copy.deepcopy(self.state)
         html = render(self.state)
         self.assertEqual(self.state, before)
@@ -512,8 +553,32 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.badges(html, 'W1'), ['in-review', 'ready'])
         self.assertIn('In review Ready to land', self.card(html, 'W1'))
 
+    def test_ready_checks_every_layer_against_the_finish_line(self):
+        self.state['needs'] = []
+        row = self.work('W1')
+        row['state'] = 'ready'
+        lower, upper = row['layers']
+        upper['status'] = 'ready'
+        lower['status'] = 'merged'
+        self.assertIn('Ready to land', render(self.state))
+        for status in ('draft', 'open', 'local', 'closed'):
+            state = copy.deepcopy(self.state)
+            layer = self.work('W1', state)['layers'][1]
+            layer['status'] = status
+            if status == 'local':
+                del layer['url']
+            with self.subTest(status=status):
+                self.assertInvalid(state, 'every layer ready or merged')
+        row['finishLine'] = 'pr-draft'
+        self.assertInvalid(self.state, 'every layer a draft or merged')
+        upper['status'] = 'draft'
+        self.assertIn('Draft open', render(self.state))
+        upper['status'] = 'open'
+        self.assertInvalid(self.state, 'every layer a draft or merged')
+
     def test_readiness_and_blocked_badges_coexist_with_blocker_summaries(self):
         self.work('W1').update(state='ready', blocked='Release window closed until Monday')
+        self.work('W1')['layers'][1]['status'] = 'ready'
         html = render(self.state)
         self.assertEqual(self.badges(html, 'W1'), ['in-review', 'ready', 'blocked'])
         self.assertIn('Blocked by Other Release window closed until Monday', self.card(html, 'W1'))
@@ -522,6 +587,7 @@ class DashboardTests(unittest.TestCase):
 
     def test_dependency_on_a_ready_outcome_still_blocks_and_names_its_state(self):
         self.work('W1')['state'] = 'ready'
+        self.work('W1')['layers'][1]['status'] = 'ready'
         self.work('W4')['blockedBy'] = ['W1']
         card = self.card(render(self.state), 'W4')
         self.assertIn('W1 Ready Retry interrupted export jobs', card)
