@@ -1052,8 +1052,8 @@ other nonignored untracked source.
   staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
   Fixes route by what they change to new tasks on the original reviewers'
   models for those angles, under Orchestration's review-pass rule; Primary's integrated check covers
-  cumulative repairs; and repeated repairs to an invariant trigger a parent
-  design checkpoint. The first independent pass adds one random optional reviewer
+  cumulative repairs; and repeated repairs to an invariant or new issues from a
+  second pass on the same component trigger a parent design checkpoint. The first independent pass adds one random optional reviewer
   from each provider pool. The loop owns provider-reference
   delivery, skips, and stable snapshots. Generic
   delegation and handoff use Orchestration, with tasks mapped to review
