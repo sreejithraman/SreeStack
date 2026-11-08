@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import time
 
@@ -41,14 +42,71 @@ def write_atomic(path: Path, text: str) -> None:
     os.replace(draft, path)
 
 
+def _read(path: Path) -> bytes:
+    with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW), "rb") as stream:
+        return stream.read()
+
+
+def _rewrite(path: Path, data: bytes) -> None:
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW), "wb") as stream:
+        stream.write(data)
+
+
 def redact_file(path: Path) -> None:
-    """Replace each secret's UTF-8 bytes in any file, whatever its encoding, keeping its mode."""
-    data = path.read_bytes()
-    cleaned = data
-    for value in secret_values():
-        cleaned = cleaned.replace(value.encode(), b"[REDACTED]")
-    if cleaned != data:
-        path.write_bytes(cleaned)
+    """Make one retained entry safe to keep. Never follows a link and never raises.
+
+    A symlink becomes a note. A regular file has each secret's UTF-8 bytes replaced,
+    whatever its encoding, with its mode restored. Anything else, or a file that
+    can't be redacted, is removed and replaced by a note.
+    """
+    try:
+        info = os.lstat(path)
+        if stat.S_ISLNK(info.st_mode):
+            target = os.readlink(path)
+            path.unlink()
+            path.write_text(redact(f"symlink to {target}\n"))
+            return
+        if not stat.S_ISREG(info.st_mode):
+            raise OSError("not a regular file")
+        mode = stat.S_IMODE(info.st_mode)
+        os.chmod(path, mode | stat.S_IRUSR | stat.S_IWUSR)
+        try:
+            data = _read(path)
+            cleaned = data
+            for value in secret_values():
+                cleaned = cleaned.replace(value.encode(), b"[REDACTED]")
+            if cleaned != data:
+                _rewrite(path, cleaned)
+        finally:
+            os.chmod(path, mode)
+    except Exception:
+        try:
+            path.unlink(missing_ok=True)
+            path.write_text("removed: could not redact\n")
+        except Exception:
+            pass
+
+
+def sanitize(root: Path) -> None:
+    """Run redact_file over every entry under root without following links. Never raises."""
+    owner = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+
+    def open_up(directory: Path) -> None:  # So entries inside can be read, replaced or removed.
+        try:
+            os.chmod(directory, stat.S_IMODE(os.lstat(directory).st_mode) | owner)
+        except OSError:
+            pass
+
+    open_up(root)
+    for directory, folders, files in os.walk(root):
+        here = Path(directory)
+        for name in folders:
+            if (here / name).is_symlink():
+                redact_file(here / name)
+            else:
+                open_up(here / name)
+        for name in files:
+            redact_file(here / name)
 
 
 def stop_group(process: subprocess.Popen) -> None:

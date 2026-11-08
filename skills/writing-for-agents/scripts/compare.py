@@ -29,9 +29,11 @@ judging, score.json), and names match [A-Za-z0-9][A-Za-z0-9._-]*. Everything els
 in <eval-dir> is the experiment: changing any file, the target or the plan makes
 every result stale. Every command first refuses a symlink anywhere in <eval-dir>,
 then skill directories inside a fixture and duplicate or unsafe names. Checks get
-only PATH, LANG, TMPDIR, HOME (the work dir), EVAL_WORK and EVAL_OUT. Before any
-evidence is kept, values of environment variables named like KEY, TOKEN, SECRET,
-PASSWORD or AUTH are redacted from it, and symlinks in kept work become notes.
+only PATH, LANG, TMPDIR, HOME (the work dir), EVAL_WORK and EVAL_OUT. However a
+cell ends, one sweep makes its folder safe to keep: symlinks become notes and are
+never followed, every file has the values of environment variables named like KEY,
+TOKEN, SECRET, PASSWORD or AUTH redacted by bytes, and a file that can't be
+redacted is replaced by a note.
 
 Accepted limits:
   - Keep checks self-contained in <eval-dir>. A change to a file outside it, such as
@@ -217,18 +219,12 @@ def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None
 
 
 def keep_work(work: Path, scratch: Path, out: Path) -> None:
-    """Turn symlinks in the work dir into notes, keep it in `out`, and redact everything there."""
+    """Keep the work dir in `out`, then make the whole cell folder safe to keep."""
     if work.exists():
-        for path in sorted(work.rglob("*"), reverse=True):
-            if path.is_symlink():
-                target = os.readlink(path)
-                path.unlink()
-                path.write_text(f"symlink to {target}\n")
+        hosts.sanitize(work)
         shutil.move(str(work), str(out / "work"))
     shutil.rmtree(scratch, ignore_errors=True)
-    for path in out.rglob("*"):
-        if path.is_file():
-            hosts.redact_file(path)
+    hosts.sanitize(out)
 
 
 def run_checks(ev: Eval, task, work: Path, out: Path) -> list:

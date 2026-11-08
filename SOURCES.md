@@ -1261,16 +1261,17 @@ output folders. It rejects missing, unplanned, stale, or malformed results, chec
 the manifest, and non-boolean judge verdicts, keeps failed runs and work dirs as
 evidence, and writes results atomically. Host and check processes run in their own
 process group, which ends with them, on cancellation too; checks get an allowlisted
-environment and a timeout. Retained evidence, kept work included, has
-secret-looking environment values redacted. `compare.py --help` lists the accepted
-limits: checker files outside the eval dir, detached sessions, short or
-JSON-escaped secret values, and Codex login refresh. Calibration runs in a task
-fixture, checks that installed skills don't leak in and that each variant's
-collection loads, and is revoked when a recalibration starts. Scoring judges one
-declared target, lets any failed required case veto, reports unavailable
-telemetry, and never claims equivalence or significance. It drops the upstream
-MISS and WORSE pass rules, regex answer scoring, full-weight token sums, and the
-one-skill-per-version layout. Paid runs stay out of the checks.
+environment and a timeout. However a cell ends, one sweep over its folder turns
+symlinks into notes without following them, redacts secret-looking environment
+values from every file by bytes, and replaces a file it can't redact with a note.
+`compare.py --help` lists the accepted limits: checker files outside the eval dir,
+detached sessions, short or JSON-escaped secret values, and Codex login refresh.
+Calibration runs in a task fixture, checks that installed skills don't leak in and
+that each variant's collection loads, and is revoked when a recalibration starts.
+Scoring judges one declared target, lets any failed required case veto, reports
+unavailable telemetry, and never claims equivalence or significance. It drops the
+upstream MISS and WORSE pass rules, regex answer scoring, full-weight token sums,
+and the one-skill-per-version layout. Paid runs stay out of the checks.
 
 The Codex adapter links the real `auth.json` into a disposable `CODEX_HOME` rather
 than copying it, so refresh-token rotation keeps working. Codex may refresh the

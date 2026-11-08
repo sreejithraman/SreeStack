@@ -10,6 +10,7 @@ import unittest
 from unittest import mock
 
 import compare
+import hosts
 from hosts import RunResult
 
 SENTINEL = "sentinel-not-a-real-secret-7f3a"
@@ -430,6 +431,59 @@ class CompareTest(unittest.TestCase):
         self.assertEqual(len(kept), 12)
         for path in kept:
             self.assertEqual(path.read_bytes(), b"\xff\x00KEY=[REDACTED]")
+
+    def test_a_read_only_binary_work_file_is_redacted_and_keeps_its_mode(self):
+        class Writer(FakeAgent):
+            def run(self, *, work, prompt, **rest):
+                if prompt.startswith("do "):
+                    path = work / "tool-debug.bin"
+                    path.write_bytes(b"\xff\x00KEY=" + os.environ["EVAL_TEST_API_KEY"].encode())
+                    path.chmod(0o444)
+                return super().run(work=work, prompt=prompt, **rest)
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            self.run_all(Writer())
+        kept = list((self.root / "runs").rglob("tool-debug.bin"))
+        self.assertEqual(len(kept), 12)
+        for path in kept:
+            self.assertEqual(path.read_bytes(), b"\xff\x00KEY=[REDACTED]")
+            self.assertEqual(path.stat().st_mode & 0o777, 0o444)
+
+    def test_a_link_a_check_leaves_in_its_output_is_not_followed(self):
+        original = self.root / "fixtures/repo/important.txt"
+        original.write_bytes(f"keep this exact data: {SENTINEL}".encode())
+        write_manifest(self.root, repeats=1, tasks=[{
+            "id": "link", "prompt": "do it", "fixture": "fixtures/repo", "required": True,
+            "checks": [f'ln -s {original} "$EVAL_OUT/diagnostic-link"']}])
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            compare.run(self.evaluate(FakeAgent()))
+        self.assertEqual(original.read_bytes(), f"keep this exact data: {SENTINEL}".encode())
+        for variant in ("old", "new"):
+            note = self.root / f"runs/link/{variant}/0/diagnostic-link"
+            self.assertFalse(note.is_symlink())
+            self.assertTrue(note.read_text().startswith("symlink to "))
+        compare.score(self.evaluate(FakeAgent()))
+
+    def test_a_file_that_cannot_be_redacted_is_removed_and_the_sweep_continues(self):
+        class Writer(FakeAgent):
+            def run(self, *, work, prompt, **rest):
+                if prompt.startswith("do "):
+                    for name in ("a-stuck.bin", "z-later.txt"):
+                        (work / name).write_text(f"KEY={os.environ['EVAL_TEST_API_KEY']}")
+                return super().run(work=work, prompt=prompt, **rest)
+
+        rewrite = hosts._rewrite
+
+        def stuck(path, data):
+            if path.name == "a-stuck.bin":
+                raise OSError("simulated failure")
+            rewrite(path, data)
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}), mock.patch("hosts._rewrite", stuck):
+            self.run_all(Writer())
+        for cell in (self.root / "runs").glob("*/*/*"):
+            self.assertEqual((cell / "work/a-stuck.bin").read_text(), "removed: could not redact\n")
+            self.assertEqual((cell / "work/z-later.txt").read_text(), "KEY=[REDACTED]")
 
 
 if __name__ == "__main__":
