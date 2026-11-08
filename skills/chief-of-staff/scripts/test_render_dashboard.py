@@ -409,6 +409,23 @@ class DashboardTests(unittest.TestCase):
         html = render(self.state)
         self.assertIn("Provisional Rests on W1-L2, the Retry owner's unmerged cancellation layer. Clears when W1 lands and this outcome's proof is refreshed on the new base. It never lands while provisional.", self.card(html, 'W2'))
 
+    def test_same_owner_work_on_a_scrapped_outcome_waits_on_an_open_halting_need(self):
+        self.state['needs'] = []
+        self.state['work'] = [self.work('W1'), self.work('W4')]
+        self.work('W1')['state'] = 'scrapped'
+        self.work('W4').update(owner='Retry owner', finishLine='land', state='ready', layers=[
+            {'id': 'W4-L1', 'branch': 'export-progress', 'status': 'ready', 'url': 'https://example.com/exports/pull/70', 'stackedOn': 'W1-L2'}])
+        self.assertInvalid(self.state, 'rests on scrapped W1')
+        choice = {'id': 'W4-S', 'ask': 'Scrap or rebase the progress estimates?', 'blocks': [{'id': 'W4', 'phase': 'proof'}]}
+        for settled in ({'status': 'answered', 'answer': 'Rebase'}, {'status': 'resolved', 'answer': 'Rebase', 'basis': 'Earlier rule.'}):
+            self.state['needs'] = [{**choice, **settled}]
+            with self.subTest(status=settled['status']):
+                self.assertInvalid(self.state, 'rests on scrapped W1')
+        self.state['needs'] = [{**choice, 'status': 'open'}]
+        html = render(self.state)
+        self.assertIn('W1 Scrapped base Retry interrupted export jobs', self.card(html, 'W4'))
+        self.assertEqual(self.badges(html, 'W4'), ['in-review', 'ready', 'blocked'])
+
     def test_published_land_outcome_keeps_its_pr_when_it_becomes_provisional(self):
         later = self.work('W1')
         later.update(effectiveFinishLine='try', provisional={'basis': "W1-D3's recommended option: three retries.", 'clears': 'W1-D3 is answered.'})
@@ -425,7 +442,7 @@ class DashboardTests(unittest.TestCase):
         self.assertIn('PR #46', self.card(html, 'W2'))
         later['state'] = 'ready'
         later['layers'][1]['status'] = 'ready'
-        self.assertInvalid(self.state, 'provisional work is never ready to land')
+        self.assertInvalid(self.state, 'provisional work is never ready')
         later['state'] = 'in-review'
         self.assertIn('PR #42', render(self.state))
         unrequested = self.work('W5')['layers'][0]
@@ -450,6 +467,10 @@ class DashboardTests(unittest.TestCase):
         scrapped['needs'].append(dict(choice, blocks=[{'id': 'W2', 'phase': 'acceptance'}]))
         self.assertInvalid(scrapped, 'rests on scrapped W1')
         scrapped['needs'][-1]['blocks'] = [{'id': 'W2', 'phase': 'proof'}]
+        scrapped['needs'][-1].update(status='answered', answer='Rebase')
+        self.assertInvalid(scrapped, 'rests on scrapped W1')
+        scrapped['needs'][-1]['status'] = 'open'
+        del scrapped['needs'][-1]['answer']
         html = render(scrapped)
         self.assertEqual(self.badges(html, 'W2'), ['building', 'provisional', 'blocked'])
         self.assertIn('W1 Scrapped base Retry interrupted export jobs', self.card(html, 'W2'))
@@ -457,7 +478,9 @@ class DashboardTests(unittest.TestCase):
         closed = copy.deepcopy(self.state)
         self.work('W1', closed)['layers'][1].update(status='closed')
         self.assertInvalid(closed, 'names closed W1-L2; record the restack')
-        closed['needs'].append(dict(choice, blocks=[{'id': 'W2', 'phase': 'proof'}]))
+        closed['needs'].append(dict(choice, blocks=[{'id': 'W2', 'phase': 'proof'}], status='resolved', answer='Rebase', basis='Earlier rule.'))
+        self.assertInvalid(closed, 'names closed W1-L2')
+        closed['needs'][-1] = dict(choice, blocks=[{'id': 'W2', 'phase': 'proof'}])
         html = render(closed)
         self.assertIn('W1-L2 Closed base Retry interrupted export jobs', self.card(html, 'W2'))
         self.assertEqual(self.badges(html, 'W2'), ['building', 'provisional', 'blocked'])
@@ -555,26 +578,47 @@ class DashboardTests(unittest.TestCase):
 
     def test_ready_checks_every_layer_against_the_finish_line(self):
         self.state['needs'] = []
+        cases = {
+            'land': ('ready', 'Ready to land', 'every layer ready or merged', ('draft', 'open', 'local', 'closed')),
+            'pr-review': ('ready', 'Review-ready', 'every layer ready or merged', ('draft', 'open', 'local', 'closed')),
+            'pr-draft': ('draft', 'Draft open', 'every layer a draft or merged', ('ready', 'open', 'local', 'closed')),
+        }
+        for finish, (good, label, message, bad_statuses) in cases.items():
+            for lower in (good, 'merged'):
+                state = copy.deepcopy(self.state)
+                row = self.work('W1', state)
+                row.update(state='ready', finishLine=finish)
+                row['layers'][0]['status'], row['layers'][1]['status'] = lower, good
+                with self.subTest(finish=finish, lower=lower):
+                    self.assertIn(label, self.card(render(state), 'W1'))
+            for position in (0, 1):
+                for bad in bad_statuses:
+                    state = copy.deepcopy(self.state)
+                    row = self.work('W1', state)
+                    row.update(state='ready', finishLine=finish)
+                    for layer in row['layers']:
+                        layer['status'] = good
+                    layer = row['layers'][position]
+                    layer['status'] = bad
+                    if bad == 'local':
+                        del layer['url']
+                    with self.subTest(finish=finish, position=position, bad=bad):
+                        self.assertInvalid(state, message)
+
+    def test_provisional_work_is_never_ready_on_any_finish_line(self):
+        self.state['needs'] = []
         row = self.work('W1')
-        row['state'] = 'ready'
-        lower, upper = row['layers']
-        upper['status'] = 'ready'
-        lower['status'] = 'merged'
-        self.assertIn('Ready to land', render(self.state))
-        for status in ('draft', 'open', 'local', 'closed'):
-            state = copy.deepcopy(self.state)
-            layer = self.work('W1', state)['layers'][1]
-            layer['status'] = status
-            if status == 'local':
-                del layer['url']
-            with self.subTest(status=status):
-                self.assertInvalid(state, 'every layer ready or merged')
-        row['finishLine'] = 'pr-draft'
-        self.assertInvalid(self.state, 'every layer a draft or merged')
-        upper['status'] = 'draft'
-        self.assertIn('Draft open', render(self.state))
-        upper['status'] = 'open'
-        self.assertInvalid(self.state, 'every layer a draft or merged')
+        row['provisional'] = {'basis': "W1-D3's recommended option.", 'clears': 'W1-D3 is answered.'}
+        for finish, status in (('pr-review', 'ready'), ('pr-draft', 'draft')):
+            row.update(finishLine=finish, state='ready')
+            for layer in row['layers']:
+                layer['status'] = status
+            with self.subTest(finish=finish):
+                self.assertInvalid(self.state, 'provisional work is never ready')
+                row['state'] = 'in-review'
+                html = render(self.state)
+                self.assertEqual(self.badges(html, 'W1'), ['in-review', 'provisional'])
+                self.assertIn('PR #44', self.card(html, 'W1'))
 
     def test_readiness_and_blocked_badges_coexist_with_blocker_summaries(self):
         self.work('W1').update(state='ready', blocked='Release window closed until Monday')

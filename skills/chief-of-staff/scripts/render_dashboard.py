@@ -171,8 +171,8 @@ def validate_work(row, layers):
     if finish == "try" and published:
         raise ValueError(f"{path}: Try stops before the PR; a published layer needs a PR or Land finish line")
     if state == "ready":
-        if effective == "try":
-            raise ValueError(f"{path}: provisional work is never ready to land; keep it in review until its condition clears")
+        if "provisional" in row:
+            raise ValueError(f"{path}: provisional work is never ready; keep it in review until its condition clears")
         allowed, wording = READY_LAYERS[effective]
         if not row.get("layers") or any(layer["status"] not in allowed for layer in row["layers"]):
             raise ValueError(f"{path}: ready needs every layer {wording} for its finish line")
@@ -209,6 +209,9 @@ def validate_edges(work, by_id, layers, halted):
         if layer["stackedOn"] == identity or layer["stackedOn"] not in layers:
             raise ValueError(f"{where} must name another layer")
         parent, parent_row = layers[layer["stackedOn"]]
+        active = layer["status"] not in {"merged", "closed"} and row["state"] not in TERMINAL
+        if active and parent_row["state"] == "scrapped" and row["id"] not in halted:
+            raise ValueError(f"{where}: {path} rests on scrapped {parent_row['id']}; halt it with its scrap-or-rebase Need or record its new base")
         if layer["status"] not in {"merged", "closed"} and parent["status"] == "closed" and row["id"] not in halted:
             raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its Need")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
@@ -552,8 +555,12 @@ class Program:
         items += [(True, STATES[self.by_id[identity]["state"]], identity, self.by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
         if row.get("blocked"):
             items.append((True, "Other", "", row["blocked"]))
-        for identity in row.get("provisional", {}).get("on", []):
-            if self.by_id[identity]["state"] == "scrapped":
+        bases = list(row.get("provisional", {}).get("on", []))
+        if row["state"] not in TERMINAL:
+            bases += [self.layers[layer["stackedOn"]][1]["id"] for layer in row.get("layers", [])
+                      if "stackedOn" in layer and layer["status"] not in {"merged", "closed"}]
+        for identity in dict.fromkeys(bases):
+            if identity != row["id"] and self.by_id[identity]["state"] == "scrapped":
                 items.append((True, "Scrapped base", identity, self.by_id[identity]["title"]))
         for layer in row.get("layers", []):
             parent, parent_row = self.layers.get(layer.get("stackedOn"), ({}, None))
