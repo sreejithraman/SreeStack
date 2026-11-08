@@ -51,8 +51,8 @@ authorizes neither automation nor recurring execution.
 
 ## Return the brief
 
-State the outcome and target, scope and preserved constraints, relevant methods,
-evaluation, and requested finish line. Include material assumptions and unknowns;
+State the outcome and target, the code it covers, preserved constraints, what
+is out of scope, relevant methods, evaluation, and requested finish line. Include material assumptions and unknowns;
 explain meaningful framing changes. Proposed evaluation is not evidence that
 the result has been achieved. Reuse the existing format and task record; a clear
 request can be confirmed in a few sentences without a separate document.

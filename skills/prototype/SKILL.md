@@ -113,8 +113,9 @@ parts only when the resulting direction remains coherent and testable.
 
 Before a decision, keep the prototype reviewable on the task branch or another
 clearly marked development surface. Once a direction is chosen, record the
-winner and why in a durable project surface already in scope, such as a PR
-description, project note, or authorized issue update.
+winner and why in a durable project surface already in scope, such as a calling
+workflow's record like Shape's, a PR description, project note, or authorized
+issue update.
 
 When production implementation is in scope, apply the chosen direction with the
 project's normal quality checks and remove prototype controls and unused

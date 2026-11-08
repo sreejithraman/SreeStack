@@ -38,6 +38,8 @@ saved snip stays Not Done under Snip Snap's
 [complete saved work](../snip-snap/SKILL.md#complete-saved-work) until its
 outcome is verified. Use [Reframe](../reframe/SKILL.md) only for what is
 unsettled, and reuse a settled brief. A spec is one input, not a requirement.
+When the direction is too rough to cut into outcomes, offer the user
+[Shape](../shape/SKILL.md).
 
 Cut the work into outcomes. When one body of work holds several, split it with
 [To Tasks](../to-tasks/SKILL.md) and keep each task's outcome, proof, inputs,

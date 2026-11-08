@@ -548,7 +548,14 @@ the requested PR set.
 Asks only frontier decisions that would change the outcome and that the agent
 can't predict, highest stakes first, and lists the rest in one Assuming block.
 Always asks decisions that risk data loss, private data, security, or can't be
-undone. The description lists triggers only.
+undone. Opens on settling the decisions that change the result rather than an
+exhaustive interview. Keeps safe, local discovery going while answers are
+pending. An answer that picks a direction settles it without a request to
+justify it, and a recommendable detail that is easy to change later goes under
+Assuming. The user's substantive answers are the confirmation, with no separate
+approval round; it returns the decisions and one Assuming block to its caller,
+and decisions it had to ask stay open until answered. The description lists
+triggers only.
 
 ## handoff
 
@@ -948,6 +955,13 @@ configured selections. Assigned researchers own synthesis; their briefs permit
 needed source tasks, whose retrievers work directly. Parents check source
 evidence and access gaps before acceptance.
 
+## shape
+
+- Local: `skills/shape` (SreeStack), a user-started workflow that turns a rough
+  idea into a settled brief, or one spec for several outcomes, through
+  conversation. It chains `reframe`, `grilling`, `prototype`, `show-me`, and
+  `to-spec`.
+
 ## reframe
 
 - Local: `skills/reframe` (SreeStack). Conceptual input from [Felix Rieseberg's ambition framework](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/) (article checked 2026-11-02) and [Ray Amjad's examples](https://www.youtube.com/watch?v=RbfQayMNtJc) (checked 2026-10-18).
@@ -959,7 +973,8 @@ to uncertainty and considers harder targets, raw evidence, testable discoveries,
 cross-field methods, and lasting workflows with explicit setup and ownership.
 Preserves authorized scope and the agreed finish line, allows qualitative
 evaluation, and returns to the calling workflow. Standalone reframing ends with
-the brief; prompt rewriting returns a copyable prompt. No mandatory ladder,
+the brief; prompt rewriting returns a copyable prompt. The brief names the code it
+covers and what is out of scope. No mandatory ladder,
 expert roster, numerical stretch target, or fixed output template.
 `references/acceptance.md` pairs outcomes with constraints and suitable evaluation,
 including qualitative judgment and research uncertainty. Brownfield discovery grows
@@ -1185,9 +1200,18 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 
 - [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Uses supplied or project-configured tracker information, and publishes without
-a readiness label. Unresolved required choices can be supplied directly or
-through the manual setup skill.
+Writes the spec into the shaping record, the one `shape` keeps or one chosen by
+its record rule, and publishes to the tracker only when the user asks. Publishing
+uses supplied or project-configured tracker information, without a readiness
+label, and leaves a link to the issue in the record. Unresolved required choices
+can be supplied directly or through the manual setup skill. Synthesizes without
+interviewing: it reuses settled decisions and seams, and asks only a missing
+decision that changes the spec, in one Grilling round. The template adds one
+entry per outcome with proof, covered code, preserved behavior, inputs and
+access, exclusions, assumptions, and finish line, and keeps every settled brief
+field when it replaces the brief; scales user stories to the settled coverage
+instead of upstream's extensive list; and allows paths where they pin down
+scope, keeping upstream's ban on line numbers and code snippets.
 
 Setup references use the local `setup-sreestack` entry point.
 
