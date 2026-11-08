@@ -48,16 +48,27 @@ def _read(path: Path) -> bytes:
 
 
 def _rewrite(path: Path, data: bytes) -> None:
-    with os.fdopen(os.open(path, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW), "wb") as stream:
-        stream.write(data)
+    """Replace the directory entry with a new file of the same mode. The old inode is never touched."""
+    mode = stat.S_IMODE(os.lstat(path).st_mode)
+    draft = path.with_name(f".{path.name}.redacted")
+    fd = os.open(draft, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            os.fchmod(stream.fileno(), mode)
+        os.replace(draft, path)
+    except BaseException:
+        draft.unlink(missing_ok=True)
+        raise
 
 
 def redact_file(path: Path) -> None:
-    """Make one retained entry safe to keep. Never follows a link and never raises.
+    """Make one retained entry safe to keep. Never follows a link, never changes an
+    existing inode, and never raises.
 
-    A symlink becomes a note. A regular file has each secret's UTF-8 bytes replaced,
-    whatever its encoding, with its mode restored. Anything else, or a file that
-    can't be redacted, is removed and replaced by a note.
+    A symlink becomes a note. A regular file with a secret's UTF-8 bytes in it,
+    whatever its encoding, is replaced by a redacted copy with the same mode. Anything
+    else, or a file that can't be redacted, is removed and replaced by a note.
     """
     try:
         info = os.lstat(path)
@@ -68,17 +79,12 @@ def redact_file(path: Path) -> None:
             return
         if not stat.S_ISREG(info.st_mode):
             raise OSError("not a regular file")
-        mode = stat.S_IMODE(info.st_mode)
-        os.chmod(path, mode | stat.S_IRUSR | stat.S_IWUSR)
-        try:
-            data = _read(path)
-            cleaned = data
-            for value in secret_values():
-                cleaned = cleaned.replace(value.encode(), b"[REDACTED]")
-            if cleaned != data:
-                _rewrite(path, cleaned)
-        finally:
-            os.chmod(path, mode)
+        data = _read(path)
+        cleaned = data
+        for value in secret_values():
+            cleaned = cleaned.replace(value.encode(), b"[REDACTED]")
+        if cleaned != data:
+            _rewrite(path, cleaned)
     except Exception:
         try:
             path.unlink(missing_ok=True)
@@ -97,6 +103,12 @@ def sanitize(root: Path) -> None:
         except OSError:
             pass
 
+    try:
+        if not stat.S_ISDIR(os.lstat(root).st_mode):  # A linked or replaced root is never traversed.
+            redact_file(root)
+            return
+    except OSError:
+        return
     open_up(root)
     for directory, folders, files in os.walk(root):
         here = Path(directory)

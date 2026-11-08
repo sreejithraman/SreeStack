@@ -30,10 +30,11 @@ in <eval-dir> is the experiment: changing any file, the target or the plan makes
 every result stale. Every command first refuses a symlink anywhere in <eval-dir>,
 then skill directories inside a fixture and duplicate or unsafe names. Checks get
 only PATH, LANG, TMPDIR, HOME (the work dir), EVAL_WORK and EVAL_OUT. However a
-cell ends, one sweep makes its folder safe to keep: symlinks become notes and are
-never followed, every file has the values of environment variables named like KEY,
-TOKEN, SECRET, PASSWORD or AUTH redacted by bytes, and a file that can't be
-redacted is replaced by a note.
+cell ends, one sweep makes its folder safe to keep. It never follows a link and
+never modifies an existing file, only replaces directory entries: symlinks become
+notes, a file holding the values of environment variables named like KEY, TOKEN,
+SECRET, PASSWORD or AUTH is replaced by a copy redacted by bytes, and a file that
+can't be redacted is replaced by a note.
 
 Accepted limits:
   - Keep checks self-contained in <eval-dir>. A change to a file outside it, such as
@@ -220,7 +221,7 @@ def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None
 
 def keep_work(work: Path, scratch: Path, out: Path) -> None:
     """Keep the work dir in `out`, then make the whole cell folder safe to keep."""
-    if work.exists():
+    if os.path.lexists(work):
         hosts.sanitize(work)
         shutil.move(str(work), str(out / "work"))
     shutil.rmtree(scratch, ignore_errors=True)

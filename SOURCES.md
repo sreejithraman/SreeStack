@@ -1261,9 +1261,10 @@ output folders. It rejects missing, unplanned, stale, or malformed results, chec
 the manifest, and non-boolean judge verdicts, keeps failed runs and work dirs as
 evidence, and writes results atomically. Host and check processes run in their own
 process group, which ends with them, on cancellation too; checks get an allowlisted
-environment and a timeout. However a cell ends, one sweep over its folder turns
-symlinks into notes without following them, redacts secret-looking environment
-values from every file by bytes, and replaces a file it can't redact with a note.
+environment and a timeout. However a cell ends, one sweep over its folder only
+replaces directory entries, never modifying an existing file: symlinks become
+notes without being followed, files holding secret-looking environment values are
+replaced by copies redacted by bytes, and a file it can't redact becomes a note.
 `compare.py --help` lists the accepted limits: checker files outside the eval dir,
 detached sessions, short or JSON-escaped secret values, and Codex login refresh.
 Calibration runs in a task fixture, checks that installed skills don't leak in and

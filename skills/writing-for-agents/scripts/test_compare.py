@@ -522,6 +522,60 @@ compare.run_session(ev, None, "p", Path({str(self.root / "fixtures/repo")!r}), P
         for path in retained:
             self.assertNotIn(SENTINEL.encode(), path.read_bytes(), path)
 
+    def outside_victim(self):
+        """A file and folder outside the eval dir holding the sentinel, with distinctive modes."""
+        outside = self.directory()
+        victim = outside / "important.txt"
+        victim.write_bytes(f"keep this exact data: {SENTINEL}".encode())
+        victim.chmod(0o640)
+        outside.chmod(0o555)
+        self.addCleanup(outside.chmod, 0o755)
+        return outside, victim
+
+    def assertUntouched(self, outside, victim):
+        self.assertEqual(victim.read_bytes(), f"keep this exact data: {SENTINEL}".encode())
+        self.assertEqual(victim.stat().st_mode & 0o777, 0o640)
+        self.assertEqual(outside.stat().st_mode & 0o777, 0o555)
+        self.assertEqual(sorted(p.name for p in outside.iterdir()), ["important.txt"])
+
+    def test_a_hard_link_into_the_output_never_changes_the_outside_file(self):
+        outside, victim = self.outside_victim()
+
+        class Linker(FakeAgent):
+            def run(self, *, out, prompt, **rest):
+                if prompt.startswith("do "):
+                    os.link(victim, out / "diagnostic-hardlink")
+                return super().run(out=out, prompt=prompt, **rest)
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            compare.run(self.evaluate(Linker()))
+        self.assertUntouched(outside, victim)
+        kept = list((self.root / "runs").rglob("diagnostic-hardlink"))
+        self.assertEqual(len(kept), 12)
+        for path in kept:
+            self.assertEqual(path.read_text(), "keep this exact data: [REDACTED]")
+            self.assertNotEqual(path.stat().st_ino, victim.stat().st_ino)
+
+    def test_a_work_dir_replaced_by_a_link_is_never_traversed(self):
+        outside, victim = self.outside_victim()
+
+        class Relinker(FakeAgent):
+            def run(self, *, work, prompt, **rest):
+                result = super().run(work=work, prompt=prompt, **rest)
+                if prompt.startswith("do "):
+                    shutil.rmtree(work)
+                    work.symlink_to(outside, target_is_directory=True)
+                return result
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            compare.run(self.evaluate(Relinker()))
+        self.assertUntouched(outside, victim)
+        notes = list((self.root / "runs").glob("*/*/*/work"))
+        self.assertEqual(len(notes), 12)
+        for note in notes:
+            self.assertTrue(note.is_file() and not note.is_symlink())
+            self.assertTrue(note.read_text().startswith("symlink to "))
+
 
 if __name__ == "__main__":
     unittest.main()
