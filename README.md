@@ -549,11 +549,11 @@ approved credential access, and private delivery. It stays automatically
 discoverable; `verify` owns the product checks that follow. Its bundled command
 supports 1Password credentials and existing local Chromium CDP tabs.
 
-Follow [command setup](skills/agent-login/references/cli-setup.md) for installation,
-private account mappings, provider prerequisites, and development checks.
-[Account setup](skills/agent-login/references/setup.md) covers onboarding and
-login readiness; [runtime provisioning](skills/agent-login/references/runtime-provisioning.md)
-covers private environment files and host-specific access checks.
+[Browser login](skills/agent-login/references/browser-login.md) covers
+installation, account onboarding, private account mappings, and development
+checks. [Machine setup](skills/agent-login/references/machine-setup.md) covers
+the agent vault, service account, private environment files, and host-specific
+access checks.
 
 ## Host defaults
 

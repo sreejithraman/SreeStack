@@ -30,25 +30,29 @@ Local-only skills need just an origin note.
 
 ## agent-login
 
-- Local: `skills/agent-login` (SreeStack) application login workflow and private alias-based CLI.
+- Local: `skills/agent-login` (SreeStack) task routes for machine setup, credential use and item management, and application login, plus a private alias-based CLI.
 - [openclaw/openclaw / skills/1password](https://github.com/openclaw/openclaw/tree/a229456f487f713315fc799767a97990f407bea6/skills/1password) — `SKILL.md`, `references/get-started.md`, and `references/cli-examples.md`; adaptation baseline commit `a229456f487f713315fc799767a97990f407bea6`. MIT notice in `licenses/openclaw.txt`.
 
 One automatically discoverable skill owns application sign-in and approved
-credential use. Provider access, authentication, and setup are in
-`references/1password.md`; runtime provisioning and delivery/storage use
-separate task references. Current CLI support is 1Password and existing local
-Chromium CDP tabs. Adds user-designated vault-scoped service-account access,
-optional automatic item management, and task-specific personal approval,
-distinguishing behavioral scope from 1Password enforcement. Machine
-administration is separate from consumer tasks. Replaces upstream
-secret-printing examples with process-local reads and stdin writes. Adds shared
-private environment-file provisioning for local Codex runtimes, preserving
+credential use. `SKILL.md` is the only router: it holds the three task routes,
+their finish lines, and the rules every route shares. Each route reads
+`references/access.md` (authorization, 1Password authentication, and the access
+boundary) and one task reference: `machine-setup.md`, `secrets-for-programs.md`,
+or `browser-login.md`. Upstream's auth-mode detection, `op whoami` check, and
+desktop-integration guidance live in `access.md`; its `op read`/`op run`
+examples became process-local delivery in `secrets-for-programs.md`. Current CLI
+support is 1Password and existing local Chromium CDP tabs. Adds user-designated
+vault-scoped service-account access, optional automatic item management, and
+task-specific personal approval, distinguishing behavioral scope from 1Password
+enforcement. Machine administration is separate from consumer tasks. Replaces
+upstream secret-printing examples with process-local reads and stdin writes.
+Adds shared private environment-file provisioning for local Codex runtimes and,
+through a bundled loader and SessionStart hook, Claude Code, preserving
 unrelated agent variables, host-specific Touch ID diagnosis, and
 provisioning-source-specific runtime checks. Omits OpenClaw install metadata,
-gateway-specific IPC assumptions, and tmux/session-export workflows. API claims
-link to official documentation; installation, private account mappings, and
-development checks live in `references/cli-setup.md`. README.md provides
-discovery links.
+gateway-specific IPC assumptions, tmux/session-export workflows, `op inject`
+examples, and the Claude in Chrome credential-tool section. API claims link to
+official documentation. README.md provides discovery links.
 
 ## snip-snap
 
