@@ -409,13 +409,61 @@ class DashboardTests(unittest.TestCase):
         html = render(self.state)
         self.assertIn("Provisional Rests on W1-L2, the Retry owner's unmerged cancellation layer. Clears when W1 lands and this outcome's proof is refreshed on the new base. It never lands while provisional.", self.card(html, 'W2'))
 
+    def dead_base_state(self, base, edge):
+        """W2 resting on W1 through provisional.on alone or also a stack edge, with W1 scrapped or all its PRs closed."""
+        state = copy.deepcopy(self.state)
+        state['needs'] = [need for need in state['needs'] if need['id'] != 'W1-D2']
+        base_row = self.work('W1', state)
+        if base == 'scrapped':
+            base_row['state'] = 'scrapped'
+        else:
+            base_row['state'] = 'building'
+            for layer in base_row['layers']:
+                layer['status'] = 'closed'
+        if edge == 'provisional':
+            del self.work('W2', state)['layers'][0]['stackedOn']
+        return state
+
+    def test_work_on_a_dead_base_waits_on_an_open_halting_need_through_either_edge(self):
+        choice = {'id': 'W2-S', 'ask': 'Scrap or rebase the retry status API?', 'blocks': [{'id': 'W2', 'phase': 'proof'}]}
+        labels = {'scrapped': 'W1 Scrapped base Retry interrupted export jobs', 'closed': 'W1 Closed base Retry interrupted export jobs'}
+        for base in ('scrapped', 'closed'):
+            for edge in ('provisional', 'mixed'):
+                state = self.dead_base_state(base, edge)
+                with self.subTest(base=base, edge=edge, need='none'):
+                    self.assertInvalid(state, f'work\\[W2\\] rests on {base} W1')
+                for settled in ({'status': 'answered', 'answer': 'Rebase'}, {'status': 'resolved', 'answer': 'Rebase', 'basis': 'Earlier rule.'}):
+                    state['needs'] = [n for n in state['needs'] if n['id'] != 'W2-S'] + [{**choice, **settled}]
+                    with self.subTest(base=base, edge=edge, need=settled['status']):
+                        self.assertInvalid(state, f'rests on {base} W1')
+                state['needs'] = [n for n in state['needs'] if n['id'] != 'W2-S'] + [{**choice, 'status': 'open'}]
+                with self.subTest(base=base, edge=edge, need='open'):
+                    card = self.card(render(state), 'W2')
+                    self.assertEqual(card.count('Scrapped base') + card.count('Closed base'), 1, card)
+                    self.assertIn(labels[base], card)
+
+    def test_an_unrelated_closed_layer_leaves_a_live_base_alone(self):
+        base = self.work('W1')
+        base['layers'].append({'id': 'W1-L3', 'branch': 'export-retry-docs', 'status': 'closed',
+                               'url': 'https://example.com/exports/pull/45', 'stackedOn': 'W1-L2'})
+        for edge in ('mixed', 'provisional'):
+            if edge == 'provisional':
+                del self.work('W2')['layers'][0]['stackedOn']
+            with self.subTest(edge=edge):
+                html = render(self.state)
+                self.assertEqual(self.badges(html, 'W2'), ['building', 'provisional'])
+                self.assertNotIn('Closed base', self.card(html, 'W2'))
+        base['layers'][1]['status'] = 'merged'
+        base['layers'][0]['status'] = 'merged'
+        self.assertNotIn('Closed base', self.card(render(self.state), 'W2'))
+
     def test_same_owner_work_on_a_scrapped_outcome_waits_on_an_open_halting_need(self):
         self.state['needs'] = []
-        self.state['work'] = [self.work('W1'), self.work('W4')]
+        self.state['work'] = [self.work('W4'), self.work('W1')]
         self.work('W1')['state'] = 'scrapped'
         self.work('W4').update(owner='Retry owner', finishLine='land', state='ready', layers=[
             {'id': 'W4-L1', 'branch': 'export-progress', 'status': 'ready', 'url': 'https://example.com/exports/pull/70', 'stackedOn': 'W1-L2'}])
-        self.assertInvalid(self.state, 'rests on scrapped W1')
+        self.assertInvalid(self.state, r'work\[W4\] rests on scrapped W1')
         choice = {'id': 'W4-S', 'ask': 'Scrap or rebase the progress estimates?', 'blocks': [{'id': 'W4', 'phase': 'proof'}]}
         for settled in ({'status': 'answered', 'answer': 'Rebase'}, {'status': 'resolved', 'answer': 'Rebase', 'basis': 'Earlier rule.'}):
             self.state['needs'] = [{**choice, **settled}]

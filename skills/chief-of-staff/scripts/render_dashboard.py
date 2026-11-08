@@ -191,6 +191,29 @@ def halted_by_need(needs):
             for entry in need.get("blocks", []) if entry["phase"] in HALTING}
 
 
+LIVE_LAYERS = {"local", "draft", "open", "ready"}
+
+
+def dead_base(row):
+    """Why work can no longer rest on this outcome: it was scrapped, or every layer closed before it landed."""
+    if row["state"] == "scrapped":
+        return "scrapped"
+    layers = row.get("layers", [])
+    if row["state"] != "landed" and layers and all(layer["status"] == "closed" for layer in layers):
+        return "closed"
+    return None
+
+
+def bases(row, layers):
+    """Outcomes this active work rests on, through provisional.on or an active stack edge."""
+    if row["state"] in TERMINAL:
+        return []
+    found = list(row.get("provisional", {}).get("on", []))
+    found += [layers[layer["stackedOn"]][1]["id"] for layer in row.get("layers", [])
+              if "stackedOn" in layer and layer["status"] in LIVE_LAYERS]
+    return [identity for identity in dict.fromkeys(found) if identity != row["id"]]
+
+
 def validate_edges(work, by_id, layers, halted):
     for row in work:
         path = f"work[{row['id']}]"
@@ -200,8 +223,6 @@ def validate_edges(work, by_id, layers, halted):
         for identity in row.get("provisional", {}).get("on", []):
             if identity == row["id"] or identity not in by_id:
                 raise ValueError(f"{path}.provisional.on must name other work; a decision names what it blocks")
-            if by_id[identity]["state"] == "scrapped" and row["id"] not in halted:
-                raise ValueError(f"{path} rests on scrapped {identity}; halt it with its scrap-or-rebase Need or record its new base")
     for identity, (layer, row) in layers.items():
         if "stackedOn" not in layer:
             continue
@@ -209,15 +230,18 @@ def validate_edges(work, by_id, layers, halted):
         if layer["stackedOn"] == identity or layer["stackedOn"] not in layers:
             raise ValueError(f"{where} must name another layer")
         parent, parent_row = layers[layer["stackedOn"]]
-        active = layer["status"] not in {"merged", "closed"} and row["state"] not in TERMINAL
-        if active and parent_row["state"] == "scrapped" and row["id"] not in halted:
-            raise ValueError(f"{where}: {path} rests on scrapped {parent_row['id']}; halt it with its scrap-or-rebase Need or record its new base")
-        if layer["status"] not in {"merged", "closed"} and parent["status"] == "closed" and row["id"] not in halted:
+        if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
+                and row["id"] not in halted):
             raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its Need")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
             raise ValueError(f"{where}: {parent['id']} is another owner's unmerged layer; mark this outcome provisional on {parent_row['id']}")
+    for row in work:
+        for identity in bases(row, layers):
+            reason = dead_base(by_id[identity])
+            if reason and row["id"] not in halted:
+                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase Need or record its new base")
 
     def depends_on(row):
         found = list(row.get("blockedBy", []))
@@ -555,19 +579,16 @@ class Program:
         items += [(True, STATES[self.by_id[identity]["state"]], identity, self.by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
         if row.get("blocked"):
             items.append((True, "Other", "", row["blocked"]))
-        bases = list(row.get("provisional", {}).get("on", []))
-        if row["state"] not in TERMINAL:
-            bases += [self.layers[layer["stackedOn"]][1]["id"] for layer in row.get("layers", [])
-                      if "stackedOn" in layer and layer["status"] not in {"merged", "closed"}]
-        for identity in dict.fromkeys(bases):
-            if identity != row["id"] and self.by_id[identity]["state"] == "scrapped":
-                items.append((True, "Scrapped base", identity, self.by_id[identity]["title"]))
+        dead = {identity: dead_base(self.by_id[identity]) for identity in bases(row, self.layers)}
+        dead = {identity: reason for identity, reason in dead.items() if reason}
+        for identity, reason in dead.items():
+            items.append((True, f"{reason.title()} base", identity, self.by_id[identity]["title"]))
         for layer in row.get("layers", []):
             parent, parent_row = self.layers.get(layer.get("stackedOn"), ({}, None))
-            if parent.get("status") == "closed" and layer["status"] not in {"merged", "closed"}:
+            if parent.get("status") == "closed" and layer["status"] in LIVE_LAYERS and parent_row["id"] not in dead:
                 items.append((True, "Closed base", parent["id"], parent_row["title"]))
         for _, parent in self.foreign_parents(row):
-            if parent["state"] != "scrapped" and self.halted(parent):
+            if parent["id"] not in dead and self.halted(parent):
                 items.append((True, "Blocked base", parent["id"], parent["title"]))
         return items
 
