@@ -100,16 +100,13 @@ canonical file owner-readable/writable (`0600`), outside repositories.
 Provision `OP_SERVICE_ACCOUNT_TOKEN` and `OP_BIOMETRIC_UNLOCK_ENABLED=false`
 inside the transfer process, using an existing authorized environment or private
 source. Capture outputs and exceptions; neither file contents nor secret values
-belong in a tool argument. Write the file as UTF-8 text without NUL bytes, one
-`KEY=value` entry per line, not executable shell code. Both loaders accept this
-subset: an optional `export ` prefix, optional whitespace around `=`, and a
-value that is empty, unquoted without whitespace, `#` or `$`, single-quoted with
-no inner `'`, or double-quoted with no inner `"` or `$`. The closing quote ends
-the line. Keys and unquoted values are ASCII, and the file ends with a newline.
-Use no backslashes, and no quotes except around a whole value. Either can make
-dotenv parsers disagree on where entries end, so the Claude loader then exports
-nothing from the file. It does the same for a file that is not UTF-8 or has a
-NUL byte, and skips any other unsupported entry. Its warnings never include a
+belong in a tool argument. Write the file as UTF-8 text without NUL bytes that
+ends with a newline, one `KEY=value` entry per line, not executable shell code.
+Both loaders accept this subset: an optional `export ` prefix, optional
+whitespace around `=`, and a value that is empty, unquoted ASCII without
+whitespace or any of `# " ' \ $`, single-quoted without `'` or `\`, or
+double-quoted without `" \ $`. Any other line makes the Claude loader export
+nothing from the file and print one warning that names the line, never the
 value.
 Reading the token from the user's personal vault is personal access: get the
 user's approval for that item under [access](access.md#who-may-use-which-credential),

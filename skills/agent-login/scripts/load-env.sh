@@ -5,105 +5,68 @@
 # with CLAUDE_ are ignored. Use:
 #   eval "$(sh load-env.sh)"
 #
-# Supported entries, one per line: KEY=value, with an optional `export ` prefix
-# and optional whitespace around `=`. A value is empty, unquoted without
-# whitespace or any of # $, single-quoted with no inner ', or double-quoted with
-# no inner " or $. The closing quote ends the line. Keys and unquoted values
-# are ASCII. A last line without a final newline may not end in whitespace.
-#
-# A backslash, or a quote anywhere but around a whole value, can make dotenv
-# parsers disagree on where entries end, so such a line exports nothing from the
-# whole file, as does a file that is not UTF-8 text without NUL bytes. Any other
-# unsupported entry is skipped. Warnings never include a value.
+# The file is UTF-8 text without NUL bytes that ends with a newline. Each line
+# is blank, a # comment, or KEY=value with an optional `export ` prefix and
+# optional whitespace around `=`. A value is empty, unquoted ASCII without
+# whitespace or any of # " ' \ $, single-quoted without ' or \, or double-quoted
+# without " \ $. Any other line makes the loader export nothing and print one
+# warning that names the line, never the value.
 LC_ALL=C
 export LC_ALL
 file="${AGENTS_SHARED_ENV:-$HOME/.config/agents/shared.env}"
 [ -r "$file" ] || exit 0
 
+# Rejects the whole file; the warning names where, never a value.
+reject() {
+  printf 'load-env: %s: %s; nothing exported\n' "$where" "$1" >&2
+  exit 0
+}
+
+where="$file"
 # macOS iconv accepts lead bytes F5-FF and code points above U+10FFFF, which
 # tr and sed reject here.
 if [ "$(tr -d '\000\365-\377' < "$file" | wc -c)" -ne "$(wc -c < "$file")" ] ||
   [ -n "$(sed -n "/$(printf '\364[\220-\277]')/=" "$file")" ] ||
   ! iconv -f UTF-8 -t UTF-8 < "$file" > /dev/null 2>&1; then
-  printf 'load-env: %s: not UTF-8 text without NUL bytes; nothing exported\n' "$file" >&2
-  exit 0
+  reject "not UTF-8 text without NUL bytes"
 fi
 
-warn() {
-  printf 'load-env: %s:%s: %s\n' "$file" "$number" "$1" >&2
-}
-
-# Calls "$1" with each line that is neither blank nor a comment, trimmed.
-# Sets open_end when the last line has no newline and ends in whitespace.
-each_entry() {
-  number=0
-  while { IFS= read -r line && open_end=; } || {
-    case "$line" in *[[:space:]]) open_end=1 ;; *) open_end= ;; esac
-    [ -n "$line" ]
-  }; do
-    number=$((number + 1))
-    line="${line#"${line%%[![:space:]]*}"}"
-    line="${line%"${line##*[![:space:]]}"}"
-    case "$line" in '' | '#'*) continue ;; esac
-    "$1" "$line"
-  done < "$file"
-}
-
-# Sets key and value from an entry; fails when it has no `=`.
-split_entry() {
-  entry="$1"
-  case "$entry" in export[[:space:]]*)
-    entry="${entry#export}"
-    entry="${entry#"${entry%%[![:space:]]*}"}" ;;
-  esac
-  case "$entry" in *=*) ;; *) return 1 ;; esac
-  key="${entry%%=*}"
-  key="${key%"${key##*[![:space:]]}"}"
-  value="${entry#*=}"
-  value="${value#"${value%%[![:space:]]*}"}"
-}
-
-has_clear_boundary() {
-  case "$1" in *\\*) return 1 ;; *[\"\']*) ;; *) return 0 ;; esac
-  split_entry "$1" || return 1
-  case "$key" in *[\"\']*) return 1 ;; esac
-  quote="${value%"${value#?}"}"
-  case "$quote" in \" | \') ;; *) return 1 ;; esac
-  inner="${value#?}"
-  case "$inner" in *"$quote") inner="${inner%?}" ;; *) return 1 ;; esac
-  case "$inner" in *"$quote"*) return 1 ;; esac
-}
-
-require_clear_boundary() {
-  has_clear_boundary "$1" && return
-  warn "backslash or quote outside a whole value; nothing exported from this file"
-  exit 0
-}
-
-export_entry() {
-  if [ -n "$open_end" ]; then
-    warn "whitespace at end of file without a final newline; not exported"
-    return
+exports=
+number=0
+while { IFS= read -r line && unterminated=; } || { unterminated=1; [ -n "$line" ]; }; do
+  number=$((number + 1))
+  where="$file:$number"
+  if [ -n "$unterminated" ]; then
+    case "$line" in *[[:space:]]) reject "whitespace at end of file without a final newline" ;; esac
   fi
-  if ! split_entry "$1"; then warn "not a KEY=value entry; not exported"; return; fi
-  case "$key" in
-    '' | [0-9]* | *[!A-Za-z0-9_]*) warn "invalid key; not exported"; return ;;
-    [Cc][Ll][Aa][Uu][Dd][Ee]_*) return ;;
+  line="${line#"${line%%[![:space:]]*}"}"
+  line="${line%"${line##*[![:space:]]}"}"
+  case "$line" in '' | '#'*) continue ;; esac
+  case "$line" in export[[:space:]]*)
+    line="${line#export}"
+    line="${line#"${line%%[![:space:]]*}"}" ;;
   esac
+  case "$line" in *=*) ;; *) reject "not a KEY=value entry" ;; esac
+  key="${line%%=*}"
+  key="${key%"${key##*[![:space:]]}"}"
+  value="${line#*=}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  case "$key" in '' | [0-9]* | *[!A-Za-z0-9_]*) reject "invalid key" ;; esac
   case "$value" in
-    \"*)
+    \'*\')
       value="${value#?}"
       value="${value%?}"
-      case "$value" in *\$*) warn "$key: \$ in double quotes; not exported"; return ;; esac ;;
-    \'*)
+      case "$value" in *[\'\\]*) reject "' or \\ inside single quotes" ;; esac ;;
+    \"*\")
       value="${value#?}"
-      value="${value%?}" ;;
-    *[[:space:]\#\$]*) warn "$key: unquoted value with whitespace, # or \$; not exported"; return ;;
-    *[![:print:]]*) warn "$key: unquoted value with a non-ASCII or control character; not exported"; return ;;
+      value="${value%?}"
+      case "$value" in *[\"\\\$]*) reject "\", \\ or \$ inside double quotes" ;; esac ;;
+    *[[:space:]\#\"\'\\\$]*) reject "unquoted value with whitespace, #, a quote, \\ or \$" ;;
+    *[![:print:]]*) reject "unquoted value with a non-ASCII or control character" ;;
   esac
+  case "$key" in [Cc][Ll][Aa][Uu][Dd][Ee]_*) continue ;; esac
   quoted=$(printf '%s' "$value" | sed "s/'/'\\\\''/g")
-  printf "export %s='%s'\n" "$key" "$quoted"
-}
-
-each_entry require_clear_boundary
-each_entry export_entry
+  exports="${exports}export $key='$quoted'
+"
+done < "$file"
+printf '%s' "$exports"

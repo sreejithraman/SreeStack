@@ -30,14 +30,16 @@ claude_lower=file
 """
 
 SECRET = "s3cret"
-SKIPPED_ENTRIES = {
-    "UNQUOTED_COMMENT": f"UNQUOTED_COMMENT={SECRET} # comment",
-    "SUBSTITUTION": f'SUBSTITUTION="{SECRET}$HOME"',
-    "UNQUOTED_SUBSTITUTION": f"UNQUOTED_SUBSTITUTION={SECRET}$HOME",
-    "UNQUOTED_SPACE": f"UNQUOTED_SPACE={SECRET} x",
-}
-# Each form can move entry boundaries; its first line is the one reported.
-UNCLEAR_BOUNDARIES = {
+# Each entry rejects the whole file; its first line is the one reported.
+REJECTED = {
+    "unquoted comment": f"KEY={SECRET} # comment",
+    "unquoted space": f"KEY={SECRET} x",
+    "unquoted substitution": f"KEY={SECRET}$HOME",
+    "double-quoted substitution": f'KEY="{SECRET}$HOME"',
+    "invalid key": f"BAD-KEY={SECRET}",
+    "leading digit": f"1KEY={SECRET}",
+    "no equals sign": f"no equals {SECRET}",
+    "unsupported value under a filtered key": f"CLAUDE_KEY={SECRET} x",
     "inline comment after quote": f'KEY="{SECRET}" # comment',
     "escaped quote": f'KEY="{SECRET}\\"x"',
     "escape": f'KEY="{SECRET}\\nx"',
@@ -46,7 +48,7 @@ UNCLEAR_BOUNDARIES = {
     "multiline": f'KEY="{SECRET}\nSMUGGLED=evil"',
     "escaped quote on continuation": f'KEY="begin\nescaped=\\"\nSMUGGLED=evil\nend{SECRET}"',
     "filtered key": f'CLAUDE_SECRET="begin\nSMUGGLED=evil\nend{SECRET}"',
-    "invalid key": f'BAD-KEY="begin\nSMUGGLED=evil\nend{SECRET}"',
+    "multiline under invalid key": f'BAD-KEY="begin\nSMUGGLED=evil\nend{SECRET}"',
     "backslash before single closing quote": f"KEY='{SECRET}\\'",
 }
 
@@ -65,7 +67,26 @@ def run_loader(fixture, preset=None):
     return variables, result.stderr.decode()
 
 
-class FileEndTest(unittest.TestCase):
+def assert_rejected(test, fixture, line, preset=None):
+    """Assert that nothing loads and one value-free warning names the line."""
+    loaded, warnings = run_loader(fixture, preset)
+    test.assertFalse({"BEFORE", "KEY", "SMUGGLED", "AFTER", "OP_SERVICE_ACCOUNT_TOKEN"} & loaded.keys())
+    test.assertNotIn(SECRET, warnings)
+    test.assertRegex(warnings, rf"^load-env: [^\n]*{line}[^\n]*; nothing exported\n$")
+
+
+class RejectedFileTest(unittest.TestCase):
+    def test_any_unsupported_entry_rejects_the_file(self):
+        for name, entry in REJECTED.items():
+            with self.subTest(name):
+                assert_rejected(self, f"BEFORE=ok\n{entry}\nOP_SERVICE_ACCOUNT_TOKEN=marker\n", ":2: ")
+
+    def test_unsupported_later_duplicate_rejects_the_file(self):
+        for name, later in {"Unicode space before key": "\u2003\tKEY=new",
+                            "inline comment": f"KEY={SECRET} # comment"}.items():
+            with self.subTest(name):
+                assert_rejected(self, f"BEFORE=ok\nKEY=old\n{later}\nAFTER=ok\n", ":3: ")
+
     def test_trailing_whitespace_needs_a_final_newline(self):
         cases = {
             "KEY=value ": "value", "KEY= ": "", 'KEY="quoted" ': "quoted", "KEY='quoted'\t": "quoted",
@@ -74,40 +95,43 @@ class FileEndTest(unittest.TestCase):
             with self.subTest(entry):
                 loaded, warnings = run_loader(f"{entry}\n")
                 self.assertEqual((loaded["KEY"], warnings), (value, ""))
-                loaded, warnings = run_loader(f"AFTER=ok\n{entry}")
-                self.assertNotIn("KEY", loaded)
-                self.assertEqual(loaded["AFTER"], "ok")
-                self.assertRegex(warnings, r"^load-env: .*:2: whitespace at end of file[^\n]*\n$")
-
-    def test_duplicate_without_final_newline_keeps_earlier_value(self):
-        loaded, warnings = run_loader("KEY=old\nKEY=new ")
-        self.assertEqual(loaded["KEY"], "old")
-        self.assertRegex(warnings, ":2: ")
+                assert_rejected(self, f"BEFORE=ok\n{entry}", ":2: whitespace at end of file")
+        assert_rejected(self, "KEY=old\nKEY=new ", ":2: ")
 
     def test_value_without_final_newline_loads(self):
         loaded, warnings = run_loader("KEY=value")
         self.assertEqual((loaded["KEY"], warnings), ("value", ""))
 
-
-class NonAsciiTest(unittest.TestCase):
-    LOCALES = ("C", "en_US.UTF-8")
-
-    def test_unquoted_unicode_whitespace_is_skipped(self):
-        for locale in self.LOCALES:
+    def test_unquoted_unicode_whitespace_rejects_the_file(self):
+        for locale in ("C", "en_US.UTF-8"):
             for space in ("\u00a0", "\u2003"):
                 for entry in (f"KEY={space}{SECRET}", f"KEY={SECRET}{space}"):
                     with self.subTest(locale=locale, entry=ascii(entry)):
-                        loaded, warnings = run_loader(f"{entry}\nAFTER=ok\n", {"LC_ALL": locale})
-                        self.assertNotIn("KEY", loaded)
-                        self.assertEqual(loaded["AFTER"], "ok")
-                        self.assertNotIn(SECRET, warnings)
-                        self.assertRegex(warnings, r"^load-env: .*:1: KEY: [^\n]*non-ASCII")
+                        assert_rejected(self, f"BEFORE=ok\n{entry}\nAFTER=ok\n", ":2: [^\\n]*non-ASCII",
+                                        {"LC_ALL": locale})
 
     def test_quoted_unicode_stays_literal(self):
-        for locale in self.LOCALES:
+        for locale in ("C", "en_US.UTF-8"):
             with self.subTest(locale):
                 loaded, warnings = run_loader('KEY="\u00a0value\u2003"\n', {"LC_ALL": locale})
                 self.assertEqual((loaded["KEY"], warnings), ("\u00a0value\u2003", ""))
+
+    def test_files_that_are_not_utf8_text_export_nothing(self):
+        secret = SECRET.encode()
+        cases = {
+            "invalid byte in double quotes": b'KEY="' + secret + b'\xff"',
+            "invalid byte in single quotes": b"KEY='" + secret + b"\xff'",
+            "truncated sequence": b'KEY="' + secret + b'\xc3("',
+            "above U+10FFFF": b'KEY="' + secret + b'\xf4\x90\x80\x80"',
+            "NUL byte": b"KEY=" + secret + b"\x00value",
+        }
+        for name, entry in cases.items():
+            with self.subTest(name):
+                assert_rejected(self, b"BEFORE=ok\n" + entry + b"\nAFTER=ok\n", ": not UTF-8 text without NUL bytes")
+
+    def test_quoted_utf8_loads(self):
+        loaded, warnings = run_loader('BEFORE=ok\nKEY="caf\u00e9"\n'.encode())
+        self.assertEqual((loaded["BEFORE"], loaded["KEY"], warnings), ("ok", "caf\u00e9", ""))
 
 
 class AcceptedEntriesTest(unittest.TestCase):
@@ -144,52 +168,6 @@ class AcceptedEntriesTest(unittest.TestCase):
             capture_output=True, text=True, check=True,
         )
         self.assertEqual((result.stdout, result.stderr), ("", ""))
-
-
-class RejectedEntriesTest(unittest.TestCase):
-    def test_unsupported_entries_are_skipped(self):
-        for key, entry in SKIPPED_ENTRIES.items():
-            with self.subTest(key):
-                loaded, warnings = run_loader(f"{entry}\nAFTER=ok\n")
-                self.assertNotIn(key, loaded)
-                self.assertEqual(loaded["AFTER"], "ok")
-                self.assertNotIn(SECRET, warnings)
-                self.assertRegex(warnings, rf"^load-env: .*:1: {key}: ")
-
-    def test_unclear_boundaries_export_nothing_from_the_file(self):
-        for name, entry in UNCLEAR_BOUNDARIES.items():
-            with self.subTest(name):
-                loaded, warnings = run_loader(f"BEFORE=ok\n{entry}\nOP_SERVICE_ACCOUNT_TOKEN=marker\n")
-                self.assertFalse({"BEFORE", "KEY", "SMUGGLED", "OP_SERVICE_ACCOUNT_TOKEN"} & loaded.keys())
-                self.assertNotIn(SECRET, warnings)
-                self.assertRegex(warnings, r"^load-env: .*:2: [^\n]*nothing exported[^\n]*\n$")
-
-    def test_invalid_keys_warn_without_exporting(self):
-        loaded, warnings = run_loader("1BAD=x\nBAD-KEY=x\nno equals sign\n")
-        self.assertFalse({"1BAD", "BAD-KEY"} & loaded.keys())
-        self.assertEqual(len(warnings.splitlines()), 3)
-
-
-class FileEncodingTest(unittest.TestCase):
-    def test_files_that_are_not_utf8_text_export_nothing(self):
-        secret = SECRET.encode()
-        cases = {
-            "invalid byte in double quotes": b'KEY="' + secret + b'\xff"',
-            "invalid byte in single quotes": b"KEY='" + secret + b"\xff'",
-            "truncated sequence": b'KEY="' + secret + b'\xc3("',
-            "above U+10FFFF": b'KEY="' + secret + b'\xf4\x90\x80\x80"',
-            "NUL byte": b"KEY=" + secret + b"\x00value",
-        }
-        for name, entry in cases.items():
-            with self.subTest(name):
-                loaded, warnings = run_loader(b"BEFORE=ok\n" + entry + b"\nAFTER=ok\n")
-                self.assertFalse({"BEFORE", "KEY", "AFTER"} & loaded.keys())
-                self.assertNotIn(SECRET, warnings)
-                self.assertRegex(warnings, r"^load-env: [^\n]*not UTF-8 text without NUL bytes[^\n]*\n$")
-
-    def test_quoted_utf8_loads(self):
-        loaded, warnings = run_loader('BEFORE=ok\nKEY="caf\u00e9"\n'.encode())
-        self.assertEqual((loaded["BEFORE"], loaded["KEY"], warnings), ("ok", "caf\u00e9", ""))
 
 
 class SessionStartHookTest(unittest.TestCase):
