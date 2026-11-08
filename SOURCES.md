@@ -1265,6 +1265,8 @@ environment and a timeout. However a cell ends, one sweep over its folder only
 replaces directory entries, never modifying an existing file: symlinks become
 notes without being followed, files holding secret-looking environment values are
 replaced by copies redacted by bytes, and a file it can't redact becomes a note.
+It only sweeps or moves folders whose identity it recorded; a cell whose scratch,
+work, or output folders were replaced is left untouched and recorded as an error.
 `compare.py --help` lists the accepted limits: checker files outside the eval dir,
 detached sessions, short or JSON-escaped secret values, and Codex login refresh.
 Calibration runs in a task fixture, checks that installed skills don't leak in and

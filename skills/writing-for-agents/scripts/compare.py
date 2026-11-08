@@ -34,7 +34,10 @@ cell ends, one sweep makes its folder safe to keep. It never follows a link and
 never modifies an existing file, only replaces directory entries: symlinks become
 notes, a file holding the values of environment variables named like KEY, TOKEN,
 SECRET, PASSWORD or AUTH is replaced by a copy redacted by bytes, and a file that
-can't be redacted is replaced by a note.
+can't be redacted is replaced by a note. The runner only sweeps or moves folders
+whose identity it recorded when the cell started. If the scratch, work or output
+folder, or a parent of the output up to <eval-dir>, was replaced, it unlinks a
+replacing link, touches nothing else, and records the cell as an error.
 
 Accepted limits:
   - Keep checks self-contained in <eval-dir>. A change to a file outside it, such as
@@ -54,6 +57,7 @@ from pathlib import Path
 import random
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import time
@@ -194,17 +198,38 @@ class Eval:
         return sorted(self.output("runs").glob("*/*/*/result.json"))
 
 
+TAMPERED = "owned directory was replaced"
+
+
+def same(path: Path, identity) -> bool:
+    """Whether path is still the directory recorded as identity, and not a link."""
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return False
+    return not stat.S_ISLNK(info.st_mode) and (info.st_dev, info.st_ino) == identity
+
+
+def record(*paths: Path) -> dict:
+    return {path: (os.lstat(path).st_dev, os.lstat(path).st_ino) for path in paths}
+
+
 def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None, out: Path, variant: str,
                 task=None) -> hosts.RunResult:
-    """One fresh session in its own work dir, then the task's checks. Its evidence is kept however it ends."""
+    """One fresh session in its own work dir, then the task's checks. Its evidence is kept however it ends.
+
+    The runner only sweeps or moves directories whose identity it recorded here. A cell
+    whose scratch, work, output, or output parents were replaced is an error.
+    """
     out.mkdir(parents=True)
     scratch = Path(tempfile.mkdtemp(prefix="compare-"))
     work = scratch / "work"
+    work.mkdir()
+    owned = record(scratch, work, out, *[p for p in out.parents if p.is_relative_to(ev.dir)])
+    tampered = []
     try:
         if fixture:
-            shutil.copytree(fixture, work)
-        else:
-            work.mkdir()
+            shutil.copytree(fixture, work, dirs_exist_ok=True)
         started = time.monotonic()
         try:
             result = ev.adapter.run(skills=skills, prompt=prompt, work=work, out=out,
@@ -212,20 +237,39 @@ def run_session(ev: Eval, skills: Path | None, prompt: str, fixture: Path | None
         except Exception as error:  # A crashed adapter is a failed cell, kept with its reason.
             result = hosts.RunResult(status="error", error=f"{type(error).__name__}: {error}")
         result.wall_seconds = round(time.monotonic() - started, 3)
-        if task is not None and result.status == "ok":
+        if task is not None and result.status == "ok" and all(same(p, i) for p, i in owned.items()):
             result.checks = run_checks(ev, task, work, out)
-        return result
     finally:  # Also on KeyboardInterrupt.
-        keep_work(work, scratch, out)
+        tampered = keep_work(owned, work, scratch, out)
+    if tampered:
+        result.status, result.error, result.checks = "error", TAMPERED, []
+        reclaim(out, owned, tampered)
+    return result
 
 
-def keep_work(work: Path, scratch: Path, out: Path) -> None:
-    """Keep the work dir in `out`, then make the whole cell folder safe to keep."""
-    if os.path.lexists(work):
-        hosts.sanitize(work)
-        shutil.move(str(work), str(out / "work"))
+def keep_work(owned: dict, work: Path, scratch: Path, out: Path) -> list:
+    """Keep the work dir in `out` and sweep the cell, or, if an owned directory was
+    replaced, only unlink replacing links and touch nothing else. Returns what was replaced."""
+    tampered = [path for path, identity in owned.items() if not same(path, identity)]
+    for path in tampered:
+        # Only the outermost replacement: anything below it already resolves elsewhere.
+        if not any(other in path.parents for other in tampered) and path.is_symlink():
+            path.unlink()
+    if tampered:
+        return tampered
+    hosts.sanitize(work)
+    shutil.move(str(work), str(out / "work"))
     shutil.rmtree(scratch, ignore_errors=True)
     hosts.sanitize(out)
+    return []
+
+
+def reclaim(out: Path, owned: dict, tampered: list) -> None:
+    """Give a tampered cell a fresh output folder for its error, or stop if one was replaced by a real directory."""
+    replaced = [p for p in tampered if (p == out or p in out.parents) and os.path.lexists(p)]
+    require(not replaced, f"{TAMPERED}: {', '.join(map(str, replaced))} left untouched")
+    if not os.path.lexists(out):
+        out.mkdir(parents=True)
 
 
 def run_checks(ev: Eval, task, work: Path, out: Path) -> list:

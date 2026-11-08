@@ -504,7 +504,7 @@ class Host:
     def run(self, *, work, out, **rest):
         hosts.execute(["sh", "-c", {host!r}], cwd=work, env=None, out=out, timeout=30)
 
-ev = types.SimpleNamespace(adapter=Host(), host={{}})
+ev = types.SimpleNamespace(adapter=Host(), host={{}}, dir=Path({str(self.root)!r}))
 compare.run_session(ev, None, "p", Path({str(self.root / "fixtures/repo")!r}), Path({str(out)!r}), "v")
 """
         env = {**os.environ, "EVAL_TEST_API_KEY": SENTINEL}
@@ -556,6 +556,15 @@ compare.run_session(ev, None, "p", Path({str(self.root / "fixtures/repo")!r}), P
             self.assertEqual(path.read_text(), "keep this exact data: [REDACTED]")
             self.assertNotEqual(path.stat().st_ino, victim.stat().st_ino)
 
+    def assertTamperedCells(self, count):
+        cells = list((self.root / "runs").glob("*/*/*/result.json"))
+        self.assertEqual(len(cells), count)
+        for cell in cells:
+            stored = json.loads(cell.read_text())
+            self.assertEqual((stored["status"], stored["error"], stored["checks"]),
+                             ("error", "owned directory was replaced", []))
+            self.assertEqual([p for p in cell.parent.rglob("*") if p.is_symlink()], [])
+
     def test_a_work_dir_replaced_by_a_link_is_never_traversed(self):
         outside, victim = self.outside_victim()
 
@@ -570,11 +579,65 @@ compare.run_session(ev, None, "p", Path({str(self.root / "fixtures/repo")!r}), P
         with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
             compare.run(self.evaluate(Relinker()))
         self.assertUntouched(outside, victim)
-        notes = list((self.root / "runs").glob("*/*/*/work"))
-        self.assertEqual(len(notes), 12)
-        for note in notes:
-            self.assertTrue(note.is_file() and not note.is_symlink())
-            self.assertTrue(note.read_text().startswith("symlink to "))
+        self.assertTamperedCells(12)
+        self.assertTrue(compare.score(self.evaluate(FakeAgent()))["decision"].startswith("reject"))
+
+    def outside_work(self):
+        """An outside folder holding a real work dir with the sentinel, all with distinctive modes."""
+        outside = self.directory()
+        victim = outside / "work/important.txt"
+        victim.parent.mkdir()
+        victim.write_bytes(f"keep this exact data: {SENTINEL}".encode())
+        victim.chmod(0o640)
+        victim.parent.chmod(0o555)
+        self.addCleanup(victim.parent.chmod, 0o755)
+        return victim
+
+    def assertWorkUntouched(self, victim):
+        self.assertEqual(victim.read_bytes(), f"keep this exact data: {SENTINEL}".encode())
+        self.assertEqual(victim.stat().st_mode & 0o777, 0o640)
+        self.assertEqual(victim.parent.stat().st_mode & 0o777, 0o555)
+        self.assertEqual(sorted(p.name for p in victim.parent.parent.rglob("*")), ["important.txt", "work"])
+
+    def test_a_scratch_dir_swapped_for_a_link_is_never_swept_or_moved(self):
+        victim = self.outside_work()
+        write_manifest(self.root, repeats=1, tasks=[{"id": "swap", "prompt": "do it", "fixture": "fixtures/repo",
+                                                     "required": True, "checks": ["test -f done.txt"]}])
+        case = self
+
+        class Swapper(FakeAgent):
+            def run(self, *, scratch, prompt, **rest):
+                result = super().run(scratch=scratch, prompt=prompt, **rest)
+                if prompt.startswith("do "):
+                    displaced = scratch.with_name(scratch.name + "-displaced")
+                    scratch.rename(displaced)
+                    case.addCleanup(shutil.rmtree, displaced)
+                    scratch.symlink_to(victim.parent.parent, target_is_directory=True)
+                    case.addCleanup(scratch.unlink, missing_ok=True)
+                return result
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            compare.run(self.evaluate(Swapper()))
+        self.assertWorkUntouched(victim)
+        self.assertTamperedCells(2)
+
+    def test_an_output_dir_swapped_for_a_link_is_never_swept(self):
+        victim = self.outside_work()
+        write_manifest(self.root, repeats=1, tasks=[{"id": "swap", "prompt": "do it", "fixture": "fixtures/repo",
+                                                     "required": True, "checks": ["test -f done.txt"]}])
+
+        class Swapper(FakeAgent):
+            def run(self, *, out, prompt, **rest):
+                result = super().run(out=out, prompt=prompt, **rest)
+                if prompt.startswith("do "):
+                    shutil.rmtree(out)
+                    out.symlink_to(victim.parent.parent, target_is_directory=True)
+                return result
+
+        with mock.patch.dict(os.environ, {"EVAL_TEST_API_KEY": SENTINEL}):
+            compare.run(self.evaluate(Swapper()))
+        self.assertWorkUntouched(victim)
+        self.assertTamperedCells(2)
 
 
 if __name__ == "__main__":
