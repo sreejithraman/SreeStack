@@ -9,7 +9,8 @@ Land a finished change. Start from a PR, a stack, or a local change the user kep
 Leave it merged and shown, with issues settled and task resources cleaned up. You are done when
 GitHub reports every PR in the set merged, and each issue and cleanup target has a result.
 
-A merge request authorizes landing the scoped work, closing fully resolved issues, and cleaning
+A workflow's **Land** finish line, picked under its policy, is a merge request too. A merge
+request authorizes landing the scoped work, closing fully resolved issues, and cleaning
 up task-owned temporary resources. It also covers fixes that
 [continue](../review-sweep/references/classification.md#continue-or-stop). Honor the user's
 limits.
@@ -24,8 +25,10 @@ limits.
    conflicts, and commits you didn't push all go through
    [continue or stop](../review-sweep/references/classification.md#continue-or-stop). Fixes that
    continue get one line in your report. A wake resumes this step, because the merge request
-   still stands. On a stop, cancel any armed landing and confirm it's cancelled, with
-   `gh pr merge --disable-auto` or, for a queue, the `dequeuePullRequest` mutation. Then leave the
+   still stands. An open `## Provisional` section, which `pr_state` reports as a blocker, is a
+   stop; a merge request alone never clears it. On a stop, cancel any armed landing and confirm
+   it's cancelled, with `gh pr merge --disable-auto` or, for a queue, the `dequeuePullRequest`
+   mutation. Then leave the
    PR open and use [Show Me](../show-me/SKILL.md) to show the user what happened, including
    anything that landed first.
 

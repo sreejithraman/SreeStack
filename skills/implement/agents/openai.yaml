@@ -1,4 +1,4 @@
 interface:
   display_name: "Implement"
-  short_description: "Own one PR-sized change through delivery"
-  default_prompt: "Use $implement to carry this change through implementation, verification, and its finish line."
+  short_description: "Carry one outcome to its finish line"
+  default_prompt: "Use $implement to carry this outcome to its finish line."

@@ -13,6 +13,8 @@ missing:
 - `status` is `ready`, `pending`, `blocked`, or `merged`.
 - `blockers` and `pending` are facts GitHub settles. A PR that `pending` lists as queued or set
   to auto-merge is already submitted, even with blockers, so never submit it again.
+- An open `## Provisional` section in the body is a blocker, even when the PR is queued or set
+  to auto-merge. See [PR body](pr-body.md). The output names the heading and leaves out the body.
 - `to_settle` lists what only a reader can judge. Each item needs a decision. GitHub records no
   decision on a comment or review body, so those stay listed. Carry your decision forward
   unless the text changed.

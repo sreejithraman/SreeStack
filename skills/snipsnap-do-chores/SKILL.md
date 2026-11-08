@@ -14,8 +14,8 @@ Use [Snip Snap](../snip-snap/SKILL.md) to find ready, unfinished chores for the
 current project. Read each candidate and its completion evidence so finished
 work stays out of the selection, including work recorded only in older notes.
 
-Use [Implement](../implement/SKILL.md) for chores forming one PR-sized change,
-or [Chief of Staff](../chief-of-staff/SKILL.md) to coordinate several PRs.
+Use [Implement](../implement/SKILL.md) for chores forming one outcome,
+or [Chief of Staff](../chief-of-staff/SKILL.md) to coordinate several outcomes.
 Use [Swarm](../swarm/SKILL.md) when bounded parallel work helps the caller.
 Carry each source snip's ID in execution briefs and handoffs. Follow
 Snip Snap's [Complete saved work](../snip-snap/SKILL.md#complete-saved-work)
