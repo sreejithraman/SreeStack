@@ -44,13 +44,15 @@ decision changes it.
 ## 1. Ground and frame
 
 Read the idea, the sources it names, and the code and records it touches. When
-the outcome, proof, and scope are already clear, say so and offer Implement with
-the request as its brief; open no record. Otherwise form the first brief with
-Reframe and open the record as Draft.
+the outcome, proof, and scope are already clear, say so. A clear single outcome
+needs no record: route the request as its brief under
+[stage 5](#5-show-and-route). Clear work with several outcomes opens the record
+and goes to [stage 4](#4-settle-ready-work) for its spec. Otherwise form the
+first brief with Reframe and open the record as Draft.
 
 Done when the desired change, its sources, and the next uncertainty are explicit,
-and the record's path is in the thread. For a clear idea, done when the user has
-the offer.
+and the record's path is in the thread. For a clear single outcome, done when
+Implement has the request or the user has the offer.
 
 ## 2. Resolve what matters
 

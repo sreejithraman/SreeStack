@@ -1207,10 +1207,11 @@ label, and leaves a link to the issue in the record. Unresolved required choices
 can be supplied directly or through the manual setup skill. Synthesizes without
 interviewing: it reuses settled decisions and seams, and asks only a missing
 decision that changes the spec, in one Grilling round. The template adds one
-entry per outcome with proof, covered code, exclusions, assumptions, and
-requested finish line; scales user stories to the settled coverage instead of
-upstream's extensive list; and allows paths where they pin down scope, keeping
-upstream's ban on line numbers and code snippets.
+entry per outcome with proof, covered code, preserved behavior, inputs and
+access, exclusions, assumptions, and finish line, and keeps every settled brief
+field when it replaces the brief; scales user stories to the settled coverage
+instead of upstream's extensive list; and allows paths where they pin down
+scope, keeping upstream's ban on line numbers and code snippets.
 
 Setup references use the local `setup-sreestack` entry point.
 

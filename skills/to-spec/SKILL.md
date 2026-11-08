@@ -10,8 +10,8 @@ Write down what the conversation settled as one spec an execution owner can
 start from. Start from a conversation or shaping record whose outcomes are
 settled. Leave the spec in that record, and in the issue tracker only when the
 user asks. You are done when every settled outcome is in the spec with its
-proof, covered code, exclusions, assumptions, and requested finish line, and
-the user can open it.
+proof, covered code, preserved behavior, inputs and access, exclusions,
+assumptions, and finish line, and the user can open it.
 
 This is synthesis, not an interview. Take each decision from the conversation,
 the record, and the code, and don't ask it again. Ask only for a missing decision
@@ -33,7 +33,8 @@ one round under [Grilling](../grilling/SKILL.md)'s rules.
    decision.
 
 3. **Write the spec into the record.** Replace the brief in the shaping record
-   with the spec, so one copy exists. Without a shaping record, choose its home
+   with the spec, so one copy exists. Carry every settled field of the brief
+   into the outcome it affects. Without a shaping record, choose its home
    by Shape's [record rule](../shape/SKILL.md#the-record). Use the template below.
 
 4. **Publish only on request.** When the user asks to publish, use the issue
@@ -61,6 +62,9 @@ One entry per settled outcome:
   qualitative criteria and judge.
 - **Covers:** the modules, and paths where they pin down scope, that the outcome
   changes or must preserve.
+- **Preserves:** the behavior this outcome must keep.
+- **Inputs and access:** the data, tools, accounts, and access it needs, and
+  which are missing.
 - **Out of scope:** what this outcome excludes.
 - **Assumptions:** what it rests on that nobody confirmed.
 - **Finish line:** the line the user requested, or else a line marked proposed,
