@@ -61,12 +61,27 @@ providers.
 ([Desktop environment setup](https://learn.chatgpt.com/docs/amazon-bedrock#desktop-app-and-ide-extension),
 [Codex `.env` loading](https://github.com/openai/codex/blob/d960b366941bf062adb4d43111e81b64507e8879/codex-rs/arg0/src/lib.rs#L272-L284))
 
+Claude Code does not load `.env` files. Add a SessionStart command hook in
+`~/.claude/settings.json` that appends one line to `CLAUDE_ENV_FILE`; Claude Code
+runs that file before each Bash command. The line evals the bundled
+[loader](../scripts/load-env.sh), which exports the shared file's variables
+without overriding ones already set. The guard keeps a repeated SessionStart from
+adding a duplicate line:
+
+```sh
+line='eval "$(sh "$HOME/.claude/skills/agent-login/scripts/load-env.sh")"'; [ -z "$CLAUDE_ENV_FILE" ] || grep -qxF "$line" "$CLAUDE_ENV_FILE" 2>/dev/null || printf '%s\n' "$line" >> "$CLAUDE_ENV_FILE"
+```
+
+Only new sessions pick it up; running sessions keep their environment.
+([Persist environment variables](https://code.claude.com/docs/en/hooks#persist-environment-variables))
+
 A reusable layout is:
 
 ```text
 ~/.config/agents/shared.env   # canonical private agent environment
 ~/.codex/.env                # symlink to that file
 <T3 Codex home>/.env         # symlink to that file
+~/.claude/settings.json      # SessionStart hook that loads that file
 ```
 
 Discover the effective homes; keep their configs and sessions separate. The
@@ -135,6 +150,7 @@ For **every provisioning source**:
 2. Restart the affected GUI/provider as needed without interrupting other work,
    then repeat the identity check from a fresh agent session. An app-server
    subprocess probe establishes runtime loading, not a completed GUI restart.
+   For Claude Code, run the check from a Bash command in a new Claude session.
 
 Record the runtime/version, effective home, token source path or setting name,
 expected identity, and completed checks without secret values, in existing

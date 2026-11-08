@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIREMENTS = ROOT / "scripts/requirements-checks.txt"
 CHECKS = (
     ("-m", "unittest", "discover", "-s", "scripts", "-p", "test_*.py"),
+    ("-m", "unittest", "discover", "-s", "skills/agent-login/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/chief-of-staff/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/create-image/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/pr/scripts", "-p", "test_*.py"),
