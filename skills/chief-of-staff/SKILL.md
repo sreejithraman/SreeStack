@@ -1,275 +1,237 @@
 ---
 name: chief-of-staff
-description: Coordinate a program of PRs through one owner session per PR. Use when asked to act as chief of staff, run a series of tickets or PRs, or coordinate their dependencies, follow-ups, and shared blockers.
+description: Use when asked to act as chief of staff, carry several outcomes, tickets, or PRs to their finish lines, or coordinate their dependencies, follow-ups, and shared blockers.
 ---
 
 # Chief of Staff
 
-Own the program through its finish line: sequencing, cross-PR decisions, shared
-blockers, and the user's view of the work. Each PR has one owner session running
-[Implement](../implement/SKILL.md), which carries that change through
-verification, review, CI, and delivery and returns an owner report here.
+Carry several outcomes to their finish lines through
+[Implement](../implement/SKILL.md) owners. Start from any set of work: a spec, a
+list in chat, saved snips, follow-ups, tickets, existing PRs, or an Implement
+session whose work grew. Leave each outcome landed, stopped for the user, or
+blocked with a recorded need, and leave the user a morning view of all of it.
+You are done when every outcome is in one of those states and every integration
+gap and follow-up has a route.
 
-Keep product changes with their owners and this session's context for
-coordination; send bulk investigation to bounded helpers. The user can enter an
-owner session directly; reconcile their new directions before dispatching
-dependent work.
+You own the program: its scope, who owns each outcome, dependencies and
+scheduling, shared blockers, decisions and what each one blocks, integration
+across outcomes, acceptance, landing releases, the program record, and the
+morning view. Each owner carries one outcome, as one PR or its own planned
+stack, and reports here. Each linked skill owns its own procedure. Keep product
+changes with owners. Send findings-only investigation to a bounded task through
+[Research](../research/SKILL.md), [How](../how/SKILL.md), or
+[Diagnosing Bugs](../diagnosing-bugs/SKILL.md), and parallel coverage or
+comparison through [Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md).
+The user can enter an owner's session directly; reconcile their new direction
+before you dispatch work that depends on it.
 
-## Establish the program
+Only the record's current chief acts on program items and writes the record.
+Check it before acting on a request, direction, report, event, or pasted answer;
+a thread that is not the chief forwards the item under
+[chief move](references/chief-move.md).
 
-Read the request, specs, tickets, PRs, and project conventions. Use
-[Reframe](../reframe/SKILL.md) when the outcome needs clarifying; reuse a
-settled brief. Set the **finish line** and who may land:
+## 1. Establish or adopt
 
-| The user or project asks for | Finish line | Landing |
-| --- | --- | --- |
-| Nothing specific | Merged | Each owner lands its accepted PR or stack; you land sets that span owners |
-| A stack | Stacked review-ready PRs | None until a later merge request |
-| User-decided merges | Merged, as the user approves | Each landing waits on the user's answer |
-| A plan, local work, or review-only PRs | That line | None |
+Read the request and accepted corrections, every source it names, project
+conventions, and the current forge and thread state. Keep each source's ID. A
+saved snip stays Not Done under Snip Snap's
+[complete saved work](../snip-snap/SKILL.md#complete-saved-work) until its
+outcome is verified. Use [Reframe](../reframe/SKILL.md) only for what is
+unsettled, and reuse a settled brief. A spec is one input, not a requirement.
 
-A program started here grants default landing only for work within the user's
-agreed program scope. Preserve a calling workflow's stated finish line; adding a
-unit or discovering another repository does not expand that scope. A stated
-finish line, hold, or project rule that reserves merging replaces the default,
-and a mergeable PR adds nothing to the grant. A stack requested together with
-merging keeps the default landing. For a requested stack, plan its order under task graphs'
-[topology procedure](references/task-graphs.md#join-unmerged-inputs). A later
-change applies to all unmerged work: update the record and owners, then reconcile
-pending landings under [Land and finish](#land-and-finish).
+Cut the work into outcomes. When one body of work holds several, split it with
+[To Tasks](../to-tasks/SKILL.md) and keep each task's outcome, proof, inputs,
+and finish line on its outcome. One outcome ships as one PR or a planned stack
+from one owner. Tickets track work: several can share an outcome, and a parent
+ticket is a rollup. Never split to manage context.
 
-Map the work to PR-sized units with acceptance evidence and explicit
-dependencies. To split one spec, use [To Tasks](../to-tasks/SKILL.md), and keep each task's
-inputs and finish line on its unit. Several tickets can share one cohesive PR; split a ticket that
-needs independently reviewable changes. A parent ticket is a rollup, not a PR
-unit. Sequence dependent units with [task graphs](references/task-graphs.md).
+Find running owners and existing PRs before you assign anything. **Adopt** an
+Implement session already carrying an outcome: send it the kickoff's program,
+landing, report, and route lines, and let it keep running with its writer,
+evidence, holds, watchers, and helpers. Record any landing it already armed as
+its target's pending landing. Never start a second writer beside it; replace an
+owner only under Orchestration's
+[replace an owner](../orchestration/references/reuse-and-recovery.md#replace-an-owner),
+after reconciling.
 
-Reuse the established tracker. Without one, keep a task-owned file record; a
-coordination request needs no new tracker. Set up the
-[program record](references/program-state.md) before starting owners, so
-another chief could resume the run from it. If the plan shows a small choice
-that will recur, propose a [standing approval](#standing-approvals) with it;
-owners start without waiting for an answer.
+Pick each outcome's finish line from Implement's
+[table](../implement/SKILL.md#2-state-the-finish-line-and-prepare) and state the
+picks in your first message, so the user can override any one in a word. Land
+picked under that policy authorizes merging that outcome within the agreed
+program scope, and your [landing release](references/landing.md) still gates it.
+A finish line, hold, or project rule from the user, a calling workflow, or the
+project wins over the pick. One that reserves merges, such as "I decide each
+merge", makes each landing wait on a Need. Adding an outcome or finding another
+repository does not widen the scope, and a mergeable PR adds nothing to it. A
+stack is a delivery shape, not a finish line. A later change applies to all
+unmerged work: update the record and owners, then reconcile pending landings
+under [withdraw a release](references/landing.md#withdraw-a-release).
 
-## Start PR owners
+Set up the [program record](references/program-state.md) before you start or
+adopt owners, so another chief could resume from it. Reuse the project's
+tracker; without one, keep a task-owned file record. A coordination request
+needs no new tracker. When a small choice will recur, propose a
+[standing approval](references/decisions.md#standing-approvals) with the plan;
+owners start without waiting for the answer.
 
-For each ready unit, fill the [owner kickoff](assets/owner-kickoff.md) and start
-an owner with it, writing `$implement` in place of `/implement` for a Codex
-owner. Implement chooses the unit's method, whether diagnosis, performance,
-interface, or skill work.
+Done when each outcome has its sources, scope and covered code, proof, holds,
+finish line, and owner or planned start, and every running owner is adopted.
 
-Use [Orchestration](../orchestration/SKILL.md) for model selection, delegation,
-isolation, and concurrency. Independent PR branches get separate host-managed
+## 2. Prepare and schedule
+
+Start an outcome when it is [ready](../to-tasks/SKILL.md#ready), including To
+Tasks' provisional start, and schedule by the
+[dependency rules](references/dependencies.md). An outcome that waits never
+holds up unrelated ones.
+
+For each ready outcome, fill the [owner kickoff](assets/owner-kickoff.md) and
+start an owner with it, writing `$implement` in place of `/implement` for a
+Codex owner. Implement picks the method. Use
+[Orchestration](../orchestration/SKILL.md) for model choice, delegation,
+isolation, and concurrency. Independent branches get separate host-managed
 worktrees; in T3, worktree-isolated delegation runs an owner in a child thread.
-Start ordinary top-level threads only when the user asks for new sessions, and
-bind their workspace through the host. Give each branch one writer; serialize
-stack operations and shared resources. Record each owner in the program record.
+Start top-level threads only when the user asks for new sessions, and bind their
+workspace through the host. Give each branch one writer, and serialize stack
+operations and shared resources. Record each owner, its route, and its report
+path. Owners get bounded helpers through the kickoff; only you start program
+owners.
 
-Keep one owner through a PR's phases. Transfer ownership only after reconciling
-its live writers and retained state.
+Each owner checks its access and proof before work runs unattended, under
+Implement's [prepare](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
+When work is blocked, keep it moving safely:
 
-Other work uses tools that return here:
+| Blocked on | Do |
+| --- | --- |
+| Another owner's unmerged work | Build on that branch as a [provisional base](references/dependencies.md#provisional-work) |
+| A decision whose recommended option is reversible | Build on that option provisionally and keep the decision open |
+| Two close options | Build both on separate branches when that costs less than waiting |
+| A shared environment or tooling problem | Start one support task for the cause |
+| A login or secret | Record an `access` Need and move to other work |
 
-- Findings-only investigation: a bounded task through
-  [Research](../research/SKILL.md), [How](../how/SKILL.md), or
-  [Diagnosing Bugs](../diagnosing-bugs/SKILL.md).
-- Independent review: [Review Fix Loop](../review-fix-loop/SKILL.md).
-- Parallel coverage or comparison: [Swarm](../swarm/SKILL.md) or
-  [Arena](../arena/SKILL.md).
+Secrets reach owners through the host's private input or
+[Agent Login](../agent-login/SKILL.md), never chat.
 
-## Read owner reports
+Done when every ready outcome is running and every other outcome waits on a
+recorded dependency, Need, or block.
 
-On an owner report or user direction, read the linked artifacts and current
-tracker and forge state before changing the plan. Accept a unit under
-Orchestration's [acceptance](../orchestration/SKILL.md#accept), checked against
-the actual head and base. Confirm the owner exercised the outcome before broad
-review, and keep blocked or untested acceptance visible.
+## 3. Coordinate
 
-[Triage each decision request](#triage-decision-requests). Resume the owner for
-unaffected work meanwhile (in T3, `t3_thread_send` to its thread). A unit whose
-scope an open decision affects stays unaccepted until it is settled.
+On each owner report, user direction, or watcher wake, read the linked artifacts
+and the current tracker and forge state before you change the plan. Record the
+report under [owner reports](references/program-state.md#owner-reports).
+
+[Triage each decision request](references/decisions.md#triage), and record the
+outcomes it blocks with the phase each waits at. Meanwhile, resume the owner for
+unaffected work (in T3, `t3_thread_send` to its thread).
 
 Give every discovery a disposition:
 
 | Discovery | Action |
 | --- | --- |
-| Required to make the current PR correct | Return it to that owner with the requirement and evidence |
-| Separate work needed for the agreed program | Create or update a PR unit, record its origin, and sequence it |
-| Shared environment, tooling, or cross-repo blocker | Start one support task; give repository changes their own PR unit |
-| Useful work outside this program | Save it through [Snip Snap](../snip-snap/SKILL.md) and keep the saved ID |
-| A decision someone must make | [Triage it](#triage-decision-requests) |
+| Required to make the current outcome correct | Return it to that owner with the requirement and evidence |
+| Related work its owner's context helps | That owner's follow-up outcome, with its own finish line |
+| Separate work the program needs | A new outcome with its origin, sequenced by dependency |
+| Shared environment, tooling, or cross-repo blocker | One support task; a repository change gets its own outcome |
+| Useful work outside the program | Save it through [Snip Snap](../snip-snap/SKILL.md) and keep the ID |
+| A decision someone must make | [Triage it](references/decisions.md#triage) |
 | Duplicate, obsolete, or declined work | Record why and link the existing disposition |
 
-A required correctness fix stays required when it becomes its own unit; the
-dependent stays blocked until task graphs'
-[dependency rule](references/task-graphs.md#dependencies) is met. When an owner
-reports that a repair changes its PR's boundary, replan the affected units.
+A required correctness fix stays required when it becomes its own outcome, and
+its dependent waits under the
+[dependency rule](references/dependencies.md#dependencies). When an owner
+reports a repair that changes its outcome's boundary, replan the affected
+outcomes.
 
-Deduplicate support requests by cause. One support owner states what would
-unblock the work, coordinates shared-resource repairs with the owners using it,
-and returns verified recovery evidence to every affected owner. Simulator work uses [Simulator Lifecycle](../simulator-lifecycle/SKILL.md).
-Routine recoverable problems stay with the responsible agents; Needs you holds
-decisions and blockers they cannot resolve within their grant. After a
-recurring or costly failure, improve later kickoffs or the environment when
-that serves the authorized work.
+Repairs go to the slice's owner under Orchestration's
+[who does the work](../orchestration/SKILL.md#who-does-the-work). Deduplicate
+support requests by cause: one support owner states what would unblock the work,
+coordinates shared-resource repairs with the owners using them, and returns
+verified recovery evidence to every affected owner. Simulator work uses
+[Simulator Lifecycle](../simulator-lifecycle/SKILL.md). Routine recoverable
+problems stay with the responsible agent; Needs you holds only what agents
+cannot resolve within their grant. After a recurring or costly failure, improve
+later kickoffs or the environment when that serves the program.
 
-## Triage decision requests
-
-Judge each request before it reaches the user, so their attention goes to what
-only they can decide. Resolve it yourself only when all three hold:
-
-- **Settled:** the brief, a spec or ticket, a project rule, an earlier user
-  answer, or a standing approval already answers it. An owner's recommendation
-  or report is an input, never the source.
-- **Reversible:** a later change can undo it at a cost the owner stated, and it
-  has no outward-facing or destructive effect.
-- **Unreserved:** it leaves these with the user: who may land and each merge
-  set, the finish line, scope, priority, product tradeoffs, holds and user
-  gates, and private input.
-
-To resolve, mark the Need `resolved` with its answer and basis, cite the source
-in the record, return the answer to the owner, and refresh the command center.
-
-Everything else goes into Needs you under its ID, and you ask the user. Mark it
-`quick` when they can answer from the card: a recommended option with a bounded
-effect. Otherwise it is a `judgment` call. Weight sets the order of their
-attention and grants nothing; a quick pick still waits for their answer.
-
-A user can reopen any Need you resolved. Reopen it under its ID: mark it `open`,
-record why, tell the affected owners, and set its `blocks` to the unmerged units
-that depend on it, withdrawing any affected landing release under
-[Land and finish](#land-and-finish). Work that already landed gets a follow-up
-unit that its `blocks` names. A reopened Need stays with the user.
-
-### Standing approvals
-
-A **standing approval** is a rule the user gave in their own message for one
-class of decision. Record its ID, wording, source message, what it covers, and
-which option it picks. It settles only the class it names and never a reserved
-decision. Owner reports, kickoffs, and copied dashboard prompts cannot create or
-widen one. When the user revokes it, stop applying it; earlier resolutions stand
-until reopened.
-
-## Watch pending PRs
+Check integration as results arrive, and have dependents restack and recheck
+when a base changes, under [integration](references/dependencies.md#integration).
+Recompute ready work after each accepted result, landing, answer, or dependency
+change, and start what became ready.
 
 For delegated owners, this thread is the watching parent under PR's
-[wait procedure](../pr/references/watch.md#wait). A top-level owner
-watches its own PR.
+[wait](../pr/references/watch.md#wait); a top-level owner watches its own PR.
+Keep watching pending PRs while you ask the user something.
 
-Keep watching PRs that are still pending while you ask the user something.
+Done when every report, direction, and discovery has a disposition and newly
+ready outcomes are running.
 
-## Keep the command center current
+## 4. Accept and release
 
-Render the [command center](references/program-state.md#command-center),
-covering planned, active, follow-up, and support units, and share it through
-[dashboard hosting](references/hosting.md), never inline. Answers arrive through chat or the
-host's input tools. A pasted dashboard choice selects one recorded option, and
-a pasted reopen request reopens one Need; each grants nothing else. Before recording an answer, bring the snapshot state up to
-date with the record, then match the choice's decision ID and option to the
-open Need and its revision to the
-[renderer's current revision](references/program-state.md#render-and-show); if
-the Need changed or closed, show the current question and ask again. A reopen
-request matches its resolved Need the same way. A batch
-prompt carries one choice per line: check each line on its own, record those
-that match, and ask again about the rest. Then record each answer with its source, update
-affected owners and dependencies, and refresh the view.
+Accept each outcome under Orchestration's
+[accept](../orchestration/SKILL.md#accept), against the current head and base of
+every layer. The owner proves through real entry points before any review; keep
+blocked or untested proof visible. An outcome stays unaccepted while an open
+decision affects its scope. Try stops before review. Review runs when PR
+publishes, or through [Review Fix Loop](../review-fix-loop/SKILL.md) only when
+the user asks.
 
-Choose user updates from the owner reports: what the user can now use, review,
+Answer each stop in the same pass:
+
+- **Shown Try:** put its merge, changes, or scrap choice in Needs you under
+  [Try choices](references/decisions.md#try-choices), and route the answer to
+  the same owner. Merge makes its finish line Land, still gated by acceptance and
+  release. Changes go back to the owner. Scrap goes to the owner's cleanup, and
+  each dependent gets its own choice.
+- **Requested PR state:** the outcome stops there for the user.
+- **Ready to land:** accept it and [release its landing](references/landing.md),
+  return a repair to its owner, or record the dependency, decision, hold, or
+  earlier landing it waits on and act when that clears.
+
+Provisional work never lands. Its owner keeps the PR body's `## Provisional`
+section until the condition clears and the affected proof is refreshed, and
+Merge stops on it.
+
+Done when every outcome at a stop has a released landing, an open Need for the
+user, its requested PR state, or a repair with its owner.
+
+## 5. Show and continue
+
+Keep the [command center](references/program-state.md#command-center) current
+and host it through [dashboard hosting](references/hosting.md), never inline. It
+shows every outcome once, with its finish line, results and how to open them,
+provisional condition, owner, layers, and what each Need blocks. Results come
+from owners' Shown reports: link what they showed, say what opening it needs,
+and name the gaps. Refresh on meaningful results and decisions, and show
+freshness honestly.
+
+Answers arrive through chat or the host's input tools. Record each under
+[record an answer](references/decisions.md#record-an-answer), then update the
+affected owners, dependencies, and releases before work resumes.
+
+Choose user updates from the owner reports: what the user can now use, try,
 decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
 the record, and answer direct questions in the detail asked.
 
-Refresh on meaningful results and decisions, and show freshness honestly.
+Done when the hosted view matches the record and shows every result and open
+Need.
 
-## Land and finish
+## 6. Settle or resume
 
-Recompute ready work after each accepted result or landing under
-[task graphs](references/task-graphs.md#dependencies).
-
-Owners stop at readiness so acceptance comes before landing. Where the finish
-line includes merging, answer that stop in the same pass: for each ready report,
-or watcher wake showing a delegated owner's PR ready, accept it and move to
-landing, return a repair to the owner, or record the dependency, decision, hold,
-or earlier landing it waits on and act when that clears.
-
-A PR can land in dependency order once it is accepted at its current head and no
-open decision or hold affects it; later PRs need not wait for unrelated ones. A
-stacked PR lands with every unmerged layer below it, so each of those layers must
-meet the same conditions. Where the user decides merges, first put the accepted
-merge set in Needs you, naming its PRs and heads. The units stay accepted, and the
-answer grants that set at those heads.
-
-Name one lander for each merge set and record it:
-
-- **Owner:** for a merge set within one owner's outcome, record a **landing
-  release** from the current chief naming the owner, each PR with its accepted
-  head/base, and any resources dependents still need, then resume that owner
-  with it. The record is authoritative; immediately before submitting a merge,
-  the owner re-reads it to confirm the current chief, active release, and
-  absence of affecting decisions or holds, and matches the forge's head/base to
-  the release. A mismatch returns to you for reconciliation. If the owner cannot
-  act, [transfer ownership](#start-pr-owners) first.
-- **You:** when the set spans several owners, confirm its owners have stopped
-  writing, then land it through [Merge](../merge/SKILL.md) and
-  [gh-stack](../gh-stack/SKILL.md); Merge stops on any PR in the set with an open
-  Provisional section. Invoke Merge as a caller that keeps its own
-  repair owner for the PR, and resume that owner, or
-  [transfer ownership](#start-pr-owners) if it cannot act, for any readiness gap
-  Merge returns before landing.
-
-Keep one pending landing per target branch, including queued merges. After it
-merges or is confirmed stopped, recheck the next set against the current base
-before releasing it. Land overlapping sets one at a time even across targets.
-A parent shared by several units lands once; recheck each dependent after it
-restacks. Coordinate restacks with branch
-owners. Read the tracker's parent/child completion rules
-before closing a rollup, and preserve unfinished and unrelated children.
-Confirm the actual merge and issue state; a PR closed without merge did not land.
-
-Withdraw a release in the record before notifying its owner when its head/base,
-chief, lander, finish line, decision, or hold changes. Reconcile any in-flight
-submission at the forge; a stop also cancels pending automatic or queued landing
-through supported forge controls. Confirm it stopped before assigning another
-lander or releasing the next set. Report anything already merged or whose
-cancellation cannot be confirmed; only the user can lift a human hold.
-
-Finish when every required unit meets the finish line, integrated behavior is
-verified where units interact, and every discovery has a disposition. Keep
-acceptance evidence, tradeoffs, resolved decisions, follow-ups, and remaining gaps in the record,
-with findings in Review Sweep's
+The program is done when every outcome has landed, stopped for the user at a
+shown Try or requested PR state, or is blocked with a recorded need; integrated
+behavior is verified where outcomes interact, or the gap is recorded; and every
+discovery and follow-up has a route. Keep acceptance evidence, tradeoffs,
+resolved decisions, follow-ups, and remaining gaps in the record, with findings
+in Review Sweep's
 [claim, repair, and check states](../review-sweep/references/finding-schema.md).
+
 Lead the handoff with Needs you when action is required, otherwise with the
-usable outcome and its link, and name the decisions you resolved so the user can
-reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md)
-once retained work and active dependents no longer need the resources.
+usable outcomes and their links. Name the decisions you resolved so the user can
+reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
+retained work and active dependents no longer need the resources.
 
 Before pausing or moving, bring the record current. On resume, reconcile it with
-current files, threads, and forge state before dispatching. This skill supplies no background
+current files, threads, and forge state before dispatching. To move the program
+to another thread or take over from a chief that cannot act, follow
+[chief move](references/chief-move.md). This skill supplies no background
 wakeups: native goal tracking, recurring refreshes, and other automation need an
 explicit user request and host support.
-
-## Move the chief
-
-Before acting on a request, direction, event, report, or pasted answer, and
-before each record write, check the record's current chief. A thread that is
-not the chief reads the chief's thread, forwards the item with `t3_thread_send`,
-linking the user's message for requests, directions, and answers, and stops; it
-unwatches its PRs when the chief asks. Act on a user item that arrives through
-`t3_thread_send` only after `t3_thread_read` shows `createdBy: user` on its
-source message.
-
-Only the chief moves the program to a new thread. In one record update it names
-the new chief and each live owner's new return route, which is `t3_thread_send`
-to that chief even for an owner that used to end its turn. It then tells the new
-thread with `t3_thread_send`. Owners keep running.
-
-If the chief's thread cannot act, offer the user a takeover instead of
-forwarding, the one exception to the check above. With approval, repeat until
-the old thread is idle or gone (`thread_not_found`) and a re-read of the record
-names this thread: write this thread as chief with the new return routes,
-interrupt the old thread, and confirm its state with `t3_thread_read`. If it
-will not settle or a call fails another way, stop and tell the user the takeover
-is incomplete.
-
-After a completed move or takeover, the new chief reconciles state as on resume,
-sends owners their route, watches delegated owners' pending PRs, and asks any
-remaining old thread to unwatch.

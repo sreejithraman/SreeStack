@@ -50,7 +50,8 @@ This skill plans. Whoever called it starts the tasks and owns integration.
    Whatever the finish line, a task needs the user before it starts when its outcome is unclear,
    it's destructive, outward-facing, or hard to undo, or the split around it needs their judgment.
    Name the one approval or answer under Inputs on every task it affects, and return it in the
-   list. That approval covers the whole task. Such a task holds up only what it blocks.
+   list. That approval covers the whole task. Such a task holds up only what it blocks. A task
+   waiting only on a decision can still start provisionally under [Ready](#ready).
 
 6. **Publish only when the user asks.** Follow [publish](references/publish.md). Otherwise return
    the list.
@@ -71,3 +72,9 @@ Separate files or worktrees alone don't prove independence.
 A task is ready when its blockers have delivered what it needs, its inputs exist, including any
 user approval, its proof can show the result, and it passes the parallelism test against the tasks
 running beside it. An empty "Blocked by" alone doesn't make a task ready.
+
+**Provisional start:** when an open decision is a task's only missing input and the recommended
+option is reversible, the task is ready to build on that option as a stated assumption. Name the
+assumption and the decision under Inputs. Its acceptance and landing wait for the answer, and
+destructive or outward-facing steps still wait for the user. Tasks that don't depend on the
+decision never wait on it.

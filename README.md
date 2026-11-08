@@ -186,7 +186,7 @@ instructions rather than maintaining another API manual.
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Carry one outcome to its finish line | [implement](skills/implement/SKILL.md), using the relevant platform/domain methods |
-| Coordinate a program of PRs | [chief-of-staff](skills/chief-of-staff/SKILL.md), with one owner session per PR |
+| Carry several outcomes to their finish lines | [chief-of-staff](skills/chief-of-staff/SKILL.md), with one Implement owner per outcome |
 | Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
 | Run bounded parallel work | [swarm](skills/swarm/SKILL.md), returning results to its caller |
 | Delegate and accept results | `orchestration` supplies shared mechanics; `research` owns cited investigations |
@@ -249,16 +249,22 @@ results and resource limits” keeps a correct 300 ms improvement as progress an
 continues toward 200 ms. Work outside the outcome becomes a follow-up with its
 own finish line, or a snip when unrelated.
 
-[Chief of Staff](skills/chief-of-staff/SKILL.md) runs a program of PRs. It maps
-the work to PR units, starts one Implement owner per unit from a kickoff
-template, reads their owner reports, watches pending PRs, and routes discoveries
-and shared blockers. It settles reversible decisions that a recorded source or
-your standing approval already answers, and you can reopen any of them; the rest
-come to you, with judgment calls ahead of quick picks. By default, each owner lands its accepted PR or stack once the
-chief releases it, and the chief lands only sets that span owners. You can ask for a review-ready stack,
-decide each merge yourself, or stop at a plan, local work, or review. Its command center shows Needs you first and
-Work second, rendered from a checked snapshot of the program record; answers
-go back through chat. Existing trackers stay authoritative. A hosting guide can serve the page at a stable
+[Chief of Staff](skills/chief-of-staff/SKILL.md) carries several outcomes to
+their finish lines. Its input is any set of work: a spec, a list in chat, saved
+snips, follow-ups, or existing PRs. It splits the work into outcomes, starts or
+adopts one Implement owner per outcome, starts only ready work, and keeps
+blocked work moving on provisional bases or recommended options that can be
+undone. It reads owner reports, watches pending PRs, and routes discoveries and
+shared blockers. It settles reversible decisions that a recorded source or your
+standing approval already answers, and you can reopen any of them; the rest come
+to you, with judgment calls ahead of quick picks. Each outcome has its own
+**Land**, **Try**, or PR finish line: an owner lands its accepted outcome once
+the chief releases it, the chief lands only sets that span owners, and each
+**Try** waits for your merge, changes, or scrap choice. Its command center shows
+Needs you first and Work second, rendered from a checked snapshot of the program
+record: each outcome with its finish line, results to open, layers, provisional
+state, and what each decision blocks. Answers go back through chat. Existing
+trackers stay authoritative. A hosting guide can serve the page at a stable
 private URL through Show Me and Tailscale Serve. Open pages pick up each new
 snapshot on their own and keep your place; publishing one in the background
 needs explicitly requested host scheduling.
