@@ -34,6 +34,8 @@ needs it. A fresh-session try while working on a skill is not a controlled compa
    any runtime change.
 5. **Run repeats.** Pilot two tasks to check the scoring. Then run each task 3 times per
    variant in fresh sessions with alternating order, and add runs where results vary.
+   `compare.py` runs the whole old suite before the new one instead; report that
+   order as a limit. Repeats and the baseline arm still apply.
 6. **Record each session.** Keep task, variant, skill and fixture hashes, settings,
    versions, the transcript, ordered tool calls, token usage, and elapsed time. Treat
    missing telemetry as a gap, not a zero: `plugin eval` reports no token counts and

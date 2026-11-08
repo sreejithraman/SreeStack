@@ -1257,9 +1257,10 @@ plugins over one copy of the eval cases, always passes `--no-publish`, and stops
 before the new run when the old one is partial. Scoring follows `eval.mjs`'s
 paired comparison with local rules: one declared target, a veto from any failed run
 of a required case, no win on equal results, missing telemetry reported as
-unproven, and no claim of equivalence or significance. It treats a partial run, a missing, failed, or
-skipped run, and results that differ in cases, graders, model, Claude version, or
-ablation as invalid. It drops skill-diet's own harness, its MISS and WORSE pass
+unproven, and no claim of equivalence or significance. It treats a partial run, a missing, failed,
+aborted, or skipped run, and results that differ in cases, case settings, model,
+Claude version, or ablation as invalid. The whole old suite runs before the new
+one. It drops skill-diet's own harness, its MISS and WORSE pass
 rules, regex answer scoring, token sums, and Codex runs; Codex comparisons use
 dry-run trials. `plugin eval` reports no token counts. Paid runs stay out of the
 checks.

@@ -18,6 +18,8 @@ FIXTURES = Path(__file__).parent / "fixtures"
 # the codeword case; the new one fails one of two runs of the file case.
 OLD = json.loads((FIXTURES / "old.json").read_text())
 NEW = json.loads((FIXTURES / "new.json").read_text())
+# The documented shape of a mock abort: the run records it with error null and score 0.
+ABORT = {"server": "fixture", "tool": "lookup", "reason": "expect violation"}
 
 
 def score(old, new, target, *required):
@@ -40,6 +42,26 @@ class DecideTest(unittest.TestCase):
         code, report = score(weaker, NEW, "score", "file")
         self.assertEqual((code, report["decision"]), (1, "rejected"))
         self.assertEqual(score(weaker, NEW, "score", "codeword")[1]["decision"], "win")
+
+    def test_one_failed_run_rejects_a_required_case_that_passes_on_average(self):
+        candidate = copy.deepcopy(NEW)
+        baseline = copy.deepcopy(NEW)
+        for result in (candidate, baseline):
+            result["suite"]["threshold"] = 0.5
+        baseline["aggregates"]["overallScore"] = 0.5
+        file_case = next(case for case in candidate["cases"] if case["name"] == "file")
+        self.assertEqual([run["score"] for run in file_case["arms"]["with"]], [0, 1])
+        self.assertGreaterEqual(file_case["aggregates"]["score"], candidate["suite"]["threshold"])
+        self.assertEqual(score(baseline, candidate, "score")[1]["decision"], "win")
+        code, report = score(baseline, candidate, "score", "file")
+        self.assertEqual((code, report["decision"]), (1, "rejected"))
+
+    def test_an_aborted_run_outside_the_required_cases_cannot_win_on_cost(self):
+        candidate = copy.deepcopy(OLD)
+        run = candidate["cases"][1]["arms"]["with"][0]
+        run.update(aborted=ABORT, costUsd=0.0001, score=0, passed=False)
+        code, report = score(OLD, candidate, "cost_usd", "codeword")
+        self.assertEqual((code, report["decision"]), (2, "invalid"), report)
 
     def test_equal_results_are_no_win_and_never_equivalence(self):
         code, report = score(OLD, OLD, "pass_rate")
@@ -67,6 +89,9 @@ class DecideTest(unittest.TestCase):
             "missing run": lambda r: r["cases"][1]["arms"]["with"].pop(),
             "missing baseline run": lambda r: r["cases"][0]["arms"]["without"].pop(),
             "errored run": lambda r: r["cases"][0]["arms"]["with"][0].update(error="timeout"),
+            "aborted baseline run": lambda r: r["cases"][0]["arms"]["without"][0].update(aborted=ABORT),
+            "other max turns": lambda r: r["cases"][0].update(maxTurns=100),
+            "other timeout": lambda r: r["cases"][0].update(timeoutSeconds=3600),
             "skipped graders": lambda r: r["cases"][0]["arms"]["with"][0].update(skippedPaidGraders=True),
             "missing case": lambda r: r["cases"].pop(),
             "changed grader": lambda r: r["cases"][0]["graders"][0]["config"].update(pattern="X"),

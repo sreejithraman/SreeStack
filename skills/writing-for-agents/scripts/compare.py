@@ -17,9 +17,9 @@ cost per plugin run, judge cost excluded) and turns (mean turns per plugin run).
 
 Prints a JSON decision. Exit 0: the candidate beat the baseline on the target. Exit
 1: no win, which includes equal results, a failed run of a required case, and a
-target without telemetry. Exit 2: invalid evidence, such as a partial run, a missing
-or failed run, skipped paid graders, or results that differ in cases, checks,
-model, Claude version or ablation. No result is a significance test, and no result
+target without telemetry. Exit 2: invalid evidence, such as a partial run, a missing,
+failed or aborted run, skipped paid graders, or results that differ in cases, case
+settings, model, Claude version or ablation. No result is a significance test, and no result
 shows equivalence.
 
 Limits: `claude plugin eval` is experimental and runs only on Claude Code. It
@@ -36,6 +36,7 @@ import sys
 
 PLUGIN_NAME = "skill-under-test"
 OWNED_FLAGS = ("--json", "--output-dir", "--publish-report", "--no-publish")
+CASE_RESULT_FIELDS = ("name", "dir", "source", "arms", "aggregates")
 TARGETS = {"score": "higher", "pass_rate": "higher", "cost_usd": "lower", "turns": "lower"}
 NOTES = [
     "plugin eval reports no token counts",
@@ -64,8 +65,9 @@ def metric(result: dict, target: str) -> float | None:
     return mean_of(result, "turns")
 
 
-def case_shape(case: dict) -> tuple:
-    return case.get("promptMarkdown"), case.get("runsPerCase"), json.dumps(case.get("graders"), sort_keys=True)
+def case_shape(case: dict) -> str:
+    """Every recorded case setting, such as prompt, graders, runs, turns and timeout."""
+    return json.dumps({key: value for key, value in case.items() if key not in CASE_RESULT_FIELDS}, sort_keys=True)
 
 
 def problems(old: dict, new: dict, required: list[str]) -> list[str]:
@@ -87,6 +89,8 @@ def problems(old: dict, new: dict, required: list[str]) -> list[str]:
                 for run in runs:
                     if run.get("error"):
                         found.append(f"{label}: {case['name']} {arm} run failed: {run['error']}")
+                    if run.get("aborted") is not None:
+                        found.append(f"{label}: {case['name']} {arm} run aborted: {run['aborted']}")
                     if run.get("skippedPaidGraders"):
                         found.append(f"{label}: {case['name']} {arm} run skipped paid graders")
     if found:
@@ -100,7 +104,7 @@ def problems(old: dict, new: dict, required: list[str]) -> list[str]:
     new_cases = {case["name"]: case_shape(case) for case in new["cases"]}
     if old_cases.keys() != new_cases.keys():
         found.append(f"case sets differ: {sorted(old_cases)} vs {sorted(new_cases)}")
-    found += [f"{name}: prompt, runs or graders differ" for name in sorted(old_cases.keys() & new_cases.keys())
+    found += [f"{name}: case settings differ" for name in sorted(old_cases.keys() & new_cases.keys())
               if old_cases[name] != new_cases[name]]
     found += [f"required case {name!r} is not in the results" for name in required if name not in new_cases]
     return found
