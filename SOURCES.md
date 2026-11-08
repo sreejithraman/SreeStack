@@ -47,7 +47,8 @@ task-specific personal approval, distinguishing behavioral scope from 1Password
 enforcement. Machine administration is separate from consumer tasks. Replaces
 upstream secret-printing examples with process-local reads and stdin writes.
 Adds shared private environment-file provisioning for local Codex runtimes and,
-through a bundled loader and SessionStart hook, Claude Code, preserving unrelated agent variables, host-specific Touch ID diagnosis, and
+through a bundled loader and SessionStart hook, Claude Code, preserving
+unrelated agent variables, host-specific Touch ID diagnosis, and
 provisioning-source-specific runtime checks. Omits OpenClaw install metadata,
 gateway-specific IPC assumptions, tmux/session-export workflows, `op inject`
 examples, and the Claude in Chrome credential-tool section. API claims link to
