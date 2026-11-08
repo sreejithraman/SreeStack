@@ -5,7 +5,11 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -484,6 +488,39 @@ class CompareTest(unittest.TestCase):
         for cell in (self.root / "runs").glob("*/*/*"):
             self.assertEqual((cell / "work/a-stuck.bin").read_text(), "removed: could not redact\n")
             self.assertEqual((cell / "work/z-later.txt").read_text(), "KEY=[REDACTED]")
+
+    def test_an_interrupted_session_keeps_its_work_redacted_and_stops_the_host(self):
+        started, survivor, out = self.root / "started", self.root / "survivor", self.root / "out"
+        host = (f'echo "$EVAL_TEST_API_KEY"; echo "$EVAL_TEST_API_KEY" > leak.txt; touch {started}; '
+                f'sleep 1; touch {survivor}')
+        program = f"""
+import sys, types
+from pathlib import Path
+sys.path.insert(0, {str(Path(compare.__file__).parent)!r})
+import compare, hosts
+hosts.GRACE_SECONDS = 0.5
+
+class Host:
+    def run(self, *, work, out, **rest):
+        hosts.execute(["sh", "-c", {host!r}], cwd=work, env=None, out=out, timeout=30)
+
+ev = types.SimpleNamespace(adapter=Host(), host={{}})
+compare.run_session(ev, None, "p", Path({str(self.root / "fixtures/repo")!r}), Path({str(out)!r}), "v")
+"""
+        env = {**os.environ, "EVAL_TEST_API_KEY": SENTINEL}
+        runner = subprocess.Popen([sys.executable, "-c", program], env=env, stderr=subprocess.DEVNULL)
+        deadline = time.monotonic() + 10
+        while not started.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        runner.send_signal(signal.SIGINT)
+        runner.wait(timeout=10)
+        time.sleep(1.5)
+        self.assertFalse(survivor.exists())
+        self.assertEqual((out / "work/README").read_text(), "fixture")
+        self.assertEqual((out / "work/leak.txt").read_text(), "[REDACTED]\n")
+        retained = [path for path in out.rglob("*") if path.is_file()]
+        for path in retained:
+            self.assertNotIn(SENTINEL.encode(), path.read_bytes(), path)
 
 
 if __name__ == "__main__":
