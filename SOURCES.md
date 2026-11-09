@@ -742,15 +742,18 @@ automated and needs assertion coverage beyond a successful command. Targeted
 suites preserve required integration gates, reconcile every selected test and
 attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
-protocols, and fresh persisted-output reads. Separates deleted run scratch from
-small kept proof in unique per-run folders under a per-task folder in the XDG
-state directory, keyed by percent-encoded repo and branch names, that lasts until
-the work lands or is abandoned; proof from runs tied to no task stays in session
-scratch. Only a worktree's known sole builder keeps builds in the build system;
-the iOS reference sends every other run's builds, disposable-checkout builds and
-result bundles into run scratch. Build identity is the commit plus the hash of the
-product actually installed or tested. Keeps bounded reproduction attempts,
-outcome counts, authorization, isolation, redaction, run-owned cleanup,
+protocols, and fresh persisted-output reads. Separates run scratch, made with
+`mktemp -d` under `$TMPDIR` and deleted, from small kept proof in unique `mktemp`
+per-run folders under a flat per-task folder in the XDG state directory. The task
+folder is named by a branch slug and a hash of the origin URL (or main checkout
+path) and branch, holds a `task.json` manifest of those inputs, and lasts until the
+work lands or is abandoned; proof from runs tied to no task stays in session
+scratch. Only the sole agent in a checkout, including a child in its own isolated
+worktree, keeps builds in the build system; the iOS reference sends every other
+run's builds, disposable-checkout builds and result bundles into run scratch.
+Build identity is the commit plus the hash of the product installed or tested.
+Keeps bounded reproduction attempts, outcome counts, authorization, isolation,
+redaction, run-owned cleanup,
 and separate defect-reproduction reporting.
 Authenticated workflows reuse designated test accounts and standing scope,
 delegate application sign-in and command/API credential use to `agent-login`,
@@ -776,6 +779,10 @@ Accepts merge completion handoffs from `merge`. Cleanup includes verified
 task-owned development processes, simulator/emulator installs, disposable test
 data, Verify's kept proof, the Xcode DerivedData of removed or missing worktrees, and
 temporary devices created solely for the task.
+It finds Verify's kept-proof task folders by scanning their `task.json` manifests,
+removes one when its PR is merged or closed, its branch is gone locally and on the
+remote with no open PR, or its checkout is gone and it has no origin, and leaves and
+reports one without a readable manifest.
 Reused devices are preserved and shut down only when the task booted them and no
 consumer remains.
 Cleanup reconstructs process, device, and install ownership from available

@@ -10,10 +10,10 @@ Clean up only resources whose owner and disposal reason are established. A merge
 1. **Inventory.** Resolve the repository, worktrees, default and task branches,
    relevant pull requests, and candidate resources. Include review surfaces,
    development apps and their servers/watchers, simulator/emulator devices and
-   installs, slot claims, runtime files, build folders, the task's kept-proof
-   folder, found from the repo and branch by Verify's
-   [naming](../verify/SKILL.md#keep-proof-not-runs), and local or remote refs as
-   applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
+   installs, slot claims, runtime files, build folders, Verify's kept-proof task
+   folders, found by reading each `task.json` under its
+   [kept-proof root](../verify/SKILL.md#keep-proof-not-runs), and local or remote
+   refs as applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
    for apps, processes, simulator/emulator devices, and installs.
    Refresh remote refs before judging branch tips.
    Prefer project cleanup commands over hand-written deletion. For each candidate,
@@ -45,8 +45,12 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and simulator/emulator installs and devices, follow
    [development resource cleanup](references/development-resources.md#clean-up).
    Measure and remove exact task-owned build folders, keeping retained app data.
-   Remove only the finished or abandoned task's own kept-proof folder, and leave
-   the root and other tasks' folders.
+   Remove a kept-proof task folder only when its `task.json` names work that
+   landed or was abandoned: the branch's PR is merged or closed, the branch is
+   gone locally and on the remote with no open PR, or the user explicitly
+   abandoned that work. Also remove one whose `checkout` path is gone and whose
+   `origin` is null. Leave a folder whose `task.json` is missing or unreadable,
+   and report it. Leave the root and every other folder.
    Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
 

@@ -28,9 +28,10 @@ A run leaves two kinds of files. Keep them in separate places from the start.
 
 **Run scratch** is anything you could produce again: plans, helper and rerun scripts,
 per-step snapshots, result bundles, intermediate reruns, and builds no later run
-reuses. Put it in a temporary directory of its own outside the repo, and delete that
-directory when the run ends, pass or fail. Only a worktree's sole builder leaves its
-builds where the build system puts them, for its later runs to reuse;
+reuses. Create its directory with `mktemp -d`, which puts it under `$TMPDIR`, so the
+OS reclaims what a cancelled run leaves. Delete that directory when the run ends, pass
+or fail. Only the sole builder in a checkout leaves its builds where the build system
+puts them, for its later runs to reuse;
 [iOS build output](references/ios.md#build-output) says which runs that covers. Record
 a build by its build identity instead of copying it or its inputs, such as source
 trees and Pods.
@@ -41,28 +42,49 @@ trees and Pods.
 - the captures behind each verdict, visual for a visual claim: screenshots,
   recordings, transcripts, or responses;
 - the log excerpts a verdict or finding cites;
-- build identity: the commit SHA and the hash of the product actually installed or
-  tested, so a build crossed with another run's shows.
+- build identity: the commit SHA and the hash of the product installed or tested.
 
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
 a finding that is still open.
 
 Write each run's kept proof to
-`${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/<repo>/<task>/<run>/`. Encode
-`<repo>` and `<task>` without loss: replace `%` with `%25` first, then `/` with `%2F`.
+`${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/<slug>-<hash>/<run>/`. The
+`<slug>-<hash>` folder is the task folder.
 
-- `<repo>` is the origin remote's `host/owner/name`, such as
-  `github.com%2Facme%2Fseatcommons`. With no origin, it is the main checkout's
-  absolute path.
-- `<task>` is the exact branch name.
-- `<run>` is the UTC time to the second, the short commit SHA, and a random suffix.
-  Create it with `mktemp -d` and a template ending in `XXXXXX`, such as
-  `$HOME/.local/state/verify-proof/github.com%2Facme%2Fseatcommons/feat%2Fseat-map/20261109T141203Z-75e0d1d-Q3x9Lp/`.
+- `<slug>` is the branch name lowercased, with each run of characters other than
+  `a-z` and `0-9` replaced by `-`, cut to 40 characters.
+- `<hash>` is the first 12 hex characters of a SHA-256 over the exact
+  `git remote get-url origin` output, a newline, and the exact branch name. With no
+  origin, use the main checkout's absolute path in place of the URL. The main
+  checkout is the parent of `git rev-parse --path-format=absolute --git-common-dir`.
+
+  ```sh
+  printf '%s\n%s' "$origin" "$branch" | shasum -a 256 | cut -c1-12
+  ```
+
+If the task folder doesn't exist yet, create it with `mkdir -p` and write its
+`task.json` with exactly these fields: `origin`, the exact origin URL or `null`;
+`checkout`, the main checkout's absolute path; `branch`, the exact branch name; and
+`created`, the UTC time. A sample:
+
+```json
+{"origin": "git@github.com:Acme/SeatCommons.git", "checkout": "/Users/me/src/SeatCommons", "branch": "feat/Seat-Map", "created": "2026-11-09T14:12:03Z"}
+```
+
+Create each run folder with `mktemp -d` and a template with no trailing slash, where
+`$task` is the task folder's absolute path:
+
+```sh
+mktemp -d "$task/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
+```
+
+A sample result:
+`$HOME/.local/state/verify-proof/feat-seat-map-68d90e4a806f/20261109T141203Z-75e0d1d-Q3x9Lp`.
 
 Give the run folder's absolute path in your report. The task folder and every run
 folder in it last until the work lands or is abandoned; then
-[Repo Cleanup](../repo-cleanup/SKILL.md) finds the task folder from the repo and
-branch and removes it.
+[Repo Cleanup](../repo-cleanup/SKILL.md) finds the task folder by its `task.json` and
+removes it.
 
 Proof from a run tied to no task branch or PR, such as a reproduction, an audit, or a
 check of `main`, goes in the session scratch directory, or in a temporary directory
