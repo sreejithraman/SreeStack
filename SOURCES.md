@@ -379,16 +379,17 @@ and sequential numbering. Discovery and invocation settings remain unchanged.
   [bro](https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md),
   [teach](https://github.com/cursor/plugins/blob/main/pstack/skills/teach/SKILL.md),
   and [in-your-own-words](https://github.com/cursor/plugins/blob/main/pstack/skills/in-your-own-words/SKILL.md),
-  checked 2026-11-01. Independently written, user-invoked only in both hosts. Technical
-  explanations using "explain it to a PM or junior engineer" as the instruction.
-  Adds brief teaching guidance. No upstream prose copied.
+  checked 2026-11-01. Independently written, user-invoked only in both hosts. No
+  upstream prose copied.
 
 ## eli5
 
 - [anthropics/claude-plugins-community / eli5/skills/eli5](https://github.com/anthropics/claude-plugins-community/tree/f4c9452f5ca091f1be7064d9faab1b001ea21645/eli5/skills/eli5) — commit `f4c9452f5ca091f1be7064d9faab1b001ea21645`.
 
-Aims at a smart adult new to the topic and keeps the logic while simplifying the
-vocabulary. The description lists triggers only.
+Keeps the HTML page of big pictures and few words, and the topic argument. Takes
+its audience and depth from `explain` instead of "someone who knows nothing", and
+shows the page through `show-me` instead of naming an HTML artifact. The
+description lists triggers only.
 
 ## gauntlet-loop
 
