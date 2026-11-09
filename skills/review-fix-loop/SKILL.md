@@ -21,6 +21,9 @@ requirements, and verification evidence with the
 [review brief](../review/references/review-brief.md). Establish its workflow/pass
 identity before dispatch and retain it with the findings through every pass.
 
+For PR work, every pass starts on a clean worktree, and its snapshot is HEAD. The caller
+commits any edits, including Show, Don't Tell's and repairs, before the pass that assesses them.
+
 Select initial discovery from the first matching row, honoring explicit user
 requests:
 
@@ -106,9 +109,6 @@ it needs.
 
 ## 4. Route repairs
 
-For PR work, the caller commits each repair before the check or pass that assesses it, so
-every pass assesses a commit.
-
 Ordinary prose and wording-only fixes use targeted checks. For code or substantive
 instruction fixes, start a new pass that sends each fix to a new task on the original
 reviewer's model for what it changes, under Orchestration's
@@ -122,6 +122,10 @@ no routed fix stay out and keep their valid coverage.
 | Only a simplification, deletion, or reuse | Ponytail |
 | An ownership boundary, guarantee, structure, or types | Thermo, plus Adversarial when it can change failure behavior |
 | Failure-sensitive behavior, or a plausible material consequence still uncertain | Adversarial on the affected contracts |
+
+A new head from a base update or restack of reviewed work is a repair pass too, routed by what
+changed: usually Primary, plus Adversarial when it's failure-sensitive. It is not a new initial
+discovery.
 
 Scope the pass to all changes since the last completed pass and their affected
 behavior, consumers, and dependencies, with the review brief's later-round inputs,
@@ -167,9 +171,11 @@ accepted findings and checks are settled on it, and the final
 code/substantive-instruction pass needs no fixes. Missing required coverage and
 accepted findings block completion.
 
-Record completion on the commit the final pass assessed, because
-[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it. Any
-edit after that pass is a new snapshot. Build this command with that commit's full SHA and a
+When the final snapshot is a commit headed for a PR, record completion on it, because
+[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it. A
+local-diff review with no PR planned finishes with its snapshot evidence; if it later becomes a
+PR, the loop finishes on that commit. Retained coverage finishes only on the SHA it assessed,
+and any other SHA gets a pass. Build this command with the final pass's full SHA and a
 description of at most 140 characters:
 
 ```sh
@@ -178,8 +184,8 @@ gh api repos/<owner>/<repo>/statuses/<reviewed sha> -f state=success \
 ```
 
 Run it once that SHA is on the remote; GitHub rejects a SHA it doesn't have, and a PR isn't
-needed. Until then, hand it off unchanged, and whoever pushes that SHA runs it. A head with
-another SHA needs another run of this loop. When posting fails, such as for a missing
+needed. Until then, hand it off unchanged, and whoever pushes that SHA runs it. When posting
+fails, such as for a missing
 permission or a fork, report it to the user as a blocker; another run won't fix it.
 
 In the Orchestration handoff, map child tasks to workflow/pass, review assignments,

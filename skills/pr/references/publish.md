@@ -9,7 +9,6 @@ work. Keep the feature branch; on the default branch, create
 a parent layer for stacks.
 
 Commit owned edits with a terse subject, and run checks needed by final staging.
-Commit review repairs the same way.
 
 ## Push
 

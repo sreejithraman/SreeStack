@@ -34,7 +34,7 @@ when a result looks wrong.
   rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
   held replies, and read the state again.
 - **No passing review status:** run [Review Fix Loop](../../review-fix-loop/SKILL.md) on the
-  head.
+  head, unless posting its status already failed; then report that blocker.
 - **A missing check:** explain it, including workflows filtered out by a stacked PR's base or
   by draft status.
 - **Behind or conflicted:** read what the new base commits touch, then decide with
