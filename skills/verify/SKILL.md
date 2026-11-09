@@ -47,48 +47,46 @@ trees and Pods.
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
 a finding that is still open.
 
-Write each run's kept proof to
-`${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/<slug>-<hash>/<run>/`. The
-`<slug>-<hash>` folder is the task folder.
-
-- `<slug>` is the branch name lowercased, with each run of characters other than
-  `a-z` and `0-9` replaced by `-`, cut to 40 characters.
-- `<hash>` is the first 12 hex characters of a SHA-256 over the exact
-  `git remote get-url origin` output, a newline, and the exact branch name. With no
-  origin, use the main checkout's absolute path in place of the URL. The main
-  checkout is the parent of `git rev-parse --path-format=absolute --git-common-dir`.
-
-  ```sh
-  printf '%s\n%s' "$origin" "$branch" | shasum -a 256 | cut -c1-12
-  ```
-
-If the task folder doesn't exist yet, create it with `mkdir -p` and write its
-`task.json` with exactly these fields: `origin`, the exact origin URL or `null`;
-`checkout`, the main checkout's absolute path; `branch`, the exact branch name; and
-`created`, the UTC time. A sample:
-
-```json
-{"origin": "git@github.com:Acme/SeatCommons.git", "checkout": "/Users/me/src/SeatCommons", "branch": "feat/Seat-Map", "created": "2026-11-09T14:12:03Z"}
-```
-
-Create each run folder with `mktemp -d` and a template with no trailing slash, where
-`$task` is the task folder's absolute path:
+Write each run's kept proof to a new run folder inside its task folder, under the
+kept-proof root `${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/`:
 
 ```sh
+branch=$(git symbolic-ref --quiet --short HEAD)  # empty if detached: use session scratch
+origin=$(git remote get-url origin 2>/dev/null | sed -E 's#^([^:/]+://)[^/]*@#\1#')
+git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
+slug=$(printf '%s' "$branch" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C tr -cs 'a-z0-9' '-' | cut -c1-40)
+hash=$(printf '%s\n%s' "${origin:-$git_dir}" "$branch" | shasum -a 256 | cut -c1-12)
+task="${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/$slug-$hash"
+mkdir -p "$task"
+# Check or write "$task/task.json" here, before every run folder.
 mktemp -d "$task/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
 ```
 
-A sample result:
-`$HOME/.local/state/verify-proof/feat-seat-map-68d90e4a806f/20261109T141203Z-75e0d1d-Q3x9Lp`.
+The `sed` strips any `user:token@` from the origin, so no credential is hashed or
+stored. `git_dir` is unique to the repo and shared by its worktrees.
+
+Before each run folder, make sure `$task/task.json` is readable and names this run's
+`branch`, plus its `origin`, or its `git_dir` when `origin` is null. If the file is
+missing, write it with exactly `origin` (or `null`), `git_dir`, `branch`, and
+`created`, the UTC time: write a temp file in the task folder, then `mv` it into
+place. If it is unreadable or names another identity, leave it, report it, and put
+this run's proof in session scratch. A sample manifest and run folder:
+
+```json
+{"origin": "git@github.com:Acme/SeatCommons.git", "git_dir": "/Users/me/src/SeatCommons/.git", "branch": "feat/Seat-Map", "created": "2026-11-09T14:12:03Z"}
+```
+
+`$HOME/.local/state/verify-proof/feat-seat-map-68d90e4a806f/20261109T141203Z-75e0d1d-Q3x9Lp`
 
 Give the run folder's absolute path in your report. The task folder and every run
 folder in it last until the work lands or is abandoned; then
 [Repo Cleanup](../repo-cleanup/SKILL.md) finds the task folder by its `task.json` and
 removes it.
 
-Proof from a run tied to no task branch or PR, such as a reproduction, an audit, or a
-check of `main`, goes in the session scratch directory, or in a temporary directory
-when the host has none. It lasts only as long as the session. Say so in your report.
+Proof from a run tied to no task branch or PR, such as a reproduction, an audit, a
+check of `main`, or a detached HEAD, goes in the session scratch directory, or in a
+temporary directory when the host has none. It lasts only as long as the session. Say
+so in your report.
 
 ## Choose what to prove
 

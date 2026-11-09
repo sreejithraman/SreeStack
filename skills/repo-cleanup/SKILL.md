@@ -27,7 +27,8 @@ Clean up only resources whose owner and disposal reason are established. A merge
    affected worktrees. A merged pull request establishes completion only for its
    merge-time source head; a branch tip reachable from its intended base is also complete.
    An explicit request to abandon work establishes abandonment for its identified
-   commits and task-owned staged, unstaged, or untracked changes. Preserve
+   commits and task-owned staged, unstaged, or untracked changes; a closed,
+   unmerged PR leaves its work open. Preserve
    unrelated changes, ignored user data, and anything whose ownership is uncertain.
    For housekeeping, verify completion or abandonment separately for each
    branch or task. Preserve unique commits unless the user explicitly abandoned
@@ -45,12 +46,16 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and simulator/emulator installs and devices, follow
    [development resource cleanup](references/development-resources.md#clean-up).
    Measure and remove exact task-owned build folders, keeping retained app data.
-   Remove a kept-proof task folder only when its `task.json` names work that
-   landed or was abandoned: the branch's PR is merged or closed, the branch is
-   gone locally and on the remote with no open PR, or the user explicitly
-   abandoned that work. Also remove one whose `checkout` path is gone and whose
-   `origin` is null. Leave a folder whose `task.json` is missing or unreadable,
-   and report it. Leave the root and every other folder.
+   Remove a kept-proof task folder when its `task.json` names a branch whose work
+   this cleanup found complete or explicitly abandoned under step 2. Also remove
+   it when a successful remote query and the local refs both lack that branch, and
+   no PR from it is open on the origin repo or its upstream. Judge these only from
+   the repo the `task.json` names: the current repo's origin or `git_dir`,
+   computed as [Verify](../verify/SKILL.md#keep-proof-not-runs) does, matches it.
+   Remove a folder whose `origin` is null and whose `git_dir` no longer exists.
+   Keep and report a folder whose `task.json` is missing or unreadable, or whose
+   check fails or can't run, such as offline or after a `gh` error. Skip folders
+   whose `task.json` names another repo. Leave the root and every other folder.
    Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
 
