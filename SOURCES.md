@@ -1007,8 +1007,6 @@ Reviewer references:
 Imported material remains in read-only assessment references. Review is
 model-agnostic and returns findings and coverage for one supplied snapshot;
 reviewer dispatch, tool execution, fixes, and repeats belong to callers.
-Review sends an agent's own change, meant to be fixed and landed, to Review Fix
-Loop.
 Explicit assignments select criteria while retaining full-scope reading;
 standalone assessment defaults to the existing correctness and code-quality
 criteria, with Adversarial used when requested or assigned. OpenCode harness
