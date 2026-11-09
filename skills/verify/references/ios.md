@@ -39,13 +39,12 @@ Xcode keys its default DerivedData folder by workspace path, so each worktree an
 each disposable checkout gets its own folder, and that folder outlives the checkout.
 
 - Use the checkout's normal DerivedData only when you are its sole builder: the
-  only agent running in that checkout. A delegated child in its own isolated
-  worktree qualifies. A child sharing its parent's checkout doesn't.
-- Every other run passes `-derivedDataPath` inside its
-  [run scratch](../SKILL.md#keep-proof-not-runs), so deleting the run scratch
-  deletes that build. That covers every run that shares its checkout with another
-  agent, any run unsure it is alone, and every build of a disposable checkout such
-  as a red-first base.
+  only agent running in that checkout, such as a delegated child in its own
+  isolated worktree.
+- Every other run, including any run unsure it is alone and every build of a
+  disposable checkout such as a red-first base, passes `-derivedDataPath` inside
+  its [run scratch](../SKILL.md#keep-proof-not-runs), so deleting the run scratch
+  deletes that build.
 - Every test run passes `-resultBundlePath` inside its run scratch.
 
 ## Prepare and run native UI tests

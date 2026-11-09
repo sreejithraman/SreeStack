@@ -742,16 +742,11 @@ automated and needs assertion coverage beyond a successful command. Targeted
 suites preserve required integration gates, reconcile every selected test and
 attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
-protocols, and fresh persisted-output reads. Separates run scratch, made with
-`mktemp -d` under `$TMPDIR` and deleted, from small kept proof in unique `mktemp`
-per-run folders. A task branch in a linked worktree keeps its proof under that
-worktree's private Git directory (`--git-path verify-proof`), so Git never commits
-it and worktree removal deletes it. Every other run, including the main checkout, a
-detached HEAD, an audit, or a reproduction, keeps proof in session scratch for the
-session only. Only the sole agent in a checkout, including a child in its own
-isolated worktree, keeps builds in the build system; the iOS reference sends every
-other run's builds, disposable-checkout builds and result bundles into run scratch.
-Build identity is the commit plus the hash of the product installed or tested.
+protocols, and fresh persisted-output reads. Separates deleted run scratch from
+small kept proof. A linked worktree on a branch keeps that proof in its private Git
+directory, which worktree removal deletes; other runs keep it in session scratch for
+the session. The iOS reference keeps builds in the build system only for a
+checkout's sole agent and sends other builds and result bundles to run scratch.
 Keeps bounded reproduction attempts, outcome counts, authorization, isolation,
 redaction, run-owned cleanup,
 and separate defect-reproduction reporting.

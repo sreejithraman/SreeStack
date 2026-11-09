@@ -47,24 +47,19 @@ trees and Pods.
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
 a finding that is still open.
 
-Write each run's kept proof to a new run folder, and give its absolute path in your
-report. When the run proves a task branch checked out in a linked worktree, put the
-folder in that worktree's private Git directory:
+Write each run's kept proof to a new run folder. In a linked worktree on a branch,
+where `git rev-parse --path-format=absolute --git-dir --git-common-dir` prints two
+different paths and `git symbolic-ref -q HEAD` succeeds, put the folder in that
+worktree's private Git directory:
 
 ```sh
 proof=$(git rev-parse --path-format=absolute --git-path verify-proof)
 mkdir -p "$proof" && mktemp -d "$proof/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
 ```
 
-Git never commits that folder, and removing or pruning the worktree deletes it, so the
-proof lasts exactly as long as the task's worktree. A checkout is a linked worktree on
-a branch when `git rev-parse --path-format=absolute --git-dir --git-common-dir` prints
-two different paths and `git symbolic-ref -q HEAD` succeeds.
-
-Put every other run's folder in the session scratch directory, or in a temporary
-directory when the host has none. That covers the main checkout, a detached HEAD, a
-run outside a repo, an audit, and a reproduction. That proof lasts only as long as the
-session. Say so in your report.
+Git never commits that folder, and removing or pruning the worktree deletes it.
+Otherwise put the folder in the session scratch directory, or in a temporary directory
+when the host has none, and say in your report that it lasts only for the session.
 
 ## Choose what to prove
 
@@ -251,7 +246,7 @@ their disposable data, and delete the run scratch. Leave reused services and sou
 fixtures running. Then open the kept proof to confirm it survived.
 
 Give each workflow and entry point its actions, expected and observed results, and
-the kept proof's path. Give every assertion one verdict:
+the kept proof's absolute path. Give every assertion one verdict:
 
 - `passed`: the observed result matched.
 - `failed`: the observed result differed.
