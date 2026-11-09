@@ -15,6 +15,11 @@ PR_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/pull/(\d+)")
 PROVISIONAL_HEADING = "## Provisional"
 PROVISIONAL_BLOCKER = (f"the body has an open '{PROVISIONAL_HEADING}' section; "
                        "it must not merge until that section is removed")
+REVIEW_CONTEXT = "review-fix-loop"
+REVIEW_MISSING = (f"no '{REVIEW_CONTEXT}' status on this head; run Review Fix Loop on it, "
+                  "or re-post the status after a base update as merge allows")
+REVIEW_PENDING = f"the '{REVIEW_CONTEXT}' status is pending on this head"
+REVIEW_FAILED = f"the '{REVIEW_CONTEXT}' status failed on this head; run Review Fix Loop on it"
 
 # baseRefOid stops at the PR's last sync with its base, so read the branch's live tip instead.
 SUMMARY_QUERY = """
@@ -227,7 +232,8 @@ def read_state(gh, pr):
     """Read until the PR holds still, so every part describes one state of it."""
     for _ in range(READ_ATTEMPTS):
         summary = read_summary(gh, pr)
-        checks = [check_result(node) for node in all_nodes(gh, CHECKS_QUERY, pr, checks_page)]
+        results = [check_result(node) for node in all_nodes(gh, CHECKS_QUERY, pr, checks_page)]
+        checks = [result for result in results if result["name"] != REVIEW_CONTEXT]
         state = {
             "summary": summary,
             "behind_by": commits_behind_base(gh, pr, summary),
@@ -236,6 +242,8 @@ def read_state(gh, pr):
             "comments": all_nodes(gh, COMMENTS_QUERY, pr),
             "reviews": all_nodes(gh, REVIEWS_QUERY, pr),
             "checks": checks,
+            "review": next((result for result in results if result["name"] == REVIEW_CONTEXT),
+                           None),
             "expects_checks": bool(checks) or has_workflows(gh, pr, summary["headRefOid"]),
         }
         if read_summary(gh, pr) == summary:
@@ -263,6 +271,15 @@ def assess_checks(state, blockers, pending, to_settle):
         to_settle.append("no checks reported on this head")
 
 
+def assess_review(review, blockers, pending):
+    if review is None:
+        blockers.append(REVIEW_MISSING)
+    elif review["state"] == "fail":
+        blockers.append(REVIEW_FAILED)
+    elif review["state"] == "pending":
+        pending.append(REVIEW_PENDING)
+
+
 def assess_merge_state(state, blockers, pending):
     summary = state["summary"]
     mergeable, merge_state = summary["mergeable"], summary["mergeStateStatus"]
@@ -274,7 +291,8 @@ def assess_merge_state(state, blockers, pending):
         blockers.append("the branch is behind its base")
     elif merge_state == "BLOCKED" and not (pending or blockers):
         blockers.append("GitHub reports an unmet merge requirement")
-    elif merge_state == "UNSTABLE" and all(check["state"] == "pass" for check in state["checks"]):
+    elif merge_state == "UNSTABLE" and all(
+            check["state"] == "pass" for check in [*state["checks"], state["review"]] if check):
         blockers.append("GitHub reports a failing status that no check here shows; "
                         "read the head and test-merge targets")
 
@@ -293,6 +311,7 @@ def assess(state, expected_head=None):
 
     if state.get("provisional"):
         blockers.append(PROVISIONAL_BLOCKER)
+    assess_review(state["review"], blockers, pending)
     if summary["isDraft"]:
         blockers.append("the PR is a draft")
     if summary["reviewDecision"] == "CHANGES_REQUESTED":

@@ -64,6 +64,11 @@ Ready means `pr_state` reports `ready`, every `to_settle` item has a decision, a
 [feedback handling](../../review-sweep/references/pr-feedback.md#finish) is complete. Report
 any unmet repository requirement.
 
+`pr_state` blocks until the head has a passing `review-fix-loop` status, and waits while it's
+pending. It reports that status under `review`, apart from `checks`.
+[Review Fix Loop](../../review-fix-loop/SKILL.md#6-finish) posts it when it finishes on the head,
+and [Merge](../../merge/SKILL.md) carries it over a base update that doesn't affect the change.
+
 GitHub stops nothing on a repo with no required checks, so `pr_state` then holds every check to
 that bar: a failure blocks, and a head with workflows but no checks waits. One of these still
 counts as ready once Review Sweep dismissed it for this head with evidence, such as the same

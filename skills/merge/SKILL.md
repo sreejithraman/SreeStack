@@ -42,12 +42,15 @@ limits.
    branch, or for a stack layer its parent in the scoped set. A different base is a stop.
 
    Every PR, including docs-only changes, needs review of its current head that includes
-   [Show, Don't Tell](../show-dont-tell/SKILL.md), plus required verification. Reuse matching
-   evidence. A scoped rerun after a repair counts. So does review from before the base moved,
-   once you've read the new base commits and they don't affect the files or behavior this change
-   depends on. If evidence is missing or stale, a caller with its own repair owner gets the gap
-   back. Otherwise run [PR's review step](../pr/SKILL.md#publish), publish any fixes, and go back
-   to step 2.
+   [Show, Don't Tell](../show-dont-tell/SKILL.md), plus required verification. The head's
+   `review-fix-loop` status records that review, and `pr_state` blocks without it.
+   [Review Fix Loop](../review-fix-loop/SKILL.md#6-finish) posts it, including after a scoped
+   rerun for a repair. After a base update or rebase makes a new head, read the new base commits.
+   If they don't affect the files or behavior this change depends on, carry the review over:
+   post the status on the new head with a description such as
+   `carried from <short sha> after base update`. Otherwise the evidence is stale. If evidence is
+   missing or stale, a caller with its own repair owner gets the gap back. Otherwise run
+   [PR's review step](../pr/SKILL.md#publish), publish any fixes, and go back to step 2.
 
    A head you didn't verify holds commits nobody reviewed. Read them, then go back to step 2. It
    counts as verified once the evidence above covers it.

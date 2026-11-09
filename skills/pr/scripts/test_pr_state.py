@@ -30,9 +30,13 @@ def check_run(name="ci", status="COMPLETED", conclusion="SUCCESS", required=True
             "detailsUrl": f"https://ci/{name}", "isRequired": required}
 
 
-def status_context(state="SUCCESS", required=True):
-    return {"__typename": "StatusContext", "context": "legacy", "state": state,
-            "targetUrl": "https://ci/legacy", "isRequired": required}
+def status_context(state="SUCCESS", required=True, context="legacy"):
+    return {"__typename": "StatusContext", "context": context, "state": state,
+            "targetUrl": f"https://ci/{context}", "isRequired": required}
+
+
+def review_status(state="SUCCESS", required=False):
+    return status_context(state, required, context="review-fix-loop")
 
 
 def thread_comment(number=1):
@@ -59,10 +63,11 @@ class FakeGitHub:
     """Answer gh calls by query, returning every page only when asked to paginate."""
 
     def __init__(self, summaries=None, threads=(), comments=(), reviews=(), checks=(check_run(),),
-                 page_size=100, rollup=True, behind_by=0, thread_comments=(), workflows=False):
+                 review=review_status(), page_size=100, behind_by=0, thread_comments=(),
+                 workflows=False):
         self.summaries = list(summaries or [summary()])
         self.threads, self.comments, self.reviews = list(threads), list(comments), list(reviews)
-        self.checks, self.page_size, self.rollup = list(checks), page_size, rollup
+        self.checks, self.page_size = [*checks, *([review] if review else [])], page_size
         self.behind_by, self.thread_comments = behind_by, list(thread_comments)
         self.workflows, self.compared = workflows, []
 
@@ -98,7 +103,7 @@ class FakeGitHub:
             return self.wrap({"page": page} for page in self.pages(self.comments))
         if "reviews(" in query:
             return self.wrap({"page": page} for page in self.pages(self.reviews))
-        rollups = [{"page": page} for page in self.pages(self.checks)] if self.rollup else [None]
+        rollups = [{"page": page} for page in self.pages(self.checks)] if self.checks else [None]
         return self.wrap({"commits": {"nodes": [{"commit": {"statusCheckRollup": rollup}}]}}
                          for rollup in rollups)
 
@@ -199,7 +204,7 @@ class Readiness(unittest.TestCase):
                 self.assertEqual(run(FakeGitHub(checks=checks))[0], 3)
 
     def test_head_with_workflows_waits_for_its_checks(self):
-        code, result = run(FakeGitHub(rollup=False, workflows=True))
+        code, result = run(FakeGitHub(checks=(), workflows=True))
         self.assertEqual((code, result["status"]), (3, "pending"))
         self.assertIn("no checks reported yet", result["pending"][0])
 
@@ -213,7 +218,7 @@ class Readiness(unittest.TestCase):
                               "review requested from a hidden reviewer"]))
 
     def test_no_checks_on_the_head_is_flagged(self):
-        code, result = run(FakeGitHub(rollup=False))
+        code, result = run(FakeGitHub(checks=()))
         self.assertEqual(code, 0)
         self.assertEqual(result["to_settle"], ["no checks reported on this head"])
 
@@ -266,6 +271,51 @@ class Readiness(unittest.TestCase):
                 code, result = run(FakeGitHub(), "--head", other)
                 self.assertEqual(code, 2)
                 self.assertIn("the head moved", result["blockers"][0])
+
+
+class ReviewGate(unittest.TestCase):
+    def test_head_without_the_review_status_blocks(self):
+        """The rollup covers only the last commit, so a status left on an older one is absent."""
+        for checks in ([check_run()], []):
+            with self.subTest(checks=checks):
+                code, result = run(FakeGitHub(checks=checks, review=None))
+                self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_MISSING]))
+
+    def test_passing_review_status_lets_the_head_land(self):
+        code, result = run(FakeGitHub())
+        self.assertEqual((code, result["status"], result["review"]["state"]), (0, "ready", "pass"))
+
+    def test_ci_rules_are_unchanged_beside_a_passing_review_status(self):
+        cases = (([check_run(conclusion="FAILURE")], "required check failed: ci https://ci/ci"),
+                 ([check_run(conclusion="FAILURE", required=False)],
+                  "check failed, and GitHub requires none here: ci https://ci/ci"))
+        for checks, blocker in cases:
+            with self.subTest(blocker=blocker):
+                code, result = run(FakeGitHub(checks=checks))
+                self.assertEqual((code, result["blockers"]), (2, [blocker]))
+
+    def test_closed_and_merged_prs_need_no_review_status(self):
+        merged = summary(state="MERGED", mergeCommit={"oid": "c" * 40})
+        self.assertEqual(run(FakeGitHub([merged], review=None))[1]["status"], "merged")
+        code, result = run(FakeGitHub([summary(state="CLOSED")], review=None))
+        self.assertEqual((code, result["blockers"]), (2, ["the PR is closed"]))
+
+    def test_pending_review_status_waits(self):
+        for merge_state in ("CLEAN", "UNSTABLE"):
+            with self.subTest(merge_state=merge_state):
+                code, result = run(FakeGitHub([summary(mergeStateStatus=merge_state)],
+                                              review=review_status("PENDING")))
+                self.assertEqual((code, result["pending"], result["blockers"]),
+                                 (3, [pr_state.REVIEW_PENDING], []))
+
+    def test_review_status_is_not_a_ci_check(self):
+        for review, blocker in ((review_status("FAILURE"), "status failed"),
+                                (review_status("ERROR", required=True), "status failed")):
+            with self.subTest(review=review):
+                _, result = run(FakeGitHub(checks=[check_run()], review=review))
+                self.assertEqual(len(result["blockers"]), 1)
+                self.assertIn(blocker, result["blockers"][0])
+                self.assertNotIn(pr_state.REVIEW_CONTEXT, json.dumps(result["checks"]))
 
 
 PROVISIONAL_BODY = ("## Summary\nAdds the list.\n\n## Provisional\n"
