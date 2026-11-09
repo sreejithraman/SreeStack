@@ -36,8 +36,8 @@ Keep, for each outcome under its stable ID:
   other outcomes.
 - **Finish line:** the picked line (Land, Try, review-ready PR, or draft PR) and
   why, and the effective line while it is provisional.
-- **Owner:** identity, thread or task IDs and links, start mode (delegated,
-  top-level, or adopted), return route, report path, model, and workspace. An
+- **Owner:** identity, thread or task IDs and links, start mode (top-level,
+  delegated, or adopted), return route, report path, model, and workspace. An
   outcome can be planned without one.
 - **Inputs:** logical dependencies, branch-order constraints, and any blocks
   with what is missing, who can supply it, and what it blocks.

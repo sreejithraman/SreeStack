@@ -16,8 +16,8 @@ Finish line: <Land | Try | review-ready PR | draft PR>, picked because <reason>.
 Landing authority: <absolute link to the record's entry for this outcome's finish line and the program scope>. Land within that scope is the merge request Merge needs, and it takes effect only on the current chief's recorded landing release for your PR or stack.
 Landing: report readiness and end your turn. Land through Merge only on that release. Immediately before submitting, re-read the record: confirm the current chief, your active release, you as its one named lander, and no affecting hold or decision; match the forge's head/base for every PR in the set to the release. Report a mismatch instead of landing. Sets that span several owners are landed by the chief.
 Holds and user gates: <hold, source, release condition, or none>.
-Delegation allowance: you may start the bounded helpers your workflow needs: implementation, verification, and review helpers, and Swarm workers that fit. <Further limits, or none>. Start no new program owners; send work that needs one to the chief.
+Delegation allowance: you may start the bounded helpers your workflow needs as your own subagents: implementation, verification, and review helpers, and Swarm workers that fit. <Further limits, or none>. Start no new program owners; send work that needs one to the chief.
 
 Owner report: write it to <record>/reports/<ID>.md. Send a partial report as soon as you hit a missing prerequisite, a human decision, or a pending PR, naming what continues and the event that resumes the rest.
-Route: <delegated: end your turn with it; the chief thread watches your PR | top-level: send it to the chief thread <link> with t3_thread_send; you watch your PR>.
+Route: <top-level: send it to the chief thread <link> with t3_thread_send; you watch your PR | delegated: end your turn with it; the chief thread watches your PR>.
 Decision requests and shared blockers use the same route as they arise. In each decision request, say what reversing each option would take and cite any recorded source that settles it.

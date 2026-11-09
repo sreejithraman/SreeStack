@@ -54,7 +54,9 @@ evidence, holds, watchers, and helpers. Record any landing it already armed as
 its target's pending landing. Never start a second writer beside it; replace an
 owner only under Orchestration's
 [replace an owner](../orchestration/references/reuse-and-recovery.md#replace-an-owner),
-after reconciling.
+after reconciling. When the stopped owner's worktree still holds its branch,
+reuse that worktree through the host (in T3, `existing_worktree`) once it is
+clean and holds no unique commits, or start the replacement on a new branch.
 
 Pick each outcome's finish line from Implement's
 [table](../implement/SKILL.md#2-state-the-finish-line-and-prepare) and state the
@@ -88,15 +90,19 @@ holds up unrelated ones.
 
 For each ready outcome, fill the [owner kickoff](assets/owner-kickoff.md) and
 start an owner with it, writing `$implement` in place of `/implement` for a
-Codex owner. Implement picks the method. Use
-[Orchestration](../orchestration/SKILL.md) for model choice, delegation,
-isolation, and concurrency. Independent branches get separate host-managed
-worktrees; in T3, worktree-isolated delegation runs an owner in a child thread.
-Start top-level threads only when the user asks for new sessions, and bind their
-workspace through the host. Give each branch one writer, and serialize stack
-operations and shared resources. Record each owner, its route, and its report
-path. Owners get bounded helpers through the kickoff; only you start program
-owners.
+Codex owner. Implement picks the method and runs its helpers as its own
+subagents.
+
+Running a chief of staff is a request for sessions: start each owner as its own
+top-level session, so the user can open and steer it. Bind its workspace through
+the host, never in the shell: in T3, `t3_thread_launch` with a `worktree`
+`workspaceStrategy` for the owner's branch. When the host cannot launch
+top-level sessions, as in a plain Claude Code or Codex session, start a
+delegated owner in its own host-managed worktree instead. Use
+[Orchestration](../orchestration/SKILL.md) for model choice and concurrency.
+Give each branch one writer, and serialize stack operations and shared
+resources. Record each owner with its start mode, route, and report path. Only
+you start program owners.
 
 Each owner checks its access and proof before work runs unattended, under
 Implement's [prepare](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
@@ -159,8 +165,17 @@ when a base changes, under [integration](references/dependencies.md#integration)
 Recompute ready work after each accepted result, landing, answer, or dependency
 change, and start what became ready.
 
-For delegated owners, this thread is the watching parent under PR's
-[wait](../pr/references/watch.md#wait); a top-level owner watches its own PR.
+A top-level owner watches its own PR and sends its reports, decision requests,
+and blockers to this thread with `t3_thread_send`. It gives you no completion
+wake-up, so after you start or message one, and before you end a turn with
+owners outstanding, wait on each outstanding owner's run through the host (in
+T3, `t3_thread_wait`, following its `next`). When a run ends, read the owner's
+thread. Handle a sent report or request as usual. Reconcile a run that failed,
+was interrupted, or went idle without a report or pending-PR partial: recover
+it under Orchestration's
+[recover work](../orchestration/references/reuse-and-recovery.md#recover-work),
+or record the outcome blocked with what is missing. For a delegated owner, this
+thread is the watching parent under PR's [wait](../pr/references/watch.md#wait).
 Keep watching pending PRs while you ask the user something.
 
 Done when every report, direction, and discovery has a disposition and newly

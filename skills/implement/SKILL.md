@@ -7,10 +7,9 @@ description: Use when asked to implement a spec, ticket, task, or feature, to de
 
 Carry one outcome to its finish line. Start from a brief, spec, task, ticket, or
 clear request. Leave merged work for **Land**, something to try for **Try**, and
-an owner report for your caller: the session that started you, or the user in a
-top-level thread. You
-are done when the finish line's gates pass, the user can open what you showed,
-and the report is delivered.
+an owner report for your caller: the session that started you, or the user when
+they started you. You are done when the finish line's gates pass, the user can
+open what you showed, and the report is delivered.
 
 You own the outcome, the finish line, the order of handoffs, integration, scope,
 and the report. Each linked skill owns its own procedure. Helpers return to you.
