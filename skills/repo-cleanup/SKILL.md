@@ -10,7 +10,8 @@ Clean up only resources whose owner and disposal reason are established. A merge
 1. **Inventory.** Resolve the repository, worktrees, default and task branches,
    relevant pull requests, and candidate resources. Include review surfaces,
    development apps and their servers/watchers, simulator/emulator devices and
-   installs, slot claims, runtime files, build folders, and local or remote refs
+   installs, slot claims, runtime files, build folders, Verify's
+   [kept proof](../verify/SKILL.md#keep-proof-not-runs), and local or remote refs
    as applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
    for apps, processes, simulator/emulator devices, and installs.
    Refresh remote refs before judging branch tips.
@@ -92,4 +93,4 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and recovery details such as recorded branch heads or reflogs. State partial
    cleanup plainly.
 
-An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including development processes, simulator/emulator installs, disposable test data, and temporary devices created for the task, in that scope. It does not authorize unrelated or uncertain targets.
+An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including development processes, simulator/emulator installs, disposable test data, kept verification proof, and temporary devices created for the task, in that scope. It does not authorize unrelated or uncertain targets.

@@ -19,9 +19,32 @@ It owns its prerequisites, verdicts, and repo writes. The steps below apply to p
 claims. A model doesn't replace them, and ordinary workflows need no new model. Look for
 existing formal checks by function, not by name.
 
-Keep plans, scripts, and evidence in the session scratch directory. Verify writes no
-docs in any repo, including a repo's verification map. If the user asks to create or
-change a map, follow [verification maps](../setup-sreestack/references/verification-map.md).
+Verify writes no docs in any repo, including a repo's verification map. If the user
+asks to create or change a map, follow [verification maps](../setup-sreestack/references/verification-map.md).
+
+## Keep proof, not runs
+
+A run leaves two kinds of files. Keep them in separate places from the start.
+
+**Run scratch** is anything you could produce again: plans, helper and rerun scripts,
+per-step snapshots, result bundles, and intermediate reruns. Put it in a temporary
+directory of its own outside the repo, and delete that directory when the run ends,
+pass or fail. Leave builds and DerivedData where the build system puts them, so later
+runs reuse them. Name a build by commit SHA plus artifact hash instead of copying the
+build or its inputs, such as source trees and Pods.
+
+**Kept proof** is what a reader needs to trust the verdicts:
+
+- the verdict table;
+- the captures behind each verdict: screenshots, recordings, transcripts, or responses;
+- the log excerpts a verdict or finding cites;
+- build identity: commit SHA plus artifact hash.
+
+For repeated attempts, keep the outcome counts, plus captures only for failures behind
+a finding that is still open. Put kept proof in the host's session scratch directory,
+or in a task folder under the OS temp directory when the host has none, and give its
+absolute path in your report. Owner reports and chiefs read it until the work lands
+or is abandoned. [Repo Cleanup](../repo-cleanup/SKILL.md) removes it then.
 
 ## Choose what to prove
 
@@ -92,8 +115,9 @@ options in the repo and the environment. Follow
 who drives an interface and with which model. The driver reports what it saw, and you
 keep the verdicts.
 
-Prefer a script you can rerun over steps by hand. Put repeatable setup, driving, and
-evidence capture in it, and give the rerun command in your report.
+Prefer a script in run scratch over steps by hand. Put repeatable setup, driving, and
+capture in it. When the same check runs again on a later commit, offer to turn it into
+a committed test or a verification-map recipe.
 
 **Run a read-only doctor before you drive.** Run the map's doctor if it has one, then
 check whatever it doesn't cover, without changing state:
@@ -158,14 +182,15 @@ target exists, and take them from current state.
 dependencies. Before running them, connect each assertion to a real check, and confirm
 the target, fixtures, filters, optional checks, and retries. Afterward, reconcile every
 selected test with its result: actual skips, unmet preconditions, and unfinished tests.
-Count a duplicate test once for coverage and keep every attempt's outcome. Exercise
+Count a duplicate test once for coverage and record every attempt's outcome. Exercise
 uncovered assertions yourself. A green command, zero tests, partial results, or a passing
 rerun can't establish a pass. Keep required broader gates, and report any you didn't run.
 
 **When something doesn't change:** Record it before you retry. Retry once, only when
-evidence shows the target moved or the interface hadn't settled, and record the retry as
-its own attempt. A repeated failure is evidence. After a stuck interface or a surprising
-result, check instance health and restore known state, even if the process looks fine.
+evidence shows the target moved or the interface hadn't settled, and record the retry's
+outcome as its own attempt. A repeated failure is evidence. After a stuck interface or a
+surprising result, check instance health and restore known state, even if the process
+looks fine.
 
 **Intermittent reports:** Choose the attempt count before you start, and use it on both
 sides. Use about 3 divided by the failure rate, so about 30 attempts for 1 in 10. Restore
@@ -201,15 +226,14 @@ or another revision's results don't show that. State the limits of the compariso
 
 ## Clean up and report
 
-Keep failed attempts and the screenshots, snapshots, logs, transcripts, or responses
-behind each verdict. Visual claims need visual captures.
+Visual claims need visual captures in the [kept proof](#keep-proof-not-runs).
 
-Stop only the processes and sessions this run started, and remove their disposable data,
-after success or failure. Leave reused services and source fixtures running. Then open
-the kept evidence to confirm it survived.
+After success or failure, stop only the processes and sessions this run started, remove
+their disposable data, and delete the run scratch. Leave reused services and source
+fixtures running. Then open the kept proof to confirm it survived.
 
 Give each workflow and entry point its actions, expected and observed results, and
-evidence location. Give every assertion one verdict:
+the kept proof's path. Give every assertion one verdict:
 
 - `passed`: the observed result matched.
 - `failed`: the observed result differed.

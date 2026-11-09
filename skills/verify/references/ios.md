@@ -51,8 +51,9 @@ delivery path from [authenticated verification](authenticated-verification.md).
 Map selected test methods to required workflow assertions. Inspect test-plan
 configurations, selection filters, disabled tests, skips, expected failures, and
 retries. Reconcile the tests actually executed with the selected assertions under
-Verify's main procedure. Retain the runner's exit status and result bundle,
-including screenshots, attachments, logs, and every attempt needed for the verdict.
+Verify's main procedure. Record the runner's exit status. Export the screenshots,
+attachments, and log excerpts a verdict cites from the result bundle into
+[kept proof](../SKILL.md#keep-proof-not-runs); the bundle itself is run scratch.
 
 Pair public UI actions with explicit outcome assertions. Prefer accessibility
 identifiers and meaningful labels. Wait for observable states with bounded
@@ -103,8 +104,9 @@ hardware is unavailable, report the device-specific assertions as blocked.
 
 ## Evidence
 
-Record the command and toolchain, scheme/test plan, build and target identity,
-fixture state, selected tests, per-assertion outcomes, and artifact locations.
+Record the command and toolchain, scheme/test plan, build identity as commit SHA
+plus app hash, target identity, fixture state, selected tests, and per-assertion
+outcomes in [kept proof](../SKILL.md#keep-proof-not-runs).
 Capture the workflow states needed to support visual claims. Use
 [interface review](interface-review.md) for relevant visual, Dynamic Type,
 keyboard, focus, touch-target, and assistive-technology checks. Exercise VoiceOver

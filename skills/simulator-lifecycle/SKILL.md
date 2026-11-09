@@ -19,6 +19,14 @@ Apply the [run ownership guard](references/workflow.md#choose-the-route-before-a
 before following reuse, release or cancellation advice: a shared requester may
 belong to a sibling run.
 
+Check the machine before you acquire or boot any device, or start a device build or
+test run. Read free space with `df -h ~` and the 1-minute load average with `uptime`,
+and compare the load with the CPU count (`sysctl -n hw.logicalcpu` or `nproc`). Less
+than 10% free space, or a load above twice the CPU count, is critical. Then hold the
+device work, continue independent work, and recheck when that runs out. If it is
+still critical, report both numbers as the blocker. Free space only through
+[Repo Cleanup](../repo-cleanup/SKILL.md)'s ownership checks.
+
 In T3, acquisition and interactive control must follow its documented route to
 the same SimLock lease; an ordinary panel session is not proof of that lease.
 Before acquiring, read [run and handoff conventions](references/workflow.md) for
