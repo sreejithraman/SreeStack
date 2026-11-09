@@ -15,6 +15,12 @@ from render_dashboard import icon, render, revision, url, validate
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
 EXAMPLE = SCRIPT.parents[1] / "assets" / "example-state.json"
+# Page tests reshape rows freely, so they carry a record that references none.
+BARE_RECORD = {"chief": "Chief thread", "request": {"text": "Carry the example program."}, "next": "Wait for owner reports."}
+
+
+def page_state():
+    return json.loads(EXAMPLE.read_text()) | {"record": copy.deepcopy(BARE_RECORD)}
 
 
 class Elements(HTMLParser):
@@ -83,7 +89,7 @@ def card_html(html, identity):
 
 class DashboardTests(unittest.TestCase):
     def setUp(self):
-        self.state = json.loads(EXAMPLE.read_text())
+        self.state = page_state()
 
     def work(self, identity, state=None):
         return next(row for row in (state or self.state)['work'] if row['id'] == identity)
@@ -267,17 +273,31 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("Nothing needs you in this snapshot", html)
         self.assertIn("No work recorded in this snapshot", html)
 
-    def test_cli_renders_and_rejects_input_overwrite(self):
+    def test_check_passes_a_valid_file_and_fails_an_invalid_one_without_writing(self):
         with tempfile.TemporaryDirectory() as directory:
-            source, output = Path(directory) / "state.json", Path(directory) / "dashboard.html"
+            source = Path(directory) / "program.json"
             source.write_text(json.dumps(self.state))
-            command = [sys.executable, str(SCRIPT), "--state", str(source), "--output"]
-            good = subprocess.run([*command, str(output)], capture_output=True, text=True)
+            command = [sys.executable, str(SCRIPT), "--state", str(source), "--check"]
+            good = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(good.returncode, 0, good.stderr)
-            self.assertTrue(output.read_text().startswith("<!doctype html>"))
-            bad = subprocess.run([*command, str(source)], capture_output=True, text=True)
+            self.work("W1")["state"] = "finished"
+            source.write_text(json.dumps(self.state))
+            bad = subprocess.run(command, capture_output=True, text=True)
             self.assertNotEqual(bad.returncode, 0)
-            self.assertEqual(json.loads(source.read_text()), self.state)
+            self.assertIn("work[W1].state must be one of", bad.stderr)
+            source.write_text("{not json")
+            self.assertNotEqual(subprocess.run(command, capture_output=True, text=True).returncode, 0)
+            self.assertEqual([path.name for path in Path(directory).iterdir()], ["program.json"])
+
+    def test_error_banner_leads_the_page_escaped_and_changes_its_version(self):
+        plain = render(self.state)
+        flagged = render(self.state, error="record.next must be <b>nonempty</b>")
+        main = flagged.split("<main>")[1]
+        self.assertTrue(main.startswith('<p class="state-error" role="alert">'))
+        self.assertIn("Showing the last good state.", text_of(flagged))
+        self.assertIn("&lt;b&gt;nonempty&lt;/b&gt;", main)
+        self.assertNotIn('class="state-error"', plain)
+        self.assertNotEqual(self.versions(self.state)[0], re.search(r'data-snapshot="(\w{64})"', flagged).group(1))
 
     def test_choice_prompts_preserve_context_and_escape_untrusted_values(self):
         self.need("W6-D1")['options'][0]['label'] = 'Keep "entry" <safe>'
@@ -995,6 +1015,76 @@ class DashboardTests(unittest.TestCase):
         layer = self.work('W5')['layers'][0]
         layer['url'] = 'https://github.com/o/a/pull/50'
         self.assertInvalid(self.state, 'a local layer has no url')
+
+
+class RecordTests(unittest.TestCase):
+    """The record holds what the page never shows, in one file with the page's state."""
+
+    def setUp(self):
+        self.state = json.loads(EXAMPLE.read_text())
+        self.record = self.state["record"]
+
+    def assertInvalid(self, message):
+        with self.assertRaisesRegex(ValueError, message):
+            validate(self.state)
+
+    def test_example_record_validates_and_never_reaches_the_page(self):
+        html = render(self.state)
+        for value in (self.record["next"], self.record["owners"]["W1"]["workspace"], self.record["hosting"]["stop"]):
+            self.assertNotIn(value, html)
+
+    def test_record_only_writes_keep_the_page_version(self):
+        before = re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1)
+        self.record["next"] = "Something else entirely."
+        self.record["waits"] = []
+        self.assertEqual(re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1), before)
+
+    def test_record_and_its_required_fields_are_present(self):
+        record = self.state.pop("record")
+        self.assertInvalid("record must be an object")
+        self.state["record"] = record
+        for key in ("chief", "next"):
+            with self.subTest(key=key):
+                value = record.pop(key)
+                self.assertInvalid(f"record.{key} must be a nonempty string")
+                record[key] = value
+        del record["request"]["text"]
+        self.assertInvalid("record.request.text")
+
+    def test_per_work_entries_name_existing_rows(self):
+        self.record["owners"]["W9"] = dict(self.record["owners"]["W1"])
+        self.assertInvalid("record.owners names missing work W9")
+        del self.record["owners"]["W9"]
+        self.record["owners"]["W1"]["start"] = "spawned"
+        self.assertInvalid(r"record.owners\[W1\].start must be one of")
+        self.record["owners"]["W1"]["start"] = "top-level"
+        self.record["landings"][0]["work"] = ["W9"]
+        self.assertInvalid(r"record.landings\[L1\].work names missing work W9")
+
+    def test_a_decision_with_a_need_leaves_the_question_and_disposition_to_it(self):
+        decision = next(row for row in self.record["decisions"] if row["id"] == "W5-D2")
+        decision["question"] = "Which component should render export history?"
+        self.assertInvalid(r"record.decisions\[W5-D2\].question: the Need W5-D2 holds it")
+        del decision["question"]
+        self.state["needs"] = [row for row in self.state["needs"] if row["id"] != "W5-D2"]
+        self.assertInvalid(r"record.decisions\[W5-D2\].question must be a nonempty string")
+
+    def test_entries_need_dates_and_sources(self):
+        self.record["corrections"][0]["date"] = "yesterday"
+        self.assertInvalid(r"record.corrections\[0\].date must be an ISO timestamp")
+        self.record["corrections"][0]["date"] = "2026-02-30"
+        self.assertInvalid("must be a date")
+        self.record["corrections"][0]["date"] = "2026-11-02T08:00:00Z"
+        validate(self.state)
+        del self.record["approvals"][0]["source"]
+        self.assertInvalid(r"record.approvals\[0\].source")
+
+    def test_landings_record_each_pr_head_and_base(self):
+        landing = self.record["landings"][0]
+        del landing["prs"][0]["head"]
+        self.assertInvalid(r"record.landings\[L1\].prs\[0\].head")
+        landing["prs"] = []
+        self.assertInvalid("needs its work and PRs")
 
 
 if __name__ == "__main__":

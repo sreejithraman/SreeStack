@@ -1,12 +1,14 @@
-"""Drive the hosted command center in headless Chrome against a static file server.
+"""Drive the hosted command center in headless Chrome.
 
 Chrome's debugging pipe needs no client package. A clock installed before the
 page's script runs its timers on demand; everything else is the real page,
 browser, and network. Without a usable Chrome the tests skip locally and fail in CI.
 """
 
+import contextlib
 import copy
 import functools
+import io
 import http.server
 import json
 import os
@@ -21,9 +23,10 @@ import unittest
 from urllib.parse import urlsplit
 
 from render_dashboard import render
+from serve_dashboard import DashboardServer
+from test_render_dashboard import page_state
 
 
-EXAMPLE = Path(__file__).parents[1] / "assets" / "example-state.json"
 CHECK_INTERVAL = 20_000
 DESKTOP = (1280, 800)
 PHONE = (390, 844)
@@ -272,7 +275,7 @@ class Page:
 
 
 class Host(http.server.ThreadingHTTPServer):
-    """The documented hosting: a static file server over a folder whose index.html is replaced atomically."""
+    """A scriptable stand-in for the dashboard server: faults, stale navigations, and template changes."""
 
     def __init__(self, folder):
         self.page_requests = 0
@@ -377,7 +380,7 @@ def tearDownModule():
 
 class CommandCenterCase(unittest.TestCase):
     def setUp(self):
-        self.state = json.loads(EXAMPLE.read_text())
+        self.state = page_state()
         self.folder = tempfile.TemporaryDirectory()
         public = Path(self.folder.name) / "public"
         public.mkdir()
@@ -530,6 +533,41 @@ class PublicationTests(CommandCenterCase):
 
 
 EVIDENCE = "#toggle-evidence-" + "W1".encode().hex()
+
+
+class ServedPageTests(CommandCenterCase):
+    """The open page against serve_dashboard.py, where writing program.json is the whole publish."""
+
+    def setUp(self):
+        self.state = page_state()
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.program = Path(folder.name) / "program.json"
+        self.write(self.state)
+        self.host = DashboardServer(self.program)
+        self.addCleanup(self.host.server_close)
+        threading.Thread(target=self.host.serve_forever, args=(.01,), daemon=True).start()
+        self.addCleanup(self.host.shutdown)
+
+    def write(self, state):
+        staging = self.program.with_name(".program.json.tmp")
+        staging.write_text(json.dumps(state))
+        os.replace(staging, self.program)
+
+    def test_open_page_follows_each_write_and_flags_a_bad_one_until_it_is_fixed(self):
+        page = self.open_page()
+        self.write(self.changed(lambda state: state.update(title="Written once")))
+        page.advance(CHECK_INTERVAL + 500)
+        self.assertIn("Written once", page.text())
+        self.program.write_text("{broken")
+        with contextlib.redirect_stderr(io.StringIO()):
+            page.advance(CHECK_INTERVAL)
+        self.assertIn("Showing the last good state.", page.text())
+        self.assertIn("Written once", page.text())
+        self.write(self.changed(lambda state: state.update(title="Written again")))
+        page.advance(CHECK_INTERVAL)
+        self.assertIn("Written again", page.text())
+        self.assertNotIn("Showing the last good state.", page.text())
 
 
 class ViewTests(CommandCenterCase):

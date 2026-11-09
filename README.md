@@ -272,13 +272,12 @@ to you, with judgment calls ahead of quick picks. Each outcome has its own
 **Land**, **Try**, or PR finish line: an owner lands its accepted outcome once
 the chief releases it, the chief lands only sets that span owners, and each
 **Try** waits for your merge, changes, or scrap choice. Its command center shows
-Needs you first and Work second, rendered from a checked snapshot of the program
-record: each outcome with its finish line, results to open, layers, provisional
-state, and what each decision blocks. Answers go back through chat. Existing
-trackers stay authoritative. A hosting guide can serve the page at a stable
-private URL through Show Me and Tailscale Serve. Open pages pick up each new
-snapshot on their own and keep your place; publishing one in the background
-needs explicitly requested host scheduling.
+Needs you first and Work second, rendered from the program record's one checked
+file on every request: each outcome with its finish line, results to open,
+layers, provisional state, and what each decision blocks. Answers go back
+through chat. Existing trackers stay authoritative. A small loopback server
+serves the page at a stable private URL through Show Me and Tailscale Serve.
+Open pages pick up each change on their own and keep your place.
 
 [Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
 “Swarm these three possible causes and return evidence” partitions the question

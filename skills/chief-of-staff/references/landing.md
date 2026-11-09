@@ -22,8 +22,9 @@ set at those heads.
 Record exactly one lander for each merge set.
 
 - **The owner,** for a set within its own outcome. Record a **landing release**
-  from the current chief naming the owner, each PR with its accepted head and
-  base, and any resources dependents still need, then resume the owner with it.
+  in `record.landings` from the current chief, naming the owner, each PR with
+  its accepted head and base, and any resources dependents still need, then
+  resume the owner with it.
   The record is authoritative. Immediately before submitting a merge, the owner
   re-reads it to confirm the current chief, its active release, itself as the
   one lander, and no affecting decision or hold, and matches the forge's head

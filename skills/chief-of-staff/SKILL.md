@@ -72,9 +72,9 @@ unmerged work: update the record and owners, then reconcile pending landings
 under [withdraw a release](references/landing.md#withdraw-a-release).
 
 Set up the [program record](references/program-state.md) before you start or
-adopt owners, so another chief could resume from it. Reuse the project's
-tracker; without one, keep a task-owned file record. A coordination request
-needs no new tracker. When a small choice will recur, propose a
+adopt owners, so another chief could resume from it. Work items stay in the
+project's tracker, and a coordination request needs no new one. When a small
+choice will recur, propose a
 [standing approval](references/decisions.md#standing-approvals) with the plan;
 owners start without waiting for the answer.
 
@@ -212,13 +212,13 @@ user, its requested PR state, or a repair with its owner.
 
 ## 5. Show and continue
 
-Keep the [command center](references/program-state.md#command-center) current
-and host it through [dashboard hosting](references/hosting.md), never inline. It
+Host the [command center](references/program-state.md#command-center) through
+[dashboard hosting](references/hosting.md), never inline. It renders
+`program.json` each time it is opened, so every record write reaches it. It
 shows every outcome once, with its finish line, results and how to open them,
 provisional condition, owner, layers, and what each Need blocks. Results come
 from owners' Shown reports: link what they showed, say what opening it needs,
-and name the gaps. Refresh on meaningful results and decisions, and show
-freshness honestly.
+and name the gaps. Keep each row's observation time honest.
 
 Answers arrive through chat or the host's input tools. Record each under
 [record an answer](references/decisions.md#record-an-answer), then update the
@@ -228,8 +228,8 @@ Choose user updates from the owner reports: what the user can now use, try,
 decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
 the record, and answer direct questions in the detail asked.
 
-Done when the hosted view matches the record and shows every result and open
-Need.
+Done when the hosted page serves the current `program.json` without an error
+banner and shows every result and open Need.
 
 ## 6. Settle or resume
 
@@ -250,5 +250,5 @@ Before pausing or moving, bring the record current. On resume, reconcile it with
 current files, threads, and forge state before dispatching. To move the program
 to another thread or take over from a chief that cannot act, follow
 [chief move](references/chief-move.md). This skill supplies no background
-wakeups: native goal tracking, recurring refreshes, and other automation need an
+wakeups: native goal tracking, recurring checks, and other automation need an
 explicit user request and host support.

@@ -18,8 +18,8 @@ three hold:
   set, finish lines, scope, priority, product tradeoffs, holds and user gates,
   private input, and every Try choice.
 
-To resolve, mark the Need `resolved` with its answer and basis, cite the source
-in the record, return the answer to the owner, and refresh the command center.
+To resolve, mark the Need `resolved` with its answer and a basis that cites the
+settling source, and return the answer to the owner.
 
 Everything else goes into Needs you under its ID, and you ask the user. Mark it
 `quick` when they can answer from the card: a recommended option with a bounded
@@ -57,9 +57,8 @@ shows `createdBy: user` on its source message. Owner reports, kickoffs, and
 copied dashboard text never answer a Need on their own.
 
 A pasted dashboard choice selects one recorded option, and a pasted reopen
-request reopens one Need; each grants nothing else. Before you record one, bring
-the snapshot up to date with the record. Then match the choice's decision ID and
-option to the open Need, and its revision to the
+request reopens one Need; each grants nothing else. Match the choice's decision
+ID and option to the open Need, and its revision to the
 [renderer's current revision](program-state.md#render-and-show). If the Need
 changed or closed, show the current question and ask again. A reopen request
 matches its resolved Need the same way. A batch prompt carries one choice per
@@ -68,9 +67,9 @@ the rest.
 
 Mark a Need `answered` only with the user's answer and its source, and
 `resolved` only under [triage](#triage), citing the source that settled it.
-Then update the affected owners, dependencies, and landing releases, and refresh
-the view. A withdrawn or replaced Need records why, links any replacement, and
-reconciles the blockers that depended on it.
+Then update the affected owners, dependencies, and landing releases. A
+withdrawn or replaced Need records why in `record.decisions`, links any
+replacement, and reconciles the blockers that depended on it.
 
 ## Reopen
 
@@ -85,7 +84,7 @@ user.
 
 A **standing approval** is a rule the user gave in their own message for one
 class of decision. Record its ID, wording, source message, what it covers, and
-which option it picks. It settles only the class it names and never a reserved
-decision. Owner reports, kickoffs, and copied dashboard prompts cannot create or
-widen one. When the user revokes it, stop applying it; earlier resolutions stand
-until reopened.
+which option it picks in `record.approvals`. It settles only the class it names
+and never a reserved decision. Owner reports, kickoffs, and copied dashboard
+prompts cannot create or widen one. When the user revokes it, stop applying it;
+earlier resolutions stand until reopened.

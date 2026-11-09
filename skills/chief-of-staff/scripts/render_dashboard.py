@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a checked program snapshot as a command center."""
+"""Check a program state file and render its command center."""
 
 import argparse
 from datetime import datetime
@@ -28,6 +28,10 @@ LAYER_STATES = {
 }
 PHASES = ("start", "access", "proof", "acceptance", "landing")
 HALTING = {"start", "access", "proof"}  # The others let building continue.
+DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
+ENTRY = ("date", "source", "text")
+START_MODES = ("top-level", "delegated", "adopted")
+LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
 
@@ -45,6 +49,17 @@ def timestamp(value, path):
         datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         raise ValueError(f"{path} must be an ISO timestamp with a timezone, such as 2026-11-02T17:00:00Z") from None
+
+
+def date(value, path):
+    if isinstance(value, str) and DAY.fullmatch(value):
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"{path} must be a date, such as 2026-11-02") from None
+    else:
+        timestamp(value, path)
+    return value
 
 
 def url(value, path):
@@ -76,6 +91,24 @@ def links(value, path):
     for index, item in enumerate(records(value, path)):
         text(item.get("label"), f"{path}[{index}].label")
         url(item.get("url"), f"{path}[{index}].url")
+
+
+def obj(value, path):
+    if not isinstance(value, dict):
+        raise ValueError(f"{path} must be an object")
+    return value
+
+
+def fields(row, path, required=(), optional=()):
+    for key in (*required, *(key for key in optional if key in row)):
+        (date if key == "date" else text)(row.get(key), f"{path}.{key}")
+    return row
+
+
+def unique_ids(rows, path):
+    ids = [text(row.get("id"), f"{path}[{index}].id") for index, row in enumerate(rows)]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"{path} contains duplicate IDs")
 
 
 def one_of(value, choices, path):
@@ -329,9 +362,7 @@ def validate(state):
     needs = records(state.get("needs"), "needs")
     revisits = records(state.get("revisits", []), "revisits")
     for name, rows in (("work", work), ("needs", needs), ("revisits", revisits)):
-        ids = [text(row.get("id"), f"{name}[{i}].id") for i, row in enumerate(rows)]
-        if len(ids) != len(set(ids)):
-            raise ValueError(f"{name} contains duplicate IDs")
+        unique_ids(rows, name)
     by_id = {row["id"]: row for row in work}
     layers = {}
     for row in work:
@@ -344,7 +375,82 @@ def validate(state):
             text(row.get(key), f"revisits[{row['id']}].{key}")
         if "source" in row:
             text(row["source"], f"revisits[{row['id']}].source")
+    validate_record(state.get("record"), by_id, {row["id"] for row in needs})
     return state
+
+
+def per_work(value, path, by_id):
+    for identity, row in obj(value, path).items():
+        if identity not in by_id:
+            raise ValueError(f"{path} names missing work {identity}")
+        yield f"{path}[{identity}]", obj(row, f"{path}[{identity}]")
+
+
+def known_work(identities, path, by_id):
+    for identity in strings(identities, path):
+        if identity not in by_id:
+            raise ValueError(f"{path} names missing work {identity}")
+
+
+def validate_record(record, by_id, need_ids):
+    """The record holds what the page does not show; check its shape and its links to the page's rows."""
+    record = obj(record, "record")
+    fields(record, "record", ("chief", "next"))
+    request = fields(obj(record.get("request"), "record.request"), "record.request", ("text",))
+    strings(request.get("sources", []), "record.request.sources")
+    for name, required, optional in (
+        ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
+        ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
+        ("waits", ("date", "on", "event"), ("work", "watcher")),
+        ("discoveries", ("date", "origin", "text", "route"), ()),
+    ):
+        for index, row in enumerate(records(record.get(name, []), f"record.{name}")):
+            fields(row, f"record.{name}[{index}]", required, optional)
+            if "work" in row and row["work"] not in by_id:
+                raise ValueError(f"record.{name}[{index}].work names missing work {row['work']}")
+    unique_ids(record.get("approvals", []), "record.approvals")
+    if "landingAuthority" in record:
+        fields(obj(record["landingAuthority"], "record.landingAuthority"), "record.landingAuthority", ENTRY)
+
+    for path, row in per_work(record.get("outcomes", {}), "record.outcomes", by_id):
+        fields(row, path, (), ("scope", "why", "acceptance"))
+        strings(row.get("sources", []), f"{path}.sources")
+    for path, row in per_work(record.get("owners", {}), "record.owners", by_id):
+        fields(row, path, ("route", "report"), ("model", "workspace", "resources"))
+        one_of(row.get("start"), START_MODES, f"{path}.start")
+        for key in ("tasks", "handled"):
+            strings(row.get(key, []), f"{path}.{key}")
+
+    landings = records(record.get("landings", []), "record.landings")
+    unique_ids(landings, "record.landings")
+    for row in landings:
+        path = f"record.landings[{row['id']}]"
+        fields(row, path, ("date", "chief", "lander", "target"), ("keep", "note"))
+        one_of(row.get("state"), LANDING_STATES, f"{path}.state")
+        if not row.get("work") or not row.get("prs"):
+            raise ValueError(f"{path} needs its work and PRs")
+        known_work(row["work"], f"{path}.work", by_id)
+        for index, pr in enumerate(records(row["prs"], f"{path}.prs")):
+            url(pr.get("url"), f"{path}.prs[{index}].url")
+            fields(pr, f"{path}.prs[{index}]", ("head", "base"))
+
+    decisions = records(record.get("decisions", []), "record.decisions")
+    unique_ids(decisions, "record.decisions")
+    for row in decisions:
+        path = f"record.decisions[{row['id']}]"
+        fields(row, path, ("date", "source"), ("owner", "rationale"))
+        if row["id"] in need_ids:
+            for key in ("question", "affects", "disposition"):
+                if key in row:
+                    raise ValueError(f"{path}.{key}: the Need {row['id']} holds it")
+        else:
+            fields(row, path, ("question", "disposition"))
+            strings(row.get("affects", []), f"{path}.affects")
+
+    if "hosting" in record:
+        hosting = obj(record["hosting"], "record.hosting")
+        url(hosting.get("url"), "record.hosting.url")
+        fields(hosting, "record.hosting", (), ("server", "serve", "stop", "access"))
 
 
 STAGE_ORDER = ("planned", "building", "shown", "in-review", "landed", "done", "unknown", "scrapped")
@@ -725,7 +831,8 @@ def overview(work):
     )
 
 
-def render(state):
+def render(state, error=None):
+    """Render the page; error adds a banner saying the page shows this older state."""
     validate(state)
     open_needs = [row for row in state["needs"] if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
@@ -751,7 +858,11 @@ def render(state):
         facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(state["finishLine"])}</span></p>'
     facts += f'<p class="fact">{icon("snapshot")}<span><span class="fact-label">Snapshot</span> {when(state["updatedAt"], age=True)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
-    content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
+    content = ""
+    if error:
+        content += (f'<p class="state-error" role="alert">{icon("blocked")}<span><strong>Showing the last good state.</strong> '
+                    f'The program file failed to load: {e(error)}</span></p>')
+    content += f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
@@ -770,27 +881,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--output", type=Path)
+    action.add_argument("--check", action="store_true", help="Validate the state and render it in memory; write nothing")
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
     args = parser.parse_args()
-    if args.revision is not None:
-        try:
-            state = validate(json.loads(args.state.read_text()))
-            print(revision(next(row for row in state["needs"] if row["id"] == args.revision)))
-        except StopIteration:
-            parser.error(f"no decision {args.revision}")
-        except (OSError, ValueError) as error:
-            parser.error(str(error))
-        return
-    if args.state.resolve() == args.output.resolve():
-        parser.error("--output must differ from --state")
     try:
-        result = render(json.loads(args.state.read_text()))
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(result)
+        state = json.loads(args.state.read_text())
+        if args.check:
+            render(state)
+            print(f"{args.state}: valid")
+            return
+        validate(state)
+        print(revision(next(row for row in state["needs"] if row["id"] == args.revision)))
+    except StopIteration:
+        parser.error(f"no decision {args.revision}")
     except (OSError, ValueError) as error:
         parser.error(str(error))
-    print(args.output.resolve())
 
 
 if __name__ == "__main__":

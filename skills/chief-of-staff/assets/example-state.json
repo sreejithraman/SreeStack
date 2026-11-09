@@ -341,5 +341,145 @@
       "revisit": "If support needs per-attempt logs, add an attempt number.",
       "source": "W0-D1"
     }
-  ]
+  ],
+  "record": {
+    "chief": "Chief thread (example)",
+    "request": {
+      "text": "Make exports dependable, then let people see and regenerate their export history.",
+      "sources": [
+        "EXP-100",
+        "EXP-101",
+        "EXP-102",
+        "EXP-103",
+        "Chat message 2026-11-01"
+      ]
+    },
+    "corrections": [
+      {
+        "date": "2026-11-01",
+        "source": "Chat message 2026-11-01",
+        "text": "Export history is a **Try**: show it before anything merges."
+      }
+    ],
+    "requirements": [
+      {
+        "date": "2026-11-01",
+        "source": "EXP-101",
+        "text": "A retried export never emails the same file twice."
+      }
+    ],
+    "approvals": [
+      {
+        "id": "SA-1",
+        "date": "2026-11-01",
+        "source": "Chat message 2026-11-01",
+        "text": "Pick the existing component when a new view could reuse one.",
+        "covers": "Component reuse for new views",
+        "picks": "The existing component"
+      }
+    ],
+    "directions": [
+      {
+        "date": "2026-11-01",
+        "source": "Chat message 2026-11-01",
+        "text": "Hold W6's landing until the support team reviews link expiry.",
+        "until": "Support confirms the expiry copy"
+      }
+    ],
+    "landingAuthority": {
+      "date": "2026-11-01",
+      "source": "Chat message 2026-11-01",
+      "text": "Land covers W0, W1, W2, and W6 in example/exports. Required checks and review stay the gate."
+    },
+    "landings": [
+      {
+        "id": "L1",
+        "date": "2026-11-02",
+        "chief": "Chief thread (example)",
+        "lander": "Idempotency owner",
+        "target": "main",
+        "work": [
+          "W0"
+        ],
+        "prs": [
+          {
+            "url": "https://example.com/exports/pull/39",
+            "head": "4f2a91c",
+            "base": "9be03d1"
+          }
+        ],
+        "state": "landed"
+      }
+    ],
+    "outcomes": {
+      "W1": {
+        "sources": [
+          "Chat message 2026-11-01"
+        ],
+        "scope": "Covers `jobs/retry.py` and its queue wiring. Proof: an interrupted export resumes once. Leaves export history to W5.",
+        "why": "Land: a contained repair the user asked to ship.",
+        "acceptance": "Retry proof passed at the current head; burst timing untested."
+      }
+    },
+    "owners": {
+      "W1": {
+        "start": "top-level",
+        "route": "`t3_thread_send` to the chief",
+        "report": "reports/W1.md",
+        "model": "Example model",
+        "workspace": "Worktree on `retry-export`"
+      },
+      "W5": {
+        "start": "top-level",
+        "route": "`t3_thread_send` to the chief",
+        "report": "reports/W5.md",
+        "resources": "History preview server on port 8105; stop with `kill` on its recorded PID."
+      }
+    },
+    "waits": [
+      {
+        "date": "2026-11-02T16:50:00Z",
+        "work": "W1",
+        "on": "PR 44 checks",
+        "event": "Required checks finish",
+        "watcher": "Retry owner"
+      }
+    ],
+    "decisions": [
+      {
+        "id": "W5-D2",
+        "date": "2026-11-02",
+        "source": "History owner report",
+        "owner": "History owner",
+        "rationale": "SA-1 settles it; switching components later costs one file."
+      },
+      {
+        "id": "W2-D1",
+        "date": "2026-11-02",
+        "source": "API owner report",
+        "owner": "API owner",
+        "question": "Paginate history by cursor or by page?",
+        "affects": [
+          "W2"
+        ],
+        "disposition": "Withdrawn: the endpoint returns at most 50 rows."
+      }
+    ],
+    "discoveries": [
+      {
+        "date": "2026-11-02",
+        "origin": "W2",
+        "text": "Export filenames repeat across time zones.",
+        "route": "Saved as snip EX-7"
+      }
+    ],
+    "hosting": {
+      "url": "https://example-host.example.ts.net:8443/",
+      "server": "`serve_dashboard.py` PID 4242 on 127.0.0.1:58665, started 2026-11-02T09:00:00Z",
+      "serve": "`tailscale serve --bg --https=8443 http://127.0.0.1:58665`",
+      "stop": "`tailscale serve --https=8443 off`, then `kill -TERM 4242` after checking its start time and arguments",
+      "access": "Tailnet devices only; checked from this machine"
+    },
+    "next": "Release W1's landing once PR 44 is ready."
+  }
 }

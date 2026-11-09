@@ -1,67 +1,94 @@
 # Program record and command center
 
 Specs, tickets, snips, PRs, and user decisions stay where the project already
-keeps them. The **program record** links those sources and adds coordination
-state. The **command center** is a rendered snapshot of that record, not a second
-tracker.
+keeps them. The **program record** is one file, `program.json`, that links those
+sources and holds the program's coordination state. Its top-level fields are
+what the **command center** shows; its `record` object holds everything the page
+never shows. Each fact has one home in it.
 
 ## Program record
 
-Reuse an established record, or choose a task-owned directory that the chief and
-its owners can read and that survives worktree cleanup. Put its absolute path in
-the chief's handoff and every owner kickoff. It needs no wiki or committed state
-file.
+Keep `program.json` and a `reports/` folder in a task-owned directory that the
+chief and its owners can read and that survives worktree cleanup. Adopt an
+existing program's file rather than starting another. Put its absolute path in
+the chief's handoff and every owner kickoff.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
-current chief alone writes the rest of the record and the snapshot. Before each
-write, confirm the record still names this thread as chief; otherwise follow
+current chief alone writes `program.json`. Before each write, confirm
+`record.chief` still names this thread; otherwise follow
 [chief move](chief-move.md).
 
-Keep, for the program:
+### Write the record
 
-- The goal, original request and message sources, accepted corrections,
-  preserved requirements, the agreed scope that Land's authority covers, and
-  holds with their source and release condition.
-- Standing approvals, accepted tradeoffs with what would prompt revisiting them,
-  and decision requests with their dispositions.
-- Discoveries with origin and destination, and support work with the owners it
-  affects.
-- The current chief thread, the snapshot state and HTML paths, hosting details,
-  and the next useful action.
+Record each owner report, answer, direction, and decision in one write, before
+you reply or move on:
 
-Keep, for each outcome under its stable ID:
+1. Write the whole new state to `.program.json.tmp` beside `program.json`, with
+   `updatedAt` set to the time of this write.
+2. Check it from this skill's folder, and fix every error it reports:
 
-- **Sources:** the ticket, snip, PR, or message IDs it came from.
-- **Scope:** the result, the code it covers, its proof, and what it leaves to
-  other outcomes.
-- **Finish line:** the picked line (Land, Try, review-ready PR, or draft PR) and
-  why, and the effective line while it is provisional.
-- **Owner:** identity, thread or task IDs and links, start mode (top-level,
-  delegated, or adopted), return route, report path, model, and workspace. An
-  outcome can be planned without one.
-- **Inputs:** logical dependencies, branch-order constraints, and any blocks
-  with what is missing, who can supply it, and what it blocks.
-- **Provisional:** the branch, PR, or assumption it rests on, the decision or
-  landing that clears it, and what may continue meanwhile.
-- **Layers:** each PR, branch, or local artifact, with its link, head, base,
-  and stack parent.
-- **Results:** what the owner showed and how to open it, with what that needs.
-- **Waits:** pending PRs, live helpers and watchers, and the events they await.
-- **Landing:** the merge set, its one lander, target branch, pending submission
-  or queue state, and the landing release (issuing chief, lander, accepted
-  head/base per PR, resources dependents still need, active or withdrawn).
-- **Disposition:** acceptance evidence, the delivery state, and any stop for the
-  user.
+   ```bash
+   python3 scripts/render_dashboard.py --state /absolute/path/.program.json.tmp --check
+   ```
 
-Date decisions and cite their sources. Code claims name the repository and
-revision they describe. Keep superseded reasoning when it explains a tradeoff,
-and recheck current facts at their source before acting on them.
+3. `mv` it over `program.json`.
 
-Each decision request keeps its ID, originating owner and message, exact
-question, affected outcomes with the phase each one blocks, and disposition
-under Orchestration's [decision requests](../../orchestration/SKILL.md#return).
-[Decisions](decisions.md) say when a Need is answered, resolved, reopened, or
-withdrawn.
+The hosted page shows the new state on its next request.
+
+### Where each fact goes
+
+For the program:
+
+| Fact | Field |
+| --- | --- |
+| The goal | `goal` |
+| A program-wide finish-line note, such as who decides merges | `finishLine` |
+| The original request and its message sources | `record.request` |
+| Accepted corrections | `record.corrections` |
+| Preserved requirements | `record.requirements` |
+| The agreed scope that Land's authority covers, and its gates | `record.landingAuthority` |
+| Standing directions, and holds with the condition that releases each | `record.directions`, a hold's release in `until` |
+| Standing approvals | `record.approvals` |
+| Accepted tradeoffs, with what would prompt revisiting them | `revisits` |
+| A decision request's question, options, blocked outcomes and phases, status, answer, and basis | `needs` |
+| A decision request's date, originating owner and message, and reasoning, including superseded reasoning | `record.decisions`, under the Need's ID |
+| A decision with no Need in the file, such as a withdrawn one or a chief call on the plan | `record.decisions`, with its `question`, `affects`, and `disposition` |
+| A discovery that became work | That row's `origin` and `description` |
+| Any other discovery, with its origin and route | `record.discoveries` |
+| Support work, and the outcomes it unblocks | A `support` row, named in their `blockedBy` or `blocked` |
+| The current chief thread | `record.chief` |
+| Hosting | `record.hosting` |
+| The next useful action | `record.next` |
+
+For each outcome, under its stable ID:
+
+| Fact | Field |
+| --- | --- |
+| Ticket sources | `tickets` |
+| Snip and message sources | `record.outcomes[ID].sources` |
+| The result it delivers | `description` |
+| The code it covers, its proof, and what it leaves to other outcomes | `record.outcomes[ID].scope` |
+| The picked and effective finish lines | `finishLine`, `effectiveFinishLine` |
+| Why that finish line | `record.outcomes[ID].why` |
+| The owner's name and session link | `owner`, `sessionUrl` |
+| The owner's task IDs, start mode, return route, report path, model, workspace, servers with their stop actions, and handled follow-up messages | `record.owners[ID]` |
+| Logical dependencies | `blockedBy` |
+| Branch order | Each layer's `stackedOn` |
+| Another block, with what is missing and who can supply it | `blocked`, or a Need's `blocks` |
+| What it rests on provisionally, what clears it, and what continues meanwhile | `provisional`, or the Need's `meanwhile` |
+| Each PR, branch, or local artifact, with link, head, base, and stack parent | `layers` |
+| What the owner showed and what opening it needs | `results` |
+| Pending PRs, live helpers and watchers, and the events they await | `record.waits` |
+| The merge set, lander, target branch, accepted head and base per PR, submission or queue state, resources dependents still need, and the release state | `record.landings` |
+| Acceptance evidence links | `evidence` |
+| Blocked or untested assertions in its proof | `record.outcomes[ID].acceptance` |
+| The delivery state | `state` |
+| A stop for the user | An open Need |
+
+Date entries and cite their sources. Code claims name the repository and
+revision they describe. Recheck current facts at their source before acting on
+them. [Decisions](decisions.md) say when a Need is answered, resolved, reopened,
+or withdrawn.
 
 ### Owner reports
 
@@ -70,22 +97,22 @@ fields; ask no other format. Record, from each:
 
 | Report field | Record it under |
 | --- | --- |
-| Outcome and finish line | The outcome's finish line and delivery state |
-| Layers | Layers, after checking each head and base at the forge |
-| Proof | Acceptance evidence, with every blocked or untested assertion kept visible |
-| Shown | Results, with access limits, servers, and stop actions |
-| Waits | Waits, and which pending PRs this thread watches |
-| Decisions | Needs, with the phase each blocks, and provisional assumptions |
-| Follow-ups | Discoveries, each with its disposition |
-| Sources | Handled follow-up messages, so none is answered twice |
+| Outcome and finish line | `finishLine` and `state` |
+| Layers | `layers`, after checking each head and base at the forge |
+| Proof | `evidence`, and every blocked or untested assertion in `record.outcomes[ID].acceptance` |
+| Shown | `results` with access limits; servers and stop actions in `record.owners[ID].resources` |
+| Waits | `record.waits`, naming the pending PRs this thread watches |
+| Decisions | `needs` with the phase each blocks, `record.decisions`, and `provisional` assumptions |
+| Follow-ups | A work row or `record.discoveries`, each with its disposition |
+| Sources | `record.owners[ID].handled`, so no message is answered twice |
 
-Also record task IDs an owner returns when it resumes.
+Also record task IDs an owner returns when it resumes in `record.owners[ID].tasks`.
 
 ## Command center
 
-Before each refresh, read the relevant owner reports, user direction, tickets,
+Before each write, read the relevant owner reports, user direction, tickets,
 and live forge state. Each work row carries the time its state was last
-observed, separate from the snapshot's assembly time. Keep an unchecked row's
+observed, separate from the file's `updatedAt`. Keep an unchecked row's
 old observation time; use `unknown` with `unknownReason` when its state cannot be
 read.
 
@@ -133,26 +160,27 @@ continue, so a shown Try waiting for its choice or a provisional build carries
 an open Need without being blocked. Put what continues meanwhile in
 `meanwhile`.
 
-Every snapshot carries all open and resolved Needs, so each resolved one stays
+The file carries all open and resolved Needs, so each resolved one stays
 reopenable; answered ones may remain. Omit a withdrawn or superseded Need only
 after recording its disposition. If work lands while a Need about it is open,
 keep the landed row and point the Need's `blocks` at a follow-up row for any
 change the answer requires.
 
-### Snapshot format
+### File format
 
-The renderer reads one JSON object. Fields without `?` are required. Times are
+`program.json` is one JSON object. Fields without `?` are required. Times are
 ISO timestamps with a timezone, such as `2026-11-02T17:00:00Z`. Omit absent
 optional fields rather than sending empty strings. IDs are unique within each
 collection, and layer IDs are unique across the program.
 
 ```ts
 type Link = { label: string; url: string };
-type Snapshot = {
+type ProgramState = Snapshot & { record: ProgramRecord };
+type Snapshot = { // what the page shows
   title: string;
   goal: string;
   finishLine?: string; // a program-wide note, such as who decides merges
-  updatedAt: string; // snapshot assembly time
+  updatedAt: string; // the time of the last write
   demo?: boolean;   // true only for an illustrative example
   needs: Need[];
   work: Work[];
@@ -204,16 +232,56 @@ type Revisit = {
   id: string; title: string; tradeoff: string; revisit: string;
   source?: string; // decision ID or source reference
 };
+
+// What the page never shows. Dates are YYYY-MM-DD or timestamps; prose is markdown.
+type Entry = { date: string; source: string; text: string };
+type ProgramRecord = {
+  chief: string; // the current chief thread
+  request: { text: string; sources?: string[] };
+  corrections?: Entry[];
+  requirements?: Entry[];
+  approvals?: (Entry & { id: string; covers: string; picks: string })[];
+  directions?: (Entry & { until?: string })[]; // until: what releases a hold
+  landingAuthority?: Entry;
+  landings?: Landing[];
+  outcomes?: { [workId: string]: { sources?: string[]; scope?: string; why?: string; acceptance?: string } };
+  owners?: { [workId: string]: Owner };
+  waits?: { date: string; on: string; event: string; work?: string; watcher?: string }[];
+  decisions?: Decision[];
+  discoveries?: { date: string; origin: string; text: string; route: string }[];
+  hosting?: { url: string; server?: string; serve?: string; stop?: string; access?: string };
+  next: string;
+};
+type Owner = {
+  start: "top-level" | "delegated" | "adopted"; route: string; report: string;
+  tasks?: string[]; model?: string; workspace?: string;
+  resources?: string; // servers, ports, and databases, with their stop actions
+  handled?: string[]; // follow-up messages already handled
+};
+type Landing = {
+  id: string; date: string; chief: string; lander: string; target: string;
+  work: string[]; prs: { url: string; head: string; base: string }[];
+  state: "released" | "submitted" | "landed" | "withdrawn";
+  keep?: string; // resources dependents still need
+  note?: string; // such as why it was withdrawn
+};
+type Decision = {
+  id: string; date: string; source: string; owner?: string; rationale?: string;
+  question?: string; affects?: string[]; disposition?: string; // only when no Need has this ID
+};
 ```
 
-The renderer rejects a snapshot that claims more than the record supports:
+The renderer rejects a file whose page claims more than the record supports:
 provisional work that merged, keeps Land, or claims ready on any finish line; a
 Try finish line with a published PR; a shown Try with nothing to open; a ready
 outcome with a layer short of its finish line; a landed outcome with an unmerged
 layer; active work with no owner; a layer on another owner's unmerged layer
 without a provisional mark; active work on a dead base, or a live layer on a
 closed one, without a halting Need; a `start` Need on work that started; and
-dangling or cyclic edges, including work blocked by itself.
+dangling or cyclic edges, including work blocked by itself. In `record`, it
+checks each field's shape, that per-outcome entries, waits, and landings name
+existing rows, and that a decision whose Need is in the file leaves the
+question, affects, and disposition to that Need.
 
 Write each `description` from the outcome's scope, not its title or the owner's
 next step. Store returned T3 thread links verbatim and use only real ticket, PR,
@@ -221,16 +289,12 @@ result, and artifact links.
 
 ### Render and show
 
-From this skill's folder, with Python 3 and no third-party packages:
-
-```bash
-python3 scripts/render_dashboard.py --state /absolute/path/program.json --output /absolute/path/command-center.html
-```
-
-The renderer validates the snapshot, escapes content, and writes standalone
-HTML stamped with a digest of the page, which open pages compare to spot a new
-publication. It makes no tracker, forge, or session changes. The
-[example snapshot](../assets/example-state.json) uses fictional work.
+The scripts need Python 3 and no third-party packages. `--check` (under
+[write the record](#write-the-record)) and the
+[dashboard server](hosting.md) render with the same code: it validates the file,
+escapes content, and stamps the page with a digest that open pages compare to
+spot a change. It makes no tracker, forge, or session changes. The
+[example file](../assets/example-state.json) uses fictional work.
 
 Each copied choice or reopen request names its decision's revision, a digest of
 the whole Need. Two or more open quick picks add a batch prompt that takes every
@@ -240,5 +304,5 @@ recommendation. Print a Need's current revision with:
 python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>
 ```
 
-Deliver the page through [dashboard hosting](hosting.md). Do not render it
-inline in T3 or another chat surface.
+Deliver the page through [dashboard hosting](hosting.md), never inline in T3 or
+another chat surface.
