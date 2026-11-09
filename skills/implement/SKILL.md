@@ -168,9 +168,9 @@ reported as a gap, and the user can open what you showed.
   keep: go to Merge, which runs review, opens the PR, and lands it. Changes go
   back to stage 3. Scrap goes to [Repo Cleanup](../repo-cleanup/SKILL.md).
 - **PR:** PR runs review, publishes, and watches to the requested state.
-- **Land:** go to Merge; a stack lands bottom-up as one merge set. Until hard
-  gates exist, Merge's requirements are the gate: review of the current head,
-  required checks, and passing proof. Land is done when GitHub reports every PR
+- **Land:** go to Merge; a stack lands bottom-up as one merge set. Merge's
+  requirements are the gate: review of the current head, which `pr_state`
+  enforces, required checks, and passing proof. Land is done when GitHub reports every PR
   merged and the result is shown. A closed PR did not land.
 
 Provisional work never merges: Land becomes Try, and a requested draft or

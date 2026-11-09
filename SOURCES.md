@@ -517,8 +517,10 @@ History-changing operations use the shared PR preservation reference to back up
 retained local files affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
-publication does not substitute for that link. Layers get `pr`’s review step before
+publication does not substitute for that link. Layers get `pr`’s Prepare and Review steps before
 `submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
+Each layer runs its held `review-fix-loop` status command unchanged once its SHA is pushed;
+after a restack, the loop reruns for that layer as a repair pass.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
 on request, to match `pr`. Branch deletion after a merge goes through `repo-cleanup`
@@ -1068,10 +1070,12 @@ other nonignored untracked source.
 - [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
 The local name and UI are `pr`, with automatic discovery. It owns PR text, publication, and
-watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing reuses
-matching review evidence, and runs `show-dont-tell` then the review loop when there is none.
+watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing runs `show-dont-tell`, commits, then runs the review
+loop on that commit and pushes after it; earlier review counts only for the same commit.
 `scripts/pr_state.py` reads one head's checks, threads, comments, and reviews through every page,
 replacing hand-read readiness with `blockers`, `pending`, and `to_settle`.
+It also gates on the head's `review-fix-loop` commit status context, kept apart from CI
+checks, including a same-named check run: anything but success blocks.
 The body guide uses Summary/Evidence/Merge Danger by default, defers to project
 PR templates, and preserves local why/effect/root-cause/stack facts. It expands
 visual selection to algorithm, runtime, UI, file, interaction, diff, and complete

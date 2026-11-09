@@ -33,6 +33,10 @@ when a result looks wrong.
   fixes something, check that review evidence covers the change. If it's missing or stale,
   rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
   held replies, and read the state again.
+- **No passing review status:** take the head through PR's
+  [Prepare and Review steps](../SKILL.md#publish), unless posting its status already failed;
+  then report that blocker. A new head of reviewed work is a
+  [repair pass](../../review-fix-loop/SKILL.md#4-route-repairs).
 - **A missing check:** explain it, including workflows filtered out by a stacked PR's base or
   by draft status.
 - **Behind or conflicted:** read what the new base commits touch, then decide with
@@ -63,6 +67,9 @@ the gap. Keep polling, sleep loops, `gh --watch`, and scheduled duplicates out o
 Ready means `pr_state` reports `ready`, every `to_settle` item has a decision, and
 [feedback handling](../../review-sweep/references/pr-feedback.md#finish) is complete. Report
 any unmet repository requirement.
+
+`pr_state` blocks until the head has a passing `review-fix-loop` commit status. It reports that
+status under `review_status`, apart from `checks`.
 
 GitHub stops nothing on a repo with no required checks, so `pr_state` then holds every check to
 that bar: a failure blocks, and a head with workflows but no checks waits. One of these still

@@ -24,17 +24,20 @@ remote description. Writing text commits and pushes nothing.
 
 ## Publish
 
-Watching an existing PR starts at step 3.
+Watching an existing PR starts at step 4.
 
-1. **Get it reviewed.** Reuse review evidence that matches the complete diff against the
-   immediate base and included [Show, Don't Tell](../show-dont-tell/SKILL.md). Otherwise run
-   Show, Don't Tell on that diff, including docs-only changes, then
-   [Review Fix Loop](../review-fix-loop/SKILL.md) on the result. Continue once review and
-   verification pass.
-2. **Publish it.** Follow [publish](references/publish.md). Publish ready for review unless
-   the user asks for a draft. In T3, link each PR you create, push to, or take over, including
-   every stack layer.
-3. **Watch it.** Follow [watch](references/watch.md).
+1. **Prepare it.** Run [Show, Don't Tell](../show-dont-tell/SKILL.md) on the complete diff
+   against the immediate base, including docs-only changes, unless earlier evidence covers
+   this change. Then [commit](references/publish.md#commit).
+2. **Get it reviewed.** Run [Review Fix Loop](../review-fix-loop/SKILL.md) on the committed
+   head. A new head of reviewed work, such as after a base update or restack, is a
+   [repair pass](../review-fix-loop/SKILL.md#4-route-repairs). Earlier review of this exact
+   commit [finishes it](../review-fix-loop/SKILL.md#6-finish) and posts the status. Continue
+   once review and verification pass.
+3. **Publish it.** Follow [publish](references/publish.md#push). Publish ready for review
+   unless the user asks for a draft. In T3, link each PR you create, push to, or take over,
+   including every stack layer.
+4. **Watch it.** Follow [watch](references/watch.md).
 
 ## Report
 
