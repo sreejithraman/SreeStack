@@ -743,11 +743,13 @@ suites preserve required integration gates, reconcile every selected test and
 attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
 protocols, and fresh persisted-output reads. Separates deleted run scratch from
-small kept proof in per-run folders under a per-task folder in the XDG state
-directory that lasts until the work lands or is abandoned; proof from runs tied
-to no task stays in session scratch. Only a worktree's own builds stay in the
-build system and are named by SHA plus hash; the iOS reference sends overlapping
-runs, disposable-checkout builds and result bundles into run scratch. Keeps bounded reproduction attempts,
+small kept proof in unique per-run folders under a per-task folder in the XDG
+state directory, keyed by percent-encoded repo and branch names, that lasts until
+the work lands or is abandoned; proof from runs tied to no task stays in session
+scratch. Only a worktree's known sole builder keeps builds in the build system;
+the iOS reference sends every other run's builds, disposable-checkout builds and
+result bundles into run scratch. Build identity is the commit plus the hash of the
+product actually installed or tested. Keeps bounded reproduction attempts,
 outcome counts, authorization, isolation, redaction, run-owned cleanup,
 and separate defect-reproduction reporting.
 Authenticated workflows reuse designated test accounts and standing scope,
@@ -772,7 +774,7 @@ evidence limits. Greetings and attribution instructions are omitted.
 
 Accepts merge completion handoffs from `merge`. Cleanup includes verified
 task-owned development processes, simulator/emulator installs, disposable test
-data, Verify's kept proof, the Xcode DerivedData of removed worktrees, and
+data, Verify's kept proof, the Xcode DerivedData of removed or missing worktrees, and
 temporary devices created solely for the task.
 Reused devices are preserved and shut down only when the task booted them and no
 consumer remains.

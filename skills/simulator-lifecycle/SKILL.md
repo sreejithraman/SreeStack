@@ -19,14 +19,17 @@ Apply the [run ownership guard](references/workflow.md#choose-the-route-before-a
 before following reuse, release or cancellation advice: a shared requester may
 belong to a sibling run.
 
-Check the machine that runs the device once, before you acquire or boot it. For a
-remote device host, run the check through that host's access. Read free space with
-`df -h "$HOME"` and the 1-minute load average with `uptime`, and compare the load
-with the CPU count (`sysctl -n hw.logicalcpu` or `nproc`). Less than 10% free space,
-or a load above twice the CPU count, is critical. Then hold the device work, continue
-independent work, and recheck when that runs out. If it is still critical, report
-both numbers as the blocker. Free space only through
+Check the machine that runs the device once, before you acquire or boot it. Read
+free space with `df -h "$HOME"` and the 1-minute load average with `uptime`, and
+compare the load with the CPU count (`sysctl -n hw.logicalcpu` or `nproc`). Less than
+10% free space, or a load above twice the CPU count, is critical. Then hold the device
+work, continue independent work, and recheck when that runs out. If it is still
+critical, report both numbers as the blocker. Free space only through
 [Repo Cleanup](../repo-cleanup/SKILL.md)'s ownership checks.
+
+On a remote device host, single-quote the commands so `$HOME` expands there, such as
+`ssh <host> 'df -h "$HOME"; uptime; sysctl -n hw.logicalcpu'`. If the host offers no
+shell, report the check as not run and continue under the host's own controls.
 
 In T3, acquisition and interactive control must follow its documented route to
 the same SimLock lease; an ordinary panel session is not proof of that lease.

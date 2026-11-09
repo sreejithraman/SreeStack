@@ -29,10 +29,11 @@ A run leaves two kinds of files. Keep them in separate places from the start.
 **Run scratch** is anything you could produce again: plans, helper and rerun scripts,
 per-step snapshots, result bundles, intermediate reruns, and builds no later run
 reuses. Put it in a temporary directory of its own outside the repo, and delete that
-directory when the run ends, pass or fail. Only the worktree's own builds stay where
-the build system puts them, for its later runs to reuse; [iOS build output](references/ios.md#build-output)
-says where Xcode writes. Record a build by its build identity instead of copying it or
-its inputs, such as source trees and Pods.
+directory when the run ends, pass or fail. Only a worktree's sole builder leaves its
+builds where the build system puts them, for its later runs to reuse;
+[iOS build output](references/ios.md#build-output) says which runs that covers. Record
+a build by its build identity instead of copying it or its inputs, such as source
+trees and Pods.
 
 **Kept proof** is what a reader needs to trust the verdicts:
 
@@ -40,28 +41,32 @@ its inputs, such as source trees and Pods.
 - the captures behind each verdict, visual for a visual claim: screenshots,
   recordings, transcripts, or responses;
 - the log excerpts a verdict or finding cites;
-- build identity: commit SHA plus artifact hash.
+- build identity: the commit SHA and the hash of the product actually installed or
+  tested, so a build crossed with another run's shows.
 
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
 a finding that is still open.
 
 Write each run's kept proof to
-`${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/<repo>/<task>/<run>/`:
+`${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/<repo>/<task>/<run>/`. Encode
+`<repo>` and `<task>` without loss: replace `%` with `%25` first, then `/` with `%2F`.
 
-- `<repo>` is the repository's name from its origin remote, or else the main
-  checkout's folder name. It is never a worktree's folder name.
-- `<task>` is the branch name with each `/` replaced by `-`.
-- `<run>` is the short commit SHA and the time, such as `8fe6922-20261109T1412`.
+- `<repo>` is the origin remote's `host/owner/name`, such as
+  `github.com%2Facme%2Fseatcommons`. With no origin, it is the main checkout's
+  absolute path.
+- `<task>` is the exact branch name.
+- `<run>` is the UTC time to the second, the short commit SHA, and a random suffix.
+  Create it with `mktemp -d` and a template ending in `XXXXXX`, such as
+  `$HOME/.local/state/verify-proof/github.com%2Facme%2Fseatcommons/feat%2Fseat-map/20261109T141203Z-75e0d1d-Q3x9Lp/`.
 
-Give the run folder's absolute path in your report. Delete the earlier run folders
-this run supersedes, except those holding captures for a finding that is still open.
-The task folder lasts until the work lands or is abandoned; then
-[Repo Cleanup](../repo-cleanup/SKILL.md) finds it from the repo and branch and
-removes it.
+Give the run folder's absolute path in your report. The task folder and every run
+folder in it last until the work lands or is abandoned; then
+[Repo Cleanup](../repo-cleanup/SKILL.md) finds the task folder from the repo and
+branch and removes it.
 
 Proof from a run tied to no task branch or PR, such as a reproduction, an audit, or a
-check of `main`, goes in the session scratch directory and lasts only as long as the
-session. Say so in your report.
+check of `main`, goes in the session scratch directory, or in a temporary directory
+when the host has none. It lasts only as long as the session. Say so in your report.
 
 ## Choose what to prove
 
@@ -176,8 +181,8 @@ Remove secrets and private data from evidence.
 When a claim says a behavior changed or a bug is fixed, reproduce the old result before
 you trust the new one. Run the same check, with the same environment and fixtures,
 against the base revision, in a disposable checkout if the change is already in place,
-and keep both results. Run the doctor there too. Red counts only when the old side runs
-and shows the old behavior. A setup error isn't red.
+and keep both results in the same run folder. Run the doctor there too. Red counts only
+when the old side runs and shows the old behavior. A setup error isn't red.
 
 A check that passes on both sides proves nothing: change it until it tells them apart, or
 mark the claim `untested`. If you can't run the old side, revert the change in a disposable
