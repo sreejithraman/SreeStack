@@ -425,9 +425,10 @@ owns readiness, including its provisional start for a decision with a reversible
 recommended option. Owners start from `assets/owner-kickoff.md` with an explicit
 return route and report file. Running a chief counts as a request for
 sessions: each owner starts as its own top-level session bound to a host
-worktree, watches its own PR, and reports with `t3_thread_send`; where the host
-cannot launch sessions, a delegated owner runs in its own worktree and the chief
-watches its PR. A running Implement session is adopted, never duplicated. The
+worktree, watches its own PR, and reports with `t3_thread_send`, while the chief
+waits on each owner's run through the host and reconciles one that ends
+without a report; where the host cannot launch sessions, a delegated owner runs
+in its own worktree and the chief watches its PR. A running Implement session is adopted, never duplicated. The
 chief reads Implement's owner report fields, accepts outcomes under
 Orchestration, and routes discoveries through an explicit disposition table.
 

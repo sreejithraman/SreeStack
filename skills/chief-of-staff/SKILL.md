@@ -167,10 +167,16 @@ change, and start what became ready.
 
 A top-level owner watches its own PR and sends its reports, decision requests,
 and blockers to this thread with `t3_thread_send`. It gives you no completion
-wake-up, so whenever you reconcile, read the thread of any idle owner that has
-not reported. For a delegated owner, this thread is the watching parent under
-PR's [wait](../pr/references/watch.md#wait). Keep watching pending PRs while
-you ask the user something.
+wake-up, so after you start or message one, and before you end a turn with
+owners outstanding, wait on each outstanding owner's run through the host (in
+T3, `t3_thread_wait`, following its `next`). When a run ends, read the owner's
+thread. Handle a sent report or request as usual. Reconcile a run that failed,
+was interrupted, or went idle without a report or pending-PR partial: recover
+it under Orchestration's
+[recover work](../orchestration/references/reuse-and-recovery.md#recover-work),
+or record the outcome blocked with what is missing. For a delegated owner, this
+thread is the watching parent under PR's [wait](../pr/references/watch.md#wait).
+Keep watching pending PRs while you ask the user something.
 
 Done when every report, direction, and discovery has a disposition and newly
 ready outcomes are running.
