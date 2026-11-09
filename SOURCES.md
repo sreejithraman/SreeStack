@@ -729,7 +729,9 @@ explicit.
 Concurrent and long checks plan resource ownership; authorized harness isolation
 changes prove concurrent isolation and independent cleanup.
 Imported interface criteria retain full requested audit coverage. Web and iOS
-checks follow the requested deployment or Simulator/device target. The iOS
+checks follow the requested deployment or Simulator/device target. Scripted web
+checks launch Playwright's bundled Chromium unless they need the shipping browser,
+and close it in the script. The iOS
 reference reuses project harnesses and prefers XCTest with XCUIAutomation for new
 iOS UI workflow tests, Swift Testing for new Swift unit tests, and XCTest for
 performance tests. Suite execution preserves target identity, required-check
