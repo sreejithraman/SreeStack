@@ -16,6 +16,7 @@ from pathlib import Path
 import select
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -34,7 +35,14 @@ REPLY_TIMEOUT = 20
 HELD_LIMIT = 120_000
 VIEW_KEY_PREFIX = "command-center-view:"
 
+# Each launch of branded macOS Chrome copies its signed app into a code_sign_clone
+# folder under /var/folders, and the copy outlives the process, so it comes last.
 MAC_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+PLAYWRIGHT_CHROMES = (
+    "chromium-*/chrome-mac*/*.app/Contents/MacOS/*",
+    "chromium-*/chrome-linux*/chrome",
+    "chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell",
+)
 PAGE_HARNESS = """
 (() => {
   const realSetTimeout = setTimeout.bind(window);
@@ -117,9 +125,19 @@ def next_template(html):
     return html.replace('data-template="', 'data-template="next').replace('data-snapshot="', 'data-snapshot="next')
 
 
+def playwright_chromes():
+    """Playwright's cached Chromium builds, Chrome for Testing first, newest first."""
+    default = "~/Library/Caches" if sys.platform == "darwin" else os.environ.get("XDG_CACHE_HOME", "~/.cache")
+    root = Path(os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or f"{default}/ms-playwright").expanduser()
+    for pattern in PLAYWRIGHT_CHROMES:
+        yield from sorted(root.glob(pattern), key=lambda path: int(path.relative_to(root).parts[0].rpartition("-")[2]),
+                          reverse=True)
+
+
 def chrome_path():
-    names = ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", MAC_CHROME)
-    return next(filter(None, map(shutil.which, names)), None)
+    candidates = (os.environ.get("COMMAND_CENTER_CHROME"), *map(str, playwright_chromes()),
+                  "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", MAC_CHROME)
+    return next(filter(None, (shutil.which(candidate) for candidate in candidates if candidate)), None)
 
 
 class Chrome:
@@ -362,6 +380,7 @@ def setUpModule():
         if required:
             raise RuntimeError("CI needs Chrome for the command center tests")
         raise unittest.SkipTest("Chrome is not installed")
+    print(f"command center tests use {executable}", file=sys.stderr)
     browser_profile = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
     browser = Chrome(executable, browser_profile.name)
     try:
