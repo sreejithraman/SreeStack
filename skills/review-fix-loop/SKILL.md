@@ -164,18 +164,19 @@ accepted findings and checks are settled on it, and the final
 code/substantive-instruction pass needs no fixes. Missing required coverage and
 accepted findings block completion.
 
-Record completion on the PR's head, because
-[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging without it.
-Confirm with `gh pr view <number> --json headRefOid` that the pushed head is the final
-snapshot, then post a status on its full SHA, with a description of at most 140 characters:
+Record completion on the final snapshot's commit, because
+[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it. A
+commit status needs only the repository and the SHA, with or without a PR. Check that the
+commit is on the remote, for example that `git ls-remote <remote> <branch>` names it as the
+branch head. Then post a status on its full SHA, with a description of at most 140 characters:
 
 ```sh
 gh api repos/<owner>/<repo>/statuses/<full head sha> -f state=success \
   -f context=review-fix-loop -f description="<workflow_id>: <N> passes"
 ```
 
-When the final snapshot isn't pushed yet, put the command in the handoff. The caller posts it
-once the PR's head is that snapshot.
+When it isn't on the remote yet, put this exact command in the handoff. Whoever pushes that
+snapshot posts it once the commit is on the remote.
 
 In the Orchestration handoff, map child tasks to workflow/pass, review assignments,
 criteria, and configured models, and state which reviewer each follow-up task

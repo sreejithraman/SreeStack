@@ -27,6 +27,6 @@ Use [PR body](pr-body.md) for the title and description. Refresh them when fixes
 change scope, evidence, or landing risk. Mark ready unless a draft was requested.
 
 Confirm the remote head matches the intended local head, the base is correct,
-and one PR represents that branch. Post the `review-fix-loop` status from the
-loop's handoff once that head is the reviewed snapshot. Record its URL and remote
-head for [watching](watch.md).
+and one PR represents that branch. Post a held `review-fix-loop` status command
+once the reviewed snapshot is pushed. Record its URL and remote head for
+[watching](watch.md).

@@ -519,6 +519,7 @@ retained local files affected by tracking deletions and verify restoration.
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
 publication does not substitute for that link. Layers get `pr`’s review step before
 `submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
+After `submit` or `push`, each layer's held `review-fix-loop` status is posted on its head.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
 on request, to match `pr`. Branch deletion after a merge goes through `repo-cleanup`
@@ -1059,8 +1060,6 @@ other nonignored untracked source.
   skips, and stable snapshots. Generic delegation and handoff use Orchestration,
   with tasks mapped to review assignments and workflow/pass identities; findings
   use Review Sweep with stable issue IDs and per-issue repair/check evidence.
-  Finishing on a pushed PR head posts the `review-fix-loop` commit status that
-  `pr_state` requires before merge.
 
 ## pr
 
@@ -1074,8 +1073,8 @@ watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publis
 matching review evidence, and runs `show-dont-tell` then the review loop when there is none.
 `scripts/pr_state.py` reads one head's checks, threads, comments, and reviews through every page,
 replacing hand-read readiness with `blockers`, `pending`, and `to_settle`.
-It also gates on the head's `review-fix-loop` commit status, kept apart from CI checks:
-missing or failed blocks, and pending waits.
+It also gates on the head's `review-fix-loop` commit status context, kept apart from CI
+checks, including a same-named check run: anything but success blocks.
 The body guide uses Summary/Evidence/Merge Danger by default, defers to project
 PR templates, and preserves local why/effect/root-cause/stack facts. It expands
 visual selection to algorithm, runtime, UI, file, interaction, diff, and complete

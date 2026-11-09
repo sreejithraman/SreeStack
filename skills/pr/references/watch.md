@@ -64,8 +64,8 @@ Ready means `pr_state` reports `ready`, every `to_settle` item has a decision, a
 [feedback handling](../../review-sweep/references/pr-feedback.md#finish) is complete. Report
 any unmet repository requirement.
 
-`pr_state` blocks until the head has a passing `review-fix-loop` status, and waits while it's
-pending. It reports that status under `review`, apart from `checks`.
+`pr_state` blocks until the head has a passing `review-fix-loop` commit status. It reports that
+status under `review_status`, apart from `checks`.
 [Review Fix Loop](../../review-fix-loop/SKILL.md#6-finish) posts it when it finishes on the head,
 and [Merge](../../merge/SKILL.md) carries it over a base update that doesn't affect the change.
 

@@ -279,11 +279,11 @@ class ReviewGate(unittest.TestCase):
         for checks in ([check_run()], []):
             with self.subTest(checks=checks):
                 code, result = run(FakeGitHub(checks=checks, review=None))
-                self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_MISSING]))
+                self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_BLOCKER]))
 
     def test_passing_review_status_lets_the_head_land(self):
         code, result = run(FakeGitHub())
-        self.assertEqual((code, result["status"], result["review"]["state"]), (0, "ready", "pass"))
+        self.assertEqual((code, result["status"], result["review_status"]["state"]), (0, "ready", "pass"))
 
     def test_ci_rules_are_unchanged_beside_a_passing_review_status(self):
         cases = (([check_run(conclusion="FAILURE")], "required check failed: ci https://ci/ci"),
@@ -300,22 +300,40 @@ class ReviewGate(unittest.TestCase):
         code, result = run(FakeGitHub([summary(state="CLOSED")], review=None))
         self.assertEqual((code, result["blockers"]), (2, ["the PR is closed"]))
 
-    def test_pending_review_status_waits(self):
-        for merge_state in ("CLEAN", "UNSTABLE"):
-            with self.subTest(merge_state=merge_state):
-                code, result = run(FakeGitHub([summary(mergeStateStatus=merge_state)],
-                                              review=review_status("PENDING")))
-                self.assertEqual((code, result["pending"], result["blockers"]),
-                                 (3, [pr_state.REVIEW_PENDING], []))
+    def test_review_status_other_than_success_blocks(self):
+        for state in ("PENDING", "EXPECTED", "FAILURE", "ERROR"):
+            for merge_state in ("CLEAN", "UNSTABLE"):
+                with self.subTest(state=state, merge_state=merge_state):
+                    code, result = run(FakeGitHub([summary(mergeStateStatus=merge_state)],
+                                                  review=review_status(state)))
+                    self.assertEqual((code, result["blockers"], result["pending"]),
+                                     (2, [pr_state.REVIEW_BLOCKER], []))
 
-    def test_review_status_is_not_a_ci_check(self):
-        for review, blocker in ((review_status("FAILURE"), "status failed"),
-                                (review_status("ERROR", required=True), "status failed")):
-            with self.subTest(review=review):
-                _, result = run(FakeGitHub(checks=[check_run()], review=review))
-                self.assertEqual(len(result["blockers"]), 1)
-                self.assertIn(blocker, result["blockers"][0])
-                self.assertNotIn(pr_state.REVIEW_CONTEXT, json.dumps(result["checks"]))
+    def test_same_named_job_is_a_ci_check_not_the_record(self):
+        code, result = run(FakeGitHub(checks=[check_run("review-fix-loop")], review=None))
+        self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_BLOCKER]))
+        self.assertIsNone(result["review_status"])
+        self.assertEqual([check["name"] for check in result["checks"]], ["review-fix-loop"])
+
+    def test_only_the_status_counts_in_any_order_across_pages(self):
+        job, status = check_run("review-fix-loop"), review_status("FAILURE")
+        for nodes in ([job, status], [status, job]):
+            with self.subTest(first=nodes[0]["__typename"]):
+                code, result = run(FakeGitHub(checks=nodes, review=None, page_size=1))
+                self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_BLOCKER]))
+                self.assertEqual(result["review_status"]["state"], "fail")
+                self.assertEqual([check["state"] for check in result["checks"]], ["pass"])
+
+    def test_failed_same_named_job_blocks_beside_a_passing_status(self):
+        failed_job = check_run("review-fix-loop", conclusion="FAILURE")
+        code, result = run(FakeGitHub(checks=[failed_job]))
+        self.assertEqual((code, result["blockers"]),
+                         (2, ["required check failed: review-fix-loop https://ci/review-fix-loop"]))
+
+    def test_required_review_status_is_not_a_ci_check(self):
+        _, result = run(FakeGitHub(review=review_status("ERROR", required=True)))
+        self.assertEqual(result["blockers"], [pr_state.REVIEW_BLOCKER])
+        self.assertEqual([check["name"] for check in result["checks"]], ["ci"])
 
 
 PROVISIONAL_BODY = ("## Summary\nAdds the list.\n\n## Provisional\n"
