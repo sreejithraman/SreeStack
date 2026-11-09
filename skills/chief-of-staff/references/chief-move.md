@@ -32,4 +32,4 @@ is incomplete.
 ## After either
 
 The new chief reconciles state as on resume, sends owners their route, watches
-delegated owners' pending PRs, and asks any remaining old thread to unwatch.
+any delegated owner's pending PRs, and asks any remaining old thread to unwatch.
