@@ -49,9 +49,9 @@ limits.
 
    Every PR, including docs-only changes, needs review of its current head that includes
    [Show, Don't Tell](../show-dont-tell/SKILL.md), plus required verification. The head's
-   `review-fix-loop` status records the loop's review, and PR's Prepare step supplies Show,
-   Don't Tell; check that both happened. Step 2 restores a missing review. Route
-   missing or stale verification the same way as a stale review, then go back to step 2.
+   passing `review-fix-loop` status records the review and its Show, Don't Tell. Step 2 restores
+   a missing one. Route missing or stale verification the same way as a stale review, then go
+   back to step 2.
 
    A head you didn't verify holds commits nobody reviewed. Read them, then go back to step 2. It
    counts as verified once the evidence above covers it.
