@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Review and fix a change through independent T3 review rounds. Use when asked to review and fix a branch, PR, or local diff.
+description: Use when asked to review and fix a branch, PR, or local diff.
 ---
 
 # Review Fix Loop
@@ -132,8 +132,8 @@ assumption or a material design or
 ownership change. Expand the scope when a fix reaches further or retained coverage
 cannot be justified.
 
-When a repair cycle returns to an invariant the loop has already repaired, pause
-further review of it. The parent applies
+When a repair cycle returns to an invariant the loop has already repaired, or a
+second pass finds new issues in the same component, pause further review of it. The parent applies
 [Attack the Premise](../engineering-principles/references/attack-the-premise.md),
 keeps the counterexamples, and records the design decision before the next pass.
 Route a changed design as an ownership or guarantee fix. This checkpoint is
