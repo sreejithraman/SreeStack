@@ -28,11 +28,11 @@ Watching an existing PR starts at step 4.
 
 1. **Commit it.** Follow [commit](references/publish.md#commit), so review sees a committed
    head.
-2. **Get it reviewed.** Reuse review evidence that matches the complete diff against the
-   immediate base and included [Show, Don't Tell](../show-dont-tell/SKILL.md). Otherwise run
-   Show, Don't Tell on that diff, including docs-only changes, then
-   [Review Fix Loop](../review-fix-loop/SKILL.md) on the result. Continue once review and
-   verification pass.
+2. **Get it reviewed.** Run [Show, Don't Tell](../show-dont-tell/SKILL.md) on the complete
+   diff against the immediate base, including docs-only changes, unless matching earlier
+   review included it. Then run [Review Fix Loop](../review-fix-loop/SKILL.md) on the result.
+   Matching earlier review is its [retained coverage](../review-fix-loop/SKILL.md#coverage-rule),
+   and finishing on it posts the status. Continue once review and verification pass.
 3. **Publish it.** Follow [publish](references/publish.md#push). Publish ready for review
    unless the user asks for a draft. In T3, link each PR you create, push to, or take over,
    including every stack layer.

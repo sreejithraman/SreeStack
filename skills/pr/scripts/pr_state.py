@@ -16,8 +16,7 @@ PROVISIONAL_HEADING = "## Provisional"
 PROVISIONAL_BLOCKER = (f"the body has an open '{PROVISIONAL_HEADING}' section; "
                        "it must not merge until that section is removed")
 REVIEW_CONTEXT = "review-fix-loop"
-REVIEW_BLOCKER = (f"no passing '{REVIEW_CONTEXT}' status on this head; run Review Fix Loop "
-                  "on it, or apply merge's carry-over rule after a base update")
+REVIEW_BLOCKER = f"no passing '{REVIEW_CONTEXT}' status on this head; run Review Fix Loop on it"
 
 # baseRefOid stops at the PR's last sync with its base, so read the branch's live tip instead.
 SUMMARY_QUERY = """

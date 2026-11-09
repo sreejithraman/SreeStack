@@ -32,20 +32,11 @@ limits.
    PR open and use [Show Me](../show-me/SKILL.md) to show the user what happened, including
    anything that landed first.
 
-   `pr_state` blocks a head without a passing `review-fix-loop` status. Carry-over is the only
-   way a review moves to a new head, and it needs all three:
-
-   - The old head has a success `review-fix-loop` status.
-   - The change is identical: `git range-diff <old base>..<old head> <new base>..<new head>`
-     shows the PR's own commits unchanged, or the old and new diffs against their merge bases
-     have the same `git patch-id --stable`.
-   - The new base commits don't affect the files or behavior this change depends on.
-
-   Then post the status on the new head with
-   [the loop's command](../review-fix-loop/SKILL.md#6-finish) and the description
-   `carried from <short sha> after base update`. Otherwise the review is stale. A caller with
-   its own repair owner gets the gap back. Without one, run
-   [PR's review step](../pr/SKILL.md#publish), publish any fixes, and read the state again.
+   `pr_state` blocks a head without a passing `review-fix-loop` status, including after a base
+   update or restack. A caller with its own repair owner gets the gap back. Without one, run
+   [PR's review step](../pr/SKILL.md#publish), publish any fixes, and read the state again. The
+   loop's [coverage rule](../review-fix-loop/SKILL.md#coverage-rule) limits that pass to what
+   changed.
 
    A caller that keeps its own repair owner gets each failure, comment, and stop back, and resumes
    that owner. You repair nothing.

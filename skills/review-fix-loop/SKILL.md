@@ -106,6 +106,9 @@ it needs.
 
 ## 4. Route repairs
 
+For PR work, the caller commits each repair before the check or pass that assesses it, so
+every pass assesses a commit.
+
 Ordinary prose and wording-only fixes use targeted checks. For code or substantive
 instruction fixes, start a new pass that sends each fix to a new task on the original
 reviewer's model for what it changes, under Orchestration's
@@ -164,12 +167,10 @@ accepted findings and checks are settled on it, and the final
 code/substantive-instruction pass needs no fixes. Missing required coverage and
 accepted findings block completion.
 
-Record completion on the exact commit the loop reviewed, because
-[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it.
-For PR work, the final snapshot is a commit. When it ends with uncommitted edits, the caller
-commits them and confirms with `git status --porcelain` that nothing in scope is left
-uncommitted. Build this command with that commit's full SHA and a description of at most 140
-characters:
+Record completion on the commit the final pass assessed, because
+[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it. Any
+edit after that pass is a new snapshot. Build this command with that commit's full SHA and a
+description of at most 140 characters:
 
 ```sh
 gh api repos/<owner>/<repo>/statuses/<reviewed sha> -f state=success \
@@ -178,8 +179,8 @@ gh api repos/<owner>/<repo>/statuses/<reviewed sha> -f state=success \
 
 Run it once that SHA is on the remote; GitHub rejects a SHA it doesn't have, and a PR isn't
 needed. Until then, hand it off unchanged, and whoever pushes that SHA runs it. A head with
-another SHA gets a record only through [Merge's carry-over rule](../merge/SKILL.md) or another
-run of this loop.
+another SHA needs another run of this loop. When posting fails, such as for a missing
+permission or a fork, report it to the user as a blocker; another run won't fix it.
 
 In the Orchestration handoff, map child tasks to workflow/pass, review assignments,
 criteria, and configured models, and state which reviewer each follow-up task

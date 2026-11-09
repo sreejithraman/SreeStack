@@ -33,8 +33,8 @@ when a result looks wrong.
   fixes something, check that review evidence covers the change. If it's missing or stale,
   rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
   held replies, and read the state again.
-- **No passing review status:** run [Review Fix Loop](../../review-fix-loop/SKILL.md#6-finish)
-  on the head, or, after a base update, apply [Merge's carry-over rule](../../merge/SKILL.md).
+- **No passing review status:** run [Review Fix Loop](../../review-fix-loop/SKILL.md) on the
+  head.
 - **A missing check:** explain it, including workflows filtered out by a stacked PR's base or
   by draft status.
 - **Behind or conflicted:** read what the new base commits touch, then decide with

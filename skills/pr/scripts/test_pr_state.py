@@ -281,10 +281,9 @@ class ReviewGate(unittest.TestCase):
                 code, result = run(FakeGitHub(checks=checks, review=None))
                 self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_BLOCKER]))
 
-    def test_review_blocker_names_the_loop_and_merges_carry_over(self):
-        self.assertIn("run Review Fix Loop on it", pr_state.REVIEW_BLOCKER)
-        self.assertIn("merge's carry-over rule", pr_state.REVIEW_BLOCKER)
-        self.assertNotIn("re-post", pr_state.REVIEW_BLOCKER)
+    def test_review_blocker_sends_every_head_to_the_loop(self):
+        self.assertEqual(pr_state.REVIEW_BLOCKER, "no passing 'review-fix-loop' status on this "
+                                                  "head; run Review Fix Loop on it")
 
     def test_passing_review_status_lets_the_head_land(self):
         code, result = run(FakeGitHub())
