@@ -3,8 +3,8 @@
 Use the requested deployment and the browser environment already attached to
 the task when possible. For a local change, start or locate the development
 server; for a live site, open its URL.
-Reach the exact route or state under test. Record the URL, viewport/device mode,
-and relevant console or network evidence.
+Reach the exact route or state under test. Record the URL, browser and version,
+viewport/device mode, and relevant console or network evidence.
 
 In T3 Code, follow the injected collaborative-browser instructions for tool
 selection and recovery. Start with `preview_status`, then `preview_open` when
@@ -14,6 +14,22 @@ host's fallback conditions or an explicit user request. For local servers,
 resolve the actual URL and port from the running process or app environment.
 The [T3 runtime instructions](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts)
 and live tools supply the current interaction contract.
+
+## Scripted browser checks
+
+Use the project's Playwright Test check when it already has one for this
+behavior; its fixtures close the browser. Otherwise write a script with the
+Playwright library in [run scratch](../SKILL.md#keep-proof-not-runs). See
+[Playwright library](https://playwright.dev/docs/library).
+
+- Launch Playwright's bundled Chromium, with no `channel` or `executablePath`.
+  Install it with `npx playwright install chromium`. Use a branded channel such as
+  `channel: 'chrome'` only when the check needs the shipping browser, such as for
+  release parity or a Chrome-only feature. Its headless mode differs, so record the
+  channel with the browser version. See [Playwright browsers](https://playwright.dev/docs/browsers).
+- Close the context and browser in a `finally` block. Bound the run with
+  Playwright's timeouts so it exits through that block. A killed branded Chrome
+  leaves a copy of its app on disk.
 
 ## Observe and interact
 
@@ -49,9 +65,9 @@ applicable contracts into assertions:
 - Check supported appearance changes and browser-chrome hints in the actual
   target mode. Inspect focus zoom and keyboard/input hints on relevant fields.
 
-Record browser/version, device or simulator, orientation, display mode, and input
-method. Emulation can establish layout and some input behavior but does not
-establish every hardware/browser assertion. Use target hardware when available
+Also record the device or simulator, orientation, display mode, and input method.
+Emulation can establish layout and some input behavior but does not establish
+every hardware/browser assertion. Use target hardware when available
 for keyboard, chrome, safe areas, gestures, and touch feel; mark unavailable
 checks `blocked` or `untested` rather than calling them passed. See [Chrome's
 Device Mode limitations](https://developer.chrome.com/docs/devtools/device-mode#limitations).

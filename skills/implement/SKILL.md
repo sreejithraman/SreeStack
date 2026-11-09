@@ -219,8 +219,8 @@ The owner report carries every field that applies:
   delivery state against it.
 - **Layers:** each PR, branch, or local artifact, with its link, head, base,
   revisions, and working-tree state.
-- **Proof:** each required assertion's verdict and evidence, and what is blocked
-  or untested.
+- **Proof:** each required assertion's verdict and evidence, the kept proof's
+  absolute path, and what is blocked or untested.
 - **Shown:** what you showed and how to open it, with what it needs, such as a
   login or a running server and its stop action.
 - **Waits:** pending PRs, live helpers and watchers, and the events they await.

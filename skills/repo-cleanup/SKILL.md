@@ -56,6 +56,14 @@ Clean up only resources whose owner and disposal reason are established. A merge
    task changes, with no retained ignored data. Leave the current worktree in
    place for Codex.
 
+   When you remove a worktree, also remove its Xcode DerivedData folders. These
+   are the folders in Xcode's DerivedData location, `~/Library/Developer/Xcode/DerivedData`
+   by default, whose `info.plist` has a `WorkspacePath` inside the removed
+   worktree: it starts with the worktree's absolute path plus `/`. During
+   housekeeping, also remove each DerivedData folder whose `WorkspacePath` no
+   longer exists on disk. It is a regenerable cache, whoever removed the worktree.
+   Leave every other DerivedData folder, including folders without that key.
+
    Before deleting any branch, recheck its tip and worktree use. For merged work,
    the tip must still equal the source head verified at merge time or be reachable
    from the intended base. If neither can be proved, retain the branch. Retain

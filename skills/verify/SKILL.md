@@ -19,9 +19,47 @@ It owns its prerequisites, verdicts, and repo writes. The steps below apply to p
 claims. A model doesn't replace them, and ordinary workflows need no new model. Look for
 existing formal checks by function, not by name.
 
-Keep plans, scripts, and evidence in the session scratch directory. Verify writes no
-docs in any repo, including a repo's verification map. If the user asks to create or
-change a map, follow [verification maps](../setup-sreestack/references/verification-map.md).
+Verify writes no docs in any repo, including a repo's verification map. If the user
+asks to create or change a map, follow [verification maps](../setup-sreestack/references/verification-map.md).
+
+## Keep proof, not runs
+
+A run leaves two kinds of files. Keep them in separate places from the start.
+
+**Run scratch** is anything you could produce again: plans, helper and rerun scripts,
+per-step snapshots, result bundles, intermediate reruns, and builds no later run
+reuses. Create its directory with `mktemp -d`, which puts it under `$TMPDIR`, so the
+OS reclaims what a cancelled run leaves. Delete that directory when the run ends, pass
+or fail. Only the sole builder in a checkout leaves its builds where the build system
+puts them, for its later runs to reuse;
+[iOS build output](references/ios.md#build-output) says which runs that covers. Record
+a build by its build identity instead of copying it or its inputs, such as source
+trees and Pods.
+
+**Kept proof** is what a reader needs to trust the verdicts:
+
+- the verdict table;
+- the captures behind each verdict, visual for a visual claim: screenshots,
+  recordings, transcripts, or responses;
+- the log excerpts a verdict or finding cites;
+- build identity: the commit SHA and the hash of the product installed or tested.
+
+For repeated attempts, keep the outcome counts, plus captures only for failures behind
+a finding that is still open.
+
+Write each run's kept proof to a new run folder. In a linked worktree on a branch,
+where `git rev-parse --path-format=absolute --git-dir --git-common-dir` prints two
+different paths and `git symbolic-ref -q HEAD` succeeds, put the folder in that
+worktree's private Git directory:
+
+```sh
+proof=$(git rev-parse --path-format=absolute --git-path verify-proof)
+mkdir -p "$proof" && mktemp -d "$proof/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
+```
+
+Git never commits that folder, and removing or pruning the worktree deletes it.
+Otherwise put the folder in the session scratch directory, or in a temporary directory
+when the host has none, and say in your report that it lasts only for the session.
 
 ## Choose what to prove
 
@@ -92,8 +130,9 @@ options in the repo and the environment. Follow
 who drives an interface and with which model. The driver reports what it saw, and you
 keep the verdicts.
 
-Prefer a script you can rerun over steps by hand. Put repeatable setup, driving, and
-evidence capture in it, and give the rerun command in your report.
+Prefer a script in run scratch over steps by hand. Put repeatable setup, driving, and
+capture in it. When the same check runs again on a later commit, offer to turn it into
+a committed test or a verification-map recipe.
 
 **Run a read-only doctor before you drive.** Run the map's doctor if it has one, then
 check whatever it doesn't cover, without changing state:
@@ -135,8 +174,8 @@ Remove secrets and private data from evidence.
 When a claim says a behavior changed or a bug is fixed, reproduce the old result before
 you trust the new one. Run the same check, with the same environment and fixtures,
 against the base revision, in a disposable checkout if the change is already in place,
-and keep both results. Run the doctor there too. Red counts only when the old side runs
-and shows the old behavior. A setup error isn't red.
+and keep both results in the same run folder. Run the doctor there too. Red counts only
+when the old side runs and shows the old behavior. A setup error isn't red.
 
 A check that passes on both sides proves nothing: change it until it tells them apart, or
 mark the claim `untested`. If you can't run the old side, revert the change in a disposable
@@ -158,14 +197,15 @@ target exists, and take them from current state.
 dependencies. Before running them, connect each assertion to a real check, and confirm
 the target, fixtures, filters, optional checks, and retries. Afterward, reconcile every
 selected test with its result: actual skips, unmet preconditions, and unfinished tests.
-Count a duplicate test once for coverage and keep every attempt's outcome. Exercise
+Count a duplicate test once for coverage and record every attempt's outcome. Exercise
 uncovered assertions yourself. A green command, zero tests, partial results, or a passing
 rerun can't establish a pass. Keep required broader gates, and report any you didn't run.
 
 **When something doesn't change:** Record it before you retry. Retry once, only when
-evidence shows the target moved or the interface hadn't settled, and record the retry as
-its own attempt. A repeated failure is evidence. After a stuck interface or a surprising
-result, check instance health and restore known state, even if the process looks fine.
+evidence shows the target moved or the interface hadn't settled, and record the retry's
+outcome as its own attempt. A repeated failure is evidence. After a stuck interface or a
+surprising result, check instance health and restore known state, even if the process
+looks fine.
 
 **Intermittent reports:** Choose the attempt count before you start, and use it on both
 sides. Use about 3 divided by the failure rate, so about 30 attempts for 1 in 10. Restore
@@ -201,15 +241,12 @@ or another revision's results don't show that. State the limits of the compariso
 
 ## Clean up and report
 
-Keep failed attempts and the screenshots, snapshots, logs, transcripts, or responses
-behind each verdict. Visual claims need visual captures.
-
-Stop only the processes and sessions this run started, and remove their disposable data,
-after success or failure. Leave reused services and source fixtures running. Then open
-the kept evidence to confirm it survived.
+After success or failure, stop only the processes and sessions this run started, remove
+their disposable data, and delete the run scratch. Leave reused services and source
+fixtures running. Then open the kept proof to confirm it survived.
 
 Give each workflow and entry point its actions, expected and observed results, and
-evidence location. Give every assertion one verdict:
+the kept proof's absolute path. Give every assertion one verdict:
 
 - `passed`: the observed result matched.
 - `failed`: the observed result differed.

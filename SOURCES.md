@@ -712,7 +712,8 @@ One automatically discoverable skill owns real-workflow selection, launch, drivi
 acceptance judgments, evidence, and cleanup. It writes no docs in any repo, except formal check records under the
 formal reference's conditions: it uses a temporary plan without a map, reads a map when one exists, and reports drift.
 Adds a read-only doctor before driving, red-first reproduction against the base
-revision, rerunnable scripts, and refusal of an assertion with no independent
+revision, run-scratch scripts with an offer to turn repeat checks into a test or
+recipe, and refusal of an assertion with no independent
 expectation or way to run it. Formal checks use one conditional reference, also
 reached when a change touches an existing check. It retains tool selection,
 code/model correspondence, bounds, negative controls, counterexample replay,
@@ -729,7 +730,9 @@ explicit.
 Concurrent and long checks plan resource ownership; authorized harness isolation
 changes prove concurrent isolation and independent cleanup.
 Imported interface criteria retain full requested audit coverage. Web and iOS
-checks follow the requested deployment or Simulator/device target. The iOS
+checks follow the requested deployment or Simulator/device target. Scripted web
+checks launch Playwright's bundled Chromium unless they need the shipping browser,
+and close it in the script. The iOS
 reference reuses project harnesses and prefers XCTest with XCUIAutomation for new
 iOS UI workflow tests, Swift Testing for new Swift unit tests, and XCTest for
 performance tests. Suite execution preserves target identity, required-check
@@ -739,8 +742,13 @@ automated and needs assertion coverage beyond a successful command. Targeted
 suites preserve required integration gates, reconcile every selected test and
 attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
-protocols, and fresh persisted-output reads. Keeps bounded reproduction attempts,
-failed-attempt evidence, authorization, isolation, redaction, run-owned cleanup,
+protocols, and fresh persisted-output reads. Separates deleted run scratch from
+small kept proof. A linked worktree on a branch keeps that proof in its private Git
+directory, which worktree removal deletes; other runs keep it in session scratch for
+the session. The iOS reference keeps builds in the build system only for a
+checkout's sole agent and sends other builds and result bundles to run scratch.
+Keeps bounded reproduction attempts, outcome counts, authorization, isolation,
+redaction, run-owned cleanup,
 and separate defect-reproduction reporting.
 Authenticated workflows reuse designated test accounts and standing scope,
 delegate application sign-in and command/API credential use to `agent-login`,
@@ -764,8 +772,10 @@ evidence limits. Greetings and attribution instructions are omitted.
 
 Accepts merge completion handoffs from `merge`. Cleanup includes verified
 task-owned development processes, simulator/emulator installs, disposable test
-data, and temporary devices created solely for the task. Reused devices are
-preserved and shut down only when the task booted them and no consumer remains.
+data, the Xcode DerivedData of removed or missing worktrees, and temporary devices
+created solely for the task.
+Reused devices are preserved and shut down only when the task booted them and no
+consumer remains.
 Cleanup reconstructs process, device, and install ownership from available
 session history and tool results, with logs, current state, and optional handoffs
 as supporting evidence. Discovery and cleanup rules live together in
@@ -1174,7 +1184,10 @@ than test phones. Adds host-routing, retained-target and shared-requester owners
 gates plus fresh lease-identity requirements, and links local
 run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
-checks. Failure guidance defers to host recovery instructions and preserves unresolved
+checks. Checks free disk space and load once before acquiring a device, on the
+machine that runs it, and holds or reports when either is critical. Project
+runners follow Verify's iOS build output rules.
+Failure guidance defers to host recovery instructions and preserves unresolved
 ownership conflicts. Owns T3 Device panel routing, returned driver and session flags,
 and Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
 with `simlock instructions`. Technical citations use checked upstream source

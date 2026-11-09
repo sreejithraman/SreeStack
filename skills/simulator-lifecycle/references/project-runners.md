@@ -23,17 +23,19 @@ The runner must:
   occur. A one-shot detached lease needs a supported renewal owner; choosing a
   long TTL alone is insufficient. Observe lease loss and stop device-dependent
   work before any further command.
-- Allocate a unique run directory for DerivedData, intermediate app builds,
-  temporary fixtures and logs. Put retained results outside the disposable
-  directory. Record created paths and process identities as they are created.
+- Allocate a unique run directory for temporary fixtures and logs, and put
+  Verify's [kept proof](../../verify/SKILL.md#keep-proof-not-runs) outside it.
+  Record created paths and process identities as they are created.
+- Place Xcode DerivedData and result bundles by Verify's
+  [build output](../../verify/references/ios.md#build-output) rules.
 - Capture PIDs at spawn and use existing ownership-checked stop tooling. Recheck
   start identity, executable/workspace and other consumers immediately before
   stopping. Await all run-owned writers, including test helpers and descendants;
   a root process exiting is insufficient if it left children running.
-- Export required screenshots, logs and result bundles before releasing. Keep
-  failure evidence. Release through the same interface in teardown even when
-  acquisition only partly succeeded; reconcile an uncertain grant by request/run
-  identity before requesting another device.
+- Export the device's screenshots and logs that kept proof needs before
+  releasing. Release through the same interface in teardown even when
+  acquisition only partly succeeded; reconcile
+  an uncertain grant by request/run identity before requesting another device.
 - Bound queued acquisition and use supported cancellation only for a request
   proven to belong to this run. Killing a waiting CLI process does not necessarily
   cancel its queued request. Reconcile whether it was cancelled or granted, and release an eventual

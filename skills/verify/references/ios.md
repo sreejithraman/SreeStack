@@ -33,6 +33,20 @@ change executable tests when the active task includes implementation, harness
 repair, or reusable verification setup. Keep test files, test plans, fixtures,
 and CI configuration in the product repo.
 
+## Build output
+
+Xcode keys its default DerivedData folder by workspace path, so each worktree and
+each disposable checkout gets its own folder, and that folder outlives the checkout.
+
+- Use the checkout's normal DerivedData only when you are its sole builder: the
+  only agent running in that checkout, such as a delegated child in its own
+  isolated worktree.
+- Every other run, including any run unsure it is alone and every build of a
+  disposable checkout such as a red-first base, passes `-derivedDataPath` inside
+  its [run scratch](../SKILL.md#keep-proof-not-runs), so deleting the run scratch
+  deletes that build.
+- Every test run passes `-resultBundlePath` inside its run scratch.
+
 ## Prepare and run native UI tests
 
 Discover the project's UI test target, scheme, test plan, wrapper command, and
@@ -51,8 +65,9 @@ delivery path from [authenticated verification](authenticated-verification.md).
 Map selected test methods to required workflow assertions. Inspect test-plan
 configurations, selection filters, disabled tests, skips, expected failures, and
 retries. Reconcile the tests actually executed with the selected assertions under
-Verify's main procedure. Retain the runner's exit status and result bundle,
-including screenshots, attachments, logs, and every attempt needed for the verdict.
+Verify's main procedure. Record the runner's exit status. Export the screenshots,
+attachments, and log excerpts a verdict cites from the result bundle into
+[kept proof](../SKILL.md#keep-proof-not-runs).
 
 Pair public UI actions with explicit outcome assertions. Prefer accessibility
 identifiers and meaningful labels. Wait for observable states with bounded
@@ -103,8 +118,9 @@ hardware is unavailable, report the device-specific assertions as blocked.
 
 ## Evidence
 
-Record the command and toolchain, scheme/test plan, build and target identity,
-fixture state, selected tests, per-assertion outcomes, and artifact locations.
+Record the command and toolchain, scheme/test plan, build identity, target
+identity, fixture state, selected tests, and per-assertion outcomes in
+[kept proof](../SKILL.md#keep-proof-not-runs).
 Capture the workflow states needed to support visual claims. Use
 [interface review](interface-review.md) for relevant visual, Dynamic Type,
 keyboard, focus, touch-target, and assistive-technology checks. Exercise VoiceOver
