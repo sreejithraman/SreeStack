@@ -10,9 +10,10 @@ Clean up only resources whose owner and disposal reason are established. A merge
 1. **Inventory.** Resolve the repository, worktrees, default and task branches,
    relevant pull requests, and candidate resources. Include review surfaces,
    development apps and their servers/watchers, simulator/emulator devices and
-   installs, slot claims, runtime files, build folders, the task's folder under
-   Verify's [kept-proof root](../verify/SKILL.md#keep-proof-not-runs), and local
-   or remote refs as applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
+   installs, slot claims, runtime files, build folders, the task's kept-proof
+   folder, found from the repo and branch by Verify's
+   [naming](../verify/SKILL.md#keep-proof-not-runs), and local or remote refs as
+   applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
    for apps, processes, simulator/emulator devices, and installs.
    Refresh remote refs before judging branch tips.
    Prefer project cleanup commands over hand-written deletion. For each candidate,
@@ -58,6 +59,12 @@ Clean up only resources whose owner and disposal reason are established. A merge
    worktree that is clean or contains solely identified, explicitly abandoned
    task changes, with no retained ignored data. Leave the current worktree in
    place for Codex.
+
+   When you remove a worktree, also remove its Xcode DerivedData folders. These
+   are the folders in Xcode's DerivedData location, `~/Library/Developer/Xcode/DerivedData`
+   by default, whose `info.plist` has a `WorkspacePath` inside the removed
+   worktree: it starts with the worktree's absolute path plus `/`. Leave every
+   other DerivedData folder, including folders without that key.
 
    Before deleting any branch, recheck its tip and worktree use. For merged work,
    the tip must still equal the source head verified at merge time or be reachable

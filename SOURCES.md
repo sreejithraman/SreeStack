@@ -743,9 +743,11 @@ suites preserve required integration gates, reconcile every selected test and
 attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
 protocols, and fresh persisted-output reads. Separates deleted run scratch from
-small kept proof in a per-task folder under the XDG state directory that lasts
-until the work lands or is abandoned; builds stay in the build system and are
-named by SHA plus hash. Keeps bounded reproduction attempts,
+small kept proof in per-run folders under a per-task folder in the XDG state
+directory that lasts until the work lands or is abandoned; proof from runs tied
+to no task stays in session scratch. Only a worktree's own builds stay in the
+build system and are named by SHA plus hash; the iOS reference sends overlapping
+runs, disposable-checkout builds and result bundles into run scratch. Keeps bounded reproduction attempts,
 outcome counts, authorization, isolation, redaction, run-owned cleanup,
 and separate defect-reproduction reporting.
 Authenticated workflows reuse designated test accounts and standing scope,
@@ -770,7 +772,8 @@ evidence limits. Greetings and attribution instructions are omitted.
 
 Accepts merge completion handoffs from `merge`. Cleanup includes verified
 task-owned development processes, simulator/emulator installs, disposable test
-data, Verify's kept proof, and temporary devices created solely for the task.
+data, Verify's kept proof, the Xcode DerivedData of removed worktrees, and
+temporary devices created solely for the task.
 Reused devices are preserved and shut down only when the task booted them and no
 consumer remains.
 Cleanup reconstructs process, device, and install ownership from available
@@ -1181,9 +1184,9 @@ than test phones. Adds host-routing, retained-target and shared-requester owners
 gates plus fresh lease-identity requirements, and links local
 run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
-checks. Checks free disk space and load before device work and holds or reports
-when either is critical. Project runners reuse the worktree's DerivedData and
-hold one exclusion from build through the last install or test read of its products.
+checks. Checks free disk space and load once before acquiring a device, on the
+machine that runs it, and holds or reports when either is critical. Project
+runners follow Verify's iOS build output rules.
 Failure guidance defers to host recovery instructions and preserves unresolved
 ownership conflicts. Owns T3 Device panel routing, returned driver and session flags,
 and Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay

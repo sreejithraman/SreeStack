@@ -26,12 +26,8 @@ The runner must:
 - Allocate a unique run directory for temporary fixtures and logs, and put
   Verify's [kept proof](../../verify/SKILL.md#keep-proof-not-runs) outside it.
   Record created paths and process identities as they are created.
-- Build into the worktree's normal DerivedData so later runs reuse it. Hold one
-  exclusion from the build through the last install or test read of its
-  products, including `test-without-building`. A run that can't wait builds
-  into its own product root inside its run directory, through the project's
-  supported option such as `-derivedDataPath`, and deletes that root with the
-  run directory.
+- Place Xcode DerivedData and result bundles by Verify's
+  [build output](../../verify/references/ios.md#build-output) rules.
 - Capture PIDs at spawn and use existing ownership-checked stop tooling. Recheck
   start identity, executable/workspace and other consumers immediately before
   stopping. Await all run-owned writers, including test helpers and descendants;

@@ -27,11 +27,12 @@ asks to create or change a map, follow [verification maps](../setup-sreestack/re
 A run leaves two kinds of files. Keep them in separate places from the start.
 
 **Run scratch** is anything you could produce again: plans, helper and rerun scripts,
-per-step snapshots, result bundles, and intermediate reruns. Put it in a temporary
-directory of its own outside the repo, and delete that directory when the run ends,
-pass or fail. Leave builds and DerivedData where the build system puts them, so later
-runs reuse them. Record a build by its build identity instead of copying it or its
-inputs, such as source trees and Pods.
+per-step snapshots, result bundles, intermediate reruns, and builds no later run
+reuses. Put it in a temporary directory of its own outside the repo, and delete that
+directory when the run ends, pass or fail. Only the worktree's own builds stay where
+the build system puts them, for its later runs to reuse; [iOS build output](references/ios.md#build-output)
+says where Xcode writes. Record a build by its build identity instead of copying it or
+its inputs, such as source trees and Pods.
 
 **Kept proof** is what a reader needs to trust the verdicts:
 
@@ -42,11 +43,25 @@ inputs, such as source trees and Pods.
 - build identity: commit SHA plus artifact hash.
 
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
-a finding that is still open. Put kept proof in
-`${XDG_STATE_HOME:-~/.local/state}/verify-proof/<repo>/<task>/`, where `<task>` is the
-branch name or another task slug, and give its absolute path in your report. It lasts
-until the work lands or is abandoned; then [Repo Cleanup](../repo-cleanup/SKILL.md)
-removes that task's folder.
+a finding that is still open.
+
+Write each run's kept proof to
+`${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/<repo>/<task>/<run>/`:
+
+- `<repo>` is the repository's name from its origin remote, or else the main
+  checkout's folder name. It is never a worktree's folder name.
+- `<task>` is the branch name with each `/` replaced by `-`.
+- `<run>` is the short commit SHA and the time, such as `8fe6922-20261109T1412`.
+
+Give the run folder's absolute path in your report. Delete the earlier run folders
+this run supersedes, except those holding captures for a finding that is still open.
+The task folder lasts until the work lands or is abandoned; then
+[Repo Cleanup](../repo-cleanup/SKILL.md) finds it from the repo and branch and
+removes it.
+
+Proof from a run tied to no task branch or PR, such as a reproduction, an audit, or a
+check of `main`, goes in the session scratch directory and lasts only as long as the
+session. Say so in your report.
 
 ## Choose what to prove
 
