@@ -10,7 +10,9 @@ evidence-backed findings and coverage. You are done when every assigned criterio
 was applied to every changed hunk, or your report names what was not.
 
 Work read-only. The caller owns reviewer selection, tools, fixes, repeat rounds,
-further delegation, and acceptance. To assign a review, prepare it with the
+further delegation, and acceptance. To review your own change that you mean to
+fix and land, run [Review Fix Loop](../review-fix-loop/SKILL.md); it calls this
+skill for each assessment. To assign a review, prepare it with the
 [review brief](references/review-brief.md) and
 [Review evidence](references/review-evidence.md).
 

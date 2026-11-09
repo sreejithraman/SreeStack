@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Use when asked to review and fix a branch, PR, or local diff, or before starting any review round on one.
+description: Use when asked to review and fix a branch, PR, or local diff.
 ---
 
 # Review Fix Loop

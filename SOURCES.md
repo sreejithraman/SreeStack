@@ -1007,6 +1007,8 @@ Reviewer references:
 Imported material remains in read-only assessment references. Review is
 model-agnostic and returns findings and coverage for one supplied snapshot;
 reviewer dispatch, tool execution, fixes, and repeats belong to callers.
+Review sends an agent's own change, meant to be fixed and landed, to Review Fix
+Loop.
 Explicit assignments select criteria while retaining full-scope reading;
 standalone assessment defaults to the existing correctness and code-quality
 criteria, with Adversarial used when requested or assigned. OpenCode harness
@@ -1051,14 +1053,14 @@ other nonignored untracked source.
   Primary for contained work, Primary plus a fitting lens for contained risk, and
   staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
   Fixes route by what they change to new tasks on the original reviewers'
-  models for those angles, under Orchestration's review-pass rule; Primary's integrated check covers
-  cumulative repairs; and repeated repairs to an invariant or new issues from a
-  second pass on the same component trigger a parent design checkpoint. The first independent pass adds one random optional reviewer
-  from each provider pool. The loop owns provider-reference
-  delivery, skips, and stable snapshots. Generic
-  delegation and handoff use Orchestration, with tasks mapped to review
-  assignments and workflow/pass identities; findings use Review Sweep with
-  stable issue IDs and per-issue repair/check evidence.
+  models for those angles, under Orchestration's review-pass rule; Primary's
+  integrated check covers cumulative repairs; and repeated repairs to an
+  invariant or new issues from a second pass on the same component trigger a
+  parent design checkpoint. The first independent pass adds one random optional
+  reviewer from each provider pool. The loop owns provider-reference delivery,
+  skips, and stable snapshots. Generic delegation and handoff use Orchestration,
+  with tasks mapped to review assignments and workflow/pass identities; findings
+  use Review Sweep with stable issue IDs and per-issue repair/check evidence.
 
 ## pr
 
