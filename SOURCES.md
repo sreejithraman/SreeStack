@@ -744,16 +744,13 @@ attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
 protocols, and fresh persisted-output reads. Separates run scratch, made with
 `mktemp -d` under `$TMPDIR` and deleted, from small kept proof in unique `mktemp`
-per-run folders under a flat per-task folder in the XDG state directory. The task
-folder is named by a branch slug and a hash of the clone's common Git directory and
-branch, records the origin without userinfo, and lasts until the work lands or is
-abandoned. Before each run folder, Verify checks its `task.json` manifest (`origin`,
-`git_dir`, `branch`, `created`), writes a missing one atomically, and sends the run's
-proof to session scratch when the manifest conflicts. Proof from runs tied to no
-task, including a detached HEAD, stays in session scratch. Only the sole agent in a
-checkout, including a child in its own isolated worktree, keeps builds in the build
-system; the iOS reference sends every other run's builds, disposable-checkout builds
-and result bundles into run scratch.
+per-run folders. A task branch in a linked worktree keeps its proof under that
+worktree's private Git directory (`--git-path verify-proof`), so Git never commits
+it and worktree removal deletes it. Every other run, including the main checkout, a
+detached HEAD, an audit, or a reproduction, keeps proof in session scratch for the
+session only. Only the sole agent in a checkout, including a child in its own
+isolated worktree, keeps builds in the build system; the iOS reference sends every
+other run's builds, disposable-checkout builds and result bundles into run scratch.
 Build identity is the commit plus the hash of the product installed or tested.
 Keeps bounded reproduction attempts, outcome counts, authorization, isolation,
 redaction, run-owned cleanup,
@@ -780,15 +777,8 @@ evidence limits. Greetings and attribution instructions are omitted.
 
 Accepts merge completion handoffs from `merge`. Cleanup includes verified
 task-owned development processes, simulator/emulator installs, disposable test
-data, Verify's kept proof, the Xcode DerivedData of removed or missing worktrees, and
-temporary devices created solely for the task.
-It finds Verify's kept-proof task folders by scanning their `task.json` manifests.
-From the manifest's own clone, it keeps one while a worktree holds its branch, and
-otherwise removes one whose PR merged at a head containing the branch tip, whose
-work was explicitly abandoned, or whose branch is gone locally and from a successful
-remote query with no open PR on the origin repo or its upstream. It also removes one
-whose common Git directory is gone. It keeps and reports one without a readable
-manifest or whose check fails or can't run, and skips folders of other clones.
+data, the Xcode DerivedData of removed or missing worktrees, and temporary devices
+created solely for the task.
 Reused devices are preserved and shut down only when the task booted them and no
 consumer remains.
 Cleanup reconstructs process, device, and install ownership from available

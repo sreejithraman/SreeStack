@@ -10,10 +10,8 @@ Clean up only resources whose owner and disposal reason are established. A merge
 1. **Inventory.** Resolve the repository, worktrees, default and task branches,
    relevant pull requests, and candidate resources. Include review surfaces,
    development apps and their servers/watchers, simulator/emulator devices and
-   installs, slot claims, runtime files, build folders, Verify's kept-proof task
-   folders, found by reading each `task.json` under its
-   [kept-proof root](../verify/SKILL.md#keep-proof-not-runs), and local or remote
-   refs as applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
+   installs, slot claims, runtime files, build folders, and local or remote refs
+   as applicable. Follow [development resource discovery](references/development-resources.md#identify-resources)
    for apps, processes, simulator/emulator devices, and installs.
    Refresh remote refs before judging branch tips.
    Prefer project cleanup commands over hand-written deletion. For each candidate,
@@ -27,8 +25,7 @@ Clean up only resources whose owner and disposal reason are established. A merge
    affected worktrees. A merged pull request establishes completion only for its
    merge-time source head; a branch tip reachable from its intended base is also complete.
    An explicit request to abandon work establishes abandonment for its identified
-   commits and task-owned staged, unstaged, or untracked changes; a closed,
-   unmerged PR leaves its work open. Preserve
+   commits and task-owned staged, unstaged, or untracked changes. Preserve
    unrelated changes, ignored user data, and anything whose ownership is uncertain.
    For housekeeping, verify completion or abandonment separately for each
    branch or task. Preserve unique commits unless the user explicitly abandoned
@@ -46,18 +43,6 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and simulator/emulator installs and devices, follow
    [development resource cleanup](references/development-resources.md#clean-up).
    Measure and remove exact task-owned build folders, keeping retained app data.
-   Judge a kept-proof task folder only from the clone its `task.json` names: the
-   current repo's `git_dir`, computed as [Verify](../verify/SKILL.md#keep-proof-not-runs)
-   does, equals the manifest's. Keep it while any worktree holds its branch.
-   Otherwise remove it when its PR merged at the verified merge-time head and the
-   branch tip equals or is contained in that head, or when the user explicitly
-   abandoned that work. Also remove it when a successful remote query and the local
-   refs both lack that branch, and no PR from it is open on the origin repo or its
-   upstream. Remove a folder whose `git_dir` no longer exists: its clone is gone.
-   Keep and report a folder whose `task.json` is missing or unreadable, or whose
-   check fails or can't run, such as offline or after a `gh` error. Skip folders
-   whose `git_dir` belongs to another existing clone. Leave the root and every
-   other folder.
    Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
 
@@ -115,4 +100,4 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and recovery details such as recorded branch heads or reflogs. State partial
    cleanup plainly.
 
-An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including development processes, simulator/emulator installs, disposable test data, kept verification proof, and temporary devices created for the task, in that scope. It does not authorize unrelated or uncertain targets.
+An explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an authorized merge covers disposal of verified task-owned temporary resources, including development processes, simulator/emulator installs, disposable test data, and temporary devices created for the task, in that scope. It does not authorize unrelated or uncertain targets.

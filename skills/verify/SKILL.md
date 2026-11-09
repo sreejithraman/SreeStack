@@ -47,47 +47,24 @@ trees and Pods.
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
 a finding that is still open.
 
-Write each run's kept proof to a new run folder inside its task folder, under the
-kept-proof root `${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/`:
+Write each run's kept proof to a new run folder, and give its absolute path in your
+report. When the run proves a task branch checked out in a linked worktree, put the
+folder in that worktree's private Git directory:
 
 ```sh
-branch=$(git symbolic-ref --quiet --short HEAD)  # empty if detached: use session scratch
-origin=$(git remote get-url origin 2>/dev/null | sed -E 's#^([^:/]+://)[^/]*@#\1#')
-git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
-slug=$(printf '%s' "$branch" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C tr -cs 'a-z0-9' '-' | cut -c1-40)
-hash=$(printf '%s\n%s' "$git_dir" "$branch" | shasum -a 256 | cut -c1-12)
-task="${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/$slug-$hash"
-mkdir -p "$task"
-# Check or write "$task/task.json" here, before every run folder.
-mktemp -d "$task/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
+proof=$(git rev-parse --path-format=absolute --git-path verify-proof)
+mkdir -p "$proof" && mktemp -d "$proof/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
 ```
 
-The `sed` strips any `user:token@` from the origin, so no credential is stored.
-`git_dir` is unique to each clone and shared by its worktrees, so separate clones of
-one remote keep separate task folders.
+Git never commits that folder, and removing or pruning the worktree deletes it, so the
+proof lasts exactly as long as the task's worktree. A checkout is a linked worktree on
+a branch when `git rev-parse --path-format=absolute --git-dir --git-common-dir` prints
+two different paths and `git symbolic-ref -q HEAD` succeeds.
 
-Before each run folder, make sure `$task/task.json` is readable and names this run's
-`branch` and `git_dir`. If the file is
-missing, write it with exactly `origin` (or `null`), `git_dir`, `branch`, and
-`created`, the UTC time: write a temp file in the task folder, then `mv` it into
-place. If it is unreadable or names another identity, leave it, report it, and put
-this run's proof in session scratch. A sample manifest and run folder:
-
-```json
-{"origin": "git@github.com:Acme/SeatCommons.git", "git_dir": "/Users/me/src/SeatCommons/.git", "branch": "feat/Seat-Map", "created": "2026-11-09T14:12:03Z"}
-```
-
-`$HOME/.local/state/verify-proof/feat-seat-map-a9e97ffc830e/20261109T141203Z-75e0d1d-Q3x9Lp`
-
-Give the run folder's absolute path in your report. The task folder and every run
-folder in it last until the work lands or is abandoned; then
-[Repo Cleanup](../repo-cleanup/SKILL.md) finds the task folder by its `task.json` and
-removes it.
-
-Proof from a run tied to no task branch or PR, such as a reproduction, an audit, a
-check of `main`, or a detached HEAD, goes in the session scratch directory, or in a
-temporary directory when the host has none. It lasts only as long as the session. Say
-so in your report.
+Put every other run's folder in the session scratch directory, or in a temporary
+directory when the host has none. That covers the main checkout, a detached HEAD, a
+run outside a repo, an audit, and a reproduction. That proof lasts only as long as the
+session. Say so in your report.
 
 ## Choose what to prove
 
