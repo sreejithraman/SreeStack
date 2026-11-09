@@ -27,11 +27,13 @@ remote description. Writing text commits and pushes nothing.
 Watching an existing PR starts at step 4.
 
 1. **Prepare it.** Run [Show, Don't Tell](../show-dont-tell/SKILL.md) on the complete diff
-   against the immediate base, including docs-only changes, unless earlier review of the
-   current head included it. Then [commit](references/publish.md#commit).
+   against the immediate base, including docs-only changes, unless earlier evidence covers
+   this change. Then [commit](references/publish.md#commit).
 2. **Get it reviewed.** Run [Review Fix Loop](../review-fix-loop/SKILL.md) on the committed
-   head. Earlier review of this exact commit [finishes it](../review-fix-loop/SKILL.md#6-finish)
-   and posts the status. Continue once review and verification pass.
+   head. A new head of reviewed work, such as after a base update or restack, is a
+   [repair pass](../review-fix-loop/SKILL.md#4-route-repairs). Earlier review of this exact
+   commit [finishes it](../review-fix-loop/SKILL.md#6-finish) and posts the status. Continue
+   once review and verification pass.
 3. **Publish it.** Follow [publish](references/publish.md#push). Publish ready for review
    unless the user asks for a draft. In T3, link each PR you create, push to, or take over,
    including every stack layer.

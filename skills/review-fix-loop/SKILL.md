@@ -21,8 +21,11 @@ requirements, and verification evidence with the
 [review brief](../review/references/review-brief.md). Establish its workflow/pass
 identity before dispatch and retain it with the findings through every pass.
 
-For PR work, every pass starts on a clean worktree, and its snapshot is HEAD. The caller
-commits any edits, including Show, Don't Tell's and repairs, before the pass that assesses them.
+For PR work, every pass starts with nothing in the PR's scope uncommitted, and its snapshot is
+HEAD. Unrelated local work stays as it is and out of the snapshot. The caller commits any
+in-scope edits, including Show, Don't Tell's and repairs, before the pass that assesses them.
+Before each pass, confirm that `git status --porcelain -- <in-scope paths>` prints nothing, and
+record that in the brief.
 
 Select initial discovery from the first matching row, honoring explicit user
 requests:

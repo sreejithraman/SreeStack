@@ -517,7 +517,7 @@ History-changing operations use the shared PR preservation reference to back up
 retained local files affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
-publication does not substitute for that link. Layers get `pr`’s review step before
+publication does not substitute for that link. Layers get `pr`’s Prepare and Review steps before
 `submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
 Each layer runs its held `review-fix-loop` status command unchanged once its SHA is pushed;
 after a restack, the loop reruns for that layer as a repair pass.

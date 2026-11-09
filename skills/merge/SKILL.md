@@ -33,9 +33,10 @@ limits.
    anything that landed first.
 
    `pr_state` blocks a head without a passing `review-fix-loop` status, including after a base
-   update or restack. A caller with its own repair owner gets the gap back. Without one, run
-   [PR's review step](../pr/SKILL.md#publish), publish any fixes, and read the state again. The
-   loop reviews the new head as a [repair pass](../review-fix-loop/SKILL.md#4-route-repairs).
+   update or restack. A caller with its own repair owner gets the gap back. Without one, take
+   the head through PR's [Prepare and Review steps](../pr/SKILL.md#publish), publish any fixes,
+   and read the state again. A new head of reviewed work is a
+   [repair pass](../review-fix-loop/SKILL.md#4-route-repairs).
 
    A caller that keeps its own repair owner gets each failure, comment, and stop back, and resumes
    that owner. You repair nothing.
@@ -48,7 +49,8 @@ limits.
 
    Every PR, including docs-only changes, needs review of its current head that includes
    [Show, Don't Tell](../show-dont-tell/SKILL.md), plus required verification. The head's
-   `review-fix-loop` status records that review, and step 2 restores a missing one. Route
+   `review-fix-loop` status records the loop's review, and PR's Prepare step supplies Show,
+   Don't Tell; check that both happened. Step 2 restores a missing review. Route
    missing or stale verification the same way as a stale review, then go back to step 2.
 
    A head you didn't verify holds commits nobody reviewed. Read them, then go back to step 2. It
