@@ -33,6 +33,8 @@ when a result looks wrong.
   fixes something, check that review evidence covers the change. If it's missing or stale,
   rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
   held replies, and read the state again.
+- **No passing review status:** run [Review Fix Loop](../../review-fix-loop/SKILL.md#6-finish)
+  on the head, or, after a base update, apply [Merge's carry-over rule](../../merge/SKILL.md).
 - **A missing check:** explain it, including workflows filtered out by a stacked PR's base or
   by draft status.
 - **Behind or conflicted:** read what the new base commits touch, then decide with
@@ -66,8 +68,6 @@ any unmet repository requirement.
 
 `pr_state` blocks until the head has a passing `review-fix-loop` commit status. It reports that
 status under `review_status`, apart from `checks`.
-[Review Fix Loop](../../review-fix-loop/SKILL.md#6-finish) posts it when it finishes on the head,
-and [Merge](../../merge/SKILL.md) carries it over a base update that doesn't affect the change.
 
 GitHub stops nothing on a repo with no required checks, so `pr_state` then holds every check to
 that bar: a failure blocks, and a head with workflows but no checks waits. One of these still

@@ -24,17 +24,19 @@ remote description. Writing text commits and pushes nothing.
 
 ## Publish
 
-Watching an existing PR starts at step 3.
+Watching an existing PR starts at step 4.
 
-1. **Get it reviewed.** Reuse review evidence that matches the complete diff against the
+1. **Commit it.** Follow [commit](references/publish.md#commit), so review sees a committed
+   head.
+2. **Get it reviewed.** Reuse review evidence that matches the complete diff against the
    immediate base and included [Show, Don't Tell](../show-dont-tell/SKILL.md). Otherwise run
    Show, Don't Tell on that diff, including docs-only changes, then
    [Review Fix Loop](../review-fix-loop/SKILL.md) on the result. Continue once review and
    verification pass.
-2. **Publish it.** Follow [publish](references/publish.md). Publish ready for review unless
-   the user asks for a draft. In T3, link each PR you create, push to, or take over, including
-   every stack layer.
-3. **Watch it.** Follow [watch](references/watch.md).
+3. **Publish it.** Follow [publish](references/publish.md#push). Publish ready for review
+   unless the user asks for a draft. In T3, link each PR you create, push to, or take over,
+   including every stack layer.
+4. **Watch it.** Follow [watch](references/watch.md).
 
 ## Report
 

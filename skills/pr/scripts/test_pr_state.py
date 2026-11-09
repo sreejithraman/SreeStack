@@ -281,9 +281,15 @@ class ReviewGate(unittest.TestCase):
                 code, result = run(FakeGitHub(checks=checks, review=None))
                 self.assertEqual((code, result["blockers"]), (2, [pr_state.REVIEW_BLOCKER]))
 
+    def test_review_blocker_names_the_loop_and_merges_carry_over(self):
+        self.assertIn("run Review Fix Loop on it", pr_state.REVIEW_BLOCKER)
+        self.assertIn("merge's carry-over rule", pr_state.REVIEW_BLOCKER)
+        self.assertNotIn("re-post", pr_state.REVIEW_BLOCKER)
+
     def test_passing_review_status_lets_the_head_land(self):
         code, result = run(FakeGitHub())
-        self.assertEqual((code, result["status"], result["review_status"]["state"]), (0, "ready", "pass"))
+        self.assertEqual((code, result["status"], result["review_status"]["state"]),
+                         (0, "ready", "pass"))
 
     def test_ci_rules_are_unchanged_beside_a_passing_review_status(self):
         cases = (([check_run(conclusion="FAILURE")], "required check failed: ci https://ci/ci"),

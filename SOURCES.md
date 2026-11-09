@@ -519,7 +519,8 @@ retained local files affected by tracking deletions and verify restoration.
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
 publication does not substitute for that link. Layers get `pr`’s review step before
 `submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
-After `submit` or `push`, each layer's held `review-fix-loop` status is posted on its head.
+Each layer runs its held `review-fix-loop` status command unchanged once its SHA is pushed;
+after a restack, merge's carry-over rule or another loop run covers that layer.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
 on request, to match `pr`. Branch deletion after a merge goes through `repo-cleanup`
@@ -1069,7 +1070,7 @@ other nonignored untracked source.
 - [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
 The local name and UI are `pr`, with automatic discovery. It owns PR text, publication, and
-watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing reuses
+watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing commits before review and pushes after it. It reuses
 matching review evidence, and runs `show-dont-tell` then the review loop when there is none.
 `scripts/pr_state.py` reads one head's checks, threads, comments, and reviews through every page,
 replacing hand-read readiness with `blockers`, `pending`, and `to_settle`.

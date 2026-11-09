@@ -164,19 +164,22 @@ accepted findings and checks are settled on it, and the final
 code/substantive-instruction pass needs no fixes. Missing required coverage and
 accepted findings block completion.
 
-Record completion on the final snapshot's commit, because
-[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it. A
-commit status needs only the repository and the SHA, with or without a PR. Check that the
-commit is on the remote, for example that `git ls-remote <remote> <branch>` names it as the
-branch head. Then post a status on its full SHA, with a description of at most 140 characters:
+Record completion on the exact commit the loop reviewed, because
+[`pr_state`](../pr/references/watch.md#ready-or-blocked) blocks merging a head without it.
+For PR work, the final snapshot is a commit. When it ends with uncommitted edits, the caller
+commits them and confirms with `git status --porcelain` that nothing in scope is left
+uncommitted. Build this command with that commit's full SHA and a description of at most 140
+characters:
 
 ```sh
-gh api repos/<owner>/<repo>/statuses/<full head sha> -f state=success \
+gh api repos/<owner>/<repo>/statuses/<reviewed sha> -f state=success \
   -f context=review-fix-loop -f description="<workflow_id>: <N> passes"
 ```
 
-When it isn't on the remote yet, put this exact command in the handoff. Whoever pushes that
-snapshot posts it once the commit is on the remote.
+Run it once that SHA is on the remote; GitHub rejects a SHA it doesn't have, and a PR isn't
+needed. Until then, hand it off unchanged, and whoever pushes that SHA runs it. A head with
+another SHA gets a record only through [Merge's carry-over rule](../merge/SKILL.md) or another
+run of this loop.
 
 In the Orchestration handoff, map child tasks to workflow/pass, review assignments,
 criteria, and configured models, and state which reviewer each follow-up task
