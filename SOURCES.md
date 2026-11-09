@@ -743,8 +743,9 @@ suites preserve required integration gates, reconcile every selected test and
 attempt, and require matching runtime evidence for pre-existing failure claims.
 Terminal and service checks use process or PTY driving, bounded completion, public
 protocols, and fresh persisted-output reads. Separates deleted run scratch from
-small kept proof that lasts until the work lands or is abandoned; builds stay in
-the build system and are named by SHA plus hash. Keeps bounded reproduction attempts,
+small kept proof in a per-task folder under the XDG state directory that lasts
+until the work lands or is abandoned; builds stay in the build system and are
+named by SHA plus hash. Keeps bounded reproduction attempts,
 outcome counts, authorization, isolation, redaction, run-owned cleanup,
 and separate defect-reproduction reporting.
 Authenticated workflows reuse designated test accounts and standing scope,
@@ -1181,7 +1182,8 @@ gates plus fresh lease-identity requirements, and links local
 run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
 checks. Checks free disk space and load before device work and holds or reports
-when either is critical. Project runners reuse the worktree's DerivedData.
+when either is critical. Project runners reuse the worktree's DerivedData and
+hold one exclusion from build through the last install or test read of its products.
 Failure guidance defers to host recovery instructions and preserves unresolved
 ownership conflicts. Owns T3 Device panel routing, returned driver and session flags,
 and Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay

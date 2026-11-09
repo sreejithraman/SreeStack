@@ -30,21 +30,23 @@ A run leaves two kinds of files. Keep them in separate places from the start.
 per-step snapshots, result bundles, and intermediate reruns. Put it in a temporary
 directory of its own outside the repo, and delete that directory when the run ends,
 pass or fail. Leave builds and DerivedData where the build system puts them, so later
-runs reuse them. Name a build by commit SHA plus artifact hash instead of copying the
-build or its inputs, such as source trees and Pods.
+runs reuse them. Record a build by its build identity instead of copying it or its
+inputs, such as source trees and Pods.
 
 **Kept proof** is what a reader needs to trust the verdicts:
 
 - the verdict table;
-- the captures behind each verdict: screenshots, recordings, transcripts, or responses;
+- the captures behind each verdict, visual for a visual claim: screenshots,
+  recordings, transcripts, or responses;
 - the log excerpts a verdict or finding cites;
 - build identity: commit SHA plus artifact hash.
 
 For repeated attempts, keep the outcome counts, plus captures only for failures behind
-a finding that is still open. Put kept proof in the host's session scratch directory,
-or in a task folder under the OS temp directory when the host has none, and give its
-absolute path in your report. Owner reports and chiefs read it until the work lands
-or is abandoned. [Repo Cleanup](../repo-cleanup/SKILL.md) removes it then.
+a finding that is still open. Put kept proof in
+`${XDG_STATE_HOME:-~/.local/state}/verify-proof/<repo>/<task>/`, where `<task>` is the
+branch name or another task slug, and give its absolute path in your report. It lasts
+until the work lands or is abandoned; then [Repo Cleanup](../repo-cleanup/SKILL.md)
+removes that task's folder.
 
 ## Choose what to prove
 
@@ -225,8 +227,6 @@ including local changes, plus the environment, fixtures, and test method. Matchi
 or another revision's results don't show that. State the limits of the comparison.
 
 ## Clean up and report
-
-Visual claims need visual captures in the [kept proof](#keep-proof-not-runs).
 
 After success or failure, stop only the processes and sessions this run started, remove
 their disposable data, and delete the run scratch. Leave reused services and source

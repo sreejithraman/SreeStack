@@ -17,8 +17,9 @@ and live tools supply the current interaction contract.
 
 ## Scripted browser checks
 
-Extend the project's Playwright Test setup for a repeatable check; its fixtures
-close the browser. Use the Playwright library for a one-off proof script. See
+Use the project's Playwright Test check when it already has one for this
+behavior; its fixtures close the browser. Otherwise write a script with the
+Playwright library in [run scratch](../SKILL.md#keep-proof-not-runs). See
 [Playwright library](https://playwright.dev/docs/library).
 
 - Launch Playwright's bundled Chromium, with no `channel` or `executablePath`.

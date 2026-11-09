@@ -104,9 +104,9 @@ hardware is unavailable, report the device-specific assertions as blocked.
 
 ## Evidence
 
-Record the command and toolchain, scheme/test plan, build identity as commit SHA
-plus app hash, target identity, fixture state, selected tests, and per-assertion
-outcomes in [kept proof](../SKILL.md#keep-proof-not-runs).
+Record the command and toolchain, scheme/test plan, build identity, target
+identity, fixture state, selected tests, and per-assertion outcomes in
+[kept proof](../SKILL.md#keep-proof-not-runs).
 Capture the workflow states needed to support visual claims. Use
 [interface review](interface-review.md) for relevant visual, Dynamic Type,
 keyboard, focus, touch-target, and assistive-technology checks. Exercise VoiceOver

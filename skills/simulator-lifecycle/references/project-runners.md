@@ -23,18 +23,22 @@ The runner must:
   occur. A one-shot detached lease needs a supported renewal owner; choosing a
   long TTL alone is insufficient. Observe lease loss and stop device-dependent
   work before any further command.
-- Build into the worktree's normal DerivedData so later runs reuse it, and
-  serialize builds that share it. Allocate a unique run directory for temporary
-  fixtures and logs, and put Verify's
-  [kept proof](../../verify/SKILL.md#keep-proof-not-runs) outside it. Record
-  created paths and process identities as they are created.
+- Allocate a unique run directory for temporary fixtures and logs, and put
+  Verify's [kept proof](../../verify/SKILL.md#keep-proof-not-runs) outside it.
+  Record created paths and process identities as they are created.
+- Build into the worktree's normal DerivedData so later runs reuse it. Hold one
+  exclusion from the build through the last install or test read of its
+  products, including `test-without-building`. A run that can't wait builds
+  into its own product root inside its run directory, through the project's
+  supported option such as `-derivedDataPath`, and deletes that root with the
+  run directory.
 - Capture PIDs at spawn and use existing ownership-checked stop tooling. Recheck
   start identity, executable/workspace and other consumers immediately before
   stopping. Await all run-owned writers, including test helpers and descendants;
   a root process exiting is insufficient if it left children running.
 - Export the device's screenshots and logs that kept proof needs before
-  releasing, because SimLock wipes the device. Release through the same
-  interface in teardown even when acquisition only partly succeeded; reconcile
+  releasing. Release through the same interface in teardown even when
+  acquisition only partly succeeded; reconcile
   an uncertain grant by request/run identity before requesting another device.
 - Bound queued acquisition and use supported cancellation only for a request
   proven to belong to this run. Killing a waiting CLI process does not necessarily
