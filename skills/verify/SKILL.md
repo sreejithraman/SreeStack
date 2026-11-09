@@ -55,18 +55,19 @@ branch=$(git symbolic-ref --quiet --short HEAD)  # empty if detached: use sessio
 origin=$(git remote get-url origin 2>/dev/null | sed -E 's#^([^:/]+://)[^/]*@#\1#')
 git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
 slug=$(printf '%s' "$branch" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C tr -cs 'a-z0-9' '-' | cut -c1-40)
-hash=$(printf '%s\n%s' "${origin:-$git_dir}" "$branch" | shasum -a 256 | cut -c1-12)
+hash=$(printf '%s\n%s' "$git_dir" "$branch" | shasum -a 256 | cut -c1-12)
 task="${XDG_STATE_HOME:-$HOME/.local/state}/verify-proof/$slug-$hash"
 mkdir -p "$task"
 # Check or write "$task/task.json" here, before every run folder.
 mktemp -d "$task/$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short HEAD)-XXXXXX"
 ```
 
-The `sed` strips any `user:token@` from the origin, so no credential is hashed or
-stored. `git_dir` is unique to the repo and shared by its worktrees.
+The `sed` strips any `user:token@` from the origin, so no credential is stored.
+`git_dir` is unique to each clone and shared by its worktrees, so separate clones of
+one remote keep separate task folders.
 
 Before each run folder, make sure `$task/task.json` is readable and names this run's
-`branch`, plus its `origin`, or its `git_dir` when `origin` is null. If the file is
+`branch` and `git_dir`. If the file is
 missing, write it with exactly `origin` (or `null`), `git_dir`, `branch`, and
 `created`, the UTC time: write a temp file in the task folder, then `mv` it into
 place. If it is unreadable or names another identity, leave it, report it, and put
@@ -76,7 +77,7 @@ this run's proof in session scratch. A sample manifest and run folder:
 {"origin": "git@github.com:Acme/SeatCommons.git", "git_dir": "/Users/me/src/SeatCommons/.git", "branch": "feat/Seat-Map", "created": "2026-11-09T14:12:03Z"}
 ```
 
-`$HOME/.local/state/verify-proof/feat-seat-map-68d90e4a806f/20261109T141203Z-75e0d1d-Q3x9Lp`
+`$HOME/.local/state/verify-proof/feat-seat-map-a9e97ffc830e/20261109T141203Z-75e0d1d-Q3x9Lp`
 
 Give the run folder's absolute path in your report. The task folder and every run
 folder in it last until the work lands or is abandoned; then

@@ -46,16 +46,18 @@ Clean up only resources whose owner and disposal reason are established. A merge
    and simulator/emulator installs and devices, follow
    [development resource cleanup](references/development-resources.md#clean-up).
    Measure and remove exact task-owned build folders, keeping retained app data.
-   Remove a kept-proof task folder when its `task.json` names a branch whose work
-   this cleanup found complete or explicitly abandoned under step 2. Also remove
-   it when a successful remote query and the local refs both lack that branch, and
-   no PR from it is open on the origin repo or its upstream. Judge these only from
-   the repo the `task.json` names: the current repo's origin or `git_dir`,
-   computed as [Verify](../verify/SKILL.md#keep-proof-not-runs) does, matches it.
-   Remove a folder whose `origin` is null and whose `git_dir` no longer exists.
+   Judge a kept-proof task folder only from the clone its `task.json` names: the
+   current repo's `git_dir`, computed as [Verify](../verify/SKILL.md#keep-proof-not-runs)
+   does, equals the manifest's. Keep it while any worktree holds its branch.
+   Otherwise remove it when its PR merged at the verified merge-time head and the
+   branch tip equals or is contained in that head, or when the user explicitly
+   abandoned that work. Also remove it when a successful remote query and the local
+   refs both lack that branch, and no PR from it is open on the origin repo or its
+   upstream. Remove a folder whose `git_dir` no longer exists: its clone is gone.
    Keep and report a folder whose `task.json` is missing or unreadable, or whose
    check fails or can't run, such as offline or after a `gh` error. Skip folders
-   whose `task.json` names another repo. Leave the root and every other folder.
+   whose `git_dir` belongs to another existing clone. Leave the root and every
+   other folder.
    Remove a shared build cache only after approval,
    when no build is active and no other worktree can use it.
 
