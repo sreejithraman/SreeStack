@@ -1,7 +1,7 @@
 /implement
 
 Program: <title>. Program record (read-only): `git -C <program directory> show HEAD:program.json`.
-Original request and accepted corrections: its `request` and `corrections`.
+Original request, accepted corrections, and preserved requirements: its `request`, `corrections`, and `requirements`.
 
 Outcome <ID>: <title>. Sources: <tickets, snips, PRs, or messages, or none>. Prefix decision request IDs with <ID>.
 Scope: <the result this outcome delivers, the code it covers, and what it leaves to other outcomes>.

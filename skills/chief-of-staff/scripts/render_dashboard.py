@@ -35,8 +35,17 @@ ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
-SHOWN_DECISION_STATES = {"open", "answered", "resolved"}
-HISTORY = {"date", "source", "rationale"}  # Decision fields the page never shows.
+HISTORY = {"date", "source", "answerSource", "rationale"}  # Decision fields the page never shows.
+PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "corrections",
+                "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
+                "discoveries", "landings", "waits")
+DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanwhile", "recommendation", "options",
+                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale")
+WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
+             "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
+             "blocked", "unknownReason", "checkedAt", "required", "origin")
+OWNER_KEYS = ("name", "session", "start", "route", "tasks", "workspace", "resources", "handled")
+LAYER_KEYS = ("id", "branch", "status", "url", "head", "base", "stackedOn")
 TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
@@ -95,6 +104,7 @@ def strings(value, path):
 
 def links(value, path):
     for index, item in enumerate(records(value, path)):
+        known_keys(item, f"{path}[{index}]", ("label", "url"))
         text(item.get("label"), f"{path}[{index}].label")
         url(item.get("url"), f"{path}[{index}].url")
 
@@ -103,6 +113,13 @@ def obj(value, path):
     if not isinstance(value, dict):
         raise ValueError(f"{path} must be an object")
     return value
+
+
+def known_keys(row, path, keys):
+    for key in row:
+        if key not in keys:
+            raise ValueError(f"{path}.{key} is not a known field" if path else f"{key} is not a known field")
+    return row
 
 
 def fields(row, path, required=(), optional=()):
@@ -125,7 +142,8 @@ def one_of(value, choices, path):
 
 
 def effective_finish(row):
-    return row.get("effectiveFinishLine", row.get("finishLine"))
+    """Provisional work never merges, so its Land becomes Try."""
+    return "try" if "provisional" in row and row.get("finishLine") == "land" else row.get("finishLine")
 
 
 def owner_name(row):
@@ -140,6 +158,7 @@ def validate_layers(row, path, layers):
     for index, layer in enumerate(records(row.get("layers", []), f"{path}.layers")):
         identity = text(layer.get("id"), f"{path}.layers[{index}].id")
         where = f"{path}.layers[{identity}]"
+        known_keys(layer, where, LAYER_KEYS)
         if identity in layers:
             raise ValueError(f"layer {identity} appears more than once; layer IDs are unique across the program")
         layers[identity] = (layer, row)
@@ -157,7 +176,8 @@ def validate_layers(row, path, layers):
 
 
 def validate_owner(owner, path):
-    fields(obj(owner, path), path, ("name", "route", "report"), ("model", "workspace", "resources"))
+    known_keys(obj(owner, path), path, OWNER_KEYS)
+    fields(owner, path, ("name", "route"), ("workspace", "resources"))
     one_of(owner.get("start"), START_MODES, f"{path}.start")
     if "session" in owner:
         url(owner["session"], f"{path}.session")
@@ -167,6 +187,7 @@ def validate_owner(owner, path):
 
 def validate_work(row, layers):
     path = f"work[{row['id']}]"
+    known_keys(row, path, WORK_KEYS)
     for key in ("title", "repo"):
         text(row.get(key), f"{path}.{key}")
     state = one_of(row.get("state"), STATES, f"{path}.state")
@@ -176,15 +197,14 @@ def validate_work(row, layers):
     strings(row.get("sources", []), f"{path}.sources")
     if "owner" in row:
         validate_owner(row["owner"], f"{path}.owner")
-    for key in ("url", "stackedOn"):
-        if key in row:
-            raise ValueError(f"{path}.{key}: record each PR and its stack parent on the outcome's layers")
     if "unknownReason" in row and state != "unknown":
         raise ValueError(f"{path}.unknownReason applies only to unknown state")
     for key in ("tickets", "evidence"):
         links(row.get(key, []), f"{path}.{key}")
     for index, result in enumerate(records(row.get("results", []), f"{path}.results")):
-        links([result], f"{path}.results[{index}]")
+        known_keys(result, f"{path}.results[{index}]", ("label", "url", "access"))
+        text(result.get("label"), f"{path}.results[{index}].label")
+        url(result.get("url"), f"{path}.results[{index}].url")
         if "access" in result:
             text(result["access"], f"{path}.results[{index}].access")
     if "required" in row and not isinstance(row["required"], bool):
@@ -195,7 +215,7 @@ def validate_work(row, layers):
         raise ValueError(f"{path}: {state} work needs its owner")
 
     if kind == "support":
-        for key in ("finishLine", "effectiveFinishLine", "layers", "provisional"):
+        for key in ("finishLine", "layers", "provisional"):
             if key in row:
                 raise ValueError(f"{path}.{key}: support work has no finish line or layers; give a repository change its own outcome")
         if state not in {"planned", "building", "done", "scrapped", "unknown"}:
@@ -205,15 +225,10 @@ def validate_work(row, layers):
     if state == "done":
         raise ValueError(f"{path}: an outcome ends landed, at its shown Try, or at its PR state, not done")
     if "provisional" in row:
-        provisional = obj(row["provisional"], f"{path}.provisional")
+        provisional = known_keys(obj(row["provisional"], f"{path}.provisional"), f"{path}.provisional", ("basis", "clears", "on"))
         for key in ("basis", "clears"):
             text(provisional.get(key), f"{path}.provisional.{key}")
         strings(provisional.get("on", []), f"{path}.provisional.on")
-        if finish == "land" and row.get("effectiveFinishLine") != "try":
-            raise ValueError(f"{path}: provisional work never merges; set effectiveFinishLine to try")
-    if "effectiveFinishLine" in row and not (
-            "provisional" in row and finish == "land" and row["effectiveFinishLine"] == "try"):
-        raise ValueError(f"{path}.effectiveFinishLine is only Try, for provisional work whose finish line is Land")
     validate_layers(row, path, layers)
     effective = effective_finish(row)
     published = [layer for layer in row.get("layers", []) if "url" in layer]
@@ -235,8 +250,8 @@ def validate_work(row, layers):
 
 
 def halted_by_decision(decisions):
-    """IDs of work an open decision holds at a phase that stops its work."""
-    return {entry["id"] for decision in decisions if decision["status"] == "open"
+    """IDs of work an open decision, or an answered one awaiting its restack, holds at a phase that stops its work."""
+    return {entry["id"] for decision in decisions if decision["status"] in {"open", "answered"}
             for entry in decision.get("blocks", []) if entry["phase"] in HALTING}
 
 
@@ -322,14 +337,16 @@ def check_cycles(graph, name):
 
 def validate_decision(row, by_id):
     path = f"decisions[{row['id']}]"
-    fields(row, path, ("question", "date", "source"), ("recommendation", "meanwhile", "answer", "basis", "rationale"))
+    known_keys(row, path, DECISION_KEYS)
+    fields(row, path, ("question", "date", "source"), ("recommendation", "meanwhile", "answer", "rationale"))
     status = one_of(row.get("status"), DECISION_STATES, f"{path}.status")
     if status in {"answered", "resolved"}:
         text(row.get("answer"), f"{path}.answer")
-    if status == "resolved":
-        text(row.get("basis"), f"{path}.basis")
-    elif "basis" in row:
-        raise ValueError(f"{path}.basis applies only to resolved decisions")
+    for key, owner in (("answerSource", "answered"), ("basis", "resolved")):
+        if status == owner:
+            text(row.get(key), f"{path}.{key}")
+        elif key in row:
+            raise ValueError(f"{path}.{key} applies only to {owner} decisions")
     if status == "withdrawn":
         text(row.get("rationale"), f"{path}.rationale")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
@@ -337,6 +354,7 @@ def validate_decision(row, by_id):
     strings(row.get("context", []), f"{path}.context")
     blocked = set()
     for index, entry in enumerate(records(row.get("blocks", []), f"{path}.blocks")):
+        known_keys(entry, f"{path}.blocks[{index}]", ("id", "phase"))
         identity = text(entry.get("id"), f"{path}.blocks[{index}].id")
         phase = one_of(entry.get("phase"), PHASES, f"{path}.blocks[{index}].phase")
         if identity not in by_id:
@@ -348,7 +366,8 @@ def validate_decision(row, by_id):
             raise ValueError(f"{path}: an open decision cannot block terminal work")
         if status == "open" and phase == "start" and by_id[identity]["state"] != "planned":
             raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
-    for option in records(row.get("options", []), f"{path}.options"):
+    for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
+        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended"))
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
         if "recommended" in option and not isinstance(option["recommended"], bool):
@@ -365,6 +384,7 @@ def validate_decision(row, by_id):
 
 def validate_landing(row, by_id):
     path = f"landings[{row['id']}]"
+    known_keys(row, path, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
     fields(row, path, ("date", "chief", "lander", "target"), ("keep", "note"))
     one_of(row.get("state"), LANDING_STATES, f"{path}.state")
     if not row.get("work") or not row.get("prs"):
@@ -372,6 +392,7 @@ def validate_landing(row, by_id):
     for identity in strings(row["work"], f"{path}.work"):
         known(identity, f"{path}.work", by_id)
     for index, pr in enumerate(records(row["prs"], f"{path}.prs")):
+        known_keys(pr, f"{path}.prs[{index}]", ("url", "head", "base"))
         url(pr.get("url"), f"{path}.prs[{index}].url")
         fields(pr, f"{path}.prs[{index}]", ("head", "base"))
 
@@ -382,16 +403,16 @@ def known(identity, path, by_id):
 
 
 def validate(state):
-    obj(state, "program")
+    known_keys(obj(state, "program"), "", PROGRAM_KEYS)
     fields(state, "", ("title", "goal", "chief", "next"), ("finishLine",))
     if "demo" in state and not isinstance(state["demo"], bool):
         raise ValueError("demo must be a boolean")
     if "hosting" in state:
         url(state["hosting"], "hosting")
-    request = fields(obj(state.get("request"), "request"), "request", ("text",))
+    request = fields(known_keys(obj(state.get("request"), "request"), "request", ("text", "sources")), "request", ("text",))
     strings(request.get("sources", []), "request.sources")
     if "landingAuthority" in state:
-        fields(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY)
+        fields(known_keys(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY), "landingAuthority", ENTRY)
 
     work = records(state.get("work"), "work")
     decisions = records(state.get("decisions"), "decisions")
@@ -405,14 +426,16 @@ def validate(state):
         validate_decision(row, by_id)
     validate_edges(work, by_id, layers, halted_by_decision(decisions))
     for row in state.get("revisits", []):
+        known_keys(row, f"revisits[{row['id']}]", ("id", "title", "tradeoff", "revisit", "source"))
         fields(row, f"revisits[{row['id']}]", ("title", "tradeoff", "revisit"), ("source",))
     for name, required, optional in (
         ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
-        ("approvals", (*ENTRY, "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
-        ("waits", ("date", "on", "event"), ("work", "watcher")),
+        ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
+        ("waits", ("date", "on", "event"), ("work",)),
         ("discoveries", ("date", "origin", "text", "route"), ()),
     ):
         for index, row in enumerate(records(state.get(name, []), name)):
+            known_keys(row, f"{name}[{index}]", (*required, *optional))
             fields(row, f"{name}[{index}]", required, optional)
             if "work" in row:
                 known(row["work"], f"{name}[{index}].work", by_id)
@@ -693,8 +716,8 @@ def finish_line(row):
     if "finishLine" not in row:
         return ""
     value = FINISH_LINES[row["finishLine"]]
-    if "effectiveFinishLine" in row:
-        value += f' → {FINISH_LINES[row["effectiveFinishLine"]]} while provisional'
+    if effective_finish(row) != row["finishLine"]:
+        value += f' → {FINISH_LINES[effective_finish(row)]} while provisional'
     return f'<p class="finish">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(value)}</span></p>'
 
 

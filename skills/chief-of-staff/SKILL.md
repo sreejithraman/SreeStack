@@ -103,8 +103,8 @@ top-level sessions, as in a plain Claude Code or Codex session, start a
 delegated owner in its own host-managed worktree instead. Use
 [Orchestration](../orchestration/SKILL.md) for model choice and concurrency.
 Give each branch one writer, and serialize stack operations and shared
-resources. Record each owner with its start mode, route, and report path. Only
-you start program owners.
+resources. Record each owner with its start mode and route. Only you start
+program owners.
 
 Each owner checks its access and proof before work runs unattended, under
 Implement's [prepare](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
@@ -247,10 +247,10 @@ usable outcomes and their links. Name the decisions you resolved so the user can
 reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
 retained work and active dependents no longer need the resources.
 
-Before pausing or moving, bring the record current. On resume, reconcile it with
-current files, threads, and forge state, and
-[publish the page](references/hosting.md), before dispatching. To move the
-program to another thread or take over from a chief that cannot act, follow
-[chief move](references/chief-move.md). This skill supplies no background
+Before pausing or moving, bring the record current. On resume, start from the
+record's `next`, reconcile the record with current files, threads, and forge
+state, and [publish the page](references/hosting.md), before dispatching. To
+move the program to another thread or take over from a chief that cannot act,
+follow [chief move](references/chief-move.md). This skill supplies no background
 wakeups: native goal tracking, recurring checks, and other automation need an
 explicit user request and host support.

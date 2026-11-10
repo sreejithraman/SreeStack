@@ -47,8 +47,8 @@ Land becomes Try while it lasts. An owner's own planned
 layers are not provisional.
 
 For each provisional outcome, record the branch, PR, or assumption it rests on,
-the open decision or unmerged base, its effective Try, what may continue, and
-that it cannot land. The morning view shows it on the outcome and on each Need
+the open decision or unmerged base, what may continue, and that it cannot
+land. The morning view shows it on the outcome and on each Need
 that holds it.
 
 When the base or decision moves:

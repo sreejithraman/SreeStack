@@ -467,8 +467,8 @@ Below 900px it stays one column; wider, Needs you is a dual-pane inbox and Work 
 board of stage lanes. It replaces the supplied archive's artifact database and
 integrations; no archive code or prose is copied. Validation rejects
 provisional landings, PRs on a Try, stacks on another owner's unmerged layer
-without a provisional mark, terminal rows with active blockers, and entries that
-name missing work. The command center is a private Claude artifact per program,
+without a provisional mark, terminal rows with active blockers, entries that
+name missing work, and fields the schema doesn't name. The command center is a private Claude artifact per program,
 so only a Claude session can be chief. `render_dashboard.py --page` renders the
 last commit beside the last published page, says whether it changed, and stamps
 the commit time that changed it; the chief republishes on a change and on every

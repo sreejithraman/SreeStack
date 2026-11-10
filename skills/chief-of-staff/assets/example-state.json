@@ -193,7 +193,8 @@
           "phase": "landing"
         }
       ],
-      "answer": "Keep the original job ID."
+      "answer": "Keep the original job ID.",
+      "answerSource": "Chat message 2026-11-02"
     },
     {
       "id": "W2-D1",
@@ -234,8 +235,6 @@
         "name": "Retry owner",
         "start": "top-level",
         "route": "`t3_thread_send` to the chief",
-        "report": "reports/W1.md",
-        "model": "Example model",
         "workspace": "Worktree on `retry-export`"
       },
       "layers": [
@@ -279,13 +278,11 @@
         }
       ],
       "finishLine": "land",
-      "effectiveFinishLine": "try",
       "state": "building",
       "owner": {
         "name": "API owner",
         "start": "top-level",
-        "route": "`t3_thread_send` to the chief",
-        "report": "reports/W2.md"
+        "route": "`t3_thread_send` to the chief"
       },
       "provisional": {
         "basis": "W1-L2, the Retry owner's unmerged cancellation layer.",
@@ -322,7 +319,6 @@
         "name": "History owner",
         "start": "top-level",
         "route": "`t3_thread_send` to the chief",
-        "report": "reports/W5.md",
         "resources": "History preview server on port 8105; stop with `kill` on its recorded PID."
       },
       "layers": [
@@ -354,13 +350,11 @@
       "kind": "outcome",
       "description": "Expire download links after seven days and offer regeneration.",
       "finishLine": "land",
-      "effectiveFinishLine": "try",
       "state": "building",
       "owner": {
         "name": "Expiry owner",
         "start": "top-level",
-        "route": "`t3_thread_send` to the chief",
-        "report": "reports/W6.md"
+        "route": "`t3_thread_send` to the chief"
       },
       "provisional": {
         "basis": "W6-D1's recommended option: expired entries stay visible.",
@@ -385,8 +379,7 @@
       "owner": {
         "name": "Support worker",
         "start": "delegated",
-        "route": "End its turn with the report",
-        "report": "reports/W3.md"
+        "route": "End its turn with the report"
       },
       "checkedAt": "2026-11-02T16:58:00Z"
     },
@@ -419,8 +412,7 @@
       "owner": {
         "name": "Idempotency owner",
         "start": "adopted",
-        "route": "`t3_thread_send` to the chief",
-        "report": "reports/W0.md"
+        "route": "`t3_thread_send` to the chief"
       },
       "layers": [
         {
@@ -489,8 +481,7 @@
       "date": "2026-11-02T16:50:00Z",
       "work": "W1",
       "on": "PR 44 checks",
-      "event": "Required checks finish",
-      "watcher": "Retry owner"
+      "event": "Required checks finish"
     }
   ]
 }

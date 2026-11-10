@@ -279,8 +279,9 @@ state, and what each decision blocks. Answers go back through chat. Existing
 trackers stay authoritative. The page is a private Claude artifact, so the chief
 runs in Claude and republishes it after each commit that changes it. On reload,
 the page restores your tab, open sections, selected decision, and scroll
-position; local browser tests cover this, but not yet inside Claude's artifact
-viewer.
+position; local browser tests cover this. In Claude's web viewer, an open page
+moved to a newly published version without a reload, kept its selected tab, and
+loaded its icons. The iPhone app is unchecked.
 
 [Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
 “Swarm these three possible causes and return evidence” partitions the question

@@ -1,13 +1,16 @@
 """Drive the command center's in-browser behavior in headless Chrome.
 
 Chrome's debugging pipe needs no client package. Each test renders the page to a
-file and opens it; a republish renders the file again and reloads the page. These
+file served from a loopback origin and opens it; a republish renders the file
+again and reloads the page. These
 tests cover tabs, selection, copy prompts, and the view kept across a reload, not
 how a Claude artifact frame delivers a new version. Without a usable Chrome the
 tests skip locally and fail in CI.
 """
 
 import copy
+import functools
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
@@ -16,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 
@@ -199,12 +203,26 @@ class Page:
         self.run(f"document.scrollingElement.scrollTop += document.querySelector({json.dumps(selector)}).getBoundingClientRect().top - {top}")
 
 
+class FreshPage(SimpleHTTPRequestHandler):
+    """Serves each republish uncached, so a reload always gets the new file."""
+
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+    def log_message(self, *args):
+        pass
+
+
 browser = None
 browser_profile = None
+# Chrome gives file:// pages an opaque origin and sometimes drops their sessionStorage on reload.
+site = None
+server = None
 
 
 def setUpModule():
-    global browser, browser_profile
+    global browser, browser_profile, site, server
     required = os.environ.get("CI")
     executable = chrome_path()
     if not executable:
@@ -221,9 +239,16 @@ def setUpModule():
         if required:
             raise
         raise unittest.SkipTest(f"Chrome did not start: {error}")
+    site = tempfile.TemporaryDirectory()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(FreshPage, directory=site.name))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
 
 
 def tearDownModule():
+    if server:
+        server.shutdown()
+        server.server_close()
+        site.cleanup()
     browser.close()
     browser_profile.cleanup()
 
@@ -232,9 +257,10 @@ def tearDownModule():
 class CommandCenterCase(unittest.TestCase):
     def setUp(self):
         self.state = example()
-        folder = tempfile.TemporaryDirectory()
+        folder = tempfile.TemporaryDirectory(dir=site.name)
         self.addCleanup(folder.cleanup)
         self.page_file = Path(folder.name) / "command-center.html"
+        self.page_url = f"http://127.0.0.1:{server.server_port}/{self.page_file.parent.name}/{self.page_file.name}"
         self.publish(self.state)
 
     def publish(self, state):
@@ -251,7 +277,7 @@ class CommandCenterCase(unittest.TestCase):
             self.addCleanup(browser.send, "Target.disposeBrowserContext", browserContextId=context)
         target = browser.send("Target.createTarget", url="about:blank", browserContextId=context)["targetId"]
         session = browser.send("Target.attachToTarget", targetId=target, flatten=True)["sessionId"]
-        page = Page(browser, context, session, self.page_file.as_uri())
+        page = Page(browser, context, session, self.page_url)
         page.send("Page.enable")
         page.set_viewport(size)
         page.send("Page.addScriptToEvaluateOnNewDocument", source=PAGE_HARNESS + before_load)

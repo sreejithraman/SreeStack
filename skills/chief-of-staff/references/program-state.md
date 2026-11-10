@@ -64,10 +64,11 @@ publish error, stop and report it to the user.
 
 ### File format
 
-`program.json` is one JSON object. Fields without `?` are required. Times are
-ISO timestamps with a timezone, such as `2026-11-02T17:00:00Z`; dates are
-`YYYY-MM-DD` or timestamps. Prose is markdown. Omit absent optional fields rather
-than sending empty strings. IDs are unique within each collection, and layer IDs
+`program.json` is one JSON object. Fields without `?` are required, and
+`--check` rejects fields the sketch doesn't name. Times are ISO timestamps with
+a timezone, such as `2026-11-02T17:00:00Z`; dates are `YYYY-MM-DD` or
+timestamps. Prose is markdown. Omit absent optional fields rather than sending
+empty strings. IDs are unique within each collection, and layer IDs
 are unique across the program. The [example file](../assets/example-state.json)
 uses fictional work.
 
@@ -90,7 +91,7 @@ type Program = {
   revisits?: Revisit[];
   discoveries?: { date: string; origin: string; text: string; route: string }[];
   landings?: Landing[];
-  waits?: { date: string; on: string; event: string; work?: string; watcher?: string }[];
+  waits?: { date: string; on: string; event: string; work?: string }[];
 };
 type Entry = { date: string; source: string; text: string };
 type Link = { label: string; url: string };
@@ -108,6 +109,7 @@ type Decision = {
   blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
   links?: Link[];
   answer?: string; // required when answered or resolved
+  answerSource?: string; // required when answered: the user's message that answered it
   basis?: string; // required when resolved: what settled it and why it is reversible
   rationale?: string; // dated reasoning the page omits, such as why it reopened; when withdrawn, why and any replacement
 };
@@ -123,7 +125,6 @@ type Work = {
   tickets?: Link[];
   finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // required unless support
   finishLineReason?: string;
-  effectiveFinishLine?: "try"; // required when provisional work's finish line is land; it keeps any PR it already has
   owner?: Owner; // required while building, shown, in review, or ready
   provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
   layers?: Layer[]; // bottom first; not on support
@@ -139,8 +140,8 @@ type Work = {
 };
 type Owner = {
   name: string; session?: string; // session: the owner's thread link
-  start: "top-level" | "delegated" | "adopted"; route: string; report: string;
-  tasks?: string[]; model?: string; workspace?: string;
+  start: "top-level" | "delegated" | "adopted"; route: string;
+  tasks?: string[]; workspace?: string;
   resources?: string; // servers, ports, and databases, with their stop actions
   handled?: string[]; // follow-up messages already handled
 };
@@ -193,7 +194,7 @@ fields; ask no other format. Record, from each:
 | Layers | `layers`, after checking each head and base at the forge |
 | Proof | `evidence`, and every blocked or untested assertion in `acceptance` |
 | Shown | `results` with access limits; servers and stop actions in `owner.resources` |
-| Waits | `waits`, naming the pending PRs this thread watches |
+| Waits | `waits`, with the work each one holds |
 | Decisions | `decisions` with the phase each blocks, and `provisional` assumptions |
 | Follow-ups | A work row or `discoveries`, each with its disposition |
 | Sources | `owner.handled`, so no message is answered twice |
@@ -221,7 +222,7 @@ layers. Outcome states:
   stays `in-review` with its Provisional badge. Shown under In review with a
   readiness badge.
 - `landed`: every layer confirmed merged. `scrapped`: the user scrapped it, or it
-  was declined or made obsolete; the record says which.
+  was declined or made obsolete.
 - `done`: completed support work. An outcome never uses `done`.
 
 `blockedBy` lists logical inputs not yet satisfied under the
@@ -236,10 +237,11 @@ A base is the outcome that work rests on through `provisional.on` or a live
 layer's `stackedOn`. A base is **dead** when it was scrapped, or when it has not
 landed and every one of its layers is closed; one closed layer beside a live or
 merged one does not count. Active work on a dead base, whether provisional or
-the same owner's stack, needs an open Need, such as its scrap-or-rebase choice,
-that halts it at `start`, `access`, or `proof`. The card shows the base once, as
-a Scrapped base or Closed base blocker. A live layer stacked on a closed layer of
-a base that is still alive needs the same Need, or a restack.
+the same owner's stack, needs a Need that halts it at `start`, `access`, or
+`proof`, such as its scrap-or-rebase choice, open or answered until you record
+its new base. The card shows the base once, as a Scrapped base or Closed base
+blocker. A live layer stacked on a closed layer of a base that is still alive
+needs the same Need, or a restack.
 Before marking a row terminal, clear its active blockers and open Needs; history
 stays in the record. Unresolved work stays visible even after its owner failed
 or its PR was abandoned.
@@ -256,17 +258,6 @@ The page shows open, answered, and resolved Needs, work, and tradeoffs, and
 leaves out withdrawn Needs, decision history, owner plumbing, and program facts
 other than the title, goal, and finish line. Its Updated time is the commit that
 last changed it.
-
-`--check` rejects a file whose claims the record doesn't support:
-provisional work that merged, keeps Land, or claims ready on any finish line; a
-Try finish line with a published PR; a shown Try with nothing to open; a ready
-outcome with a layer short of its finish line; a landed outcome with an unmerged
-layer; active work with no owner; a layer on another owner's unmerged layer
-without a provisional mark; active work on a dead base, or a live layer on a
-closed one, without a halting Need; a `start` Need on work that started; an open
-Need on finished work; a withdrawn Need without its rationale; and dangling or
-cyclic edges, including work blocked by itself and waits or landings that name
-missing work.
 
 Write each `description` from the outcome's scope, not its title or the owner's
 next step. Store returned T3 thread links verbatim and use only real ticket, PR,

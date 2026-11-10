@@ -34,7 +34,7 @@ def decision(state, identity):
 
 
 def owner(name):
-    return {"name": name, "start": "top-level", "route": "`t3_thread_send` to the chief", "report": f"reports/{name}.md"}
+    return {"name": name, "start": "top-level", "route": "`t3_thread_send` to the chief"}
 
 
 class Program:
@@ -122,6 +122,8 @@ def merged(layer):
 # One violation per validator rule: (rule, change to the example, expected error).
 RULES = [
     ("program facts are nonempty text", lambda s: s.pop("chief"), r"^chief must be a nonempty string"),
+    ("the program has only known fields", lambda s: s.update(record={}), r"^record is not a known field"),
+    ("each object has only known fields", lambda s: work(s, "W1")["owner"].update(report="reports/W1.md"), r"^work\[W1\]\.owner\.report is not a known field"),
     ("the request has its text", lambda s: s["request"].pop("text"), r"request\.text"),
     ("hosting is a link", lambda s: s.update(hosting="javascript:alert(1)"), r"hosting must be an http"),
     ("demo is a boolean", lambda s: s.update(demo="yes"), r"demo must be a boolean"),
@@ -136,7 +138,7 @@ RULES = [
     ("an owner session is a link", lambda s: work(s, "W1")["owner"].update(session="file:///tmp/x"), r"owner\.session must be"),
     ("a local layer has no PR", lambda s: work(s, "W5")["layers"][0].update(url="https://example.com/pull/1"), r"a local layer has no url"),
     ("layer IDs are unique across the program", lambda s: work(s, "W5")["layers"][0].update(id="W1-L1"), r"more than once"),
-    ("PRs live on layers", lambda s: work(s, "W1").update(url="https://example.com/exports/pull/42"), r"on the outcome's layers"),
+    ("PRs live on layers", lambda s: work(s, "W1").update(url="https://example.com/exports/pull/42"), r"work\[W1\]\.url is not a known field"),
     ("only unknown work explains its state", lambda s: work(s, "W1").update(unknownReason="x"), r"unknownReason applies only"),
     ("finished work keeps no blockers", lambda s: work(s, "W0").update(blockedBy=["W4"]), r"terminal work cannot retain"),
     ("active work has an owner", lambda s: work(s, "W1").pop("owner"), r"in-review work needs its owner"),
@@ -144,12 +146,10 @@ RULES = [
     ("support never delivers", lambda s: work(s, "W3").update(state="shown"), r"support work uses"),
     ("an outcome has a finish line", lambda s: work(s, "W1").pop("finishLine"), r"work\[W1\]\.finishLine must be"),
     ("an outcome is never done", lambda s: work(s, "W1").update(state="done"), r"not done"),
-    ("provisional Land becomes Try", lambda s: work(s, "W2").pop("effectiveFinishLine"), r"set effectiveFinishLine to try"),
-    ("only provisional Land becomes Try", lambda s: work(s, "W5").update(effectiveFinishLine="try"), r"only Try, for provisional"),
     ("provisional work never merges", lambda s: merged(work(s, "W6")["layers"][0]), r"never merges; clear the condition"),
     ("Try stops before the PR", lambda s: work(s, "W5")["layers"][0].update(status="open", url="https://example.com/exports/pull/50"), r"Try stops before the PR"),
     ("provisional work is never ready", lambda s: work(s, "W1").update(
-        state="ready", effectiveFinishLine="try", provisional={"basis": "x", "clears": "y"},
+        state="ready", provisional={"basis": "x", "clears": "y"},
         layers=[dict(layer, status="ready") for layer in work(s, "W1")["layers"]]), r"provisional work is never ready"),
     ("ready means every layer is ready", lambda s: work(s, "W1").update(state="ready"), r"ready needs every layer ready or merged"),
     ("shown Try has results", lambda s: work(s, "W5").pop("results"), r"shown is a Try result"),
@@ -166,6 +166,8 @@ RULES = [
     ("a decision is dated", lambda s: decision(s, "W6-D1").pop("date"), r"decisions\[W6-D1\]\.date"),
     ("decision states are known", lambda s: decision(s, "W6-D1").update(status="closed"), r"status must be one of"),
     ("an answer is recorded", lambda s: decision(s, "W6-D1").update(status="answered"), r"W6-D1\]\.answer must be"),
+    ("an answer names its message", lambda s: decision(s, "W0-D1").pop("answerSource"), r"W0-D1\]\.answerSource must be"),
+    ("only an answer has an answer source", lambda s: decision(s, "W6-D1").update(answerSource="x"), r"answerSource applies only to answered"),
     ("a chief's call has its basis", lambda s: decision(s, "W6-D1").update(status="resolved", answer="Keep"), r"\.basis must be"),
     ("only a chief's call has a basis", lambda s: decision(s, "W0-D1").update(basis="x"), r"basis applies only to resolved"),
     ("a withdrawal says why", lambda s: decision(s, "W2-D1").pop("rationale"), r"W2-D1\]\.rationale must be"),
@@ -195,9 +197,13 @@ RULES = [
 # Programs at each rule's edge that it must accept.
 ACCEPTED = [
     ("planned work may wait for an owner", lambda s: None),
-    ("a settled decision may name finished work", lambda s: decision(s, "W0-D1").update(status="resolved", basis="Earlier rule.")),
+    ("a settled decision may name finished work", lambda s: (
+        decision(s, "W0-D1").update(status="resolved", basis="Earlier rule."), decision(s, "W0-D1").pop("answerSource"))),
     ("an open halting decision holds work on a dead base", lambda s: (
         work(s, "W1").update(state="scrapped"), s["decisions"].append(scrap_choice("W2", "proof")))),
+    ("an answered halting decision holds work on a dead base until its restack", lambda s: (
+        work(s, "W1").update(state="scrapped"), s["decisions"].append(scrap_choice("W2", "proof") | {
+            "status": "answered", "answer": "Rebase onto main", "answerSource": "Chat message 2026-11-03"}))),
     ("an open halting decision holds a live layer on a closed parent", lambda s: (
         work(s, "W1")["layers"][1].update(status="closed"), s["decisions"].append(scrap_choice("W2", "proof")))),
     ("an unrelated closed layer leaves a live base alone", lambda s: work(s, "W1")["layers"].append(
@@ -208,8 +214,7 @@ ACCEPTED = [
         owner=copy.deepcopy(work(s, "W1")["owner"]), state="building",
         layers=[{"id": "W4-L1", "branch": "progress", "status": "local", "stackedOn": "W1-L2"}])),
     ("a published Land outcome keeps its PR when it becomes provisional", lambda s: work(s, "W1").update(
-        effectiveFinishLine="try", provisional={"basis": "W1-D2's recommended option.", "clears": "W1-D2 is answered."})),
-    ("unknown fields are ignored", lambda s: work(s, "W1").update(activity="Addressing review")),
+        provisional={"basis": "W1-D2's recommended option.", "clears": "W1-D2 is answered."})),
 ]
 
 
@@ -229,6 +234,21 @@ class RuleTests(unittest.TestCase):
             state = example()
             change(state)
             with self.subTest(case=case):
+                validate(state)
+
+    def test_every_object_rejects_an_unknown_field(self):
+        def objects(value):
+            if isinstance(value, dict):
+                yield value
+            for child in value.values() if isinstance(value, dict) else value if isinstance(value, list) else ():
+                yield from objects(child)
+
+        count = sum(1 for _ in objects(example()))
+        for index in range(count):
+            state = example()
+            target = list(objects(state))[index]
+            target["typo"] = "x"
+            with self.subTest(fields=sorted(target)), self.assertRaisesRegex(ValueError, r"(^|\.)typo is not a known field$"):
                 validate(state)
 
     def test_a_program_is_an_object_with_work_and_decision_lists(self):
@@ -276,6 +296,7 @@ class PageTests(unittest.TestCase):
             "owner plumbing": lambda s: work(s, "W1")["owner"].update(route="Ends its turn", handled=["msg-1"]),
             "outcome scope": lambda s: work(s, "W1").update(scope="Reworded", finishLineReason="Reworded", acceptance="All proved"),
             "decision history": lambda s: decision(s, "W6-D1").update(date="2026-11-03", source="Another report", rationale="Earlier reasoning."),
+            "answer source": lambda s: decision(s, "W0-D1").update(answerSource="Another message"),
             "a withdrawn decision": lambda s: decision(s, "W2-D1").update(question="Reworded"),
         }
         for name, change in changes.items():
@@ -284,6 +305,12 @@ class PageTests(unittest.TestCase):
             with self.subTest(change=name):
                 self.assertEqual(render(state), base)
         self.assertNotIn("Paginate history", text_of(base))
+
+    def test_provisional_land_reads_as_try(self):
+        html = render(self.state)
+        self.assertIn("Finish line Land → Try while provisional", text_of(card(html, "W2")))
+        self.assertIn("Finish line Land", text_of(card(html, "W1")))
+        self.assertNotIn("while provisional", text_of(card(html, "W1")))
 
     def test_updated_time_shows_only_when_given(self):
         self.assertNotIn("Updated", text_of(render(self.state)))
@@ -299,7 +326,7 @@ class PageTests(unittest.TestCase):
         html = render(self.state)
         self.assertEqual(badges(html, "W6"), ["building", "provisional", "blocked"])
         self.assertIn("Blocked by W6-D1 Decision · blocks start", text_of(card(html, "W4")))
-        decision(self.state, "W6-D1").update(status="answered", answer="Keep the entry")
+        decision(self.state, "W6-D1").update(status="answered", answer="Keep the entry", answerSource="Chat message")
         self.assertEqual(badges(render(self.state), "W6"), ["building", "provisional"])
 
     def test_dead_and_halted_bases_show_once_on_the_dependent(self):
@@ -342,7 +369,7 @@ class PageTests(unittest.TestCase):
             f'Decision "W1-D2" (revision {revision(decision(self.state, "W1-D2"))}): I choose option 1: "Three attempts"',
             f'Decision "W3-D1" (revision {revision(decision(self.state, "W3-D1"))}): I choose option 2: "Between test classes"',
         ])
-        decision(self.state, "W3-D1").update(status="answered", answer="Between test classes")
+        decision(self.state, "W3-D1").update(status="answered", answer="Between test classes", answerSource="Chat message")
         self.assertFalse(any(prompt.startswith("Decisions in") for prompt in copy_prompts(render(self.state))))
 
     def test_pr_numbers_come_only_from_pull_request_paths(self):
