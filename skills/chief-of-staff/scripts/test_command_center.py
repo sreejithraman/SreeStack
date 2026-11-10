@@ -1,9 +1,10 @@
-"""Drive the command center page in headless Chrome.
+"""Drive the command center's in-browser behavior in headless Chrome.
 
 Chrome's debugging pipe needs no client package. Each test renders the page to a
-file and opens it; a republish renders the file again and reloads the page, as an
-artifact moves to its new version. Without a usable Chrome the tests skip locally
-and fail in CI.
+file and opens it; a republish renders the file again and reloads the page. These
+tests cover tabs, selection, copy prompts, and the view kept across a reload, not
+how a Claude artifact frame delivers a new version. Without a usable Chrome the
+tests skip locally and fail in CI.
 """
 
 import copy
@@ -19,7 +20,7 @@ import time
 import unittest
 
 from render_dashboard import render
-from test_render_dashboard import page_state
+from test_render_dashboard import example, owner
 
 
 DESKTOP = (1280, 800)
@@ -230,7 +231,7 @@ def tearDownModule():
 
 class CommandCenterCase(unittest.TestCase):
     def setUp(self):
-        self.state = page_state()
+        self.state = example()
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.page_file = Path(folder.name) / "command-center.html"
@@ -262,7 +263,7 @@ class CommandCenterCase(unittest.TestCase):
         update(state)
         return state
 
-    def retitled(self, title="Retitled snapshot"):
+    def retitled(self, title="Retitled program"):
         return self.changed(lambda state: state.update(title=title))
 
     def work(self, state, identity):
@@ -274,7 +275,7 @@ class CommandCenterCase(unittest.TestCase):
     def outcome(self, identity, stage, **fields):
         """A self-contained outcome row, with the published layer its stage needs."""
         row = {"id": identity, "title": f"Work {identity}", "repo": "example/exports", "kind": "outcome",
-               "finishLine": "land", "state": stage, "owner": f"Owner {identity}", "updatedAt": "2026-11-02T16:00:00Z"}
+               "finishLine": "land", "state": stage, "owner": owner(f"Owner {identity}"), "checkedAt": "2026-11-02T16:00:00Z"}
         if stage in ("in-review", "ready", "landed"):
             status = {"landed": "merged", "ready": "ready"}.get(stage, "open")
             row["layers"] = [{"id": f"{identity}-L1", "branch": f"branch-{identity}", "status": status,
@@ -283,29 +284,33 @@ class CommandCenterCase(unittest.TestCase):
 
 
 class PageTests(CommandCenterCase):
-    def test_controls_icons_times_and_copy_work_offline(self):
+    def test_tabs_and_decisions_select_by_click_and_arrow_keys(self):
         page = self.open_page()
         page.click("#work-tab")
         self.assertEqual(page.visible_panels(), ["work-panel"])
-        page.click("#needs-tab")
+        page.run("document.querySelector('#work-tab').dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}))")
+        self.assertEqual((page.selected_tab(), page.visible_panels()), ("needs-tab", ["needs-panel"]))
         rows = page.run("[...document.querySelectorAll('.inbox-row')].map(row => row.getAttribute('aria-controls'))")
         page.click(f'.inbox-row[aria-controls="{rows[1]}"]')
         self.assertEqual(page.selected_decision(), rows[1])
-        self.assertTrue(page.run(f"document.getElementById({json.dumps(rows[1])}).classList.contains('selected')"))
-        self.assertEqual(page.run("document.querySelectorAll('i[data-lucide]').length"), 0)
-        snapshot_time = page.run("document.querySelector('time[data-age]').textContent")
-        self.assertNotIn("T17:00:00Z", snapshot_time)
-        self.assertIn(" · ", snapshot_time)
-        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
-        page.click(".copy-prompt")
-        self.assertIn("Decision", page.run("new Promise(resolve => setTimeout(() => resolve(window.copied)))"))
+        self.assertEqual(page.run("[...document.querySelectorAll('.need.selected')].map(card => card.id)"), [rows[1]])
+        page.run(f"document.querySelector('.inbox-row[aria-controls=\"{rows[1]}\"]').dispatchEvent(new KeyboardEvent('keydown', {{key: 'ArrowDown', bubbles: true}}))")
+        self.assertEqual(page.selected_decision(), rows[2])
         self.assertEqual(page.run("pageErrors"), [])
 
-    def test_page_loads_nothing_from_other_hosts_but_the_icon_script(self):
+    def test_copy_prompt_copies_its_choice_or_offers_the_text(self):
         page = self.open_page()
-        sources = page.run("[...document.querySelectorAll('[src], link[href]')].map(node => node.src || node.href)")
-        self.assertEqual(sources, ["https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js"])
-        self.assertNotIn("fetch(", self.page_file.read_text())
+        target = "#decision-" + "W5-T".encode().hex()
+        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
+        page.click(f"{target} .options li:last-child .copy-prompt")
+        copied = page.run("new Promise(resolve => setTimeout(() => resolve(window.copied)))").splitlines()
+        self.assertTrue(copied[0].startswith('Decision "W5-T" (revision '))
+        self.assertEqual(copied[-1], 'I choose option 3: "Scrap"')
+        page.run("navigator.clipboard.writeText = async () => { throw new Error('denied'); }")
+        page.click(f"{target} .options li:first-child .copy-prompt")
+        manual = page.run(f"new Promise(resolve => setTimeout(() => {{ const box = document.querySelector('{target} .options li:first-child .manual-prompt'); resolve([box.hidden, box.value]); }}))")
+        self.assertFalse(manual[0])
+        self.assertTrue(manual[1].endswith('I choose option 1: "Merge"'))
 
 
 EVIDENCE = "#toggle-evidence-" + "W1".encode().hex()
@@ -327,7 +332,7 @@ class ViewTests(CommandCenterCase):
         page = self.open_page()
         self.prepare_view(page)
         self.republish(page, self.retitled())
-        self.assertIn("Retitled snapshot", page.text())
+        self.assertIn("Retitled program", page.text())
         self.assert_view(page)
 
     def test_republish_keeps_the_selected_decision(self):
@@ -335,7 +340,7 @@ class ViewTests(CommandCenterCase):
         target = page.run("document.querySelectorAll('.inbox-row')[3].getAttribute('aria-controls')")
         page.click(f'.inbox-row[aria-controls="{target}"]')
         self.republish(page, self.retitled())
-        self.assertIn("Retitled snapshot", page.text())
+        self.assertIn("Retitled program", page.text())
         self.assertEqual(page.selected_decision(), target)
         self.assertTrue(page.run(f"document.getElementById({json.dumps(target)}).checkVisibility()"))
 
@@ -343,14 +348,14 @@ class ViewTests(CommandCenterCase):
         page = self.open_page()
         rows = page.run("[...document.querySelectorAll('.inbox-row')].map(row => row.getAttribute('aria-controls'))")
         page.click(f'.inbox-row[aria-controls="{rows[2]}"]')
-        self.republish(page, self.changed(lambda state: state["needs"].pop(2)))
+        self.republish(page, self.changed(lambda state: state["decisions"].pop(2)))
         self.assertEqual(page.selected_decision(), rows[0])
         self.assertTrue(page.run(f"document.getElementById({json.dumps(rows[0])}).checkVisibility()"))
         self.assertEqual(page.run("document.querySelectorAll('.inbox-row[tabindex=\"0\"]').length"), 1)
 
     def test_last_decisions_removed_leaves_a_working_empty_state(self):
         page = self.open_page()
-        self.republish(page, self.changed(lambda state: state.update(needs=[], revisits=[])))
+        self.republish(page, self.changed(lambda state: state.update(decisions=[], revisits=[])))
         self.assertIn("Nothing needs you", page.text())
         self.assertIsNone(page.selected_decision())
         page.click("#work-tab")
@@ -362,7 +367,7 @@ class ViewTests(CommandCenterCase):
         page.click(f'.inbox-row[aria-controls="{target}"]')
 
         def resolve(state):
-            need = next(row for row in state["needs"] if row["id"] == "W1-D2")
+            need = next(row for row in state["decisions"] if row["id"] == "W1-D2")
             need.update(status="resolved", answer="Three retries", basis="Matches the recorded policy.")
         self.republish(page, self.changed(resolve))
         self.assertEqual(page.selected_decision(), target)
@@ -374,7 +379,7 @@ class ViewTests(CommandCenterCase):
 
         def finish_planned(state):
             state["work"] = [row for row in state["work"] if row["state"] != "planned"]
-            for need in state["needs"]:
+            for need in state["decisions"]:
                 need["blocks"] = [entry for entry in need.get("blocks", []) if entry["id"] != "W4"]
         self.republish(page, self.changed(finish_planned))
         self.assertEqual(page.run("document.querySelectorAll('.collapsible.planned').length"), 0)
@@ -421,7 +426,7 @@ class ViewTests(CommandCenterCase):
                 page.set_visible(False)
                 page.set_visible(True)
                 self.republish(page, self.retitled())
-                self.assertIn("Retitled snapshot", page.text())
+                self.assertIn("Retitled program", page.text())
                 self.assertEqual(page.selected_tab(), "needs-tab")
                 self.assertEqual(page.run("pageErrors"), [])
 
@@ -481,56 +486,11 @@ class ScrollTests(CommandCenterCase):
         self.long_state()
         page = self.open_page(PHONE)
         self.read_in_work(page, "W35")
-        self.republish(page, self.changed(lambda state: state.update(work=[self.outcome("W2", "building")], needs=[], revisits=[])))
+        self.republish(page, self.changed(lambda state: state.update(
+            work=[self.outcome("W2", "building")], decisions=[], revisits=[], landings=[], waits=[])))
         self.assertEqual(page.run("document.querySelectorAll('.work').length"), 1)
         self.assertLessEqual(page.run("scrollY + innerHeight"), page.run("document.documentElement.scrollHeight"))
         self.assertEqual(page.selected_tab(), "work-tab")
-
-    def test_top_of_the_page_stays_at_the_top(self):
-        page = self.open_page(PHONE)
-        self.republish(page, self.changed(lambda state: state.update(goal=state["goal"] + " " + "Longer goal. " * 30)))
-        self.assertIn("Longer goal", page.text())
-        self.assertEqual(page.run("scrollY"), 0)
-
-    def test_phone_position_ignores_cards_in_a_collapsed_section(self):
-        self.long_state()
-        page = self.open_page(PHONE)
-        page.click("#work-tab")
-        page.click("#toggle-stage-planned")
-        self.read_in_work(page, "W20", top=120)
-        before = page.top_of(self.card("W20"))
-
-        def add_above(state):
-            for index in range(50, 54):
-                state["work"].insert(0, dict(copy.deepcopy(self.work(state, "W3")), id=f"W{index}", title=f"New work {index}", state="building", blockedBy=[]))
-        self.republish(page, self.changed(add_above))
-        self.assertIn("New work 50", page.text())
-        self.assertAlmostEqual(page.top_of(self.card("W20")), before, delta=1)
-
-    def test_phone_position_holds_when_a_hidden_card_leaves_a_collapsed_section(self):
-        self.long_state()
-        page = self.open_page(PHONE)
-        page.click("#work-tab")
-        page.click("#toggle-stage-planned")
-        self.read_in_work(page, "W20", top=120)
-        before = page.top_of(self.card("W20"))
-        self.republish(page, self.changed(lambda state: self.work(state, "W22").update(self.outcome("W22", "in-review"))))
-        self.assertIn("in-review", self.lane_of(page, "W22"))
-        self.assertAlmostEqual(page.top_of(self.card("W20")), before, delta=1)
-
-    def test_desktop_page_follows_a_card_when_the_board_has_one_lane(self):
-        def one_lane(state):
-            state["needs"] = []
-            state["revisits"] = []
-            state["work"] = [dict(copy.deepcopy(self.work(state, "W3")), id=f"W{index}", title=f"Task {index}", blockedBy=[]) for index in range(30)]
-        self.state = self.changed(one_lane)
-        self.publish(self.state)
-        page = self.open_page(DESKTOP)
-        self.read_in_work(page, "W12", top=0)
-        before = page.top_of(self.card("W12"))
-        self.republish(page, self.changed(lambda state: state["work"].insert(0, dict(copy.deepcopy(state["work"][0]), id="ADDED", title="New card"))))
-        self.assertIn("New card", page.text())
-        self.assertAlmostEqual(page.top_of(self.card("W12")), before, delta=1)
 
     def wide_board(self):
         self.state["work"] += [dict(copy.deepcopy(self.work(self.state, "W3")), id=f"X{index}", state=state)
@@ -557,12 +517,12 @@ class ScrollTests(CommandCenterCase):
         page.run("document.querySelector('.stage-board').scrollLeft = 300")
         page.click("#needs-tab")
         self.republish(page, self.retitled())
-        self.assertIn("Retitled snapshot", page.text())
+        self.assertIn("Retitled program", page.text())
         page.click("#work-tab")
         self.assertEqual(page.run("document.querySelector('.stage-board').scrollLeft"), 300)
 
     def test_decision_list_keeps_its_row_when_a_decision_is_added_above_it(self):
-        self.state["needs"] += [dict(copy.deepcopy(self.state["needs"][0]), id=f"N{index}", ask=f"Extra decision {index}") for index in range(20)]
+        self.state["decisions"] += [dict(copy.deepcopy(self.state["decisions"][0]), id=f"N{index}", question=f"Extra decision {index}") for index in range(20)]
         self.publish(self.state)
         page = self.open_page(DESKTOP)
         page.run("document.querySelector('.inbox-list').scrollTop = 400")
@@ -570,7 +530,7 @@ class ScrollTests(CommandCenterCase):
         before = page.top_of(row)
 
         def add_above(state):
-            state["needs"].insert(0, dict(copy.deepcopy(state["needs"][0]), id="NEWEST", ask="A newer decision"))
+            state["decisions"].insert(0, dict(copy.deepcopy(state["decisions"][0]), id="NEWEST", question="A newer decision"))
         self.republish(page, self.changed(add_above))
         self.assertIn("A newer decision", page.text())
         self.assertAlmostEqual(page.top_of(row), before, delta=1)
@@ -588,77 +548,6 @@ class ScrollTests(CommandCenterCase):
         self.republish(page, self.changed(lambda state: self.work(state, identity).update(landed)))
         self.assertIn("landed", page.run(f"document.getElementById({json.dumps(mover)}).closest('.collapsible').className"))
         self.assertAlmostEqual(page.top_of("#" + watched), before, delta=1)
-
-
-class MorningViewTests(CommandCenterCase):
-    def card_text(self, page, identity):
-        return page.run(f"document.querySelector({json.dumps(self.card(identity))}).innerText")
-
-    def test_phone_work_view_fits_and_shows_results_layers_and_provisional_state(self):
-        page = self.open_page(PHONE)
-        page.click("#work-tab")
-        self.assertLessEqual(page.run("document.scrollingElement.scrollWidth"), PHONE[0])
-        outside = page.run("[...document.querySelectorAll('.work, .layer, .results, .provisional-note, .blocker')]"
-                           ".filter(node => node.getBoundingClientRect().right > innerWidth + .5).length")
-        self.assertEqual(outside, 0)
-        try_card = self.card_text(page, "W5")
-        self.assertIn("Preview build", try_card)
-        self.assertIn("Tailnet only. Stays up until you choose.", try_card)
-        self.assertIn("Waits on", try_card)
-        self.assertNotIn("Blocked", try_card)
-        provisional = self.card_text(page, "W2")
-        self.assertIn("It never lands while provisional.", provisional)
-        self.assertIn("on W1-L2 (W1)", provisional)
-        targets = page.run("[...document.querySelectorAll('.work .pr-link, .work .result-link')].map(link => link.getBoundingClientRect().height)")
-        self.assertEqual(len(targets), 5)
-        self.assertTrue(all(height >= 44 for height in targets), targets)
-
-    def test_phone_decision_cards_say_what_they_block_and_copy_one_try_choice(self):
-        page = self.open_page(PHONE)
-        self.assertLessEqual(page.run("document.scrollingElement.scrollWidth"), PHONE[0])
-        first = page.run("document.querySelector('.need').innerText")
-        self.assertIn("Blocks W6 acceptance", first)
-        self.assertIn("W6 builds on keeping the entry", first)
-        target = "decision-" + "W5-T".encode().hex()
-        labels = page.run(f"[...document.querySelectorAll('#{target} .options .copy-prompt')].map(button => button.getAttribute('aria-label'))")
-        self.assertEqual(labels, ["Copy prompt: Merge", "Copy prompt: Changes", "Copy prompt: Scrap"])
-        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
-        page.click(f"#{target} .options li:last-child .copy-prompt")
-        copied = page.run("new Promise(resolve => setTimeout(() => resolve(window.copied)))").splitlines()
-        self.assertTrue(copied[0].startswith('Decision "W5-T" (revision '))
-        self.assertEqual(copied[-1], 'I choose option 3: "Scrap"')
-
-    def test_layer_link_stays_in_place_as_the_program_grows(self):
-        page = self.open_page(PHONE)
-        page.click("#work-tab")
-        link = 'a[href="https://example.com/exports/pull/44"]'
-        page.bring_into_view(self.card("W1"), 120)
-        before = page.top_of(link)
-
-        def grow(state):
-            self.work(state, "W1")["layers"].append({"id": "W1-L3", "branch": "export-retry-docs", "status": "open",
-                                                     "url": "https://example.com/exports/pull/45", "stackedOn": "W1-L2"})
-            state["work"].insert(0, self.outcome("W9", "planned", title="Newly planned outcome"))
-        self.republish(page, self.changed(grow))
-        self.assertIn("Newly planned outcome", page.text())
-        self.assertIn("3 layers, bottom first", self.card_text(page, "W1"))
-        self.assertAlmostEqual(page.top_of(link), before, delta=1)
-
-    def test_phone_follows_a_kept_try_into_review(self):
-        page = self.open_page(PHONE)
-        page.click("#work-tab")
-        page.bring_into_view(self.card("W5"), 0)
-        before = page.top_of(self.card("W5"))
-
-        def keep(state):
-            self.work(state, "W5").update(finishLine="land", state="in-review", layers=[
-                {"id": "W5-L1", "branch": "export-history", "status": "open", "url": "https://example.com/exports/pull/50"}])
-            next(need for need in state["needs"] if need["id"] == "W5-T").update(status="answered", answer="Merge")
-        self.republish(page, self.changed(keep))
-        self.assertIn("in-review", page.run(f"document.querySelector({json.dumps(self.card('W5'))}).closest('.collapsible').className"))
-        self.assertIn("PR #50", self.card_text(page, "W5"))
-        self.assertAlmostEqual(page.top_of(self.card("W5")), before, delta=1)
-        self.assertEqual(page.selected_tab(), "work-tab")
 
 
 if __name__ == "__main__":

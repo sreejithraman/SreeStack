@@ -276,8 +276,11 @@ the chief releases it, the chief lands only sets that span owners, and each
 Needs you first and Work second, rendered from the program record's last
 commit: each outcome with its finish line, results to open, layers, provisional
 state, and what each decision blocks. Answers go back through chat. Existing
-trackers stay authoritative. The page is a private Claude artifact, republished
-after each commit that changes it, and keeps your place across updates.
+trackers stay authoritative. The page is a private Claude artifact, so the chief
+runs in Claude and republishes it after each commit that changes it. On reload,
+the page restores your tab, open sections, selected decision, and scroll
+position; local browser tests cover this, but not yet inside Claude's artifact
+viewer.
 
 [Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
 “Swarm these three possible causes and return evidence” partitions the question

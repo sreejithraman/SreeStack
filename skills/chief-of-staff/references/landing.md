@@ -22,7 +22,7 @@ set at those heads.
 Record exactly one lander for each merge set.
 
 - **The owner,** for a set within its own outcome. Record a **landing release**
-  in `record.landings` from the current chief, naming the owner, each PR with
+  in `landings` from the current chief, naming the owner, each PR with
   its accepted head and base, and any resources dependents still need, then
   resume the owner with it.
   The record's last commit is authoritative. Immediately before submitting a

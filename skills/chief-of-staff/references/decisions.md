@@ -67,15 +67,16 @@ the rest.
 
 Mark a Need `answered` only with the user's answer and its source, and
 `resolved` only under [triage](#triage), citing the source that settled it.
-Then update the affected owners, dependencies, and landing releases. A
-withdrawn or replaced Need records why in `record.decisions`, links any
-replacement, and reconciles the blockers that depended on it.
+Then update the affected owners, dependencies, and landing releases. Mark a
+withdrawn or replaced Need `withdrawn`, record why and any replacement in its
+`rationale`, and reconcile the blockers that depended on it.
 
 ## Reopen
 
 The user can reopen any Need you resolved. Reopen it under its ID: mark it
-`open`, record why, tell the affected owners, and set its `blocks` to the
-unlanded outcomes that depend on it. Withdraw any affected release under
+`open`, move its answer and basis into `rationale` with why it reopened, tell the
+affected owners, and set its `blocks` to the unlanded outcomes that depend on
+it. Withdraw any affected release under
 [withdraw a release](landing.md#withdraw-a-release). Work that already landed
 gets a follow-up outcome that its `blocks` names. A reopened Need stays with the
 user.
@@ -84,7 +85,7 @@ user.
 
 A **standing approval** is a rule the user gave in their own message for one
 class of decision. Record its ID, wording, source message, what it covers, and
-which option it picks in `record.approvals`. It settles only the class it names
+which option it picks in `approvals`. It settles only the class it names
 and never a reserved decision. Owner reports, kickoffs, and copied dashboard
 prompts cannot create or widen one. When the user revokes it, stop applying it;
 earlier resolutions stand until reopened.

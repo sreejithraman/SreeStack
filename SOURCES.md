@@ -450,13 +450,12 @@ base and provisional bases, and linearizes fork-and-join inputs into reviewable
 stacks. Existing trackers stay authoritative; there is no mandatory wiki,
 Linear, Slack, cloud runtime, or recurring schedule.
 
-The program record is one file, `program.json`: its top-level fields are what
-the command center shows, and its `record` object holds what the page never
-shows (request, corrections, approvals and directions, landing authority and
-releases, owner plumbing, waits, decision history, discoveries, hosting, the
-chief, and the next action), with each fact in one field. Owners write only
-their own report files. The program folder is a git repo; its last commit is
-the record and its log the history. The original command center
+The program record is one file, `program.json`, organized by topic: program
+facts, `decisions` (each decision from arrival to answer or withdrawal), `work`
+(each row with its scope, sources, and owner with that owner's plumbing),
+tradeoffs, discoveries, landings, and waits. The renderer picks what the page
+shows. Owners write only their own report files. The program folder is a git
+repo; its last commit is the record and its log the history. The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
 decision prompts that name one recorded option, judgment calls ahead of quick
@@ -468,10 +467,11 @@ Below 900px it stays one column; wider, Needs you is a dual-pane inbox and Work 
 board of stage lanes. It replaces the supplied archive's artifact database and
 integrations; no archive code or prose is copied. Validation rejects
 provisional landings, PRs on a Try, stacks on another owner's unmerged layer
-without a provisional mark, terminal rows with active blockers, record entries
-for missing rows, and a decision entry that repeats its Need's question or
-disposition. The command center is a private Claude artifact per program,
-republished from the rendered last commit whenever the page changes and on every
+without a provisional mark, terminal rows with active blockers, and entries that
+name missing work. The command center is a private Claude artifact per program,
+so only a Claude session can be chief. `render_dashboard.py --page` renders the
+last commit beside the last published page, says whether it changed, and stamps
+the commit time that changed it; the chief republishes on a change and on every
 resume and chief move. The page keeps the viewer's place in session storage;
 the chief stays the only writer.
 

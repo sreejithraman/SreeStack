@@ -1,7 +1,7 @@
 /implement
 
 Program: <title>. Program record (read-only): `git -C <program directory> show HEAD:program.json`.
-Original request and accepted corrections: its `record.request` and `record.corrections`.
+Original request and accepted corrections: its `request` and `corrections`.
 
 Outcome <ID>: <title>. Sources: <tickets, snips, PRs, or messages, or none>. Prefix decision request IDs with <ID>.
 Scope: <the result this outcome delivers, the code it covers, and what it leaves to other outcomes>.
@@ -13,8 +13,8 @@ Inputs available at that base: <dependencies>. Uncommitted inputs: <paths, or no
 Provisional assumptions: <another owner's unmerged branch or PR, or the recommended option of an open decision you build on, with what clears it, or none>. Your own planned layers are not provisional. Provisional work never merges and never takes destructive or outward-facing steps on its own; the user's scrap allows its scoped cleanup per Implement. Land becomes Try, and a requested draft or review-ready PR state can still be reached. Publish such a PR with a Provisional section in its body, per PR's body guide; that section holds its status until the condition clears and proof is refreshed.
 
 Finish line: <Land | Try | review-ready PR | draft PR>, picked because <reason>.
-Landing authority: `record.landingAuthority` and this outcome's finish line. Land within that scope is the merge request Merge needs, and it takes effect only on the current chief's recorded landing release for your PR or stack.
-Landing: report readiness and end your turn. Land through Merge only on that release. Immediately before submitting, re-read the record: confirm `record.chief`, your active release in `record.landings`, you as its one named lander, and no affecting hold or decision; match the forge's head/base for every PR in the set to the release. Report a mismatch instead of landing. Sets that span several owners are landed by the chief.
+Landing authority: `landingAuthority` and this outcome's finish line. Land within that scope is the merge request Merge needs, and it takes effect only on the current chief's recorded landing release for your PR or stack.
+Landing: report readiness and end your turn. Land through Merge only on that release. Immediately before submitting, re-read the record: confirm `chief`, your active release in `landings`, you as its one named lander, and no affecting hold or decision; match the forge's head/base for every PR in the set to the release. Report a mismatch instead of landing. Sets that span several owners are landed by the chief.
 Holds and user gates: <hold, source, release condition, or none>.
 Delegation allowance: you may start the bounded helpers your workflow needs as your own subagents: implementation, verification, and review helpers, and Swarm workers that fit. <Further limits, or none>. Start no new program owners; send work that needs one to the chief.
 

@@ -25,6 +25,8 @@ comparison through [Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md).
 The user can enter an owner's session directly; reconcile their new direction
 before you dispatch work that depends on it.
 
+Only a Claude session with the artifact tools can be chief, since the chief
+publishes the command center; elsewhere, ask the user to start the chief in one.
 Only the record's current chief acts on program items and writes the record.
 Check it before acting on a request, direction, report, event, or pasted answer;
 a thread that is not the chief forwards the item under
@@ -213,9 +215,9 @@ user, its requested PR state, or a repair with its owner.
 ## 5. Show and continue
 
 [Publish the command center](references/hosting.md) after each record write and
-give the user its link. It shows every outcome once, with its finish line,
-results and how to open them, provisional condition, owner, layers, and what
-each Need blocks. Results come from owners' Shown reports: link what they
+give the user its link, never an inline render. It shows every outcome once,
+with its finish line, results and how to open them, provisional condition,
+owner, layers, and what each Need blocks. Results come from owners' Shown reports: link what they
 showed, say what opening it needs, and name the gaps. Keep each row's
 observation time honest.
 

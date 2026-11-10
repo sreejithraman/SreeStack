@@ -34,6 +34,9 @@ DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
+DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
+SHOWN_DECISION_STATES = {"open", "answered", "resolved"}
+HISTORY = {"date", "source", "rationale"}  # Decision fields the page never shows.
 TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
@@ -104,7 +107,7 @@ def obj(value, path):
 
 def fields(row, path, required=(), optional=()):
     for key in (*required, *(key for key in optional if key in row)):
-        (date if key == "date" else text)(row.get(key), f"{path}.{key}")
+        (date if key == "date" else text)(row.get(key), f"{path}.{key}" if path else key)
     return row
 
 
@@ -125,8 +128,12 @@ def effective_finish(row):
     return row.get("effectiveFinishLine", row.get("finishLine"))
 
 
+def owner_name(row):
+    return row.get("owner", {}).get("name")
+
+
 def owned_by_another(row, other):
-    return not (row.get("owner") and row.get("owner") == other.get("owner"))
+    return not (owner_name(row) and owner_name(row) == owner_name(other))
 
 
 def validate_layers(row, path, layers):
@@ -149,23 +156,31 @@ def validate_layers(row, path, layers):
             raise ValueError(f"{where}: provisional work never merges; clear the condition before recording a merge")
 
 
+def validate_owner(owner, path):
+    fields(obj(owner, path), path, ("name", "route", "report"), ("model", "workspace", "resources"))
+    one_of(owner.get("start"), START_MODES, f"{path}.start")
+    if "session" in owner:
+        url(owner["session"], f"{path}.session")
+    for key in ("tasks", "handled"):
+        strings(owner.get(key, []), f"{path}.{key}")
+
+
 def validate_work(row, layers):
     path = f"work[{row['id']}]"
     for key in ("title", "repo"):
         text(row.get(key), f"{path}.{key}")
     state = one_of(row.get("state"), STATES, f"{path}.state")
     kind = one_of(row.get("kind"), ("outcome", "follow-up", "support"), f"{path}.kind")
-    timestamp(row.get("updatedAt"), f"{path}.updatedAt")
-    for key in ("description", "owner", "blocked", "origin", "unknownReason"):
-        if key in row:
-            text(row[key], f"{path}.{key}")
+    timestamp(row.get("checkedAt"), f"{path}.checkedAt")
+    fields(row, path, (), ("description", "scope", "finishLineReason", "acceptance", "blocked", "origin", "unknownReason"))
+    strings(row.get("sources", []), f"{path}.sources")
+    if "owner" in row:
+        validate_owner(row["owner"], f"{path}.owner")
     for key in ("url", "stackedOn"):
         if key in row:
             raise ValueError(f"{path}.{key}: record each PR and its stack parent on the outcome's layers")
     if "unknownReason" in row and state != "unknown":
         raise ValueError(f"{path}.unknownReason applies only to unknown state")
-    if "sessionUrl" in row:
-        url(row["sessionUrl"], f"{path}.sessionUrl")
     for key in ("tickets", "evidence"):
         links(row.get(key, []), f"{path}.{key}")
     for index, result in enumerate(records(row.get("results", []), f"{path}.results")):
@@ -175,7 +190,7 @@ def validate_work(row, layers):
     if "required" in row and not isinstance(row["required"], bool):
         raise ValueError(f"{path}.required must be a boolean")
     if state in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
-        raise ValueError(f"{path}: terminal work cannot retain active blockers; keep history in the program record")
+        raise ValueError(f"{path}: terminal work cannot retain active blockers; keep their history in decisions or discoveries")
     if state in ACTIVE and "owner" not in row:
         raise ValueError(f"{path}: {state} work needs its owner")
 
@@ -219,10 +234,10 @@ def validate_work(row, layers):
         raise ValueError(f"{path}: landed needs a Land finish line and every layer merged")
 
 
-def halted_by_need(needs):
-    """IDs of work an open Need holds at a phase that stops its work."""
-    return {entry["id"] for need in needs if need["status"] == "open"
-            for entry in need.get("blocks", []) if entry["phase"] in HALTING}
+def halted_by_decision(decisions):
+    """IDs of work an open decision holds at a phase that stops its work."""
+    return {entry["id"] for decision in decisions if decision["status"] == "open"
+            for entry in decision.get("blocks", []) if entry["phase"] in HALTING}
 
 
 LIVE_LAYERS = {"local", "draft", "open", "ready"}
@@ -266,7 +281,7 @@ def validate_edges(work, by_id, layers, halted):
         parent, parent_row = layers[layer["stackedOn"]]
         if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
                 and row["id"] not in halted):
-            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its Need")
+            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its decision")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
@@ -275,7 +290,7 @@ def validate_edges(work, by_id, layers, halted):
         for identity in bases(row, layers):
             reason = dead_base(by_id[identity])
             if reason and row["id"] not in halted:
-                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase Need or record its new base")
+                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase decision or record its new base")
 
     def depends_on(row):
         found = list(row.get("blockedBy", []))
@@ -305,19 +320,18 @@ def check_cycles(graph, name):
         visit(identity)
 
 
-def validate_need(row, by_id):
-    path = f"needs[{row['id']}]"
-    text(row.get("ask"), f"{path}.ask")
-    status = one_of(row.get("status"), ("open", "answered", "resolved"), f"{path}.status")
-    if status != "open":
+def validate_decision(row, by_id):
+    path = f"decisions[{row['id']}]"
+    fields(row, path, ("question", "date", "source"), ("recommendation", "meanwhile", "answer", "basis", "rationale"))
+    status = one_of(row.get("status"), DECISION_STATES, f"{path}.status")
+    if status in {"answered", "resolved"}:
         text(row.get("answer"), f"{path}.answer")
     if status == "resolved":
         text(row.get("basis"), f"{path}.basis")
     elif "basis" in row:
         raise ValueError(f"{path}.basis applies only to resolved decisions")
-    for key in ("recommendation", "answer", "meanwhile"):
-        if key in row:
-            text(row[key], f"{path}.{key}")
+    if status == "withdrawn":
+        text(row.get("rationale"), f"{path}.rationale")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
         raise ValueError(f"{path}.weight must be quick or judgment")
     strings(row.get("context", []), f"{path}.context")
@@ -349,34 +363,17 @@ def validate_need(row, by_id):
     links(row.get("links", []), f"{path}.links")
 
 
-def validate(state):
-    obj(state, "state")
-    for key in ("title", "goal"):
-        text(state.get(key), key)
-    timestamp(state.get("updatedAt"), "updatedAt")
-    if "finishLine" in state:
-        text(state["finishLine"], "finishLine")
-    if "demo" in state and not isinstance(state["demo"], bool):
-        raise ValueError("demo must be a boolean")
-    work = records(state.get("work"), "work")
-    needs = records(state.get("needs"), "needs")
-    revisits = records(state.get("revisits", []), "revisits")
-    for name, rows in (("work", work), ("needs", needs), ("revisits", revisits)):
-        unique_ids(rows, name)
-    by_id = {row["id"]: row for row in work}
-    layers = {}
-    for row in work:
-        validate_work(row, layers)
-    for row in needs:
-        validate_need(row, by_id)
-    validate_edges(work, by_id, layers, halted_by_need(needs))
-    for row in revisits:
-        for key in ("title", "tradeoff", "revisit"):
-            text(row.get(key), f"revisits[{row['id']}].{key}")
-        if "source" in row:
-            text(row["source"], f"revisits[{row['id']}].source")
-    validate_record(state.get("record"), by_id, {row["id"] for row in needs})
-    return state
+def validate_landing(row, by_id):
+    path = f"landings[{row['id']}]"
+    fields(row, path, ("date", "chief", "lander", "target"), ("keep", "note"))
+    one_of(row.get("state"), LANDING_STATES, f"{path}.state")
+    if not row.get("work") or not row.get("prs"):
+        raise ValueError(f"{path} needs its work and PRs")
+    for identity in strings(row["work"], f"{path}.work"):
+        known(identity, f"{path}.work", by_id)
+    for index, pr in enumerate(records(row["prs"], f"{path}.prs")):
+        url(pr.get("url"), f"{path}.prs[{index}].url")
+        fields(pr, f"{path}.prs[{index}]", ("head", "base"))
 
 
 def known(identity, path, by_id):
@@ -384,70 +381,44 @@ def known(identity, path, by_id):
         raise ValueError(f"{path} names missing work {identity}")
 
 
-def per_work(value, path, by_id):
-    for identity, row in obj(value, path).items():
-        known(identity, path, by_id)
-        yield f"{path}[{identity}]", obj(row, f"{path}[{identity}]")
+def validate(state):
+    obj(state, "program")
+    fields(state, "", ("title", "goal", "chief", "next"), ("finishLine",))
+    if "demo" in state and not isinstance(state["demo"], bool):
+        raise ValueError("demo must be a boolean")
+    if "hosting" in state:
+        url(state["hosting"], "hosting")
+    request = fields(obj(state.get("request"), "request"), "request", ("text",))
+    strings(request.get("sources", []), "request.sources")
+    if "landingAuthority" in state:
+        fields(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY)
 
-
-def validate_record(record, by_id, need_ids):
-    """The record holds what the page does not show; check its shape and its links to the page's rows."""
-    record = obj(record, "record")
-    fields(record, "record", ("chief", "next"))
-    request = fields(obj(record.get("request"), "record.request"), "record.request", ("text",))
-    strings(request.get("sources", []), "record.request.sources")
+    work = records(state.get("work"), "work")
+    decisions = records(state.get("decisions"), "decisions")
+    for name in ("work", "decisions", "revisits", "approvals", "landings"):
+        unique_ids(records(state.get(name, []), name), name)
+    by_id = {row["id"]: row for row in work}
+    layers = {}
+    for row in work:
+        validate_work(row, layers)
+    for row in decisions:
+        validate_decision(row, by_id)
+    validate_edges(work, by_id, layers, halted_by_decision(decisions))
+    for row in state.get("revisits", []):
+        fields(row, f"revisits[{row['id']}]", ("title", "tradeoff", "revisit"), ("source",))
     for name, required, optional in (
         ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
-        ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
+        ("approvals", (*ENTRY, "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
         ("waits", ("date", "on", "event"), ("work", "watcher")),
         ("discoveries", ("date", "origin", "text", "route"), ()),
     ):
-        for index, row in enumerate(records(record.get(name, []), f"record.{name}")):
-            fields(row, f"record.{name}[{index}]", required, optional)
+        for index, row in enumerate(records(state.get(name, []), name)):
+            fields(row, f"{name}[{index}]", required, optional)
             if "work" in row:
-                known(row["work"], f"record.{name}[{index}].work", by_id)
-    unique_ids(record.get("approvals", []), "record.approvals")
-    if "landingAuthority" in record:
-        fields(obj(record["landingAuthority"], "record.landingAuthority"), "record.landingAuthority", ENTRY)
-
-    for path, row in per_work(record.get("outcomes", {}), "record.outcomes", by_id):
-        fields(row, path, (), ("scope", "why", "acceptance"))
-        strings(row.get("sources", []), f"{path}.sources")
-    for path, row in per_work(record.get("owners", {}), "record.owners", by_id):
-        fields(row, path, ("route", "report"), ("model", "workspace", "resources"))
-        one_of(row.get("start"), START_MODES, f"{path}.start")
-        for key in ("tasks", "handled"):
-            strings(row.get(key, []), f"{path}.{key}")
-
-    landings = records(record.get("landings", []), "record.landings")
-    unique_ids(landings, "record.landings")
-    for row in landings:
-        path = f"record.landings[{row['id']}]"
-        fields(row, path, ("date", "chief", "lander", "target"), ("keep", "note"))
-        one_of(row.get("state"), LANDING_STATES, f"{path}.state")
-        if not row.get("work") or not row.get("prs"):
-            raise ValueError(f"{path} needs its work and PRs")
-        for identity in strings(row["work"], f"{path}.work"):
-            known(identity, f"{path}.work", by_id)
-        for index, pr in enumerate(records(row["prs"], f"{path}.prs")):
-            url(pr.get("url"), f"{path}.prs[{index}].url")
-            fields(pr, f"{path}.prs[{index}]", ("head", "base"))
-
-    decisions = records(record.get("decisions", []), "record.decisions")
-    unique_ids(decisions, "record.decisions")
-    for row in decisions:
-        path = f"record.decisions[{row['id']}]"
-        fields(row, path, ("date", "source"), ("owner", "rationale"))
-        if row["id"] in need_ids:
-            for key in ("question", "affects", "disposition"):
-                if key in row:
-                    raise ValueError(f"{path}.{key}: the Need {row['id']} holds it")
-        else:
-            fields(row, path, ("question", "disposition"))
-            strings(row.get("affects", []), f"{path}.affects")
-
-    if "hosting" in record:
-        url(record["hosting"], "record.hosting")
+                known(row["work"], f"{name}[{index}].work", by_id)
+    for row in state.get("landings", []):
+        validate_landing(row, by_id)
+    return state
 
 
 STAGE_ORDER = ("planned", "building", "shown", "in-review", "landed", "done", "unknown", "scrapped")
@@ -457,7 +428,7 @@ ICONS = {
     "scrapped": "ban", "unknown": "circle-question-mark", "provisional": "git-branch",
     "blocked": "triangle-alert", "waits": "hourglass", "copy": "copy", "copied": "check",
     "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
-    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "snapshot": "clock", "tradeoff": "scale",
+    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "updated": "clock", "tradeoff": "scale",
     "result": "external-link",
 }
 
@@ -488,17 +459,24 @@ def hexed(identity):
     return identity.encode().hex()
 
 
-def when(value, age=False):
-    return f'<time datetime="{e(value)}"{" data-age" if age else ""}>{e(value)}</time>'
+def when(value):
+    return f'<time datetime="{e(value)}">{e(value)}</time>'
+
+
+UPDATED = re.compile(r'<time id="updated" datetime="[^"]*" data-age>[^<]*</time>')
+
+
+def updated_time(value):
+    return f'<time id="updated" datetime="{e(value)}" data-age>{e(value)}</time>'
 
 
 def quoted(value):
     return json.dumps(" ".join(value.split()), ensure_ascii=False)
 
 
-def revision(need):
+def revision(decision):
     """Digest of the decision content a copied choice answers."""
-    return digest(json.dumps(need, sort_keys=True))[:10]
+    return digest(json.dumps({key: value for key, value in decision.items() if key not in HISTORY}, sort_keys=True))[:10]
 
 
 def display_stage(row):
@@ -518,7 +496,7 @@ def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", a
 def decision_prompt(row, state, action):
     return (
         f'Decision {json.dumps(row["id"], ensure_ascii=False)} (revision {revision(row)}) in {quoted(state["title"])}\n'
-        f'Question: {quoted(row["ask"])}\n'
+        f'Question: {quoted(row["question"])}\n'
         f'{action}'
     )
 
@@ -592,7 +570,7 @@ def tradeoff_label(row):
 
 def need_card(row, state, selected=False):
     classes = "card need" + (" quick" if row["status"] == "open" and row.get("weight") == "quick" else "") + (" selected" if selected else "")
-    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["ask"])}</h3>'
+    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["question"])}</h3>'
     if row.get("context"):
         content += '<ul class="context">' + "".join(f"<li>{e(item)}</li>" for item in row["context"]) + "</ul>"
     if row["status"] == "open" and row.get("meanwhile"):
@@ -630,7 +608,7 @@ def inbox_group(heading_id, title, tone, rows):
 
 def needs_view(state, judgment, quick, resolved, answered):
     """Decision cards in reading order, with the list that shows one card at a time in the dual-pane inbox."""
-    empty = '<p class="empty">Nothing needs you in this snapshot.</p>'
+    empty = '<p class="empty">Nothing needs you right now.</p>'
     revisits = state.get("revisits", [])
     open_needs = judgment + quick
     if not (open_needs or resolved or revisits or answered):
@@ -644,15 +622,15 @@ def needs_view(state, judgment, quick, resolved, answered):
     groups = ""
     for heading_id, title, rows in (("judgment-list", "Judgment calls", judgment), ("quick-list", "Quick picks", quick)):
         if rows:
-            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["ask"], selected=row is selected) for row in rows])
+            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["question"], selected=row is selected) for row in rows])
     if resolved:
-        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["ask"]) for row in resolved])
+        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in resolved])
         cards += collapsible("resolved-heading", "Chief decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>')
     if revisits:
         groups += inbox_group("revisits-list", "Worth a second look", "revisit", [inbox_row(card_id("tradeoff", row), row["id"], row["title"]) for row in revisits])
         cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>')
     if answered:
-        groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["ask"]) for row in answered])
+        groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in answered])
         cards += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{"".join(need_card(row, state) for row in answered)}</div>')
     return f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
 
@@ -661,7 +639,7 @@ class Program:
     """Lookups the work board needs across outcomes, layers, and decisions."""
 
     def __init__(self, state):
-        self.needs = state["needs"]
+        self.decisions = state["decisions"]
         self.by_id = {row["id"]: row for row in state["work"]}
         self.layers = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
 
@@ -675,10 +653,10 @@ class Program:
     def blockers(self, row):
         """(halts, kind, identity, text) for each open blocker; waits let building continue."""
         items = []
-        for need in self.needs:
-            entry = next((entry for entry in need.get("blocks", []) if entry["id"] == row["id"]), None)
-            if need["status"] == "open" and entry:
-                items.append((entry["phase"] in HALTING, f'Decision · blocks {entry["phase"]}', need["id"], need["ask"]))
+        for decision in self.decisions:
+            entry = next((entry for entry in decision.get("blocks", []) if entry["id"] == row["id"]), None)
+            if decision["status"] == "open" and entry:
+                items.append((entry["phase"] in HALTING, f'Decision · blocks {entry["phase"]}', decision["id"], decision["question"]))
         items += [(True, STATES[self.by_id[identity]["state"]], identity, self.by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
         if row.get("blocked"):
             items.append((True, "Other", "", row["blocked"]))
@@ -799,12 +777,10 @@ def work_card(row, program):
         content += link_list(row.get("evidence", []))
         content += "</div></details>"
     content += '<div class="work-footer"><div class="assignee">'
-    if row.get("owner"):
-        owner = link(row["owner"], row["sessionUrl"]) if row.get("sessionUrl") else e(row["owner"])
-        content += f'<p class="owner">{owner}</p>'
-    elif row.get("sessionUrl"):
-        content += f'<p class="owner">{link("Owner session", row["sessionUrl"])}</p>'
-    content += f'<p class="observation">Checked {when(row["updatedAt"])}</p></div>'
+    if "owner" in row:
+        owner = row["owner"]
+        content += f'<p class="owner">{link(owner["name"], owner["session"]) if "session" in owner else e(owner["name"])}</p>'
+    content += f'<p class="observation">Checked {when(row["checkedAt"])}</p></div>'
     return content + "</div></article>"
 
 
@@ -828,14 +804,15 @@ def overview(work):
     )
 
 
-def render(state):
-    """Validate the state and render its page."""
+def render(state, updated=None):
+    """Validate the program and render its page, stamped with the time its content last changed."""
     validate(state)
-    open_needs = [row for row in state["needs"] if row["status"] == "open"]
+    decisions = state["decisions"]
+    open_needs = [row for row in decisions if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
     quick = [row for row in open_needs if row.get("weight") == "quick"]
-    resolved = [row for row in state["needs"] if row["status"] == "resolved"]
-    answered = [row for row in state["needs"] if row["status"] == "answered"]
+    resolved = [row for row in decisions if row["status"] == "resolved"]
+    answered = [row for row in decisions if row["status"] == "answered"]
     program = Program(state)
 
     needs_html = needs_view(state, judgment, quick, resolved, answered)
@@ -848,12 +825,13 @@ def render(state):
             alert = f'<span class="state blocked"><span class="sr-only">, </span>{icon("blocked")}{blocked} blocked</span>' if blocked else ""
             cards = "".join(work_card(row, program) for row in rows)
             stages += collapsible(f"stage-{key}", STATES[key], len(rows), f'<div class="section-body stage-cards">{cards}</div>', level=3, state=key, mark=icon(key), alert=alert)
-    work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded in this snapshot.</p>'
+    work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded yet.</p>'
 
     facts = ""
     if state.get("finishLine"):
         facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(state["finishLine"])}</span></p>'
-    facts += f'<p class="fact">{icon("snapshot")}<span><span class="fact-label">Snapshot</span> {when(state["updatedAt"], age=True)}</span></p>'
+    if updated:
+        facts += f'<p class="fact">{icon("updated")}<span><span class="fact-label">Updated</span> {updated_time(updated)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
     content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
@@ -868,53 +846,52 @@ def render(state):
     return TEMPLATE.read_text().replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
 
 
+def git(state_file, *args):
+    result = subprocess.run(["git", "-C", str(state_file.parent), *args], capture_output=True, encoding="utf-8")
+    if result.returncode:
+        raise ValueError(result.stderr.strip() or f"git {args[0]} exited with status {result.returncode}")
+    return result.stdout
+
+
 def committed(state_file):
-    """The state file's text at HEAD of its git repository."""
-    git = subprocess.run(["git", "-C", str(state_file.parent), "show", f"HEAD:./{state_file.name}"],
-                         capture_output=True, encoding="utf-8")
-    if git.returncode:
-        raise ValueError(git.stderr.strip() or f"git show exited with status {git.returncode}")
-    return git.stdout
-
-
-def check_snapshot(state, state_file):
-    """Fail when updatedAt disagrees with what changed since the last commit."""
-    try:
-        head = json.loads(committed(state_file))
-        before = render(head)
-    except ValueError:
-        return  # no usable commit to compare with
-    moved = state["updatedAt"] != head["updatedAt"]
-    if not moved and render(state | {"updatedAt": head["updatedAt"]}) != before:
-        raise ValueError(f"{state_file}: the page changed, so set updatedAt to the time of this write")
-    if moved and all(state.get(key) == head.get(key) for key in (state.keys() | head.keys()) - {"record", "updatedAt"}):
-        raise ValueError(f"{state_file}: only record changed, so keep updatedAt at {head['updatedAt']}")
+    """The state file's program at HEAD of its git repository."""
+    return json.loads(git(state_file, "show", f"HEAD:./{state_file.name}"))
 
 
 def stage_page(state_file, page_file):
-    """Render the committed state beside page_file; return whether it differs from page_file."""
+    """Render HEAD to page_file's .next sibling; return whether it differs from page_file, ignoring the updated time.
+
+    The updated time is HEAD's commit time, or the staged page's when it already holds this content.
+    """
     staged = page_file.with_name(f"{page_file.stem}.next{page_file.suffix}")
     if state_file.resolve() in (page_file.resolve(), staged.resolve()):
         raise ValueError(f"{page_file}: the page would overwrite the state file")
-    page = render(json.loads(committed(state_file)))
-    staged.write_text(page)
-    return not page_file.exists() or page_file.read_text() != page
+    page = render(committed(state_file), git(state_file, "log", "-1", "--format=%cI").strip())
+
+    def holds(path):
+        return path.exists() and UPDATED.sub(lambda _: UPDATED.search(page)[0], path.read_text(), count=1) == page
+
+    if holds(page_file):
+        staged.unlink(missing_ok=True)
+        return False
+    if not holds(staged):
+        staged.write_text(page)
+    return True
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--check", action="store_true", help="Validate the working state against its last commit; write nothing")
-    action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
+    action.add_argument("--check", action="store_true", help="Validate the working state file; write nothing")
+    action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's revision at HEAD")
     action.add_argument("--page", type=Path, metavar="FILE",
-                        help="Render the state's last commit to FILE's .next sibling; print changed when it differs from FILE")
+                        help="Render HEAD to FILE's .next sibling; print changed when it differs from FILE")
     args = parser.parse_args()
     try:
         if args.page:
             print("changed" if stage_page(args.state, args.page) else "unchanged")
-            return
-        if args.check:
+        elif args.check:
             text = args.state.read_text()
             state = json.loads(text)
             render(state)
@@ -922,12 +899,10 @@ def main():
                 path = shlex.quote(str(args.state))
                 raise ValueError(f"{args.state}: not one value per line; rewrite it with: "
                                  f"python3 -m json.tool --indent 2 --no-ensure-ascii {path} > {path}.fmt && mv {path}.fmt {path}")
-            check_snapshot(state, args.state)
             print(f"{args.state}: valid")
-            return
-        state = json.loads(committed(args.state))
-        validate(state)
-        print(revision(next(row for row in state["needs"] if row["id"] == args.revision)))
+        else:
+            state = validate(committed(args.state))
+            print(revision(next(row for row in state["decisions"] if row["id"] == args.revision)))
     except StopIteration:
         parser.error(f"no decision {args.revision}")
     except (OSError, ValueError) as error:
