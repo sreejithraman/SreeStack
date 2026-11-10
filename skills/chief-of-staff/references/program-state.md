@@ -13,6 +13,12 @@ chief and its owners can read and that survives worktree cleanup. Adopt an
 existing program's file rather than starting another. Put its absolute path in
 the chief's handoff and every owner kickoff.
 
+The program folder is a git repository, and its log is the record's history.
+When you create or adopt a program in a folder that is not one yet, run
+`git init` there and commit `program.json` once it passes the check. Keep the
+file indented one value per line, as the [example](../assets/example-state.json)
+is, so each change shows in `git diff`.
+
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
 current chief alone writes `program.json`. Before each write, confirm
 `record.chief` still names this thread; otherwise, or if the file fails to load,
@@ -35,22 +41,27 @@ you reply or move on:
    Set `updatedAt` to the time of this write if it changes anything outside
    `record`; a write that changes only `record` keeps `updatedAt`, so open
    pages stay put.
-2. Check it from this skill's folder, and fix every error it reports.
-   `--previous` fails when `record.corrections`, `requirements`, `directions`,
-   `landings`, `decisions`, or `discoveries` lost entries; mark a change in
-   place instead of deleting its entry. On the first write, start a new file
-   and omit `--previous`.
+2. Check it from this skill's folder, and fix every error it reports. On the
+   first write, start a new file.
 
    ```bash
-   python3 scripts/render_dashboard.py --state <temp> --check --previous /absolute/path/program.json
+   python3 scripts/render_dashboard.py --state <temp> --check
    ```
 
-3. Keep the live file as `.program.json.prev`, the recovery copy for a bad
-   write, then move the temp file over it:
+3. Move it into place and read what changed:
 
    ```bash
-   cp /absolute/path/program.json /absolute/path/.program.json.prev
    mv <temp> /absolute/path/program.json
+   git -C /absolute/path diff program.json
+   ```
+
+   A removed or changed line the event didn't call for is a mistake. Restore it
+   from `git -C /absolute/path show HEAD:program.json` and check `program.json`
+   again. Mark a change to a history entry in place instead of deleting it.
+4. Commit with a message naming the event:
+
+   ```bash
+   git -C /absolute/path add program.json && git -C /absolute/path commit -m "R2 report: PR 12 open"
    ```
 
 The hosted page shows the new state on its next request.

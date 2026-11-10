@@ -6,19 +6,21 @@ from acting on stale state or writing over the record.
 ## Check the chief
 
 Before acting on a request, direction, event, report, or pasted answer, and
-before each record write, read `record.chief` in `program.json`. A thread that
-is not the chief reads the chief's thread, forwards the item with
+before each record write, read `record.chief` in `program.json`, or in
+`git show HEAD:program.json` when `program.json` fails `--check`. Every write
+passes the check before it is committed, so the last commit is always valid. A
+thread that is not the chief reads the chief's thread, forwards the item with
 `t3_thread_send`, linking the user's message for requests, directions, and
-answers, and stops. It unwatches its PRs when the chief asks. A user item that arrives through
-`t3_thread_send` counts under [record an answer](decisions.md#record-an-answer).
+answers, and stops. It unwatches its PRs when the chief asks. A user item that
+arrives through `t3_thread_send` counts under
+[record an answer](decisions.md#record-an-answer).
 
-When `program.json` fails `--check`, only the thread whose own last write named
-it chief writes: it repairs the file through
-[write the record](program-state.md#write-the-record), then resumes the check.
-In that repair, restore anything lost or damaged from `.program.json.prev`, pass
-it as `--previous` when `program.json` is not valid JSON, and skip the `cp` over
-it, so it keeps the last good state.
-Any other thread reports the break to the user and writes nothing.
+When `program.json` fails `--check`, the chief named there repairs it: it fixes
+the file, or restores it with `git checkout -- program.json` when the break is
+an unwanted hand edit, then writes as usual under
+[write the record](program-state.md#write-the-record). A chief that cannot act
+goes through [take over](#take-over). Any other thread forwards or reports the
+break as it would any other item.
 
 ## Move
 
@@ -40,7 +42,7 @@ is incomplete.
 
 ## After either
 
-The new chief takes over `program.json` and the dashboard server as they stand,
-and [checks the hosted page](hosting.md#check-the-hosted-page). It reconciles
+The new chief takes over the program folder as it stands and
+[hosts the page again](hosting.md#host-again). It reconciles
 state as on resume, sends owners their route, watches any delegated owner's
 pending PRs, and asks any remaining old thread to unwatch.

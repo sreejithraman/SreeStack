@@ -38,12 +38,14 @@ URL, so a manual refresh returns to it too; a new tab starts at Needs you. A
 write that changes only `record` keeps `updatedAt` and leaves open pages alone.
 Answers still go through chat.
 
-## Check the hosted page
+## Host again
 
-On every resume and chief move, open the URL in `record.hosting` and confirm it
-serves the current `program.json`. If it fails or shows an older state, as after
-a reboot, start the server again under step 1 on the recorded port, so the
-existing Serve mapping still works. Then update `record.hosting`.
+On every resume and chief move, host the page again, however it looks. Follow
+[take it down](#take-it-down), then steps 1–3 on a free loopback port, mapping
+the HTTPS Serve port in `record.hosting` to it so the link stays the same.
+Confirm the URL serves the current `program.json`, then update `record.hosting`.
+This picks up skill updates, a server lost to a reboot, and a stale live server
+alike.
 
 ## Take it down
 

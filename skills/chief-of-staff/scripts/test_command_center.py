@@ -117,11 +117,6 @@ document.dispatchEvent(new Event('visibilitychange'));
 """
 
 
-def next_template(html):
-    """A page as a later template would render it: both versions differ."""
-    return html.replace('data-template="', 'data-template="next').replace('data-snapshot="', 'data-snapshot="next')
-
-
 def playwright_chromes():
     """Playwright's cached Chromium builds, Chrome for Testing first, newest first."""
     default = "~/Library/Caches" if sys.platform == "darwin" else os.environ.get("XDG_CACHE_HOME", "~/.cache")
@@ -289,13 +284,12 @@ class Page:
 
 
 class Host(DashboardServer):
-    """The dashboard server with test hooks: faults, stale navigations, and template changes."""
+    """The dashboard server with test hooks: faults and stale navigations."""
 
     def __init__(self, folder, state):
         self.page_requests = 0
         self.fault = None
         self.stale_navigations = None
-        self.template = None
         program = folder / "program.json"
         program.write_text(json.dumps(state))
         super().__init__(program)
@@ -304,16 +298,15 @@ class Host(DashboardServer):
     def handle_error(self, request, client_address):
         """Aborted checks close their connections mid-response by design."""
 
-    def publish(self, state, template=None):
-        """Write the program file as the chief does; template rewrites each page served from it."""
+    def publish(self, state):
+        """Write the program file as the chief does."""
         staging = self.state_path.with_name(".program.json.tmp")
         staging.write_text(json.dumps(state))
         os.replace(staging, self.state_path)
-        self.template = template
 
-    def page(self):
-        status, page = super().page()
-        return status, page if self.template is None else self.template(page)
+    def ship_template(self):
+        """Serve pages from a changed template, as a restarted server would after a skill update."""
+        self.page_template = self.page_template.replace("<body>", '<body data-shipped="yes">', 1)
 
 
 class HostHandler(DashboardHandler):
@@ -504,7 +497,7 @@ class PublicationTests(CommandCenterCase):
         page = self.open_page()
         page.click("#work-tab")
         page.keep_quiet()
-        self.host.publish(self.state, template=lambda html: next_template(html).replace("<body>", '<body data-shipped="yes">'))
+        self.host.ship_template()
         page.set_visible(True)
         page.wait_for_load()
         self.assertEqual(page.run("document.body.dataset.shipped"), "yes")
@@ -534,7 +527,8 @@ class PublicationTests(CommandCenterCase):
         page.click("#work-tab")
         page.keep_quiet()
         self.host.stale_navigations = self.host.page()[1]
-        self.host.publish(self.changed(lambda state: state.update(title="Newer content")), template=next_template)
+        self.host.ship_template()
+        self.host.publish(self.changed(lambda state: state.update(title="Newer content")))
         page.set_visible(True)
         page.wait_for_load()
         page.run("window.stayed = true")
@@ -544,7 +538,7 @@ class PublicationTests(CommandCenterCase):
         page.click("#needs-tab")
         self.assertEqual(page.visible_panels(), ["needs-panel"])
         self.host.stale_navigations = None
-        self.host.publish(self.changed(lambda state: state.update(title="Newest content")), template=next_template)
+        self.host.publish(self.changed(lambda state: state.update(title="Newest content")))
         page.set_visible(True)
         page.wait_for_load()
         self.assertIn("Newest content", page.text())

@@ -455,9 +455,11 @@ the command center shows, and its `record` object holds what the page never
 shows (request, corrections, approvals and directions, landing authority and
 releases, owner plumbing, waits, decision history, discoveries, hosting, the
 chief, and the next action), with each fact in one field. Owners write only
-their own report files. The chief edits a copy of the file and moves it into
-place after `render_dashboard.py --check --previous` confirms it is valid and
-kept every history entry, keeping the replaced file as `.program.json.prev`.
+their own report files. The program folder is a git repository: the chief
+edits a copy of the file, moves it into place after `render_dashboard.py --check`
+confirms it is valid, reads `git diff` for unintended losses, and commits each
+write with a message naming its event. A failed check is repaired by the chief
+named in the file or in its last commit.
 The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
@@ -475,7 +477,8 @@ for missing rows, and a decision entry that repeats its Need's question or
 disposition. Delivery is hosted only: `scripts/serve_dashboard.py` renders the
 file on loopback at each request, serving the last good page under an error
 banner when it fails to load, and `references/hosting.md` shares it through Show
-Me's web sharing, including Tailscale Serve. A hosted page polls its own URL and
+Me's web sharing, including Tailscale Serve, and is hosted again on every
+resume and chief move. A hosted page polls its own URL and
 swaps in a changed digest without a server push, keeping the viewer's place per
 URL in session storage; the chief stays the only writer.
 

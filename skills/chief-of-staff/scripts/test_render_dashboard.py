@@ -1034,38 +1034,6 @@ class RecordTests(unittest.TestCase):
         for value in (self.record["next"], self.record["owners"]["W1"]["workspace"], self.record["hosting"]["stop"]):
             self.assertNotIn(value, html)
 
-    def test_check_with_previous_fails_when_record_history_loses_entries(self):
-        with tempfile.TemporaryDirectory() as directory:
-            live, staged = Path(directory) / "program.json", Path(directory) / ".program.json.next"
-            live.write_text(json.dumps(self.state))
-            command = [sys.executable, str(SCRIPT), "--state", str(staged), "--check", "--previous", str(live)]
-            self.record["decisions"].append({"id": "D9", "date": "2026-11-03", "source": "Chief thread",
-                                             "question": "Keep the export format?", "affects": ["W1"], "disposition": "Kept"})
-            staged.write_text(json.dumps(self.state))
-            appended = subprocess.run(command, capture_output=True, text=True)
-            self.assertEqual(appended.returncode, 0, appended.stderr)
-            for key in ("corrections", "requirements", "directions", "landings", "decisions", "discoveries"):
-                with self.subTest(dropped=key):
-                    state = json.loads(live.read_text())
-                    state["record"][key].pop()
-                    staged.write_text(json.dumps(state))
-                    dropped = subprocess.run(command, capture_output=True, text=True)
-                    self.assertNotEqual(dropped.returncode, 0)
-                    self.assertIn(f"record.{key} has", dropped.stderr)
-            state = json.loads(live.read_text())
-            state["record"]["waits"] = []
-            staged.write_text(json.dumps(state))
-            self.assertEqual(subprocess.run(command, capture_output=True, text=True).returncode, 0)
-            for broken in ("{not json", None):
-                with self.subTest(previous=broken):
-                    if broken is None:
-                        live.unlink()
-                    else:
-                        live.write_text(broken)
-                    failed = subprocess.run(command, capture_output=True, text=True)
-                    self.assertNotEqual(failed.returncode, 0)
-                    self.assertIn("cannot load previous file", failed.stderr)
-
     def test_record_only_writes_keep_the_page_version(self):
         """A write keeps updatedAt unless it changes what the page shows."""
         snapshot = lambda: re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1)

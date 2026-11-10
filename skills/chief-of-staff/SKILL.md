@@ -248,8 +248,7 @@ retained work and active dependents no longer need the resources.
 
 Before pausing or moving, bring the record current. On resume, reconcile it with
 current files, threads, and forge state, and
-[check the hosted page](references/hosting.md#check-the-hosted-page), before
-dispatching. To move the program to another thread or take over from a chief
+[host the page again](references/hosting.md#host-again), before dispatching. To move the program to another thread or take over from a chief
 that cannot act, follow [chief move](references/chief-move.md). This skill supplies no background
 wakeups: native goal tracking, recurring checks, and other automation need an
 explicit user request and host support.

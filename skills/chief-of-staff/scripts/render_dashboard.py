@@ -32,7 +32,6 @@ DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
-HISTORY = ("corrections", "requirements", "directions", "landings", "decisions", "discoveries")  # Append-only record lists.
 TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
@@ -876,20 +875,7 @@ def with_error(page, error):
     banner = (f'<p class="state-error" role="alert">{icon("blocked")}<span><strong>Showing the last good state.</strong> '
               f'The program file failed to load: {e(error)}</span></p>')
     flagged = page.replace("<main>", f"<main>{banner}", 1)
-    snapshot = re.search(r'data-snapshot="(\w+)"', flagged).group(0)
-    return flagged.replace(snapshot, f'data-snapshot="{digest(flagged)}"', 1)
-
-
-def check_history(state, previous):
-    """Fail when an append-only record list has fewer entries than in the previous file."""
-    def counts(program):
-        record = program.get("record") if isinstance(program, dict) else None
-        record = record if isinstance(record, dict) else {}
-        return {key: len(record[key]) if isinstance(record.get(key), list) else 0 for key in HISTORY}
-    before, after = counts(previous), counts(state)
-    lost = [f"record.{key} has {after[key]} entries, down from {before[key]}" for key in HISTORY if after[key] < before[key]]
-    if lost:
-        raise ValueError("; ".join(lost) + "; restore the missing entries from the previous file")
+    return re.sub(r'data-snapshot="\w+"', f'data-snapshot="{digest(flagged)}"', flagged, count=1)
 
 
 def main():
@@ -898,20 +884,11 @@ def main():
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--check", action="store_true", help="Validate the state and render it in memory; write nothing")
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
-    parser.add_argument("--previous", type=Path, help="With --check, the live program.json; fail if record history lost entries")
     args = parser.parse_args()
-    if args.previous and not args.check:
-        parser.error("--previous needs --check")
     try:
         state = json.loads(args.state.read_text())
         if args.check:
             render(state)
-            if args.previous:
-                try:
-                    previous = json.loads(args.previous.read_text())
-                except (OSError, ValueError) as error:
-                    raise ValueError(f"cannot load previous file {args.previous}: {error}") from error
-                check_history(state, previous)
             print(f"{args.state}: valid")
             return
         validate(state)
