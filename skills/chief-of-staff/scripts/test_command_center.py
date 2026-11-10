@@ -23,6 +23,7 @@ from urllib.parse import urlsplit
 
 from serve_dashboard import DashboardHandler, DashboardServer
 from test_render_dashboard import page_state
+from test_serve_dashboard import commit, git
 
 
 CHECK_INTERVAL = 20_000
@@ -290,19 +291,16 @@ class Host(DashboardServer):
         self.page_requests = 0
         self.fault = None
         self.stale_navigations = None
-        program = folder / "program.json"
-        program.write_text(json.dumps(state))
-        super().__init__(program)
+        git(folder, "init", "-q")
+        commit(folder, json.dumps(state))
+        super().__init__(folder)
         self.RequestHandlerClass = HostHandler
 
     def handle_error(self, request, client_address):
         """Aborted checks close their connections mid-response by design."""
 
     def publish(self, state):
-        """Write the program file as the chief does."""
-        staging = self.state_path.with_name(".program.json.tmp")
-        staging.write_text(json.dumps(state))
-        os.replace(staging, self.state_path)
+        commit(self.program, json.dumps(state))
 
     def ship_template(self):
         """Serve pages from a changed template, as a restarted server would after a skill update."""
@@ -379,6 +377,7 @@ def tearDownModule():
 
 class CommandCenterCase(unittest.TestCase):
     def setUp(self):
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))  # Server logs, including requests racing the folder's cleanup.
         self.state = page_state()
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
@@ -512,9 +511,8 @@ class PublicationTests(CommandCenterCase):
         self.publish_retitled("Written once")
         page.advance(CHECK_INTERVAL + 500)
         self.assertIn("Written once", page.text())
-        self.host.state_path.write_text("{broken")
-        with contextlib.redirect_stderr(io.StringIO()):
-            page.advance(CHECK_INTERVAL)
+        commit(self.host.program, "{broken")
+        page.advance(CHECK_INTERVAL)
         self.assertIn("Showing the last good state.", page.text())
         self.assertIn("Written once", page.text())
         self.publish_retitled("Written again")

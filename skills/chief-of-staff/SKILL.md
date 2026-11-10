@@ -213,8 +213,8 @@ user, its requested PR state, or a repair with its owner.
 ## 5. Show and continue
 
 Host the [command center](references/program-state.md#command-center) through
-[dashboard hosting](references/hosting.md), never inline. It renders
-`program.json` each time it is opened, so every record write reaches it. It
+[dashboard hosting](references/hosting.md), never inline. It renders the
+record's last commit each time it is opened, so every record write reaches it. It
 shows every outcome once, with its finish line, results and how to open them,
 provisional condition, owner, layers, and what each Need blocks. Results come
 from owners' Shown reports: link what they showed, say what opening it needs,
@@ -228,8 +228,8 @@ Choose user updates from the owner reports: what the user can now use, try,
 decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
 the record, and answer direct questions in the detail asked.
 
-Done when the hosted page serves the current `program.json` without an error
-banner and shows every result and open Need.
+Done when the hosted page serves the last commit without an error banner and
+shows every result and open Need.
 
 ## 6. Settle or resume
 

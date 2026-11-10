@@ -455,8 +455,8 @@ the command center shows, and its `record` object holds what the page never
 shows (request, corrections, approvals and directions, landing authority and
 releases, owner plumbing, waits, decision history, discoveries, hosting, the
 chief, and the next action), with each fact in one field. Owners write only
-their own report files. The program folder is a git repo whose commits are the
-record's history. The original command center
+their own report files. The program folder is a git repo; its last commit is
+the record and its log the history. The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
 decision prompts that name one recorded option, judgment calls ahead of quick
@@ -471,7 +471,7 @@ provisional landings, PRs on a Try, stacks on another owner's unmerged layer
 without a provisional mark, terminal rows with active blockers, record entries
 for missing rows, and a decision entry that repeats its Need's question or
 disposition. Delivery is hosted only: `scripts/serve_dashboard.py` renders the
-file on loopback at each request, serving the last good page under an error
+last commit on loopback at each request, serving the last good page under an error
 banner when it fails to load, and `references/hosting.md` shares it through Show
 Me's web sharing, including Tailscale Serve. A hosted page polls its own URL and
 swaps in a changed digest without a server push, keeping the viewer's place per

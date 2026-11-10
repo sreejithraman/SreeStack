@@ -19,6 +19,18 @@ from test_render_dashboard import page_state
 
 
 SCRIPT = Path(__file__).with_name("serve_dashboard.py")
+GIT_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "GIT_AUTHOR_NAME": "Test",
+           "GIT_AUTHOR_EMAIL": "test@example.com", "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com"}
+
+
+def git(folder, *args):
+    subprocess.run(["git", "-C", str(folder), *args], check=True, capture_output=True, env=GIT_ENV)
+
+
+def commit(folder, text):
+    (folder / "program.json").write_text(text)
+    git(folder, "add", "program.json")
+    git(folder, "commit", "-q", "--allow-empty", "-m", "write")
 
 
 class ServerTests(unittest.TestCase):
@@ -28,10 +40,11 @@ class ServerTests(unittest.TestCase):
         self.addCleanup(folder.cleanup)
         self.folder = Path(folder.name)
         self.program = self.folder / "program.json"
+        git(self.folder, "init", "-q")
         self.enterContext(contextlib.redirect_stderr(io.StringIO()))
 
     def start(self):
-        server = DashboardServer(self.program)
+        server = DashboardServer(self.folder)
         self.addCleanup(server.server_close)
         threading.Thread(target=server.serve_forever, args=(.01,), daemon=True).start()
         self.addCleanup(server.shutdown)
@@ -39,9 +52,7 @@ class ServerTests(unittest.TestCase):
         return server
 
     def write(self, state):
-        staging = self.folder / ".program.json.tmp"
-        staging.write_text(json.dumps(state))
-        os.replace(staging, self.program)
+        commit(self.folder, json.dumps(state))
 
     def changed(self, title):
         state = copy.deepcopy(self.state)
@@ -65,7 +76,7 @@ class ServerTests(unittest.TestCase):
         self.write(self.state)
         self.assertEqual(self.start().server_address[0], "127.0.0.1")
 
-    def test_each_request_renders_the_current_file(self):
+    def test_each_request_renders_the_last_commit_and_ignores_the_working_file(self):
         self.write(self.changed("First write"))
         self.start()
         status, headers, page = self.get()
@@ -73,22 +84,26 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertEqual(headers["Cache-Control"], "no-store")
         self.assertEqual(self.title(page), "First write")
+        for edit in (json.dumps(self.changed("Uncommitted edit")), "{not json"):
+            self.program.write_text(edit)
+            self.assertEqual(self.get()[2], page, edit)
         self.write(self.changed("Second write"))
         self.assertEqual(self.title(self.get()[2]), "Second write")
-        self.assertEqual(sorted(path.name for path in self.folder.iterdir()), ["program.json"])
+        self.assertEqual(sorted(path.name for path in self.folder.iterdir()), [".git", "program.json"])
 
-    def test_invalid_file_serves_the_last_good_page_with_a_banner_until_fixed(self):
+    def test_invalid_commit_serves_the_last_good_page_with_a_banner_until_fixed(self):
         self.write(self.changed("Good state"))
         self.start()
         good = self.get()[2]
         bad = copy.deepcopy(self.state)
         bad["work"][0]["state"] = "finished"
-        for broken, reason in ((json.dumps(bad), "state must be one of"), ("{not json", "Expecting property name"), (None, "FileNotFoundError")):
+        for broken, reason in ((json.dumps(bad), "state must be one of"), ("{not json", "Expecting property name"), (None, "does not exist in")):
             with self.subTest(reason=reason):
                 if broken is None:
-                    self.program.unlink()
+                    git(self.folder, "rm", "-q", "program.json")
+                    git(self.folder, "commit", "-q", "-m", "remove")
                 else:
-                    self.program.write_text(broken)
+                    commit(self.folder, broken)
                 status, _, page = self.get()
                 self.assertEqual(status, 200)
                 self.assertEqual(self.title(page), "Good state")
@@ -163,12 +178,13 @@ class ServerTests(unittest.TestCase):
             newer.join(10)
         self.assertEqual(self.title(pages["older"][1]), "Older state")
         self.assertEqual(self.title(pages["newer"][1]), "Newer state")
-        self.program.write_text("{not json")
+        commit(self.folder, "{not json")
         self.assertEqual(self.title(self.get()[2]), "Newer state")
 
     def test_without_a_good_state_it_serves_an_error_page(self):
-        self.program.write_text("{not json")
         self.start()
+        self.assertEqual(self.get()[0], 503, "no commit yet")
+        commit(self.folder, "{not json")
         status, _, page = self.get()
         self.assertEqual(status, 503)
         self.assertIn("Command center unavailable", page)
@@ -180,7 +196,7 @@ class ServerTests(unittest.TestCase):
         self.write(self.state)
         (self.folder / "secret.txt").write_text("private")
         self.start()
-        for path in ("/program.json", "/secret.txt", "/index.html", "/../program.json", "//program.json", "/reports/W1.md"):
+        for path in ("/program.json", "/secret.txt", "/index.html", "/../program.json", "//program.json", "/reports/W1.md", "/.git/HEAD"):
             with self.subTest(path=path):
                 status, _, body = self.get(path)
                 self.assertEqual(status, 404)
@@ -189,9 +205,9 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.get("/?tab=work")[0], 200)
         self.assertEqual(self.get(method="POST")[0], 501)
 
-    def test_cli_prints_its_loopback_url_and_serves_the_file(self):
+    def test_cli_prints_its_loopback_url_and_serves_the_last_commit(self):
         self.write(self.changed("From the command line"))
-        process = subprocess.Popen([sys.executable, str(SCRIPT), "--state", str(self.program)], stdout=subprocess.PIPE, text=True)
+        process = subprocess.Popen([sys.executable, str(SCRIPT), "--program", str(self.folder)], stdout=subprocess.PIPE, text=True)
         self.addCleanup(process.wait, 10)
         self.addCleanup(process.terminate)
         address = process.stdout.readline().strip()

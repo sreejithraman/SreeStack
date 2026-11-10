@@ -874,7 +874,7 @@ def render(state, template=None):
 def with_error(page, error):
     """The page under an error banner, with a new digest so open pages notice the banner appear and clear."""
     banner = (f'<p class="state-error" role="alert">{icon("blocked")}<span><strong>Showing the last good state.</strong> '
-              f'The program file failed to load: {e(error)}</span></p>')
+              f'The program record failed to load: {e(error)}</span></p>')
     flagged = page.replace("<main>", f"<main>{banner}", 1)
     return re.sub(r'data-snapshot="\w+"', f'data-snapshot="{digest(flagged)}"', flagged, count=1)
 

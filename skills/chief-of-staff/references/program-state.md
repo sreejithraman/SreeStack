@@ -10,72 +10,56 @@ never shows. Each fact has one home in it.
 
 Keep `program.json` and a `reports/` folder in a task-owned directory that the
 chief and its owners can read and that survives worktree cleanup. Adopt an
-existing program's file rather than starting another. Put its absolute path in
-the chief's handoff and every owner kickoff.
+existing program's folder rather than starting another. Put the folder's
+absolute path in the chief's handoff and every owner kickoff.
 
-The program folder is a git repository, and its log is the record's history.
-A new program starts from a new `program.json`. When the folder is not a
-repository yet, run `git -C /absolute/path init`, then add and commit
+The program folder is a git repository. Its last commit is the record: the
+hosted page and every reader use `HEAD`, and the log is its history. The working
+`program.json` is only the chief's edit buffer. A new program starts from a new
+`program.json`: run `git -C /absolute/path init`, then add and commit
 `program.json` once it passes the check.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
-current chief alone writes `program.json`. Before each write, confirm
-`record.chief` still names this thread; otherwise, or if the file fails to load,
-follow [check the chief](chief-move.md#check-the-chief).
+current chief alone writes `program.json`, after it
+[checks the chief](chief-move.md#check-the-chief).
 
 ### Write the record
 
 Record each owner report, answer, direction, and decision in one write, before
 you reply or move on:
 
-1. Confirm the live file matches its last commit:
+1. Look for an earlier uncommitted change:
 
    ```bash
    git -C /absolute/path status --porcelain -- program.json
    ```
 
-   Any output means the file changed outside these steps. If it fails the
-   check below, repair it as [check the chief](chief-move.md#check-the-chief)
-   says. Otherwise show the user `git -C /absolute/path diff HEAD -- program.json`
-   and build nothing on it until they choose: commit it as their edit, or
-   restore it with `git -C /absolute/path checkout HEAD -- program.json`.
-2. Copy the live file to a unique temp file beside it, then edit only what
-   changed in the copy. Never regenerate the whole file; that silently drops
-   history.
+   Any output means a failed commit or an outside edit. Show the user
+   `git -C /absolute/path diff HEAD -- program.json` and settle it with them
+   before you build on it. If they keep it, check and commit it; otherwise run
+   `git -C /absolute/path checkout HEAD -- program.json`.
+2. Edit `program.json` in place, changing only what the event changed. Never
+   regenerate the whole file; that silently drops history. Set `updatedAt` to
+   the time of this write if it changes anything outside `record`; a write that
+   changes only `record` keeps `updatedAt`, so open pages stay put.
+3. Check it from this skill's folder, and fix every error it reports. When only
+   the layout is wrong, run the command it prints.
 
    ```bash
-   mktemp /absolute/path/.program.json.XXXXXX   # prints <temp>
-   cp /absolute/path/program.json <temp>
+   python3 scripts/render_dashboard.py --state /absolute/path/program.json --check
    ```
 
-   Set `updatedAt` to the time of this write if it changes anything outside
-   `record`; a write that changes only `record` keeps `updatedAt`, so open
-   pages stay put.
-3. Check it from this skill's folder, and fix every error it reports.
+4. Read `git -C /absolute/path diff -- program.json`. A removed or changed line
+   the event didn't call for is a mistake. Restore it and check again. Mark a
+   change to a history entry in place instead of deleting it.
+5. Commit with a message naming the event. The commit publishes the write:
 
    ```bash
-   python3 scripts/render_dashboard.py --state <temp> --check
-   ```
-
-4. Read what changed; exit status 1 only means the files differ:
-
-   ```bash
-   git -C /absolute/path diff --no-index program.json <temp>
-   ```
-
-   A removed or changed line the event didn't call for is a mistake. Restore it
-   in the temp file and check it again. Mark a change to a history entry in
-   place instead of deleting it.
-5. Move it into place and commit with a message naming the event:
-
-   ```bash
-   mv <temp> /absolute/path/program.json
    git -C /absolute/path commit -m "R2 report: PR 12 open" program.json
    ```
 
-A write is done only when its commit lands; on any git error, stop, report it
-to the user, and write nothing more. The hosted page shows the new state on its
-next request.
+A write is done when its commit lands, and the hosted page shows it on its next
+request. On a git error, stop and report it to the user.
 
 ### Where each fact goes
 

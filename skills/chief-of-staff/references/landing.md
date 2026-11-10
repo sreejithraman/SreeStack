@@ -25,10 +25,10 @@ Record exactly one lander for each merge set.
   in `record.landings` from the current chief, naming the owner, each PR with
   its accepted head and base, and any resources dependents still need, then
   resume the owner with it.
-  The record is authoritative. Immediately before submitting a merge, the owner
-  re-reads it to confirm the current chief, its active release, itself as the
-  one lander, and no affecting decision or hold, and matches the forge's head
-  and base to the release. A mismatch returns to you for reconciliation. If the
+  The record's last commit is authoritative. Immediately before submitting a
+  merge, the owner re-reads it to confirm the current chief, its active
+  release, itself as the one lander, and no affecting decision or hold, and
+  matches the forge's head and base to the release. A mismatch returns to you for reconciliation. If the
   owner cannot act, replace it under Orchestration's
   [replace an owner](../../orchestration/references/reuse-and-recovery.md#replace-an-owner)
   first.

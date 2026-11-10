@@ -1,6 +1,6 @@
 /implement
 
-Program: <title>. Program record (read-only): <absolute path to program.json>.
+Program: <title>. Program record (read-only): `git -C <program directory> show HEAD:program.json`.
 Original request and accepted corrections: its `record.request` and `record.corrections`.
 
 Outcome <ID>: <title>. Sources: <tickets, snips, PRs, or messages, or none>. Prefix decision request IDs with <ID>.
