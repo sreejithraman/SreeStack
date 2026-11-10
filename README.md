@@ -129,7 +129,8 @@ deleting `reference-transaction`.
 
 Read each skill before use. Delegation and review target T3 Code's orchestration
 MCP tools and its configured provider runtimes. Other workflows may need goal
-state tools, GitHub CLI, Claude artifact tools, optional Tailscale sharing, or
+state tools, GitHub CLI, Claude artifact tools or the Sites plugin for command
+center publication, optional Tailscale sharing, or
 Apple development tools. Linking skills does not install provider executables,
 authenticate accounts, or enable models.
 
@@ -276,8 +277,11 @@ the chief releases it, the chief lands only sets that span owners, and each
 Needs you first and Work second, rendered from the program record's last
 commit: each outcome with its finish line, results to open, layers, provisional
 state, and what each decision blocks. Answers go back through chat. Existing
-trackers stay authoritative. The page is a private Claude artifact, so the chief
-runs in Claude and republishes it after each commit that changes it. On reload,
+trackers stay authoritative. Claude chiefs publish a private Claude artifact;
+Codex chiefs publish a private ChatGPT Site when the Sites plugin is available.
+The chief reuses its backend target and republishes after each commit that
+changes the page, and on resume or chief move. A backend change updates the
+current page link after successful publication. On reload,
 the page restores your tab, open sections, selected decision, and scroll
 position; local browser tests cover this. In Claude's web viewer, an open page
 moved to a newly published version without a reload, kept its selected tab, and

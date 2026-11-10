@@ -34,9 +34,9 @@ fails another way, stop and tell the user the takeover is incomplete.
 
 ## After either
 
-The new chief takes over the program folder as it stands. The move or takeover
-completes when it can read the artifact in `hosting`. If it can't, it asks the
-user to approve a new artifact, creates it, records the new link, and gives it to
-the user. It then [publishes the page](hosting.md), reconciles state as on
-resume, sends owners their route, watches any delegated owner's pending PRs, and
-asks any remaining old thread to unwatch.
+The new chief takes over the program folder as it stands, keeping its single
+record and git history. It [publishes the page](hosting.md) with its session's
+backend, reusing that backend's target or recording the new URL after success.
+The move or takeover completes after successful publication and any link write.
+It reconciles state as on resume, sends owners their route, watches any
+delegated owner's pending PRs, and asks any remaining old thread to unwatch.

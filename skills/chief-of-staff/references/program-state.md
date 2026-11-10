@@ -59,7 +59,9 @@ you reply or move on:
 6. [Publish the command center](hosting.md), except after a
    [chief move](chief-move.md), where the new chief publishes.
 
-A write is done when its commit lands and its page is published. On a git or
+A write is done when its commit lands and its page is published or the render
+confirms the published page is unchanged. Hosting-link commits follow
+[publication bookkeeping](hosting.md#render-and-publish). On a git or
 publish error, stop and report it to the user.
 
 ### File format
@@ -78,7 +80,7 @@ type Program = {
   finishLine?: string; // a program-wide note, such as who decides merges
   demo?: boolean; // true only for an illustrative example
   chief: string; // the current chief thread
-  hosting?: string; // the command center artifact's link
+  hosting?: string; // the current published command center's URL
   next: string; // the next useful action
   request: { text: string; sources?: string[] }; // the original request and its message sources
   corrections?: Entry[]; // accepted corrections

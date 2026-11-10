@@ -25,8 +25,10 @@ comparison through [Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md).
 The user can enter an owner's session directly; reconcile their new direction
 before you dispatch work that depends on it.
 
-Only a Claude session with the artifact tools can be chief, since the chief
-publishes the command center; elsewhere, ask the user to start the chief in one.
+The chief must have its session's [publishing tools](references/hosting.md):
+Claude artifact tools for Claude, or the available Sites plugin for Codex.
+If those tools are unavailable, report the blocker and ask the user to use a
+session with them; do not install plugins automatically.
 Only the record's current chief acts on program items and writes the record.
 Check it before acting on a request, direction, report, event, or pasted answer;
 a thread that is not the chief forwards the item under

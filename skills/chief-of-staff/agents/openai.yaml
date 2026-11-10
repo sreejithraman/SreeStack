@@ -1,4 +1,4 @@
 interface:
   display_name: "Chief of Staff"
-  short_description: "Carry several outcomes through Implement owners; the chief runs in Claude"
+  short_description: "Carry several outcomes through Implement owners"
   default_prompt: "Use $chief-of-staff to carry these outcomes to their finish lines through Implement owners."

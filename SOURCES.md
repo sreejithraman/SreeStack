@@ -468,8 +468,17 @@ board of stage lanes. It replaces the supplied archive's artifact database and
 integrations; no archive code or prose is copied. Validation rejects
 provisional landings, PRs on a Try, stacks on another owner's unmerged layer
 without a provisional mark, terminal rows with active blockers, entries that
-name missing work, and fields the schema doesn't name. The command center is a private Claude artifact per program,
-so only a Claude session can be chief. `render_dashboard.py --page` renders the
+name missing work, and fields the schema doesn't name. Claude chiefs publish a
+private Claude artifact; Codex chiefs use the available
+plugin-managed `sites:sites` skill for a private ChatGPT Site with the existing
+HTML as buildless `dist/index.html`. Chiefs need their backend's tools. Each
+backend reuses its target; Site identity persists in `.openai/hosting.json`.
+`hosting` holds the current successful publication's URL, with no extra
+provider-switch approval or parallel program record. Existing chief ownership
+and takeover coordination remain. Hosting-link commits render normally without
+redeploying an unchanged page. The published-page marker advances only after
+confirmed publication, including a successful terminal Sites deployment;
+failures remain visible. `render_dashboard.py --page` renders the
 last commit beside the last published page, says whether it changed, and stamps
 the commit time that changed it; the chief republishes on a change and on every
 resume and chief move. The page keeps the viewer's place in session storage;
