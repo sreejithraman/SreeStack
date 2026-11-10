@@ -33,11 +33,7 @@ into every project.
    creating a fresh device for every run. Changes requiring a SimLock daemon
    restart belong in a maintenance window with its consumers accounted for;
    ordinary agents do not restart a shared daemon to repair a run.
-4. In T3, discover the host's supported SimLock connection/setup and confirm the
-   Device panel and pinned agent-device command refer to the granted device and
-   lease. Do not switch device sets just to make an ordinary panel discover a
-   private device, or overwrite a T3-provided agent-device connection. Missing
-   host support blocks that integration, not independent build work.
+4. For T3 adoption, follow [T3 connection setup](t3.md#connection-setup).
 
 Use the current [configuration reference](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/reference/configuration.mdx),
 [capacity guidance](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/worker/capacity.mdx)
