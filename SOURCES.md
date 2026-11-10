@@ -465,17 +465,15 @@ tradeoffs. Each work row is one outcome, follow-up, or support task, counted onc
 with its finish line, results to open, provisional condition, owner, and PR
 layers; each decision names the outcomes it blocks and the phase each waits at.
 Below 900px it stays one column; wider, Needs you is a dual-pane inbox and Work a
-board of stage lanes. It replaces the supplied archive's Claude artifact database
-and integrations; no archive code or prose is copied. Validation rejects
+board of stage lanes. It replaces the supplied archive's artifact database and
+integrations; no archive code or prose is copied. Validation rejects
 provisional landings, PRs on a Try, stacks on another owner's unmerged layer
 without a provisional mark, terminal rows with active blockers, record entries
 for missing rows, and a decision entry that repeats its Need's question or
-disposition. Delivery is hosted only: `scripts/serve_dashboard.py` renders the
-last commit on loopback at each request, serving the last good page under an error
-banner when it fails to load, and `references/hosting.md` shares it through Show
-Me's web sharing, including Tailscale Serve. A hosted page polls its own URL and
-swaps in a changed digest without a server push, keeping the viewer's place per
-URL in session storage; the chief stays the only writer.
+disposition. The command center is a private Claude artifact per program,
+republished from the rendered last commit whenever the page changes and on every
+resume and chief move. The page keeps the viewer's place in session storage;
+the chief stays the only writer.
 
 ## implement
 

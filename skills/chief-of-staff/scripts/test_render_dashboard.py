@@ -3,6 +3,7 @@ import copy
 from html.parser import HTMLParser
 from itertools import combinations
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -11,7 +12,7 @@ import sys
 import tempfile
 import unittest
 
-from render_dashboard import icon, render, revision, url, validate, with_error
+from render_dashboard import icon, render, revision, url, validate
 
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
@@ -104,21 +105,9 @@ class DashboardTests(unittest.TestCase):
     def card(self, html, identity):
         return text_of(card_html(html, identity))
 
-    def versions(self, state):
-        return re.search(r'<html lang="en" data-snapshot="(\w{64})" data-template="(\w{64})">', render(state)).groups()
-
     def assertInvalid(self, state, message):
         with self.assertRaisesRegex(ValueError, message):
             validate(state)
-
-    def test_identical_snapshots_share_a_version_and_any_change_makes_a_new_one(self):
-        snapshot, template = self.versions(self.state)
-        self.assertEqual(self.versions(copy.deepcopy(self.state)), (snapshot, template))
-        for field, value in (("updatedAt", "2026-11-03T09:30:00Z"), ("title", "Another title")):
-            changed = dict(self.state, **{field: value})
-            with self.subTest(field=field):
-                self.assertNotEqual(self.versions(changed)[0], snapshot)
-                self.assertEqual(self.versions(changed)[1], template)
 
     def test_example_has_needs_first_and_work_hidden(self):
         html = render(self.state)
@@ -307,16 +296,42 @@ class DashboardTests(unittest.TestCase):
             fixed = subprocess.run(check + [str(source)], capture_output=True, text=True)
             self.assertEqual(fixed.returncode, 0, fixed.stderr)
 
-    def test_error_banner_leads_the_page_escaped_and_changes_its_version(self):
-        plain = render(self.state)
-        flagged = with_error(plain, "record.next must be <b>nonempty</b>")
-        main = flagged.split("<main>")[1]
-        self.assertTrue(main.startswith('<p class="state-error" role="alert">'))
-        self.assertIn("Showing the last good state.", text_of(flagged))
-        self.assertIn("&lt;b&gt;nonempty&lt;/b&gt;", main)
-        self.assertNotIn('class="state-error"', plain)
-        snapshots = {re.search(r'data-snapshot="(\w{64})"', page).group(1) for page in (plain, flagged, with_error(plain, "another error"))}
-        self.assertEqual(len(snapshots), 3)
+    def test_page_renders_the_last_commit_and_says_when_it_changed(self):
+        env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "GIT_AUTHOR_NAME": "Test",
+               "GIT_AUTHOR_EMAIL": "test@example.com", "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com"}
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            source, page = folder / "program.json", folder / "command-center.html"
+
+            def git(*args):
+                subprocess.run(["git", "-C", directory, *args], check=True, capture_output=True, env=env)
+
+            def write(state, commit=True):
+                source.write_text(json.dumps(state))
+                if commit:
+                    git("commit", "-q", "-m", "write", "program.json")
+
+            def publish():
+                result = subprocess.run([sys.executable, str(SCRIPT), "--state", str(source), "--page", str(page)],
+                                        capture_output=True, text=True)
+                return result.stdout.strip() or result.stderr
+
+            git("init", "-q")
+            self.assertIn("HEAD", publish())
+            self.assertFalse(page.exists())
+            write(self.state, commit=False)
+            git("add", "program.json")
+            git("commit", "-q", "-m", "start")
+            self.assertEqual(publish(), "changed")
+            self.assertEqual(page.read_text(), render(self.state))
+            self.assertEqual(publish(), "unchanged")
+            write(dict(self.state, title="Not committed"), commit=False)
+            self.assertEqual(publish(), "unchanged")
+            write(dict(self.state, record={**self.state["record"], "next": "Record only."}))
+            self.assertEqual(publish(), "unchanged")
+            write(dict(self.state, title="Committed", updatedAt="2026-11-03T09:30:00Z"))
+            self.assertEqual(publish(), "changed")
+            self.assertIn("<title>Committed</title>", page.read_text())
 
     def test_choice_prompts_preserve_context_and_escape_untrusted_values(self):
         self.need("W6-D1")['options'][0]['label'] = 'Keep "entry" <safe>'
@@ -1049,19 +1064,18 @@ class RecordTests(unittest.TestCase):
 
     def test_example_record_validates_and_never_reaches_the_page(self):
         html = render(self.state)
-        for value in (self.record["next"], self.record["owners"]["W1"]["workspace"], self.record["hosting"]["stop"]):
+        for value in (self.record["next"], self.record["owners"]["W1"]["workspace"], self.record["hosting"]):
             self.assertNotIn(value, html)
 
-    def test_record_only_writes_keep_the_page_version(self):
+    def test_record_only_writes_keep_the_page(self):
         """A write keeps updatedAt unless it changes what the page shows."""
-        snapshot = lambda: re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1)
-        before = snapshot()
+        before = render(self.state)
         self.record["next"] = "Something else entirely."
         self.record["waits"] = []
-        self.assertEqual(snapshot(), before)
+        self.assertEqual(render(self.state), before)
         self.state["goal"] += " Now with a deadline."
         self.state["updatedAt"] = "2026-11-02T18:00:00Z"
-        self.assertNotEqual(snapshot(), before)
+        self.assertNotEqual(render(self.state), before)
 
     def test_record_and_its_required_fields_are_present(self):
         record = self.state.pop("record")

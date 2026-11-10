@@ -18,8 +18,8 @@ counts under [record an answer](decisions.md#record-an-answer).
 Only the chief moves the program to a new thread. In one
 [record write](program-state.md#write-the-record) it names the new chief in
 `record.chief` and each live owner's new return route in `record.owners`, which
-is `t3_thread_send` to that chief even for an owner that used to end its turn. It then tells the new thread with `t3_thread_send`.
-Owners keep running.
+is `t3_thread_send` to that chief even for an owner that used to end its
+turn. It then tells the new thread with `t3_thread_send`. Owners keep running.
 
 ## Take over
 
@@ -34,6 +34,6 @@ stop and tell the user the takeover is incomplete.
 ## After either
 
 The new chief takes over the program folder as it stands and
-[hosts the page again](hosting.md#host-again). It reconciles
+[publishes the page](hosting.md) to the same artifact. It reconciles
 state as on resume, sends owners their route, watches any delegated owner's
 pending PRs, and asks any remaining old thread to unwatch.

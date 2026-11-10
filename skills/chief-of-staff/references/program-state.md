@@ -14,10 +14,10 @@ existing program's folder rather than starting another. Put the folder's
 absolute path in the chief's handoff and every owner kickoff.
 
 The program folder is a git repository. Its last commit is the record: the
-hosted page and every reader use `HEAD`, and the log is its history. The working
-`program.json` is only the chief's edit buffer. A new program starts from a new
-`program.json`: run `git -C /absolute/path init`, then add and commit
-`program.json` once it passes the check.
+command center and every reader use `HEAD`, and the log is its history. The
+working `program.json` is only the chief's edit buffer. A new program starts
+from a new `program.json`: run `git -C /absolute/path init`, then add and
+commit `program.json` once it passes the check.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
 current chief alone writes `program.json`, after it
@@ -41,7 +41,7 @@ you reply or move on:
 2. Edit `program.json` in place, changing only what the event changed. Never
    regenerate the whole file; that silently drops history. Set `updatedAt` to
    the time of this write if it changes anything outside `record`; a write that
-   changes only `record` keeps `updatedAt`, so open pages stay put.
+   changes only `record` keeps `updatedAt`, so its page stays the same.
 3. Check it from this skill's folder, and fix every error it reports. When only
    the layout is wrong, run the command it prints.
 
@@ -52,14 +52,16 @@ you reply or move on:
 4. Read `git -C /absolute/path diff -- program.json`. A removed or changed line
    the event didn't call for is a mistake. Restore it and check again. Mark a
    change to a history entry in place instead of deleting it.
-5. Commit with a message naming the event. The commit publishes the write:
+5. Commit with a message naming the event:
 
    ```bash
    git -C /absolute/path commit -m "R2 report: PR 12 open" program.json
    ```
 
-A write is done when its commit lands, and the hosted page shows it on its next
-request. On a git error, stop and report it to the user.
+6. [Publish the command center](hosting.md).
+
+A write is done when its commit lands and its page is published. On a git
+error, stop and report it to the user.
 
 ### Where each fact goes
 
@@ -83,7 +85,7 @@ For the program:
 | Any other discovery, with its origin and route | `record.discoveries` |
 | Support work, and the outcomes it unblocks | A `support` row, named in their `blockedBy` or `blocked` |
 | The current chief thread | `record.chief` |
-| Hosting | `record.hosting` |
+| The command center's artifact link | `record.hosting` |
 | The next useful action | `record.next` |
 
 For each outcome, under its stable ID:
@@ -275,7 +277,7 @@ type ProgramRecord = {
   waits?: { date: string; on: string; event: string; work?: string; watcher?: string }[];
   decisions?: Decision[];
   discoveries?: { date: string; origin: string; text: string; route: string }[];
-  hosting?: { url: string; server?: string; serve?: string; stop?: string; access?: string };
+  hosting?: string; // the command center artifact's link
   next: string;
 };
 type Owner = {
@@ -316,10 +318,9 @@ result, and artifact links.
 ### Render and show
 
 The scripts need Python 3 and no third-party packages. `--check` (under
-[write the record](#write-the-record)) and the
-[dashboard server](hosting.md) render with the same code: it validates the file,
-escapes content, and stamps the page with a digest that open pages compare to
-spot a change. It makes no tracker, forge, or session changes. The
+[write the record](#write-the-record)) and `--page` (under
+[publishing](hosting.md)) render with the same code: it validates the file and
+escapes content. It makes no tracker, forge, or session changes. The
 [example file](../assets/example-state.json) uses fictional work.
 
 Each copied choice or reopen request names its decision's revision, a digest of
@@ -329,6 +330,3 @@ recommendation. Print a Need's current revision with:
 ```bash
 python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>
 ```
-
-Deliver the page through [dashboard hosting](hosting.md), never inline in T3 or
-another chat surface.

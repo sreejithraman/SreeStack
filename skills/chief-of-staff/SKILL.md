@@ -212,13 +212,12 @@ user, its requested PR state, or a repair with its owner.
 
 ## 5. Show and continue
 
-Host the [command center](references/program-state.md#command-center) through
-[dashboard hosting](references/hosting.md), never inline. It renders the
-record's last commit each time it is opened, so every record write reaches it. It
-shows every outcome once, with its finish line, results and how to open them,
-provisional condition, owner, layers, and what each Need blocks. Results come
-from owners' Shown reports: link what they showed, say what opening it needs,
-and name the gaps. Keep each row's observation time honest.
+[Publish the command center](references/hosting.md) after each record write and
+give the user its link. It shows every outcome once, with its finish line,
+results and how to open them, provisional condition, owner, layers, and what
+each Need blocks. Results come from owners' Shown reports: link what they
+showed, say what opening it needs, and name the gaps. Keep each row's
+observation time honest.
 
 Answers arrive through chat or the host's input tools. Record each under
 [record an answer](references/decisions.md#record-an-answer), then update the
@@ -228,8 +227,8 @@ Choose user updates from the owner reports: what the user can now use, try,
 decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
 the record, and answer direct questions in the detail asked.
 
-Done when the hosted page serves the last commit without an error banner and
-shows every result and open Need.
+Done when the published page matches the last commit and shows every result
+and open Need.
 
 ## 6. Settle or resume
 
@@ -248,7 +247,8 @@ retained work and active dependents no longer need the resources.
 
 Before pausing or moving, bring the record current. On resume, reconcile it with
 current files, threads, and forge state, and
-[host the page again](references/hosting.md#host-again), before dispatching. To move the program to another thread or take over from a chief
-that cannot act, follow [chief move](references/chief-move.md). This skill supplies no background
+[publish the page](references/hosting.md), before dispatching. To move the
+program to another thread or take over from a chief that cannot act, follow
+[chief move](references/chief-move.md). This skill supplies no background
 wakeups: native goal tracking, recurring checks, and other automation need an
 explicit user request and host support.

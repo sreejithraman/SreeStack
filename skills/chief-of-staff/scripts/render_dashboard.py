@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import shlex
+import subprocess
 from urllib.parse import urlsplit
 
 
@@ -446,9 +447,7 @@ def validate_record(record, by_id, need_ids):
             strings(row.get("affects", []), f"{path}.affects")
 
     if "hosting" in record:
-        hosting = obj(record["hosting"], "record.hosting")
-        url(hosting.get("url"), "record.hosting.url")
-        fields(hosting, "record.hosting", (), ("server", "serve", "stop", "access"))
+        url(record["hosting"], "record.hosting")
 
 
 STAGE_ORDER = ("planned", "building", "shown", "in-review", "landed", "done", "unknown", "scrapped")
@@ -829,8 +828,8 @@ def overview(work):
     )
 
 
-def render(state, template=None):
-    """Validate the state and render its page, reading the template from disk unless given."""
+def render(state):
+    """Validate the state and render its page."""
     validate(state)
     open_needs = [row for row in state["needs"] if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
@@ -866,17 +865,25 @@ def render(state, template=None):
         f'<section id="needs-panel" role="tabpanel" aria-labelledby="needs-tab" tabindex="0"><h2 class="sr-only">Needs you</h2>{needs_html}</section>'
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
-    template = template or TEMPLATE.read_text()
-    page = template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
-    return page.replace("<!--SNAPSHOT-->", digest(page)).replace("<!--TEMPLATE-->", digest(template))
+    return TEMPLATE.read_text().replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
 
 
-def with_error(page, error):
-    """The page under an error banner, with a new digest so open pages notice the banner appear and clear."""
-    banner = (f'<p class="state-error" role="alert">{icon("blocked")}<span><strong>Showing the last good state.</strong> '
-              f'The program record failed to load: {e(error)}</span></p>')
-    flagged = page.replace("<main>", f"<main>{banner}", 1)
-    return re.sub(r'data-snapshot="\w+"', f'data-snapshot="{digest(flagged)}"', flagged, count=1)
+def committed(state_file):
+    """The state file's text at HEAD of its git repository."""
+    git = subprocess.run(["git", "-C", str(state_file.parent), "show", f"HEAD:./{state_file.name}"],
+                         capture_output=True, encoding="utf-8")
+    if git.returncode:
+        raise ValueError(git.stderr.strip() or f"git show exited with status {git.returncode}")
+    return git.stdout
+
+
+def write_page(state_file, page_file):
+    """Render the committed state to page_file; return whether the page changed."""
+    page = render(json.loads(committed(state_file)))
+    if page_file.exists() and page_file.read_text() == page:
+        return False
+    page_file.write_text(page)
+    return True
 
 
 def main():
@@ -885,8 +892,13 @@ def main():
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--check", action="store_true", help="Validate the state and render it in memory; write nothing")
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
+    action.add_argument("--page", type=Path, metavar="FILE",
+                        help="Render the state's last commit to FILE; print changed or unchanged")
     args = parser.parse_args()
     try:
+        if args.page:
+            print("changed" if write_page(args.state, args.page) else "unchanged")
+            return
         text = args.state.read_text()
         state = json.loads(text)
         if args.check:

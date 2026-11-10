@@ -473,13 +473,7 @@
         "route": "Saved as snip EX-7"
       }
     ],
-    "hosting": {
-      "url": "https://example-host.example.ts.net:8452/",
-      "server": "`serve_dashboard.py` PID 4242 on 127.0.0.1:58665, started 2026-11-02T09:00:00Z, log `serve-20261102T090000Z.log`",
-      "serve": "`tailscale serve --bg --https=8452 http://127.0.0.1:58665`",
-      "stop": "`tailscale serve --https=8452 off`, then `kill -TERM 4242` after checking its start time and arguments",
-      "access": "Tailnet devices only; checked from this machine"
-    },
+    "hosting": "https://claude.ai/artifact/ExampleCommandCenter",
     "next": "Release W1's landing once PR 44 is ready."
   }
 }
