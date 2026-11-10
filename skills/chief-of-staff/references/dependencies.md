@@ -63,9 +63,15 @@ When the base or decision moves:
   offers the work for scrap.
 - **Base scrapped:** each dependent gets its own scrap or rebase choice in
   Needs you. Nothing continues on the scrapped base. Answering "scrap" scraps
-  the dependent. Answering "rebase onto X" records X in the same commit: retarget
-  or drop its `stackedOn` and `provisional.on`, and set its `base`. Its owner
-  then restacks, and the report updates `head`.
+  the dependent. Answering "rebase onto X" records X in the same commit and sets
+  the dependent's `base`:
+  - X is another outcome's layer: retarget `stackedOn` to that layer, and
+    retarget `provisional` from the scrapped work to X's outcome.
+  - X is the target branch: drop `stackedOn`, and remove the scrapped work from
+    `provisional.on`. If nothing remains, drop `provisional`, and the owner then
+    follows **Base landed**.
+
+  Its owner then restacks, and the report updates `head`.
 
 When two options are close and building both costs less than waiting, the
 outcome's owner builds each on its own branch, as a Swarm race. The answer keeps

@@ -132,10 +132,40 @@ def rebased_onto_main(s):
     """The answer retargets W2 to main; its head stays the old one until the owner's restack report."""
     work(s, "W1").update(state="scrapped")
     s["decisions"].append(answered(scrap_choice("W2", "proof")) | {"answer": "Rebase onto main"})
-    work(s, "W2").pop("provisional")
+    provisional = work(s, "W2")["provisional"]
+    provisional["on"].remove("W1")
+    if not provisional["on"]:
+        work(s, "W2").pop("provisional")
     layer = work(s, "W2")["layers"][0]
     layer.pop("stackedOn")
     layer.update(base="main", head="9e4b1a7")
+
+
+def rebased_onto_w5(s):
+    work(s, "W1").update(state="scrapped")
+    s["decisions"].append(answered(scrap_choice("W2", "proof")))
+    work(s, "W2")["provisional"].update(on=["W5"], basis="W5-L1, the History owner's unshipped layer.", clears="W5 lands.")
+    work(s, "W2")["layers"][0].update(stackedOn="W5-L1", base="export-history")
+
+
+def rebased_onto_w5_branch_only(s):
+    """T3: the answer drops the stack edge and names W5's branch only in base."""
+    work(s, "W1").update(state="scrapped")
+    s["decisions"].append(answered(scrap_choice("W2", "proof")))
+    work(s, "W2").pop("provisional")
+    work(s, "W2")["layers"][0].pop("stackedOn")
+    work(s, "W2")["layers"][0].update(base="export-history")
+
+
+def scrapped_w5(s):
+    work(s, "W5").update(state="scrapped")
+    decision(s, "W5-T").pop("blocks")
+
+
+def rebased_onto_main_beside_live_w5(s):
+    work(s, "W2")["provisional"].update(on=["W1", "W5"])
+    rebased_onto_main(s)
+    assert work(s, "W2")["provisional"]["on"] == ["W5"]
 
 
 def merged(layer):
@@ -187,6 +217,12 @@ RULES = [
     ("an answered decision no longer holds work", lambda s: (
         work(s, "W1").update(state="scrapped"), s["decisions"].append(answered(scrap_choice("W2", "start")))), r"work\[W2\] rests on scrapped W1"),
     ("a landed rebase ends the hold", rebased_onto_scrapped_w5, r"work\[W2\] rests on scrapped W5"),
+    ("a base on another layer's branch names it in stackedOn", rebased_onto_w5_branch_only,
+     r"layers\[W2-L1\]\.base is W5-L1's branch; name W5-L1 in stackedOn"),
+    ("a rebase onto a scrapped outcome's branch names its layer (T2)", lambda s: (
+        scrapped_w5(s), rebased_onto_w5_branch_only(s)), r"layers\[W2-L1\]\.base is W5-L1's branch"),
+    ("a base on another layer's branch cannot hide its later scrap (T3b)", lambda s: (
+        rebased_onto_w5_branch_only(s), scrapped_w5(s)), r"layers\[W2-L1\]\.base is W5-L1's branch"),
     ("an external blocker does not hold work on a dead base", lambda s: (
         work(s, "W1").update(state="scrapped"), work(s, "W2").update(blocked="Waiting on CI quota; infra team.")),
         r"work\[W2\] rests on scrapped W1"),
@@ -234,6 +270,8 @@ ACCEPTED = [
     ("an open halting decision holds work on a dead base", lambda s: (
         work(s, "W1").update(state="scrapped"), s["decisions"].append(scrap_choice("W2", "proof")))),
     ("a recorded rebase answer moves work off its dead base before the restack", rebased_onto_main),
+    ("a rebase onto another outcome stacks on its layer and stays provisional", rebased_onto_w5),
+    ("a rebase onto main keeps provisional for a second live base", rebased_onto_main_beside_live_w5),
     ("an open halting decision holds a live layer on a closed parent", lambda s: (
         work(s, "W1")["layers"][1].update(status="closed"), s["decisions"].append(scrap_choice("W2", "proof")))),
     ("an unrelated closed layer leaves a live base alone", lambda s: work(s, "W1")["layers"].append(

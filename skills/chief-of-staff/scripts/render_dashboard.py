@@ -287,12 +287,18 @@ def validate_edges(work, by_id, layers, halted):
         for identity in row.get("provisional", {}).get("on", []):
             if identity == row["id"] or identity not in by_id:
                 raise ValueError(f"{path}.provisional.on must name other work; a decision names what it blocks")
+    branches = {}
     for identity, (layer, row) in layers.items():
+        branches.setdefault((row["repo"], layer["branch"]), []).append(identity)
+    for identity, (layer, row) in layers.items():
+        where = f"work[{row['id']}].layers[{identity}].stackedOn"
+        if "stackedOn" in layer and (layer["stackedOn"] == identity or layer["stackedOn"] not in layers):
+            raise ValueError(f"{where} must name another layer")
+        below = [other for other in branches.get((row["repo"], layer.get("base")), []) if other != identity]
+        if layer["status"] in LIVE_LAYERS and below and layer.get("stackedOn") not in below:
+            raise ValueError(f"work[{row['id']}].layers[{identity}].base is {below[0]}'s branch; name {below[0]} in stackedOn")
         if "stackedOn" not in layer:
             continue
-        where = f"work[{row['id']}].layers[{identity}].stackedOn"
-        if layer["stackedOn"] == identity or layer["stackedOn"] not in layers:
-            raise ValueError(f"{where} must name another layer")
         parent, parent_row = layers[layer["stackedOn"]]
         if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
                 and row["id"] not in halted):
