@@ -877,38 +877,55 @@ def committed(state_file):
     return git.stdout
 
 
-def write_page(state_file, page_file):
-    """Render the committed state to page_file; return whether the page changed."""
+def check_snapshot(state, state_file):
+    """Fail when updatedAt disagrees with what changed since the last commit."""
+    try:
+        head = json.loads(committed(state_file))
+        before = render(head)
+    except ValueError:
+        return  # no usable commit to compare with
+    moved = state["updatedAt"] != head["updatedAt"]
+    if not moved and render(state | {"updatedAt": head["updatedAt"]}) != before:
+        raise ValueError(f"{state_file}: the page changed, so set updatedAt to the time of this write")
+    if moved and all(state.get(key) == head.get(key) for key in (state.keys() | head.keys()) - {"record", "updatedAt"}):
+        raise ValueError(f"{state_file}: only record changed, so keep updatedAt at {head['updatedAt']}")
+
+
+def stage_page(state_file, page_file):
+    """Render the committed state beside page_file; return whether it differs from page_file."""
+    staged = page_file.with_name(f"{page_file.stem}.next{page_file.suffix}")
+    if state_file.resolve() in (page_file.resolve(), staged.resolve()):
+        raise ValueError(f"{page_file}: the page would overwrite the state file")
     page = render(json.loads(committed(state_file)))
-    if page_file.exists() and page_file.read_text() == page:
-        return False
-    page_file.write_text(page)
-    return True
+    staged.write_text(page)
+    return not page_file.exists() or page_file.read_text() != page
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--check", action="store_true", help="Validate the state and render it in memory; write nothing")
+    action.add_argument("--check", action="store_true", help="Validate the working state against its last commit; write nothing")
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
     action.add_argument("--page", type=Path, metavar="FILE",
-                        help="Render the state's last commit to FILE; print changed or unchanged")
+                        help="Render the state's last commit to FILE's .next sibling; print changed when it differs from FILE")
     args = parser.parse_args()
     try:
         if args.page:
-            print("changed" if write_page(args.state, args.page) else "unchanged")
+            print("changed" if stage_page(args.state, args.page) else "unchanged")
             return
-        text = args.state.read_text()
-        state = json.loads(text)
         if args.check:
+            text = args.state.read_text()
+            state = json.loads(text)
             render(state)
             if text != json.dumps(state, indent=2, ensure_ascii=False) + "\n":
                 path = shlex.quote(str(args.state))
                 raise ValueError(f"{args.state}: not one value per line; rewrite it with: "
                                  f"python3 -m json.tool --indent 2 --no-ensure-ascii {path} > {path}.fmt && mv {path}.fmt {path}")
+            check_snapshot(state, args.state)
             print(f"{args.state}: valid")
             return
+        state = json.loads(committed(args.state))
         validate(state)
         print(revision(next(row for row in state["needs"] if row["id"] == args.revision)))
     except StopIteration:

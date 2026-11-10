@@ -21,8 +21,33 @@ EXAMPLE = SCRIPT.parents[1] / "assets" / "example-state.json"
 BARE_RECORD = {"chief": "Chief thread", "request": {"text": "Carry the example program."}, "next": "Wait for owner reports."}
 
 
+GIT_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "GIT_AUTHOR_NAME": "Test",
+           "GIT_AUTHOR_EMAIL": "test@example.com", "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com"}
+
+
 def page_state():
     return json.loads(EXAMPLE.read_text()) | {"record": copy.deepcopy(BARE_RECORD)}
+
+
+class Program:
+    """A program folder: its git repository and state file."""
+
+    def __init__(self, directory):
+        self.folder = Path(directory)
+        self.source = self.folder / "program.json"
+        self.git("init", "-q")
+
+    def git(self, *args):
+        subprocess.run(["git", "-C", str(self.folder), *args], check=True, capture_output=True, env=GIT_ENV)
+
+    def write(self, state, commit=True):
+        self.source.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n")
+        if commit:
+            self.git("add", "program.json")
+            self.git("commit", "-q", "-m", "write", "program.json")
+
+    def run(self, *args):
+        return subprocess.run([sys.executable, str(SCRIPT), "--state", str(self.source), *args], capture_output=True, text=True)
 
 
 class Elements(HTMLParser):
@@ -296,42 +321,68 @@ class DashboardTests(unittest.TestCase):
             fixed = subprocess.run(check + [str(source)], capture_output=True, text=True)
             self.assertEqual(fixed.returncode, 0, fixed.stderr)
 
-    def test_page_renders_the_last_commit_and_says_when_it_changed(self):
-        env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1", "GIT_AUTHOR_NAME": "Test",
-               "GIT_AUTHOR_EMAIL": "test@example.com", "GIT_COMMITTER_NAME": "Test", "GIT_COMMITTER_EMAIL": "test@example.com"}
+    def test_check_holds_updated_at_to_what_changed_since_the_last_commit(self):
         with tempfile.TemporaryDirectory() as directory:
-            folder = Path(directory)
-            source, page = folder / "program.json", folder / "command-center.html"
+            program = Program(directory)
+            program.write(self.state, commit=False)
+            self.assertEqual(program.run("--check").returncode, 0, "a first write has no commit to compare with")
+            program.write(self.state)
+            record_only = dict(self.state, record={**self.state["record"], "next": "Record only."})
+            program.write(record_only, commit=False)
+            self.assertEqual(program.run("--check").returncode, 0)
+            program.write(dict(record_only, updatedAt="2026-11-03T09:30:00Z"), commit=False)
+            self.assertIn(f"only record changed, so keep updatedAt at {self.state['updatedAt']}", program.run("--check").stderr)
+            program.write(dict(self.state, title="Shown"), commit=False)
+            self.assertIn("the page changed, so set updatedAt", program.run("--check").stderr)
+            program.write(dict(self.state, title="Shown", updatedAt="2026-11-03T09:30:00Z"), commit=False)
+            self.assertEqual(program.run("--check").returncode, 0)
 
-            def git(*args):
-                subprocess.run(["git", "-C", directory, *args], check=True, capture_output=True, env=env)
+    def test_page_stages_the_last_commit_until_it_is_published(self):
+        with tempfile.TemporaryDirectory() as directory:
+            program = Program(directory)
+            page = program.folder / "command-center.html"
+            staged = program.folder / "command-center.next.html"
 
-            def write(state, commit=True):
-                source.write_text(json.dumps(state))
-                if commit:
-                    git("commit", "-q", "-m", "write", "program.json")
-
-            def publish():
-                result = subprocess.run([sys.executable, str(SCRIPT), "--state", str(source), "--page", str(page)],
-                                        capture_output=True, text=True)
+            def render_page():
+                result = program.run("--page", str(page))
                 return result.stdout.strip() or result.stderr
 
-            git("init", "-q")
-            self.assertIn("HEAD", publish())
-            self.assertFalse(page.exists())
-            write(self.state, commit=False)
-            git("add", "program.json")
-            git("commit", "-q", "-m", "start")
-            self.assertEqual(publish(), "changed")
-            self.assertEqual(page.read_text(), render(self.state))
-            self.assertEqual(publish(), "unchanged")
-            write(dict(self.state, title="Not committed"), commit=False)
-            self.assertEqual(publish(), "unchanged")
-            write(dict(self.state, record={**self.state["record"], "next": "Record only."}))
-            self.assertEqual(publish(), "unchanged")
-            write(dict(self.state, title="Committed", updatedAt="2026-11-03T09:30:00Z"))
-            self.assertEqual(publish(), "changed")
+            def publish():
+                staged.replace(page)
+
+            self.assertIn("HEAD", render_page())
+            self.assertFalse(staged.exists())
+            program.write(self.state)
+            self.assertEqual(render_page(), "changed")
+            self.assertEqual(staged.read_text(), render(self.state))
+            self.assertEqual(render_page(), "changed", "an unpublished page stays changed")
+            publish()
+            self.assertEqual(render_page(), "unchanged")
+            program.write(dict(self.state, title="Not committed"), commit=False)
+            self.assertEqual(render_page(), "unchanged")
+            program.write(dict(self.state, record={**self.state["record"], "next": "Record only."}))
+            self.assertEqual(render_page(), "unchanged")
+            program.write(dict(self.state, title="Committed", updatedAt="2026-11-03T09:30:00Z"))
+            self.assertEqual(render_page(), "changed")
+            program.write(dict(self.state, title="Committed", updatedAt="2026-11-03T09:30:00Z",
+                               record={**self.state["record"], "next": "Skipped publish."}))
+            self.assertEqual(render_page(), "changed", "a skipped publish shows again after a record-only write")
+            publish()
             self.assertIn("<title>Committed</title>", page.read_text())
+            self.assertEqual(render_page(), "unchanged")
+
+    def test_page_never_overwrites_the_state_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            program = Program(directory)
+            program.write(self.state)
+            alias = program.folder / "alias.html"
+            alias.symlink_to(program.source)
+            for target in (program.source, alias):
+                result = program.run("--page", str(target))
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("would overwrite the state file", result.stderr)
+            self.assertEqual(json.loads(program.source.read_text()), self.state)
+            self.assertEqual(sorted(path.name for path in program.folder.iterdir()), [".git", "alias.html", "program.json"])
 
     def test_choice_prompts_preserve_context_and_escape_untrusted_values(self):
         self.need("W6-D1")['options'][0]['label'] = 'Keep "entry" <safe>'
@@ -907,12 +958,15 @@ class DashboardTests(unittest.TestCase):
         need['blocks'][0]['phase'] = 'landing'
         self.assertNotEqual(revision(need), revision(json.loads(EXAMPLE.read_text())['needs'][0]))
         with tempfile.TemporaryDirectory() as directory:
-            source = Path(directory) / "state.json"
-            source.write_text(json.dumps(self.state))
-            result = subprocess.run([sys.executable, str(SCRIPT), "--state", str(source), "--revision", need['id']], capture_output=True, text=True)
+            program = Program(directory)
+            program.write(self.state)
+            program.write(self.state | {"needs": []}, commit=False)
+            self.assertEqual(program.run("--revision", need["id"]).stdout.strip(), revision(need))
+            program.source.write_text("{not json")
+            result = program.run("--revision", need["id"])
             self.assertEqual(result.stdout.strip(), revision(need), result.stderr)
             for absent in ("missing", ""):
-                missing = subprocess.run([sys.executable, str(SCRIPT), "--state", str(source), "--revision", absent], capture_output=True, text=True)
+                missing = program.run("--revision", absent)
                 self.assertEqual(missing.returncode, 2, missing.stderr)
                 self.assertIn("no decision", missing.stderr)
 
@@ -1066,16 +1120,6 @@ class RecordTests(unittest.TestCase):
         html = render(self.state)
         for value in (self.record["next"], self.record["owners"]["W1"]["workspace"], self.record["hosting"]):
             self.assertNotIn(value, html)
-
-    def test_record_only_writes_keep_the_page(self):
-        """A write keeps updatedAt unless it changes what the page shows."""
-        before = render(self.state)
-        self.record["next"] = "Something else entirely."
-        self.record["waits"] = []
-        self.assertEqual(render(self.state), before)
-        self.state["goal"] += " Now with a deadline."
-        self.state["updatedAt"] = "2026-11-02T18:00:00Z"
-        self.assertNotEqual(render(self.state), before)
 
     def test_record_and_its_required_fields_are_present(self):
         record = self.state.pop("record")
