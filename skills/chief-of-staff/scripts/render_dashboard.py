@@ -32,6 +32,8 @@ DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
+HISTORY = ("corrections", "requirements", "directions", "landings", "decisions", "discoveries")  # Append-only record lists.
+TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
 
@@ -827,8 +829,8 @@ def overview(work):
     )
 
 
-def render(state):
-    """Validate the state and render its page."""
+def render(state, template=None):
+    """Validate the state and render its page, reading the template from disk unless given."""
     validate(state)
     open_needs = [row for row in state["needs"] if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
@@ -864,7 +866,7 @@ def render(state):
         f'<section id="needs-panel" role="tabpanel" aria-labelledby="needs-tab" tabindex="0"><h2 class="sr-only">Needs you</h2>{needs_html}</section>'
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
-    template = (Path(__file__).resolve().parents[1] / "assets" / "command-center.html").read_text()
+    template = template or TEMPLATE.read_text()
     page = template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
     return page.replace("<!--SNAPSHOT-->", digest(page)).replace("<!--TEMPLATE-->", digest(template))
 
@@ -878,17 +880,38 @@ def with_error(page, error):
     return flagged.replace(snapshot, f'data-snapshot="{digest(flagged)}"', 1)
 
 
+def check_history(state, previous):
+    """Fail when an append-only record list has fewer entries than in the previous file."""
+    def counts(program):
+        record = program.get("record") if isinstance(program, dict) else None
+        record = record if isinstance(record, dict) else {}
+        return {key: len(record[key]) if isinstance(record.get(key), list) else 0 for key in HISTORY}
+    before, after = counts(previous), counts(state)
+    lost = [f"record.{key} has {after[key]} entries, down from {before[key]}" for key in HISTORY if after[key] < before[key]]
+    if lost:
+        raise ValueError("; ".join(lost) + "; restore the missing entries from the previous file")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--check", action="store_true", help="Validate the state and render it in memory; write nothing")
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
+    parser.add_argument("--previous", type=Path, help="With --check, the live program.json; fail if record history lost entries")
     args = parser.parse_args()
+    if args.previous and not args.check:
+        parser.error("--previous needs --check")
     try:
         state = json.loads(args.state.read_text())
         if args.check:
             render(state)
+            if args.previous:
+                try:
+                    previous = json.loads(args.previous.read_text())
+                except (OSError, ValueError) as error:
+                    raise ValueError(f"cannot load previous file {args.previous}: {error}") from error
+                check_history(state, previous)
             print(f"{args.state}: valid")
             return
         validate(state)

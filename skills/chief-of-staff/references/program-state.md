@@ -23,17 +23,35 @@ follow [check the chief](chief-move.md#check-the-chief).
 Record each owner report, answer, direction, and decision in one write, before
 you reply or move on:
 
-1. Write the whole new state to `.program.json.tmp` beside `program.json`. Set
-   `updatedAt` to the time of this write if it changes anything outside
-   `record`; a write that changes only `record` keeps `updatedAt`, so open
-   pages stay put.
-2. Check it from this skill's folder, and fix every error it reports:
+1. Copy the live file to a unique temp file beside it, then edit only what
+   changed in the copy. Never regenerate the whole file; that silently drops
+   history.
 
    ```bash
-   python3 scripts/render_dashboard.py --state /absolute/path/.program.json.tmp --check
+   mktemp /absolute/path/.program.json.XXXXXX   # prints <temp>
+   cp /absolute/path/program.json <temp>
    ```
 
-3. `mv` it over `program.json`.
+   Set `updatedAt` to the time of this write if it changes anything outside
+   `record`; a write that changes only `record` keeps `updatedAt`, so open
+   pages stay put.
+2. Check it from this skill's folder, and fix every error it reports.
+   `--previous` fails when `record.corrections`, `requirements`, `directions`,
+   `landings`, `decisions`, or `discoveries` lost entries; mark a change in
+   place instead of deleting its entry. On the first write, start a new file
+   and omit `--previous`.
+
+   ```bash
+   python3 scripts/render_dashboard.py --state <temp> --check --previous /absolute/path/program.json
+   ```
+
+3. Keep the live file as `.program.json.prev`, the recovery copy for a bad
+   write, then move the temp file over it:
+
+   ```bash
+   cp /absolute/path/program.json /absolute/path/.program.json.prev
+   mv <temp> /absolute/path/program.json
+   ```
 
 The hosted page shows the new state on its next request.
 

@@ -15,6 +15,9 @@ answers, and stops. It unwatches its PRs when the chief asks. A user item that a
 When `program.json` fails `--check`, only the thread whose own last write named
 it chief writes: it repairs the file through
 [write the record](program-state.md#write-the-record), then resumes the check.
+In that repair, restore anything lost or damaged from `.program.json.prev`, pass
+it as `--previous` when `program.json` is not valid JSON, and skip the `cp` over
+it, so it keeps the last good state.
 Any other thread reports the break to the user and writes nothing.
 
 ## Move
@@ -37,7 +40,7 @@ is incomplete.
 
 ## After either
 
-The new chief takes over `program.json` and the running dashboard server as they
-stand; the server needs no restart. It reconciles state as on resume, sends
-owners their route, watches any delegated owner's pending PRs, and asks any
-remaining old thread to unwatch.
+The new chief takes over `program.json` and the dashboard server as they stand,
+and [checks the hosted page](hosting.md#check-the-hosted-page). It reconciles
+state as on resume, sends owners their route, watches any delegated owner's
+pending PRs, and asks any remaining old thread to unwatch.

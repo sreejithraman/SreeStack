@@ -104,21 +104,27 @@ class ServerTests(unittest.TestCase):
         self.write(self.changed("Good state"))
         self.start()
         good = self.get()[2]
-        read_text = Path.read_text
-
-        def template_removed(path, *args, **kwargs):
-            if path.name == "command-center.html":
-                raise FileNotFoundError("template removed during hosting")
-            return read_text(path, *args, **kwargs)
-
-        with mock.patch.object(Path, "read_text", template_removed):
+        with mock.patch("serve_dashboard.render", side_effect=RuntimeError("renderer failed during hosting")):
             status, _, page = self.get()
         self.assertEqual(status, 200)
         self.assertEqual(self.title(page), "Good state")
         self.assertIn('<p class="state-error" role="alert">', page)
-        self.assertIn("template removed during hosting", page)
+        self.assertIn("renderer failed during hosting", page)
         self.assertNotEqual(self.snapshot(page), self.snapshot(good))
         self.assertEqual(self.get()[2], good)
+
+    def test_template_is_read_once_at_startup(self):
+        self.write(self.state)
+        self.start()
+        before = self.get()[2]
+        read_text = Path.read_text
+
+        def template_changed(path, *args, **kwargs):
+            text = read_text(path, *args, **kwargs)
+            return text.replace("<main>", "<main>Changed template", 1) if path.name == "command-center.html" else text
+
+        with mock.patch.object(Path, "read_text", template_changed):
+            self.assertEqual(self.get()[2], before)
 
     def test_an_older_request_never_replaces_a_newer_page(self):
         self.write(self.changed("Older state"))
@@ -126,11 +132,11 @@ class ServerTests(unittest.TestCase):
         older_rendering, resume_older, newer_waits_or_ends = threading.Event(), threading.Event(), threading.Event()
         self.addCleanup(resume_older.set)
 
-        def render_pausing_older(state):
+        def render_pausing_older(state, template):
             if state["title"] == "Older state" and not older_rendering.is_set():
                 older_rendering.set()
                 resume_older.wait(10)
-            return render(state)
+            return render(state, template)
 
         class SignalingLock:
             def __enter__(self):

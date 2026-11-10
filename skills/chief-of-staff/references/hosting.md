@@ -3,7 +3,8 @@
 The command center is hosted only: give the user a link to return to, not an
 inline render in the chat. `scripts/serve_dashboard.py` renders `program.json`
 on every request, so the page always shows the file as it stands. Writing the
-file is all it takes to update the page. The server adds no coordinator,
+file is all it takes to update the page. The server loads the page template
+once, when it starts. The server adds no coordinator,
 database, or wakeups.
 
 1. Start the server from this skill's folder, detached so it outlives the turn,
@@ -36,6 +37,15 @@ sections, and scroll position kept. Each browser tab keeps that view for the
 URL, so a manual refresh returns to it too; a new tab starts at Needs you. A
 write that changes only `record` keeps `updatedAt` and leaves open pages alone.
 Answers still go through chat.
+
+## Check the hosted page
+
+On every resume and chief move, open the URL in `record.hosting` and confirm it
+serves the current `program.json`. If it fails or shows an older state, as after
+a reboot, start the server again under step 1 on the recorded port, so the
+existing Serve mapping still works. Then update `record.hosting`.
+
+## Take it down
 
 For teardown, follow the
 [web sharing](../../show-me/references/web-sharing.md#take-it-down)'s take-down

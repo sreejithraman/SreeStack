@@ -474,10 +474,10 @@
       }
     ],
     "hosting": {
-      "url": "https://example-host.example.ts.net:8443/",
+      "url": "https://example-host.example.ts.net:8452/",
       "server": "`serve_dashboard.py` PID 4242 on 127.0.0.1:58665, started 2026-11-02T09:00:00Z",
-      "serve": "`tailscale serve --bg --https=8443 http://127.0.0.1:58665`",
-      "stop": "`tailscale serve --https=8443 off`, then `kill -TERM 4242` after checking its start time and arguments",
+      "serve": "`tailscale serve --bg --https=8452 http://127.0.0.1:58665`",
+      "stop": "`tailscale serve --https=8452 off`, then `kill -TERM 4242` after checking its start time and arguments",
       "access": "Tailnet devices only; checked from this machine"
     },
     "next": "Release W1's landing once PR 44 is ready."

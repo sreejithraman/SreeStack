@@ -11,7 +11,7 @@ import sys
 import threading
 from urllib.parse import urlsplit
 
-from render_dashboard import render, with_error
+from render_dashboard import TEMPLATE, render, with_error
 
 
 ERROR_PAGE = """<!doctype html>
@@ -33,6 +33,7 @@ class DashboardServer(ThreadingHTTPServer):
         self.state_path = Path(state_path)
         self.last_good = None
         self.last_error = None
+        self.page_template = TEMPLATE.read_text()  # Read once, so the page always matches the code this process loaded.
         self.lock = threading.Lock()  # One request at a time, so an older read never replaces a newer page.
         super().__init__(("127.0.0.1", port), DashboardHandler)
         self.page()
@@ -41,7 +42,7 @@ class DashboardServer(ThreadingHTTPServer):
         """Return (status, html) for the current file, falling back to the last page that rendered."""
         with self.lock:
             try:
-                page = render(json.loads(self.state_path.read_text()))
+                page = render(json.loads(self.state_path.read_text()), self.page_template)
             except Exception as error:  # Any failure to read or render keeps the last good page up.
                 message = f"{type(error).__name__}: {error}" if not isinstance(error, ValueError) else str(error)
                 if message != self.last_error:

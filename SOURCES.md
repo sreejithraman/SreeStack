@@ -455,8 +455,10 @@ the command center shows, and its `record` object holds what the page never
 shows (request, corrections, approvals and directions, landing authority and
 releases, owner plumbing, waits, decision history, discoveries, hosting, the
 chief, and the next action), with each fact in one field. Owners write only
-their own report files. The chief writes the file atomically after
-`render_dashboard.py --check` passes on it. The original command center
+their own report files. The chief edits a copy of the file and moves it into
+place after `render_dashboard.py --check --previous` confirms it is valid and
+kept every history entry, keeping the replaced file as `.program.json.prev`.
+The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
 decision prompts that name one recorded option, judgment calls ahead of quick
