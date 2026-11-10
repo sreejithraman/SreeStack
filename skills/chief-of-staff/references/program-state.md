@@ -14,10 +14,9 @@ existing program's file rather than starting another. Put its absolute path in
 the chief's handoff and every owner kickoff.
 
 The program folder is a git repository, and its log is the record's history.
-When you create or adopt a program in a folder that is not one yet, run
-`git init` there and commit `program.json` once it passes the check. Keep the
-file indented one value per line, as the [example](../assets/example-state.json)
-is, so each change shows in `git diff`.
+A new program starts from a new `program.json`. When the folder is not a
+repository yet, run `git -C /absolute/path init`, then add and commit
+`program.json` once it passes the check.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
 current chief alone writes `program.json`. Before each write, confirm
@@ -29,7 +28,18 @@ follow [check the chief](chief-move.md#check-the-chief).
 Record each owner report, answer, direction, and decision in one write, before
 you reply or move on:
 
-1. Copy the live file to a unique temp file beside it, then edit only what
+1. Confirm the live file matches its last commit:
+
+   ```bash
+   git -C /absolute/path status --porcelain -- program.json
+   ```
+
+   Any output means the file changed outside these steps. If it fails the
+   check below, repair it as [check the chief](chief-move.md#check-the-chief)
+   says. Otherwise show the user `git -C /absolute/path diff HEAD -- program.json`
+   and build nothing on it until they choose: commit it as their edit, or
+   restore it with `git -C /absolute/path checkout HEAD -- program.json`.
+2. Copy the live file to a unique temp file beside it, then edit only what
    changed in the copy. Never regenerate the whole file; that silently drops
    history.
 
@@ -41,30 +51,31 @@ you reply or move on:
    Set `updatedAt` to the time of this write if it changes anything outside
    `record`; a write that changes only `record` keeps `updatedAt`, so open
    pages stay put.
-2. Check it from this skill's folder, and fix every error it reports. On the
-   first write, start a new file.
+3. Check it from this skill's folder, and fix every error it reports.
 
    ```bash
    python3 scripts/render_dashboard.py --state <temp> --check
    ```
 
-3. Read what changed; exit status 1 only means the files differ:
+4. Read what changed; exit status 1 only means the files differ:
 
    ```bash
-   git diff --no-index /absolute/path/program.json <temp>
+   git -C /absolute/path diff --no-index program.json <temp>
    ```
 
    A removed or changed line the event didn't call for is a mistake. Restore it
    in the temp file and check it again. Mark a change to a history entry in
    place instead of deleting it.
-4. Move it into place and commit with a message naming the event:
+5. Move it into place and commit with a message naming the event:
 
    ```bash
    mv <temp> /absolute/path/program.json
-   git -C /absolute/path add program.json && git -C /absolute/path commit -m "R2 report: PR 12 open"
+   git -C /absolute/path commit -m "R2 report: PR 12 open" program.json
    ```
 
-The hosted page shows the new state on its next request.
+A write is done only when its commit lands; on any git error, stop, report it
+to the user, and write nothing more. The hosted page shows the new state on its
+next request.
 
 ### Where each fact goes
 

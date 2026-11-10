@@ -7,17 +7,19 @@ from acting on stale state or writing over the record.
 
 Before acting on a request, direction, event, report, or pasted answer, and
 before each record write, read `record.chief` in `program.json`, or in
-`git show HEAD:program.json` when `program.json` fails `--check`. Every write
-passes the check before it is committed, so the last commit is always valid. A
-thread that is not the chief reads the chief's thread, forwards the item with
+`git -C /absolute/path show HEAD:program.json` when `program.json` fails
+`--check`. Every write passes the check before it is committed, so the last
+commit is always valid. A thread that is not the chief reads the chief's thread, forwards the item with
 `t3_thread_send`, linking the user's message for requests, directions, and
 answers, and stops. It unwatches its PRs when the chief asks. A user item that
 arrives through `t3_thread_send` counts under
 [record an answer](decisions.md#record-an-answer).
 
-When `program.json` fails `--check`, the chief named there repairs it: it fixes
-the file, or restores it with `git checkout -- program.json` when the break is
-an unwanted hand edit, then writes as usual under
+When `program.json` fails `--check`, the chief named there repairs it. If
+`git -C /absolute/path diff HEAD -- program.json` shows a change, it shows the
+user that diff, restores the file with
+`git -C /absolute/path checkout HEAD -- program.json`, and checks it again. It
+fixes what still fails, and redoes any wanted part of the change, under
 [write the record](program-state.md#write-the-record). A chief that cannot act
 goes through [take over](#take-over). Any other thread forwards or reports the
 break as it would any other item.

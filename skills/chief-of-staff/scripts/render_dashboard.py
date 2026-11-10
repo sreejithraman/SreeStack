@@ -8,6 +8,7 @@ from html import escape
 import json
 from pathlib import Path
 import re
+import shlex
 from urllib.parse import urlsplit
 
 
@@ -886,9 +887,14 @@ def main():
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
     args = parser.parse_args()
     try:
-        state = json.loads(args.state.read_text())
+        text = args.state.read_text()
+        state = json.loads(text)
         if args.check:
             render(state)
+            if text != json.dumps(state, indent=2, ensure_ascii=False) + "\n":
+                path = shlex.quote(str(args.state))
+                raise ValueError(f"{args.state}: not one value per line; rewrite it with: "
+                                 f"python3 -m json.tool --indent 2 --no-ensure-ascii {path} > {path}.fmt && mv {path}.fmt {path}")
             print(f"{args.state}: valid")
             return
         validate(state)

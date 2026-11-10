@@ -5,6 +5,7 @@ from itertools import combinations
 import json
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -276,18 +277,35 @@ class DashboardTests(unittest.TestCase):
     def test_check_passes_a_valid_file_and_fails_an_invalid_one_without_writing(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "program.json"
-            source.write_text(json.dumps(self.state))
+            source.write_text(json.dumps(self.state, indent=2, ensure_ascii=False) + "\n")
             command = [sys.executable, str(SCRIPT), "--state", str(source), "--check"]
             good = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(good.returncode, 0, good.stderr)
             self.work("W1")["state"] = "finished"
-            source.write_text(json.dumps(self.state))
+            source.write_text(json.dumps(self.state, indent=2, ensure_ascii=False) + "\n")
             bad = subprocess.run(command, capture_output=True, text=True)
             self.assertNotEqual(bad.returncode, 0)
             self.assertIn("work[W1].state must be one of", bad.stderr)
             source.write_text("{not json")
             self.assertNotEqual(subprocess.run(command, capture_output=True, text=True).returncode, 0)
             self.assertEqual([path.name for path in Path(directory).iterdir()], ["program.json"])
+
+    def test_check_holds_the_file_to_one_value_per_line_and_names_the_fix(self):
+        check = [sys.executable, str(SCRIPT), "--check", "--state"]
+        self.assertEqual(subprocess.run(check + [str(EXAMPLE)], capture_output=True).returncode, 0)
+        self.state["goal"] = "Ship exports — résumé ✓"
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "program file.json"
+            for layout in (json.dumps(self.state), json.dumps(self.state, indent=2), json.dumps(self.state, indent=4, ensure_ascii=False)):
+                source.write_text(layout)
+                failed = subprocess.run(check + [str(source)], capture_output=True, text=True)
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertIn("not one value per line", failed.stderr)
+            fix = failed.stderr.split("rewrite it with: ", 1)[1].strip().replace("python3", shlex.quote(sys.executable), 1)
+            subprocess.run(fix, shell=True, check=True)
+            self.assertEqual(json.loads(source.read_text()), self.state)
+            fixed = subprocess.run(check + [str(source)], capture_output=True, text=True)
+            self.assertEqual(fixed.returncode, 0, fixed.stderr)
 
     def test_error_banner_leads_the_page_escaped_and_changes_its_version(self):
         plain = render(self.state)

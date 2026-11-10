@@ -29,13 +29,13 @@ ERROR_PAGE = """<!doctype html>
 
 
 class DashboardServer(ThreadingHTTPServer):
-    def __init__(self, state_path, port=0):
+    def __init__(self, state_path):
         self.state_path = Path(state_path)
         self.last_good = None
         self.last_error = None
         self.page_template = TEMPLATE.read_text()  # Read once, so the page always matches the code this process loaded.
         self.lock = threading.Lock()  # One request at a time, so an older read never replaces a newer page.
-        super().__init__(("127.0.0.1", port), DashboardHandler)
+        super().__init__(("127.0.0.1", 0), DashboardHandler)  # The OS picks an unused port.
         self.page()
 
     def page(self):
@@ -78,9 +78,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path, help="The program state file, such as program.json")
-    parser.add_argument("--port", type=int, default=0, help="Loopback port; 0 picks an unused one")
     args = parser.parse_args()
-    server = DashboardServer(args.state.resolve(), args.port)
+    server = DashboardServer(args.state.resolve())
     print(f"http://127.0.0.1:{server.server_port}/", flush=True)
     try:
         server.serve_forever()

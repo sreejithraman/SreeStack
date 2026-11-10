@@ -284,7 +284,7 @@ class Page:
 
 
 class Host(DashboardServer):
-    """The dashboard server with test hooks: faults and stale navigations."""
+    """The dashboard server with test hooks: faults, stale navigations, and template shipping."""
 
     def __init__(self, folder, state):
         self.page_requests = 0
