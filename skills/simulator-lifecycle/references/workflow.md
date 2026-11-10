@@ -15,17 +15,13 @@ is unavailable, continue independent build or code work and report the missing
 prerequisite. Environment setup and adoption checks use
 [setup and rollout](setup.md).
 
-In T3, use `device_list`, then `device_open`, so the user can watch the device, and keep
-the exact `agent-device` launcher, host configuration, and session flags it returns on
-every command. Prefer current snapshot refs. Report an unavailable platform. See the
-[T3 device contract](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/mcp/toolkits/device/handlers.ts#L28). Confirm
-that the host's documented SimLock integration acquires and drives the same
-underlying lease. A regular `device_open` session alone does not establish a
-SimLock lease. A device from a `simlock-` host in `device_list` is that integration. If it
-is unavailable, report interactive disposable
-verification blocked; do not combine an unrelated CLI lease with a panel session
-or substitute another driver. Project test suites may use their supported
-SimLock route independently of interactive panel support.
+For T3 acquisition and interaction, follow [T3 device routing](t3.md).
+Project test suites may use their supported SimLock route independently of
+interactive panel support. A panel or metadata failure blocks only work that
+depends on it; authorized independent build/test paths may continue under the
+same ownership rules. Runner success does not prove panel recovery or replace
+required visual proof. Honor explicit holds by their stated scope and release
+condition, including holds on native suites or all device work.
 
 Outside a host-owned device route, choose one of SimLock's supported allocation
 interfaces for the run: its CLI, MCP, or agent-device bridge. With the bridge,
@@ -114,17 +110,15 @@ paths with the run receipt's versions, workspace, session and lease/device
 identities. Separate device-tool failure from app failure; a passing build or
 generic doctor check does not prove runner readiness.
 
-In T3, quote the error and follow its recovery advice once through its supported
-tools and returned driver, including any requested diagnostic. If that still fails, report the
-blocker and stop device work, unless a failure before a grant applies below. Preserve T3's connection, session and install
-directory; the skill does not authorize a second lease or an alternate driver.
-If a diagnostic is unavailable through that route, record that limit.
+For T3 failures, apply [T3 recovery and stop rules](t3.md#recovery-and-stop)
+before the cases below. Host and task limits constrain retries and substitutions;
+these cases do not authorize an attempt they prohibit.
 
 - **Failed before a grant:** no lease exists, so ended-lease recovery does not apply.
   Check `simlock status --json` for your own queued request or late grant. If you find
   one, apply the [run ownership guard](#choose-the-route-before-acquiring) and don't
   retry. Otherwise retry once, counting any retry the host's error advised, then try one
-  other model from `device_list`, unless the user named the target. If that model boots,
+  other model from the host's supported catalog, unless the user named the target. If that model boots,
   use it and label the substitution. If the same boot failure repeats on iOS on this Mac,
   check [break glass](break-glass.md). Otherwise stop device work and report the blocker.
 - **Lease ended or target missing:** stop using the old target. Reconcile the

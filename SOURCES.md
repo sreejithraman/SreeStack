@@ -1204,8 +1204,12 @@ checks. Checks free disk space and load once before acquiring a device, on the
 machine that runs it, and holds or reports when either is critical. Project
 runners follow Verify's iOS build output rules.
 Failure guidance defers to host recovery instructions and preserves unresolved
-ownership conflicts. Owns T3 Device panel routing, returned driver and session flags,
-and Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
+ownership conflicts. Consolidates T3 acquisition, returned driver/session, setup and recovery rules
+in one host reference; the live host contract remains authoritative. Panel or
+metadata failures block dependent work, while authorized independent supported
+project runners may continue under ownership rules and explicit holds. Runner
+success does not prove panel recovery or replace required visual proof. Keeps
+Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
 with `simlock instructions`. Technical citations use checked upstream source
 documents rather than inaccessible deployed documentation routes.
 

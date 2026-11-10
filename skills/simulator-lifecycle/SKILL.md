@@ -3,9 +3,12 @@ name: simulator-lifecycle
 description: Use before touching an iOS simulator or Android emulator, or before running simctl, adb, emulator or xcodebuild for a simulator, or agent-device. Simlock shares these devices between agents and has rules every agent must follow.
 ---
 
-Simlock shares iOS simulators and Android emulators between agents. It works only if every agent follows its rules.
+Use SimLock to isolate disposable simulator/emulator work and leave each run’s
+lease and resources released or explicitly retained with an owner.
 
-Follow the host's device contract first. For retained inspection targets, read
+Follow the host's live device contract first. In T3, read
+[T3 device routing and recovery](references/t3.md) before acquisition, interaction,
+setup or recovery. For retained inspection targets, read
 [run and handoff conventions](references/workflow.md) before touching the device;
 the disposable-pool checks below do not authorize resetting or enrolling it.
 
@@ -31,8 +34,6 @@ On a remote device host, single-quote the commands so `$HOME` expands there, suc
 `ssh <host> 'df -h "$HOME"; uptime; sysctl -n hw.logicalcpu'`. If the host offers no
 shell, report the check as not run and continue under the host's own controls.
 
-In T3, acquisition and interactive control must follow its documented route to
-the same SimLock lease; an ordinary panel session is not proof of that lease.
 Before acquiring, read [run and handoff conventions](references/workflow.md) for
 host routing, run evidence, teardown and retention. Use
 [project runner integration](references/project-runners.md) when changing normal
