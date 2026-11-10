@@ -16,8 +16,8 @@ database, or wakeups.
    It binds `127.0.0.1` and serves only `/`, nothing else from disk. When the
    file fails to load, it serves the last good page under an error banner and
    logs the error; with no good page since it started, it serves an error page
-   that retries. Fix the file under
-   [write the record](program-state.md#write-the-record).
+   that retries. Repair the file as [check the chief](chief-move.md#check-the-chief)
+   says.
 2. Use Show Me's [web sharing](../../show-me/references/web-sharing.md) to share
    it. For Tailscale, follow its procedure with this server as the origin:
    existing Serve mappings preserved, verification, lifetime, and teardown.
@@ -34,8 +34,8 @@ An open page fetches its URL every 20 seconds while visible and when the user
 returns to it, then shows a changed page in place with its tab, selection,
 sections, and scroll position kept. Each browser tab keeps that view for the
 URL, so a manual refresh returns to it too; a new tab starts at Needs you. A
-write that changes only `record` leaves open pages alone. Answers still go
-through chat.
+write that changes only `record` keeps `updatedAt` and leaves open pages alone.
+Answers still go through chat.
 
 For teardown, follow the
 [web sharing](../../show-me/references/web-sharing.md#take-it-down)'s take-down

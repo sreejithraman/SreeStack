@@ -10,7 +10,7 @@ import sys
 import tempfile
 import unittest
 
-from render_dashboard import icon, render, revision, url, validate
+from render_dashboard import icon, render, revision, url, validate, with_error
 
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
@@ -291,13 +291,14 @@ class DashboardTests(unittest.TestCase):
 
     def test_error_banner_leads_the_page_escaped_and_changes_its_version(self):
         plain = render(self.state)
-        flagged = render(self.state, error="record.next must be <b>nonempty</b>")
+        flagged = with_error(plain, "record.next must be <b>nonempty</b>")
         main = flagged.split("<main>")[1]
         self.assertTrue(main.startswith('<p class="state-error" role="alert">'))
         self.assertIn("Showing the last good state.", text_of(flagged))
         self.assertIn("&lt;b&gt;nonempty&lt;/b&gt;", main)
         self.assertNotIn('class="state-error"', plain)
-        self.assertNotEqual(self.versions(self.state)[0], re.search(r'data-snapshot="(\w{64})"', flagged).group(1))
+        snapshots = {re.search(r'data-snapshot="(\w{64})"', page).group(1) for page in (plain, flagged, with_error(plain, "another error"))}
+        self.assertEqual(len(snapshots), 3)
 
     def test_choice_prompts_preserve_context_and_escape_untrusted_values(self):
         self.need("W6-D1")['options'][0]['label'] = 'Keep "entry" <safe>'
@@ -1034,10 +1035,15 @@ class RecordTests(unittest.TestCase):
             self.assertNotIn(value, html)
 
     def test_record_only_writes_keep_the_page_version(self):
-        before = re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1)
+        """A write keeps updatedAt unless it changes what the page shows."""
+        snapshot = lambda: re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1)
+        before = snapshot()
         self.record["next"] = "Something else entirely."
         self.record["waits"] = []
-        self.assertEqual(re.search(r'data-snapshot="(\w{64})"', render(self.state)).group(1), before)
+        self.assertEqual(snapshot(), before)
+        self.state["goal"] += " Now with a deadline."
+        self.state["updatedAt"] = "2026-11-02T18:00:00Z"
+        self.assertNotEqual(snapshot(), before)
 
     def test_record_and_its_required_fields_are_present(self):
         record = self.state.pop("record")

@@ -12,6 +12,11 @@ is not the chief reads the chief's thread, forwards the item with
 answers, and stops. It unwatches its PRs when the chief asks. A user item that arrives through
 `t3_thread_send` counts under [record an answer](decisions.md#record-an-answer).
 
+When `program.json` fails `--check`, only the thread whose own last write named
+it chief writes: it repairs the file through
+[write the record](program-state.md#write-the-record), then resumes the check.
+Any other thread reports the break to the user and writes nothing.
+
 ## Move
 
 Only the chief moves the program to a new thread. In one record write it names

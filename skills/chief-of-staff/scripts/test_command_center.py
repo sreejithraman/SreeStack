@@ -7,9 +7,7 @@ browser, and network. Without a usable Chrome the tests skip locally and fail in
 
 import contextlib
 import copy
-import functools
 import io
-import http.server
 import json
 import os
 from pathlib import Path
@@ -23,8 +21,7 @@ import time
 import unittest
 from urllib.parse import urlsplit
 
-from render_dashboard import render
-from serve_dashboard import DashboardServer
+from serve_dashboard import DashboardHandler, DashboardServer
 from test_render_dashboard import page_state
 
 
@@ -135,9 +132,8 @@ def playwright_chromes():
 
 
 def chrome_path():
-    candidates = (os.environ.get("COMMAND_CENTER_CHROME"), *map(str, playwright_chromes()),
-                  "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", MAC_CHROME)
-    return next(filter(None, (shutil.which(candidate) for candidate in candidates if candidate)), None)
+    candidates = (*map(str, playwright_chromes()), "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", MAC_CHROME)
+    return next(filter(None, map(shutil.which, candidates)), None)
 
 
 class Chrome:
@@ -292,62 +288,53 @@ class Page:
         return "document.querySelector('main').dataset.testMark === 'same'"
 
 
-class Host(http.server.ThreadingHTTPServer):
-    """A scriptable stand-in for the dashboard server: faults, stale navigations, and template changes."""
+class Host(DashboardServer):
+    """The dashboard server with test hooks: faults, stale navigations, and template changes."""
 
-    def __init__(self, folder):
+    def __init__(self, folder, state):
         self.page_requests = 0
         self.fault = None
         self.stale_navigations = None
-        self.folder = folder
-        super().__init__(("127.0.0.1", 0), functools.partial(HostHandler, directory=str(folder)))
+        self.template = None
+        program = folder / "program.json"
+        program.write_text(json.dumps(state))
+        super().__init__(program)
+        self.RequestHandlerClass = HostHandler
 
     def handle_error(self, request, client_address):
         """Aborted checks close their connections mid-response by design."""
 
-    def publish(self, state, template=None, same_validator=False):
-        """Replace the page atomically. Publications a real second apart get a new Last-Modified validator."""
-        page = render(state) if template is None else template(render(state))
-        staging = self.folder.parent / "staging.html"
-        staging.write_text(page)
-        published = self.folder / "index.html"
-        if published.exists():
-            modified = published.stat().st_mtime + (0 if same_validator else 60)
-            os.utime(staging, (modified, modified))
-        os.replace(staging, published)
+    def publish(self, state, template=None):
+        """Write the program file as the chief does; template rewrites each page served from it."""
+        staging = self.state_path.with_name(".program.json.tmp")
+        staging.write_text(json.dumps(state))
+        os.replace(staging, self.state_path)
+        self.template = template
+
+    def page(self):
+        status, page = super().page()
+        return status, page if self.template is None else self.template(page)
 
 
-class HostHandler(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *arguments):
-        pass
-
-    def end_headers(self):
-        self.send_header("Cache-Control", "public, max-age=3600")
-        super().end_headers()
-
+class HostHandler(DashboardHandler):
     def do_GET(self):
         host = self.server
-        if urlsplit(self.path).path not in ("/", "/index.html"):
-            self.send_error(404)
-            return
-        host.page_requests += 1
-        if self.headers.get("Sec-Fetch-Mode") == "navigate" and host.stale_navigations:
-            self.reply(200, host.stale_navigations.encode())
-        elif host.fault and self.headers.get("Sec-Fetch-Mode") != "navigate":
-            host.fault(self)
-        else:
-            super().do_GET()
+        if urlsplit(self.path).path == "/":
+            host.page_requests += 1
+            navigation = self.headers.get("Sec-Fetch-Mode") == "navigate"
+            if navigation and host.stale_navigations:
+                return self.reply(200, host.stale_navigations.encode())
+            if host.fault and not navigation:
+                return host.fault(self)
+        super().do_GET()
 
-    def reply(self, status, body, content_type="text/html"):
-        self.send_response(status)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+
+def current_page(handler):
+    return handler.server.page()[1].encode()
 
 
 def server_error(handler):
-    handler.reply(503, (handler.server.folder / "index.html").read_bytes())
+    handler.reply(503, current_page(handler))
 
 
 def dropped_connection(handler):
@@ -360,7 +347,7 @@ def login_page(handler):
 
 
 def truncated_page(handler):
-    page = (handler.server.folder / "index.html").read_bytes()
+    page = current_page(handler)
     handler.reply(200, page[:page.index(b'id="work-panel"') + 200])
 
 
@@ -400,15 +387,12 @@ def tearDownModule():
 class CommandCenterCase(unittest.TestCase):
     def setUp(self):
         self.state = page_state()
-        self.folder = tempfile.TemporaryDirectory()
-        public = Path(self.folder.name) / "public"
-        public.mkdir()
-        self.host = Host(public)
-        self.addCleanup(self.folder.cleanup)
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.host = Host(Path(folder.name), self.state)
         self.addCleanup(self.host.server_close)
         threading.Thread(target=self.host.serve_forever, args=(.01,), daemon=True).start()
         self.addCleanup(self.host.shutdown)
-        self.host.publish(self.state)
 
     def open_page(self, size=DESKTOP, before_load="", context=None):
         if context is None:
@@ -456,7 +440,7 @@ class PublicationTests(CommandCenterCase):
         page.advance(CHECK_INTERVAL * 3)
         self.assertEqual(self.host.page_requests, before + 4)
 
-    def test_new_publication_appears_without_a_reload_despite_cacheable_responses(self):
+    def test_new_publication_appears_without_a_reload(self):
         page = self.open_page()
         page.run("window.neverReloaded = true")
         self.publish_retitled()
@@ -520,7 +504,7 @@ class PublicationTests(CommandCenterCase):
         page = self.open_page()
         page.click("#work-tab")
         page.keep_quiet()
-        self.host.publish(self.state, template=lambda html: next_template(html).replace("<body>", '<body data-shipped="yes">'), same_validator=True)
+        self.host.publish(self.state, template=lambda html: next_template(html).replace("<body>", '<body data-shipped="yes">'))
         page.set_visible(True)
         page.wait_for_load()
         self.assertEqual(page.run("document.body.dataset.shipped"), "yes")
@@ -530,11 +514,26 @@ class PublicationTests(CommandCenterCase):
         self.assertEqual(self.host.page_requests, loads + 2)
         self.assertEqual(page.run("performance.getEntriesByType('navigation')[0].type"), "reload")
 
+    def test_open_page_flags_a_bad_write_until_it_is_fixed(self):
+        page = self.open_page()
+        self.publish_retitled("Written once")
+        page.advance(CHECK_INTERVAL + 500)
+        self.assertIn("Written once", page.text())
+        self.host.state_path.write_text("{broken")
+        with contextlib.redirect_stderr(io.StringIO()):
+            page.advance(CHECK_INTERVAL)
+        self.assertIn("Showing the last good state.", page.text())
+        self.assertIn("Written once", page.text())
+        self.publish_retitled("Written again")
+        page.advance(CHECK_INTERVAL)
+        self.assertIn("Written again", page.text())
+        self.assertNotIn("Showing the last good state.", page.text())
+
     def test_reload_that_returns_the_old_template_keeps_the_old_page_without_looping(self):
         page = self.open_page()
         page.click("#work-tab")
         page.keep_quiet()
-        self.host.stale_navigations = (self.host.folder / "index.html").read_text()
+        self.host.stale_navigations = self.host.page()[1]
         self.host.publish(self.changed(lambda state: state.update(title="Newer content")), template=next_template)
         page.set_visible(True)
         page.wait_for_load()
@@ -552,41 +551,6 @@ class PublicationTests(CommandCenterCase):
 
 
 EVIDENCE = "#toggle-evidence-" + "W1".encode().hex()
-
-
-class ServedPageTests(CommandCenterCase):
-    """The open page against serve_dashboard.py, where writing program.json is the whole publish."""
-
-    def setUp(self):
-        self.state = page_state()
-        folder = tempfile.TemporaryDirectory()
-        self.addCleanup(folder.cleanup)
-        self.program = Path(folder.name) / "program.json"
-        self.write(self.state)
-        self.host = DashboardServer(self.program)
-        self.addCleanup(self.host.server_close)
-        threading.Thread(target=self.host.serve_forever, args=(.01,), daemon=True).start()
-        self.addCleanup(self.host.shutdown)
-
-    def write(self, state):
-        staging = self.program.with_name(".program.json.tmp")
-        staging.write_text(json.dumps(state))
-        os.replace(staging, self.program)
-
-    def test_open_page_follows_each_write_and_flags_a_bad_one_until_it_is_fixed(self):
-        page = self.open_page()
-        self.write(self.changed(lambda state: state.update(title="Written once")))
-        page.advance(CHECK_INTERVAL + 500)
-        self.assertIn("Written once", page.text())
-        self.program.write_text("{broken")
-        with contextlib.redirect_stderr(io.StringIO()):
-            page.advance(CHECK_INTERVAL)
-        self.assertIn("Showing the last good state.", page.text())
-        self.assertIn("Written once", page.text())
-        self.write(self.changed(lambda state: state.update(title="Written again")))
-        page.advance(CHECK_INTERVAL)
-        self.assertIn("Written again", page.text())
-        self.assertNotIn("Showing the last good state.", page.text())
 
 
 class ViewTests(CommandCenterCase):
@@ -683,7 +647,7 @@ class ViewTests(CommandCenterCase):
         page = self.open_page()
         page.click("#work-tab")
         page.keep_quiet()
-        page.navigate(page.url + "index.html?program=other")
+        page.navigate(page.url + "?program=other")
         self.assertEqual(page.selected_tab(), "needs-tab")
 
     def test_leaving_the_tab_saves_the_view(self):
@@ -1200,7 +1164,7 @@ class InteractionTests(CommandCenterCase):
         page = self.open_page()
         page.keep_quiet()
         self.publish_retitled()
-        self.host.fault = lambda handler: (time.sleep(.3), http.server.SimpleHTTPRequestHandler.do_GET(handler))
+        self.host.fault = lambda handler: (time.sleep(.3), DashboardHandler.do_GET(handler))
         page.advance(CHECK_INTERVAL - CHECK_INTERVAL // 4 + 100, settle=False)
         page.click("#work-tab")
         self.host.fault = None

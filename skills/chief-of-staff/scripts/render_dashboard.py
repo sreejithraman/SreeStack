@@ -187,9 +187,7 @@ def validate_work(row, layers):
     if state == "done":
         raise ValueError(f"{path}: an outcome ends landed, at its shown Try, or at its PR state, not done")
     if "provisional" in row:
-        provisional = row["provisional"]
-        if not isinstance(provisional, dict):
-            raise ValueError(f"{path}.provisional must be an object")
+        provisional = obj(row["provisional"], f"{path}.provisional")
         for key in ("basis", "clears"):
             text(provisional.get(key), f"{path}.provisional.{key}")
         strings(provisional.get("on", []), f"{path}.provisional.on")
@@ -349,8 +347,7 @@ def validate_need(row, by_id):
 
 
 def validate(state):
-    if not isinstance(state, dict):
-        raise ValueError("state must be an object")
+    obj(state, "state")
     for key in ("title", "goal"):
         text(state.get(key), key)
     timestamp(state.get("updatedAt"), "updatedAt")
@@ -379,17 +376,15 @@ def validate(state):
     return state
 
 
+def known(identity, path, by_id):
+    if identity not in by_id:
+        raise ValueError(f"{path} names missing work {identity}")
+
+
 def per_work(value, path, by_id):
     for identity, row in obj(value, path).items():
-        if identity not in by_id:
-            raise ValueError(f"{path} names missing work {identity}")
+        known(identity, path, by_id)
         yield f"{path}[{identity}]", obj(row, f"{path}[{identity}]")
-
-
-def known_work(identities, path, by_id):
-    for identity in strings(identities, path):
-        if identity not in by_id:
-            raise ValueError(f"{path} names missing work {identity}")
 
 
 def validate_record(record, by_id, need_ids):
@@ -406,8 +401,8 @@ def validate_record(record, by_id, need_ids):
     ):
         for index, row in enumerate(records(record.get(name, []), f"record.{name}")):
             fields(row, f"record.{name}[{index}]", required, optional)
-            if "work" in row and row["work"] not in by_id:
-                raise ValueError(f"record.{name}[{index}].work names missing work {row['work']}")
+            if "work" in row:
+                known(row["work"], f"record.{name}[{index}].work", by_id)
     unique_ids(record.get("approvals", []), "record.approvals")
     if "landingAuthority" in record:
         fields(obj(record["landingAuthority"], "record.landingAuthority"), "record.landingAuthority", ENTRY)
@@ -429,7 +424,8 @@ def validate_record(record, by_id, need_ids):
         one_of(row.get("state"), LANDING_STATES, f"{path}.state")
         if not row.get("work") or not row.get("prs"):
             raise ValueError(f"{path} needs its work and PRs")
-        known_work(row["work"], f"{path}.work", by_id)
+        for identity in strings(row["work"], f"{path}.work"):
+            known(identity, f"{path}.work", by_id)
         for index, pr in enumerate(records(row["prs"], f"{path}.prs")):
             url(pr.get("url"), f"{path}.prs[{index}].url")
             fields(pr, f"{path}.prs[{index}]", ("head", "base"))
@@ -831,8 +827,8 @@ def overview(work):
     )
 
 
-def render(state, error=None):
-    """Render the page; error adds a banner saying the page shows this older state."""
+def render(state):
+    """Validate the state and render its page."""
     validate(state)
     open_needs = [row for row in state["needs"] if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
@@ -858,11 +854,7 @@ def render(state, error=None):
         facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(state["finishLine"])}</span></p>'
     facts += f'<p class="fact">{icon("snapshot")}<span><span class="fact-label">Snapshot</span> {when(state["updatedAt"], age=True)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
-    content = ""
-    if error:
-        content += (f'<p class="state-error" role="alert">{icon("blocked")}<span><strong>Showing the last good state.</strong> '
-                    f'The program file failed to load: {e(error)}</span></p>')
-    content += f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
+    content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
@@ -875,6 +867,15 @@ def render(state, error=None):
     template = (Path(__file__).resolve().parents[1] / "assets" / "command-center.html").read_text()
     page = template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
     return page.replace("<!--SNAPSHOT-->", digest(page)).replace("<!--TEMPLATE-->", digest(template))
+
+
+def with_error(page, error):
+    """The page under an error banner, with a new digest so open pages notice the banner appear and clear."""
+    banner = (f'<p class="state-error" role="alert">{icon("blocked")}<span><strong>Showing the last good state.</strong> '
+              f'The program file failed to load: {e(error)}</span></p>')
+    flagged = page.replace("<main>", f"<main>{banner}", 1)
+    snapshot = re.search(r'data-snapshot="(\w+)"', flagged).group(0)
+    return flagged.replace(snapshot, f'data-snapshot="{digest(flagged)}"', 1)
 
 
 def main():

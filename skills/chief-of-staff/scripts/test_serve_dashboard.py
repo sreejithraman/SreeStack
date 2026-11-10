@@ -11,7 +11,9 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
+from render_dashboard import render
 from serve_dashboard import DashboardServer
 from test_render_dashboard import page_state
 
@@ -56,6 +58,9 @@ class ServerTests(unittest.TestCase):
     def title(self, page):
         return re.search(r"<title>(.*)</title>", page).group(1)
 
+    def snapshot(self, page):
+        return re.search(r'data-snapshot="(\w+)"', page).group(1)
+
     def test_binds_only_to_loopback(self):
         self.write(self.state)
         self.assertEqual(self.start().server_address[0], "127.0.0.1")
@@ -89,11 +94,71 @@ class ServerTests(unittest.TestCase):
                 self.assertEqual(self.title(page), "Good state")
                 self.assertIn('<p class="state-error" role="alert">', page)
                 self.assertIn(reason, page)
-                self.assertNotEqual(re.search(r'data-snapshot="(\w+)"', page).group(1), re.search(r'data-snapshot="(\w+)"', good).group(1))
+                self.assertNotEqual(self.snapshot(page), self.snapshot(good))
         self.write(self.changed("Fixed state"))
         page = self.get()[2]
         self.assertEqual(self.title(page), "Fixed state")
         self.assertNotIn("state-error", page.split("<main>")[1])
+
+    def test_render_failure_serves_the_last_good_page_with_a_banner_until_it_clears(self):
+        self.write(self.changed("Good state"))
+        self.start()
+        good = self.get()[2]
+        read_text = Path.read_text
+
+        def template_removed(path, *args, **kwargs):
+            if path.name == "command-center.html":
+                raise FileNotFoundError("template removed during hosting")
+            return read_text(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "read_text", template_removed):
+            status, _, page = self.get()
+        self.assertEqual(status, 200)
+        self.assertEqual(self.title(page), "Good state")
+        self.assertIn('<p class="state-error" role="alert">', page)
+        self.assertIn("template removed during hosting", page)
+        self.assertNotEqual(self.snapshot(page), self.snapshot(good))
+        self.assertEqual(self.get()[2], good)
+
+    def test_an_older_request_never_replaces_a_newer_page(self):
+        self.write(self.changed("Older state"))
+        server = self.start()
+        older_rendering, resume_older, newer_waits_or_ends = threading.Event(), threading.Event(), threading.Event()
+        self.addCleanup(resume_older.set)
+
+        def render_pausing_older(state):
+            if state["title"] == "Older state" and not older_rendering.is_set():
+                older_rendering.set()
+                resume_older.wait(10)
+            return render(state)
+
+        class SignalingLock:
+            def __enter__(self):
+                if not lock.acquire(blocking=False):
+                    newer_waits_or_ends.set()
+                    lock.acquire()
+
+            def __exit__(self, *error):
+                lock.release()
+
+        lock, server.lock = server.lock, SignalingLock()
+        pages = {}
+        with mock.patch("serve_dashboard.render", render_pausing_older):
+            older = threading.Thread(target=lambda: pages.update(older=server.page()))
+            older.start()
+            self.assertTrue(older_rendering.wait(10))
+            self.write(self.changed("Newer state"))
+            newer = threading.Thread(target=lambda: (pages.update(newer=server.page()), newer_waits_or_ends.set()))
+            newer.start()
+            self.assertTrue(newer_waits_or_ends.wait(10))
+            self.assertNotIn("newer", pages, "the newer request finished while the older one was still rendering")
+            resume_older.set()
+            older.join(10)
+            newer.join(10)
+        self.assertEqual(self.title(pages["older"][1]), "Older state")
+        self.assertEqual(self.title(pages["newer"][1]), "Newer state")
+        self.program.write_text("{not json")
+        self.assertEqual(self.title(self.get()[2]), "Newer state")
 
     def test_without_a_good_state_it_serves_an_error_page(self):
         self.program.write_text("{not json")

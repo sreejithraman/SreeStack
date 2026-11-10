@@ -8,9 +8,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import sys
+import threading
 from urllib.parse import urlsplit
 
-from render_dashboard import render
+from render_dashboard import render, with_error
 
 
 ERROR_PAGE = """<!doctype html>
@@ -32,24 +33,25 @@ class DashboardServer(ThreadingHTTPServer):
         self.state_path = Path(state_path)
         self.last_good = None
         self.last_error = None
+        self.lock = threading.Lock()  # One request at a time, so an older read never replaces a newer page.
         super().__init__(("127.0.0.1", port), DashboardHandler)
         self.page()
 
     def page(self):
-        """Return (status, html) for the current file, falling back to the last state that rendered."""
-        try:
-            state = json.loads(self.state_path.read_text())
-            page = render(state)
-        except Exception as error:  # Any failure to read or render keeps the last good page up.
-            message = f"{type(error).__name__}: {error}" if not isinstance(error, ValueError) else str(error)
-            if message != self.last_error:
-                print(f"{self.state_path}: {message}", file=sys.stderr, flush=True)
-                self.last_error = message
-            if self.last_good is None:
-                return HTTPStatus.SERVICE_UNAVAILABLE, ERROR_PAGE.format(error=escape(message))
-            return HTTPStatus.OK, render(self.last_good, error=message)
-        self.last_good, self.last_error = state, None
-        return HTTPStatus.OK, page
+        """Return (status, html) for the current file, falling back to the last page that rendered."""
+        with self.lock:
+            try:
+                page = render(json.loads(self.state_path.read_text()))
+            except Exception as error:  # Any failure to read or render keeps the last good page up.
+                message = f"{type(error).__name__}: {error}" if not isinstance(error, ValueError) else str(error)
+                if message != self.last_error:
+                    print(f"{self.state_path}: {message}", file=sys.stderr, flush=True)
+                    self.last_error = message
+                if self.last_good is None:
+                    return HTTPStatus.SERVICE_UNAVAILABLE, ERROR_PAGE.format(error=escape(message))
+                return HTTPStatus.OK, with_error(self.last_good, message)
+            self.last_good, self.last_error = page, None
+            return HTTPStatus.OK, page
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -58,9 +60,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         status, page = self.server.page()
-        body = page.encode()
+        self.reply(status, page.encode())
+
+    def reply(self, status, body, content_type="text/html; charset=utf-8"):
         self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()

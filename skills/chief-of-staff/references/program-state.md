@@ -15,16 +15,18 @@ the chief's handoff and every owner kickoff.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
 current chief alone writes `program.json`. Before each write, confirm
-`record.chief` still names this thread; otherwise follow
-[chief move](chief-move.md).
+`record.chief` still names this thread; otherwise, or if the file fails to load,
+follow [check the chief](chief-move.md#check-the-chief).
 
 ### Write the record
 
 Record each owner report, answer, direction, and decision in one write, before
 you reply or move on:
 
-1. Write the whole new state to `.program.json.tmp` beside `program.json`, with
-   `updatedAt` set to the time of this write.
+1. Write the whole new state to `.program.json.tmp` beside `program.json`. Set
+   `updatedAt` to the time of this write if it changes anything outside
+   `record`; a write that changes only `record` keeps `updatedAt`, so open
+   pages stay put.
 2. Check it from this skill's folder, and fix every error it reports:
 
    ```bash
@@ -180,7 +182,7 @@ type Snapshot = { // what the page shows
   title: string;
   goal: string;
   finishLine?: string; // a program-wide note, such as who decides merges
-  updatedAt: string; // the time of the last write
+  updatedAt: string; // the last write that changed what the page shows
   demo?: boolean;   // true only for an illustrative example
   needs: Need[];
   work: Work[];
