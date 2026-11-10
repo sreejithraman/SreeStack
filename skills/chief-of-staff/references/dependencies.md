@@ -65,7 +65,7 @@ When the base or decision moves:
   Needs you. Nothing continues on the scrapped base. Answering "scrap" scraps
   the dependent. Answering "rebase onto X" records X in the same commit and sets
   the dependent's `base`:
-  - X is another outcome's layer: retarget `stackedOn` to that layer, and
+  - X is another outcome's unmerged layer: retarget `stackedOn` to that layer, and
     retarget `provisional` from the scrapped work to X's outcome.
   - X is the target branch: drop `stackedOn`, and remove the scrapped work from
     `provisional.on`. If nothing remains, drop `provisional`, and the owner then
