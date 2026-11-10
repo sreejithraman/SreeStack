@@ -68,9 +68,11 @@ the rest.
 Mark a Need `answered` only with the user's answer and, in `answerSource`, the
 message it came from. Mark it `resolved` only under [triage](#triage), citing
 the source that settled it. Then update the affected owners, dependencies, and
-landing releases. Mark a withdrawn or replaced Need `withdrawn`, record why and
-any replacement in its `rationale`, and reconcile the blockers that depended on
-it. Move any answer, `answerSource`, and basis into `rationale` too, as on reopen.
+landing releases. Record a rebase answer with the new base, or with `blocked`
+until the rebase lands, in the same commit. Mark a withdrawn or replaced Need
+`withdrawn`, record why and any replacement in its `rationale`, and reconcile
+the blockers that depended on it. Move any answer, `answerSource`, and basis
+into `rationale` too, as on reopen.
 
 ## Reopen
 

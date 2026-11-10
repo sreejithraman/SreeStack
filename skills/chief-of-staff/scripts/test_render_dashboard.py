@@ -115,6 +115,19 @@ def scrap_choice(identity, phase):
             "status": "open", "blocks": [{"id": identity, "phase": phase}]}
 
 
+def answered(need):
+    return need | {"status": "answered", "answer": "Rebase onto W5", "answerSource": "Chat message 2026-11-03"}
+
+
+def rebased_onto_scrapped_w5(s):
+    work(s, "W1").update(state="scrapped")
+    s["decisions"].append(answered(scrap_choice("W2", "proof")))
+    work(s, "W2")["provisional"].update(on=["W5"])
+    work(s, "W2")["layers"][0].update(stackedOn="W5-L1")
+    work(s, "W5").update(state="scrapped")
+    decision(s, "W5-T").pop("blocks")
+
+
 def merged(layer):
     layer.update(status="merged", url=layer.get("url", "https://example.com/exports/pull/60"))
 
@@ -161,6 +174,9 @@ RULES = [
     ("a live layer leaves a closed parent", lambda s: work(s, "W1")["layers"][1].update(status="closed"), r"names closed W1-L2; record the restack"),
     ("another owner's unmerged layer is provisional", lambda s: work(s, "W2")["provisional"].update(on=[]), r"another owner's unmerged layer"),
     ("work on a dead base halts", lambda s: work(s, "W1").update(state="scrapped"), r"work\[W2\] rests on scrapped W1"),
+    ("an answered decision no longer holds work", lambda s: (
+        work(s, "W1").update(state="scrapped"), s["decisions"].append(answered(scrap_choice("W2", "start")))), r"work\[W2\] rests on scrapped W1"),
+    ("a landed rebase ends the hold", rebased_onto_scrapped_w5, r"work\[W2\] rests on scrapped W5"),
     ("dependencies have no cycle", lambda s: work(s, "W1").update(blockedBy=["W2"]), r"work dependency cycle"),
     ("stacks have no cycle", lambda s: work(s, "W1")["layers"][0].update(stackedOn="W1-L2"), r"stack cycle"),
     ("a decision is dated", lambda s: decision(s, "W6-D1").pop("date"), r"decisions\[W6-D1\]\.date"),
@@ -201,9 +217,9 @@ ACCEPTED = [
         decision(s, "W0-D1").update(status="resolved", basis="Earlier rule."), decision(s, "W0-D1").pop("answerSource"))),
     ("an open halting decision holds work on a dead base", lambda s: (
         work(s, "W1").update(state="scrapped"), s["decisions"].append(scrap_choice("W2", "proof")))),
-    ("an answered halting decision holds work on a dead base until its restack", lambda s: (
-        work(s, "W1").update(state="scrapped"), s["decisions"].append(scrap_choice("W2", "proof") | {
-            "status": "answered", "answer": "Rebase onto main", "answerSource": "Chat message 2026-11-03"}))),
+    ("blocked holds work on a dead base until its rebase lands", lambda s: (
+        work(s, "W1").update(state="scrapped"), s["decisions"].append(answered(scrap_choice("W2", "proof"))),
+        work(s, "W2").update(blocked="Rebase onto W5 pending; W2's owner restacks it."))),
     ("an open halting decision holds a live layer on a closed parent", lambda s: (
         work(s, "W1")["layers"][1].update(status="closed"), s["decisions"].append(scrap_choice("W2", "proof")))),
     ("an unrelated closed layer leaves a live base alone", lambda s: work(s, "W1")["layers"].append(

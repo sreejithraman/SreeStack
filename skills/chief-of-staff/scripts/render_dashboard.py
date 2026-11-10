@@ -249,10 +249,11 @@ def validate_work(row, layers):
         raise ValueError(f"{path}: landed needs a Land finish line and every layer merged")
 
 
-def halted_by_decision(decisions):
-    """IDs of work an open decision, or an answered one awaiting its restack, holds at a phase that stops its work."""
-    return {entry["id"] for decision in decisions if decision["status"] in {"open", "answered"}
-            for entry in decision.get("blocks", []) if entry["phase"] in HALTING}
+def held(work, decisions):
+    """IDs of work that `blocked` or an open decision at a phase that stops work holds."""
+    return {row["id"] for row in work if row.get("blocked")} | {
+        entry["id"] for decision in decisions if decision["status"] == "open"
+        for entry in decision.get("blocks", []) if entry["phase"] in HALTING}
 
 
 LIVE_LAYERS = {"local", "draft", "open", "ready"}
@@ -296,7 +297,7 @@ def validate_edges(work, by_id, layers, halted):
         parent, parent_row = layers[layer["stackedOn"]]
         if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
                 and row["id"] not in halted):
-            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its decision")
+            raise ValueError(f"{where} names closed {parent['id']}; record the restack or hold it with its decision or `blocked`")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
@@ -305,7 +306,7 @@ def validate_edges(work, by_id, layers, halted):
         for identity in bases(row, layers):
             reason = dead_base(by_id[identity])
             if reason and row["id"] not in halted:
-                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase decision or record its new base")
+                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; hold it with its scrap-or-rebase decision or `blocked`, or record its new base")
 
     def depends_on(row):
         found = list(row.get("blockedBy", []))
@@ -424,7 +425,7 @@ def validate(state):
         validate_work(row, layers)
     for row in decisions:
         validate_decision(row, by_id)
-    validate_edges(work, by_id, layers, halted_by_decision(decisions))
+    validate_edges(work, by_id, layers, held(work, decisions))
     for row in state.get("revisits", []):
         known_keys(row, f"revisits[{row['id']}]", ("id", "title", "tradeoff", "revisit", "source"))
         fields(row, f"revisits[{row['id']}]", ("title", "tradeoff", "revisit"), ("source",))
