@@ -237,12 +237,12 @@ A base is the outcome that work rests on through `provisional.on` or a live
 layer's `stackedOn`. A base is **dead** when it was scrapped, or when it has not
 landed and every one of its layers is closed; one closed layer beside a live or
 merged one does not count. Active work on a dead base, whether provisional or
-the same owner's stack, needs a hold: an open Need that halts it at `start`,
-`access`, or `proof`, such as its scrap-or-rebase choice, or `blocked`. Record
-the answer and either the new base or `blocked` in the same commit; clearing
-`blocked` ends the hold. The card shows the base once, as a Scrapped base or
-Closed base blocker. A live layer stacked on a closed layer of a base that is
-still alive needs the same hold, or a restack.
+the same owner's stack, needs an open Need that halts it at `start`, `access`,
+or `proof`, such as its scrap-or-rebase choice. Its answer moves the work off the
+dead base in the same commit, under [Base scrapped](dependencies.md#provisional-work).
+The card shows the base once, as a Scrapped base or Closed base blocker. A live
+layer stacked on a closed layer of a base that is still alive needs the same
+Need, or a restack.
 Before marking a row terminal, clear its active blockers and open Needs; history
 stays in the record. Unresolved work stays visible even after its owner failed
 or its PR was abandoned.

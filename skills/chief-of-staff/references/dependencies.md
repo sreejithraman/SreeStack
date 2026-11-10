@@ -54,7 +54,7 @@ that holds it.
 When the base or decision moves:
 
 - **Base changed:** its dependents restack and recheck, bottom first, one owner
-  at a time. Record the new heads and bases.
+  at a time. Record the new heads and bases from each owner's report.
 - **Base landed, or decision answered as assumed:** the owner refreshes the
   affected proof and then removes the PR body's `## Provisional` section. The
   picked finish line returns, and the outcome goes through acceptance and
@@ -62,7 +62,10 @@ When the base or decision moves:
 - **Decision answered another way:** the owner rebuilds on the answer, or
   offers the work for scrap.
 - **Base scrapped:** each dependent gets its own scrap or rebase choice in
-  Needs you. Nothing continues on the scrapped base.
+  Needs you. Nothing continues on the scrapped base. Answering "scrap" scraps
+  the dependent. Answering "rebase onto X" records X in the same commit: retarget
+  or drop its `stackedOn` and `provisional.on`, and set its `base`. Its owner
+  then restacks, and the report updates `head`.
 
 When two options are close and building both costs less than waiting, the
 outcome's owner builds each on its own branch, as a Swarm race. The answer keeps
