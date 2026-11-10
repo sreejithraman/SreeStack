@@ -48,19 +48,19 @@ you reply or move on:
    python3 scripts/render_dashboard.py --state <temp> --check
    ```
 
-3. Move it into place and read what changed:
+3. Read what changed; exit status 1 only means the files differ:
 
    ```bash
-   mv <temp> /absolute/path/program.json
-   git -C /absolute/path diff program.json
+   git diff --no-index /absolute/path/program.json <temp>
    ```
 
    A removed or changed line the event didn't call for is a mistake. Restore it
-   from `git -C /absolute/path show HEAD:program.json` and check `program.json`
-   again. Mark a change to a history entry in place instead of deleting it.
-4. Commit with a message naming the event:
+   in the temp file and check it again. Mark a change to a history entry in
+   place instead of deleting it.
+4. Move it into place and commit with a message naming the event:
 
    ```bash
+   mv <temp> /absolute/path/program.json
    git -C /absolute/path add program.json && git -C /absolute/path commit -m "R2 report: PR 12 open"
    ```
 
