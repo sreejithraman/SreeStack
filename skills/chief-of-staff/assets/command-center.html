@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en" data-snapshot="<!--SNAPSHOT-->" data-template="<!--TEMPLATE-->">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -257,7 +257,6 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 </head>
 <body>
 <main><!--CONTENT--></main>
-<p id="snapshot-status" class="sr-only" role="status"></p>
 <script id="lucide-icons" async src="https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js" integrity="sha384-xrRF3kGz5GMZeUudxpTxrrjy0NRy/+U3dHY72SdMEgy9OsrO9x8mCw6DCD8m+jjS" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const iconScript = document.getElementById('lucide-icons');
@@ -361,14 +360,13 @@ function connectContent() {
   renderIcons();
 }
 
-const viewStorageKey = `command-center-view:${location.href.split('#')[0]}`;
+const viewStorageKey = 'command-center-view';
 const scrollAreas = {
   page: {find: () => document.scrollingElement, edge: 'top', anchors: '.card[id], summary[id]'},
   board: {find: () => document.querySelector('.stage-board'), edge: 'left', anchors: '.stage-board > .collapsible > details > summary'},
   inbox: {find: () => document.querySelector('.inbox-list'), edge: 'top', anchors: '.inbox-row'},
 };
 const anchorsKept = 6;
-const focusable = 'a, button, summary';
 const lastScroll = {}; // An area in a hidden tab has no box to read or scroll, so its position waits here.
 
 const scrollOffset = edge => edge === 'top' ? 'scrollTop' : 'scrollLeft';
@@ -420,20 +418,6 @@ function restoreScroll() {
   }
 }
 
-const controlIdentity = control => control.getAttribute('aria-label') ?? control.getAttribute('href') ?? control.id;
-const controlsIn = owner => [owner, ...owner.querySelectorAll(focusable)];
-
-function captureFocus() {
-  const active = document.activeElement;
-  const owner = active?.closest('main [id]');
-  return owner && {owner: owner.id, control: controlIdentity(active)};
-}
-
-function restoreFocus(saved) {
-  const owner = document.getElementById(saved?.owner);
-  if (owner) controlsIn(owner).find(control => controlIdentity(control) === saved.control)?.focus({preventScroll: true});
-}
-
 function captureView() {
   return {
     tab: document.querySelector('[role="tab"][aria-selected="true"]')?.id,
@@ -471,84 +455,11 @@ function loadView() {
   }
 }
 
-const inputQuietPeriod = 2000;
-const heldInteractionLimit = 120000;
-let lastInput = -Infinity;
-let pointerHeld = false;
-const noteInput = () => { lastInput = performance.now(); };
-const listenerOptions = {capture: true, passive: true};
-for (const type of ['pointerdown', 'keydown', 'scroll']) addEventListener(type, noteInput, listenerOptions);
-addEventListener('pointerdown', () => { pointerHeld = true; }, listenerOptions);
-for (const type of ['pointerup', 'pointercancel']) addEventListener(type, () => { pointerHeld = false; }, listenerOptions);
 addEventListener('pagehide', saveView);
-
-function userIsActive() {
-  const sinceInput = performance.now() - lastInput;
-  const holding = pointerHeld || document.activeElement?.matches('textarea') || getSelection()?.isCollapsed === false;
-  return sinceInput < inputQuietPeriod || (holding && sinceInput < heldInteractionLimit);
-}
-
-function parsePublishedPage(source) {
-  if (!source.trimEnd().endsWith('</html>')) return null;
-  const page = new DOMParser().parseFromString(source, 'text/html');
-  const {snapshot, template} = page.documentElement.dataset;
-  const main = page.querySelector('main');
-  if (!snapshot || !template || !main) return null;
-  return {snapshot, template, main, title: page.title};
-}
-
-function showSnapshot(published) {
-  const view = captureView();
-  const focus = captureFocus();
-  document.querySelector('main').replaceWith(published.main);
-  document.title = published.title;
-  connectContent();
-  restoreView(view);
-  restoreFocus(focus);
-  document.documentElement.dataset.snapshot = published.snapshot;
-  document.getElementById('snapshot-status').textContent = `Snapshot updated at ${new Date().toLocaleTimeString()}.`;
-}
-
-function applyPublishedPage(published) {
-  if (published.template === document.documentElement.dataset.template) {
-    showSnapshot(published);
-  } else if (history.state?.reloadedFor !== published.snapshot) {
-    history.replaceState({reloadedFor: published.snapshot}, '');
-    location.reload();
-  }
-}
-
-const checkInterval = 20000;
-const checkTimeout = 10000;
-let activeCheck;
-let nextCheck;
-
-async function checkForSnapshot() {
-  clearTimeout(nextCheck);
-  activeCheck?.abort();
-  if (document.hidden) return;
-  const check = activeCheck = new AbortController();
-  const timeout = setTimeout(() => check.abort(), checkTimeout);
-  try {
-    const response = await fetch(location.href, {cache: 'reload', signal: check.signal});
-    const published = response.ok ? parsePublishedPage(await response.text()) : null;
-    if (published && published.snapshot !== document.documentElement.dataset.snapshot && !userIsActive()) applyPublishedPage(published);
-  } catch {
-    // The page keeps its snapshot and the next check tries again.
-  } finally {
-    clearTimeout(timeout);
-    if (check === activeCheck) nextCheck = setTimeout(checkForSnapshot, checkInterval);
-  }
-}
-
-addEventListener('pageshow', event => {
-  describeTimes();
-  if (event.persisted) checkForSnapshot();
-});
+addEventListener('pageshow', describeTimes);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { saveView(); return; }
-  describeTimes();
-  checkForSnapshot();
+  if (document.hidden) saveView();
+  else describeTimes();
 });
 
 const savedView = loadView();
@@ -556,7 +467,6 @@ if (savedView) history.scrollRestoration = 'manual';
 for (const name of Object.keys(scrollAreas)) {
   if (isSavedScroll(savedView?.scroll?.[name])) lastScroll[name] = savedView.scroll[name];
 }
-nextCheck = setTimeout(checkForSnapshot, checkInterval);
 connectContent();
 restoreView(savedView);
 </script>

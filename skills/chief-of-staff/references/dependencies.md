@@ -47,14 +47,14 @@ Land becomes Try while it lasts. An owner's own planned
 layers are not provisional.
 
 For each provisional outcome, record the branch, PR, or assumption it rests on,
-the open decision or unmerged base, its effective Try, what may continue, and
-that it cannot land. The morning view shows it on the outcome and on each Need
+the open decision or unmerged base, what may continue, and that it cannot
+land. The morning view shows it on the outcome and on each Need
 that holds it.
 
 When the base or decision moves:
 
 - **Base changed:** its dependents restack and recheck, bottom first, one owner
-  at a time. Record the new heads and bases.
+  at a time. Record the new heads and bases from each owner's report.
 - **Base landed, or decision answered as assumed:** the owner refreshes the
   affected proof and then removes the PR body's `## Provisional` section. The
   picked finish line returns, and the outcome goes through acceptance and
@@ -62,7 +62,16 @@ When the base or decision moves:
 - **Decision answered another way:** the owner rebuilds on the answer, or
   offers the work for scrap.
 - **Base scrapped:** each dependent gets its own scrap or rebase choice in
-  Needs you. Nothing continues on the scrapped base.
+  Needs you. Nothing continues on the scrapped base. Answering "scrap" scraps
+  the dependent. Answering "rebase onto X" records X in the same commit and sets
+  the dependent's `base`:
+  - X is another outcome's unmerged layer: retarget `stackedOn` to that layer, and
+    retarget `provisional` from the scrapped work to X's outcome.
+  - X is the target branch: drop `stackedOn`, and remove the scrapped work from
+    `provisional.on`. If nothing remains, drop `provisional`, and the owner then
+    follows **Base landed**.
+
+  Its owner then restacks, and the report updates `head`.
 
 When two options are close and building both costs less than waiting, the
 outcome's owner builds each on its own branch, as a Swarm race. The answer keeps

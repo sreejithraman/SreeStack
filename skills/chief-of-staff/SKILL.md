@@ -25,6 +25,8 @@ comparison through [Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md).
 The user can enter an owner's session directly; reconcile their new direction
 before you dispatch work that depends on it.
 
+Only a Claude session with the artifact tools can be chief, since the chief
+publishes the command center; elsewhere, ask the user to start the chief in one.
 Only the record's current chief acts on program items and writes the record.
 Check it before acting on a request, direction, report, event, or pasted answer;
 a thread that is not the chief forwards the item under
@@ -72,9 +74,9 @@ unmerged work: update the record and owners, then reconcile pending landings
 under [withdraw a release](references/landing.md#withdraw-a-release).
 
 Set up the [program record](references/program-state.md) before you start or
-adopt owners, so another chief could resume from it. Reuse the project's
-tracker; without one, keep a task-owned file record. A coordination request
-needs no new tracker. When a small choice will recur, propose a
+adopt owners, so another chief could resume from it. Work items stay in the
+project's tracker, and a coordination request needs no new one. When a small
+choice will recur, propose a
 [standing approval](references/decisions.md#standing-approvals) with the plan;
 owners start without waiting for the answer.
 
@@ -101,8 +103,8 @@ top-level sessions, as in a plain Claude Code or Codex session, start a
 delegated owner in its own host-managed worktree instead. Use
 [Orchestration](../orchestration/SKILL.md) for model choice and concurrency.
 Give each branch one writer, and serialize stack operations and shared
-resources. Record each owner with its start mode, route, and report path. Only
-you start program owners.
+resources. Record each owner with its start mode and route. Only you start
+program owners.
 
 Each owner checks its access and proof before work runs unattended, under
 Implement's [prepare](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
@@ -212,13 +214,12 @@ user, its requested PR state, or a repair with its owner.
 
 ## 5. Show and continue
 
-Keep the [command center](references/program-state.md#command-center) current
-and host it through [dashboard hosting](references/hosting.md), never inline. It
-shows every outcome once, with its finish line, results and how to open them,
-provisional condition, owner, layers, and what each Need blocks. Results come
-from owners' Shown reports: link what they showed, say what opening it needs,
-and name the gaps. Refresh on meaningful results and decisions, and show
-freshness honestly.
+[Publish the command center](references/hosting.md) after each record write and
+give the user its link, never an inline render. It shows every outcome once,
+with its finish line, results and how to open them, provisional condition,
+owner, layers, and what each Need blocks. Results come from owners' Shown reports: link what they
+showed, say what opening it needs, and name the gaps. Keep each row's
+observation time honest.
 
 Answers arrive through chat or the host's input tools. Record each under
 [record an answer](references/decisions.md#record-an-answer), then update the
@@ -228,8 +229,8 @@ Choose user updates from the owner reports: what the user can now use, try,
 decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
 the record, and answer direct questions in the detail asked.
 
-Done when the hosted view matches the record and shows every result and open
-Need.
+Done when the published page matches the last commit and shows every result
+and open Need.
 
 ## 6. Settle or resume
 
@@ -246,9 +247,10 @@ usable outcomes and their links. Name the decisions you resolved so the user can
 reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
 retained work and active dependents no longer need the resources.
 
-Before pausing or moving, bring the record current. On resume, reconcile it with
-current files, threads, and forge state before dispatching. To move the program
-to another thread or take over from a chief that cannot act, follow
-[chief move](references/chief-move.md). This skill supplies no background
-wakeups: native goal tracking, recurring refreshes, and other automation need an
+Before pausing or moving, bring the record current. On resume, start from the
+record's `next`, reconcile the record with current files, threads, and forge
+state, and [publish the page](references/hosting.md), before dispatching. To
+move the program to another thread or take over from a chief that cannot act,
+follow [chief move](references/chief-move.md). This skill supplies no background
+wakeups: native goal tracking, recurring checks, and other automation need an
 explicit user request and host support.

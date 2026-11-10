@@ -450,8 +450,13 @@ base and provisional bases, and linearizes fork-and-join inputs into reviewable
 stacks. Existing trackers stay authoritative; there is no mandatory wiki,
 Linear, Slack, cloud runtime, or recurring schedule.
 
-The original command center renders a checked JSON snapshot of the program
-record (`scripts/render_dashboard.py`, `assets/command-center.html`) with
+The program record is one file, `program.json`, organized by topic: program
+facts, `decisions` (each decision from arrival to answer or withdrawal), `work`
+(each row with its scope, sources, and owner with that owner's plumbing),
+tradeoffs, discoveries, landings, and waits. The renderer picks what the page
+shows. Owners write only their own report files. The program folder is a git
+repo; its last commit is the record and its log the history. The original command center
+(`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
 decision prompts that name one recorded option, judgment calls ahead of quick
 picks with a batch prompt, reopenable chief-resolved decisions, and accepted
@@ -459,14 +464,16 @@ tradeoffs. Each work row is one outcome, follow-up, or support task, counted onc
 with its finish line, results to open, provisional condition, owner, and PR
 layers; each decision names the outcomes it blocks and the phase each waits at.
 Below 900px it stays one column; wider, Needs you is a dual-pane inbox and Work a
-board of stage lanes. It replaces the supplied archive's Claude artifact database
-and integrations; no archive code or prose is copied. Validation rejects
+board of stage lanes. It replaces the supplied archive's artifact database and
+integrations; no archive code or prose is copied. Validation rejects
 provisional landings, PRs on a Try, stacks on another owner's unmerged layer
-without a provisional mark, and terminal rows with active blockers. Delivery is
-hosted only; `references/hosting.md` serves the page through Show Me's web
-sharing, including Tailscale Serve. A hosted page polls its own URL and swaps in
-a newer published digest without a server push, keeping the viewer's place per
-URL in session storage; the chief stays the only publisher.
+without a provisional mark, terminal rows with active blockers, entries that
+name missing work, and fields the schema doesn't name. The command center is a private Claude artifact per program,
+so only a Claude session can be chief. `render_dashboard.py --page` renders the
+last commit beside the last published page, says whether it changed, and stamps
+the commit time that changed it; the chief republishes on a change and on every
+resume and chief move. The page keeps the viewer's place in session storage;
+the chief stays the only writer.
 
 ## implement
 

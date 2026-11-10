@@ -129,8 +129,9 @@ deleting `reference-transaction`.
 
 Read each skill before use. Delegation and review target T3 Code's orchestration
 MCP tools and its configured provider runtimes. Other workflows may need goal
-state tools, GitHub CLI, optional Tailscale sharing, or Apple development tools. Linking skills
-does not install provider executables, authenticate accounts, or enable models.
+state tools, GitHub CLI, Claude artifact tools, optional Tailscale sharing, or
+Apple development tools. Linking skills does not install provider executables,
+authenticate accounts, or enable models.
 
 ### Claude Code
 
@@ -272,13 +273,15 @@ to you, with judgment calls ahead of quick picks. Each outcome has its own
 **Land**, **Try**, or PR finish line: an owner lands its accepted outcome once
 the chief releases it, the chief lands only sets that span owners, and each
 **Try** waits for your merge, changes, or scrap choice. Its command center shows
-Needs you first and Work second, rendered from a checked snapshot of the program
-record: each outcome with its finish line, results to open, layers, provisional
+Needs you first and Work second, rendered from the program record's last
+commit: each outcome with its finish line, results to open, layers, provisional
 state, and what each decision blocks. Answers go back through chat. Existing
-trackers stay authoritative. A hosting guide can serve the page at a stable
-private URL through Show Me and Tailscale Serve. Open pages pick up each new
-snapshot on their own and keep your place; publishing one in the background
-needs explicitly requested host scheduling.
+trackers stay authoritative. The page is a private Claude artifact, so the chief
+runs in Claude and republishes it after each commit that changes it. On reload,
+the page restores your tab, open sections, selected decision, and scroll
+position; local browser tests cover this. In Claude's web viewer, an open page
+moved to a newly published version without a reload, kept its selected tab, and
+loaded its icons. The iPhone app is unchecked.
 
 [Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
 “Swarm these three possible causes and return evidence” partitions the question

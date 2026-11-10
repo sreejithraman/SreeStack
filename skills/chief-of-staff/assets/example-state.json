@@ -2,12 +2,64 @@
   "title": "Export reliability",
   "goal": "Make exports dependable and let people see and regenerate their export history.",
   "finishLine": "Each outcome has its own finish line. Land outcomes merge on the chief's release; Try outcomes wait for your choice.",
-  "updatedAt": "2026-11-02T17:00:00Z",
   "demo": true,
-  "needs": [
+  "chief": "Chief thread (example)",
+  "hosting": "https://claude.ai/artifact/ExampleCommandCenter",
+  "next": "Release W1's landing once PR 44 is ready.",
+  "request": {
+    "text": "Make exports dependable, then let people see and regenerate their export history.",
+    "sources": [
+      "EXP-100",
+      "EXP-101",
+      "EXP-102",
+      "EXP-103",
+      "Chat message 2026-11-01"
+    ]
+  },
+  "corrections": [
+    {
+      "date": "2026-11-01",
+      "source": "Chat message 2026-11-01",
+      "text": "Export history is a **Try**: show it before anything merges."
+    }
+  ],
+  "requirements": [
+    {
+      "date": "2026-11-01",
+      "source": "EXP-101",
+      "text": "A retried export never emails the same file twice."
+    }
+  ],
+  "approvals": [
+    {
+      "id": "SA-1",
+      "date": "2026-11-01",
+      "source": "Chat message 2026-11-01",
+      "text": "Pick the existing component when a new view could reuse one.",
+      "covers": "Component reuse for new views",
+      "picks": "The existing component"
+    }
+  ],
+  "directions": [
+    {
+      "date": "2026-11-01",
+      "source": "Chat message 2026-11-01",
+      "text": "Hold W6's landing until the support team reviews link expiry.",
+      "until": "Support confirms the expiry copy"
+    }
+  ],
+  "landingAuthority": {
+    "date": "2026-11-01",
+    "source": "Chat message 2026-11-01",
+    "text": "Land covers W0, W1, W2, and W6 in example/exports. Required checks and review stay the gate."
+  },
+  "decisions": [
     {
       "id": "W6-D1",
-      "ask": "Should expired export links remain visible?",
+      "question": "Should expired export links remain visible?",
+      "date": "2026-11-02",
+      "source": "Expiry owner report",
+      "status": "open",
       "context": [
         "Expiry needs a settled retention rule before it can be accepted.",
         "Existing tests cover downloads, but do not specify expired-link behavior."
@@ -29,12 +81,14 @@
           "id": "W6",
           "phase": "acceptance"
         }
-      ],
-      "status": "open"
+      ]
     },
     {
       "id": "W5-T",
-      "ask": "Keep, change, or scrap the export history view?",
+      "question": "Keep, change, or scrap the export history view?",
+      "date": "2026-11-02T16:40:00Z",
+      "source": "History owner's Shown report",
+      "status": "open",
       "context": [
         "Built, proved, and shown. Nothing else depends on it."
       ],
@@ -63,12 +117,14 @@
           "label": "Open the preview",
           "url": "https://example.com/previews/export-history"
         }
-      ],
-      "status": "open"
+      ]
     },
     {
       "id": "W1-D2",
-      "ask": "How many retries should an interrupted export get?",
+      "question": "How many retries should an interrupted export get?",
+      "date": "2026-11-02",
+      "source": "Retry owner report",
+      "status": "open",
       "weight": "quick",
       "context": [
         "Other worker jobs use three attempts."
@@ -83,12 +139,14 @@
           "label": "Five attempts",
           "effect": "Rides out longer outages but reports failures later."
         }
-      ],
-      "status": "open"
+      ]
     },
     {
       "id": "W3-D1",
-      "ask": "When should the simulator fixture reset?",
+      "question": "When should the simulator fixture reset?",
+      "date": "2026-11-02",
+      "source": "Support worker report",
+      "status": "open",
       "weight": "quick",
       "options": [
         {
@@ -100,12 +158,14 @@
           "recommended": true,
           "effect": "Adds about a minute and stops state leaking."
         }
-      ],
-      "status": "open"
+      ]
     },
     {
       "id": "W5-D2",
-      "ask": "Which component should render export history?",
+      "question": "Which component should render export history?",
+      "date": "2026-11-02",
+      "source": "History owner report",
+      "status": "resolved",
       "context": [
         "The history view needs a sortable list."
       ],
@@ -115,13 +175,15 @@
           "phase": "acceptance"
         }
       ],
-      "status": "resolved",
       "answer": "Use the shared data table.",
       "basis": "Project rule: history views reuse the shared data table. Swapping it later needs no data change."
     },
     {
       "id": "W0-D1",
-      "ask": "Should a retried export keep its original job ID?",
+      "question": "Should a retried export keep its original job ID?",
+      "date": "2026-11-01",
+      "source": "Idempotency owner report",
+      "status": "answered",
       "context": [
         "Keeping the ID lets users follow one export through retries."
       ],
@@ -131,8 +193,22 @@
           "phase": "landing"
         }
       ],
-      "status": "answered",
-      "answer": "Keep the original job ID."
+      "answer": "Keep the original job ID.",
+      "answerSource": "Chat message 2026-11-02"
+    },
+    {
+      "id": "W2-D1",
+      "question": "Paginate history by cursor or by page?",
+      "date": "2026-11-02",
+      "source": "API owner report",
+      "status": "withdrawn",
+      "blocks": [
+        {
+          "id": "W2",
+          "phase": "proof"
+        }
+      ],
+      "rationale": "The endpoint returns at most 50 rows, so it needs no pagination."
     }
   ],
   "work": [
@@ -142,16 +218,25 @@
       "repo": "example/exports",
       "kind": "outcome",
       "description": "Retry interrupted exports without creating duplicate jobs or losing cancellation requests.",
-      "finishLine": "land",
-      "state": "in-review",
-      "owner": "Retry owner",
-      "updatedAt": "2026-11-02T16:55:00Z",
+      "scope": "Covers `jobs/retry.py` and its queue wiring. Proof: an interrupted export resumes once. Leaves export history to W5.",
+      "sources": [
+        "Chat message 2026-11-01"
+      ],
       "tickets": [
         {
           "label": "EXP-101",
           "url": "https://example.com/tracker/EXP-101"
         }
       ],
+      "finishLine": "land",
+      "finishLineReason": "Land: a contained repair the user asked to ship.",
+      "state": "in-review",
+      "owner": {
+        "name": "Retry owner",
+        "start": "top-level",
+        "route": "`t3_thread_send` to the chief",
+        "workspace": "Worktree on `retry-export`"
+      },
       "layers": [
         {
           "id": "W1-L1",
@@ -176,7 +261,9 @@
           "label": "Retry fixture run",
           "url": "https://example.com/exports/actions/runs/7"
         }
-      ]
+      ],
+      "acceptance": "Retry proof passed at the current head; burst timing untested.",
+      "checkedAt": "2026-11-02T16:55:00Z"
     },
     {
       "id": "W2",
@@ -184,17 +271,19 @@
       "repo": "example/exports",
       "kind": "outcome",
       "description": "Let API clients see how many attempts an export has made and whether it will retry.",
-      "finishLine": "land",
-      "effectiveFinishLine": "try",
-      "state": "building",
-      "owner": "API owner",
-      "updatedAt": "2026-11-02T16:50:00Z",
       "tickets": [
         {
           "label": "EXP-103",
           "url": "https://example.com/tracker/EXP-103"
         }
       ],
+      "finishLine": "land",
+      "state": "building",
+      "owner": {
+        "name": "API owner",
+        "start": "top-level",
+        "route": "`t3_thread_send` to the chief"
+      },
       "provisional": {
         "basis": "W1-L2, the Retry owner's unmerged cancellation layer.",
         "clears": "W1 lands and this outcome's proof is refreshed on the new base.",
@@ -209,7 +298,8 @@
           "status": "local",
           "stackedOn": "W1-L2"
         }
-      ]
+      ],
+      "checkedAt": "2026-11-02T16:50:00Z"
     },
     {
       "id": "W5",
@@ -217,14 +307,27 @@
       "repo": "example/exports",
       "kind": "outcome",
       "description": "Add an export history view with download and regeneration controls.",
-      "finishLine": "try",
-      "state": "shown",
-      "owner": "History owner",
-      "updatedAt": "2026-11-02T16:40:00Z",
       "tickets": [
         {
           "label": "EXP-102",
           "url": "https://example.com/tracker/EXP-102"
+        }
+      ],
+      "finishLine": "try",
+      "state": "shown",
+      "owner": {
+        "name": "History owner",
+        "start": "top-level",
+        "route": "`t3_thread_send` to the chief",
+        "resources": "History preview server on port 8105; stop with `kill` on its recorded PID."
+      },
+      "layers": [
+        {
+          "id": "W5-L1",
+          "branch": "export-history",
+          "status": "local",
+          "head": "c03e5d8",
+          "base": "main"
         }
       ],
       "results": [
@@ -238,15 +341,7 @@
           "url": "https://example.com/previews/export-history/compare"
         }
       ],
-      "layers": [
-        {
-          "id": "W5-L1",
-          "branch": "export-history",
-          "status": "local",
-          "head": "c03e5d8",
-          "base": "main"
-        }
-      ]
+      "checkedAt": "2026-11-02T16:40:00Z"
     },
     {
       "id": "W6",
@@ -255,10 +350,12 @@
       "kind": "outcome",
       "description": "Expire download links after seven days and offer regeneration.",
       "finishLine": "land",
-      "effectiveFinishLine": "try",
       "state": "building",
-      "owner": "Expiry owner",
-      "updatedAt": "2026-11-02T16:52:00Z",
+      "owner": {
+        "name": "Expiry owner",
+        "start": "top-level",
+        "route": "`t3_thread_send` to the chief"
+      },
       "provisional": {
         "basis": "W6-D1's recommended option: expired entries stay visible.",
         "clears": "W6-D1 is answered and the affected proof is refreshed."
@@ -269,7 +366,8 @@
           "branch": "export-expiry",
           "status": "local"
         }
-      ]
+      ],
+      "checkedAt": "2026-11-02T16:52:00Z"
     },
     {
       "id": "W3",
@@ -278,8 +376,12 @@
       "kind": "support",
       "description": "Restore the shared simulator fixture so export UI checks can run reliably.",
       "state": "building",
-      "owner": "Support worker",
-      "updatedAt": "2026-11-02T16:58:00Z"
+      "owner": {
+        "name": "Support worker",
+        "start": "delegated",
+        "route": "End its turn with the report"
+      },
+      "checkedAt": "2026-11-02T16:58:00Z"
     },
     {
       "id": "W4",
@@ -291,7 +393,7 @@
       "state": "planned",
       "required": false,
       "origin": "Found while building W1; separate from retry correctness.",
-      "updatedAt": "2026-11-02T16:45:00Z"
+      "checkedAt": "2026-11-02T16:45:00Z"
     },
     {
       "id": "W0",
@@ -299,16 +401,19 @@
       "repo": "example/exports",
       "kind": "outcome",
       "description": "Give each export a stable key so a retry cannot start a second job.",
-      "finishLine": "land",
-      "state": "landed",
-      "owner": "Idempotency owner",
-      "updatedAt": "2026-11-02T15:30:00Z",
       "tickets": [
         {
           "label": "EXP-100",
           "url": "https://example.com/tracker/EXP-100"
         }
       ],
+      "finishLine": "land",
+      "state": "landed",
+      "owner": {
+        "name": "Idempotency owner",
+        "start": "adopted",
+        "route": "`t3_thread_send` to the chief"
+      },
       "layers": [
         {
           "id": "W0-L1",
@@ -317,13 +422,14 @@
           "url": "https://example.com/exports/pull/39"
         }
       ],
-      "origin": "Split from W1 so retries could land on a stable job identity.",
       "evidence": [
         {
           "label": "Duplicate-job fixture run",
           "url": "https://example.com/exports/actions/runs/5"
         }
-      ]
+      ],
+      "origin": "Split from W1 so retries could land on a stable job identity.",
+      "checkedAt": "2026-11-02T15:30:00Z"
     }
   ],
   "revisits": [
@@ -340,6 +446,42 @@
       "tradeoff": "Reusing the original job ID keeps one export easy to follow but merges each attempt's logs.",
       "revisit": "If support needs per-attempt logs, add an attempt number.",
       "source": "W0-D1"
+    }
+  ],
+  "discoveries": [
+    {
+      "date": "2026-11-02",
+      "origin": "W2",
+      "text": "Export filenames repeat across time zones.",
+      "route": "Saved as snip EX-7"
+    }
+  ],
+  "landings": [
+    {
+      "id": "L1",
+      "date": "2026-11-02",
+      "chief": "Chief thread (example)",
+      "lander": "Idempotency owner",
+      "target": "main",
+      "work": [
+        "W0"
+      ],
+      "prs": [
+        {
+          "url": "https://example.com/exports/pull/39",
+          "head": "4f2a91c",
+          "base": "9be03d1"
+        }
+      ],
+      "state": "landed"
+    }
+  ],
+  "waits": [
+    {
+      "date": "2026-11-02T16:50:00Z",
+      "work": "W1",
+      "on": "PR 44 checks",
+      "event": "Required checks finish"
     }
   ]
 }

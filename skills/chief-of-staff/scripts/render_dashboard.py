@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a checked program snapshot as a command center."""
+"""Check a program state file and render its command center."""
 
 import argparse
 from datetime import datetime
@@ -8,6 +8,8 @@ from html import escape
 import json
 from pathlib import Path
 import re
+import shlex
+import subprocess
 from urllib.parse import urlsplit
 
 
@@ -28,6 +30,23 @@ LAYER_STATES = {
 }
 PHASES = ("start", "access", "proof", "acceptance", "landing")
 HALTING = {"start", "access", "proof"}  # The others let building continue.
+DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
+ENTRY = ("date", "source", "text")
+START_MODES = ("top-level", "delegated", "adopted")
+LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
+DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
+HISTORY = {"date", "source", "answerSource", "rationale"}  # Decision fields the page never shows.
+PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "corrections",
+                "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
+                "discoveries", "landings", "waits")
+DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanwhile", "recommendation", "options",
+                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale")
+WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
+             "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
+             "blocked", "unknownReason", "checkedAt", "required", "origin")
+OWNER_KEYS = ("name", "session", "start", "route", "tasks", "workspace", "resources", "handled")
+LAYER_KEYS = ("id", "branch", "status", "url", "head", "base", "stackedOn")
+TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
 
@@ -45,6 +64,17 @@ def timestamp(value, path):
         datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         raise ValueError(f"{path} must be an ISO timestamp with a timezone, such as 2026-11-02T17:00:00Z") from None
+
+
+def date(value, path):
+    if isinstance(value, str) and DAY.fullmatch(value):
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"{path} must be a date, such as 2026-11-02") from None
+    else:
+        timestamp(value, path)
+    return value
 
 
 def url(value, path):
@@ -74,8 +104,34 @@ def strings(value, path):
 
 def links(value, path):
     for index, item in enumerate(records(value, path)):
+        known_keys(item, f"{path}[{index}]", ("label", "url"))
         text(item.get("label"), f"{path}[{index}].label")
         url(item.get("url"), f"{path}[{index}].url")
+
+
+def obj(value, path):
+    if not isinstance(value, dict):
+        raise ValueError(f"{path} must be an object")
+    return value
+
+
+def known_keys(row, path, keys):
+    for key in row:
+        if key not in keys:
+            raise ValueError(f"{path}.{key} is not a known field" if path else f"{key} is not a known field")
+    return row
+
+
+def fields(row, path, required=(), optional=()):
+    for key in (*required, *(key for key in optional if key in row)):
+        (date if key == "date" else text)(row.get(key), f"{path}.{key}" if path else key)
+    return row
+
+
+def unique_ids(rows, path):
+    ids = [text(row.get("id"), f"{path}[{index}].id") for index, row in enumerate(rows)]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"{path} contains duplicate IDs")
 
 
 def one_of(value, choices, path):
@@ -86,17 +142,23 @@ def one_of(value, choices, path):
 
 
 def effective_finish(row):
-    return row.get("effectiveFinishLine", row.get("finishLine"))
+    """Provisional work never merges, so its Land becomes Try."""
+    return "try" if "provisional" in row and row.get("finishLine") == "land" else row.get("finishLine")
+
+
+def owner_name(row):
+    return row.get("owner", {}).get("name")
 
 
 def owned_by_another(row, other):
-    return not (row.get("owner") and row.get("owner") == other.get("owner"))
+    return not (owner_name(row) and owner_name(row) == owner_name(other))
 
 
 def validate_layers(row, path, layers):
     for index, layer in enumerate(records(row.get("layers", []), f"{path}.layers")):
         identity = text(layer.get("id"), f"{path}.layers[{index}].id")
         where = f"{path}.layers[{identity}]"
+        known_keys(layer, where, LAYER_KEYS)
         if identity in layers:
             raise ValueError(f"layer {identity} appears more than once; layer IDs are unique across the program")
         layers[identity] = (layer, row)
@@ -113,38 +175,47 @@ def validate_layers(row, path, layers):
             raise ValueError(f"{where}: provisional work never merges; clear the condition before recording a merge")
 
 
+def validate_owner(owner, path):
+    known_keys(obj(owner, path), path, OWNER_KEYS)
+    fields(owner, path, ("name", "route"), ("workspace", "resources"))
+    one_of(owner.get("start"), START_MODES, f"{path}.start")
+    if "session" in owner:
+        url(owner["session"], f"{path}.session")
+    for key in ("tasks", "handled"):
+        strings(owner.get(key, []), f"{path}.{key}")
+
+
 def validate_work(row, layers):
     path = f"work[{row['id']}]"
+    known_keys(row, path, WORK_KEYS)
     for key in ("title", "repo"):
         text(row.get(key), f"{path}.{key}")
     state = one_of(row.get("state"), STATES, f"{path}.state")
     kind = one_of(row.get("kind"), ("outcome", "follow-up", "support"), f"{path}.kind")
-    timestamp(row.get("updatedAt"), f"{path}.updatedAt")
-    for key in ("description", "owner", "blocked", "origin", "unknownReason"):
-        if key in row:
-            text(row[key], f"{path}.{key}")
-    for key in ("url", "stackedOn"):
-        if key in row:
-            raise ValueError(f"{path}.{key}: record each PR and its stack parent on the outcome's layers")
+    timestamp(row.get("checkedAt"), f"{path}.checkedAt")
+    fields(row, path, (), ("description", "scope", "finishLineReason", "acceptance", "blocked", "origin", "unknownReason"))
+    strings(row.get("sources", []), f"{path}.sources")
+    if "owner" in row:
+        validate_owner(row["owner"], f"{path}.owner")
     if "unknownReason" in row and state != "unknown":
         raise ValueError(f"{path}.unknownReason applies only to unknown state")
-    if "sessionUrl" in row:
-        url(row["sessionUrl"], f"{path}.sessionUrl")
     for key in ("tickets", "evidence"):
         links(row.get(key, []), f"{path}.{key}")
     for index, result in enumerate(records(row.get("results", []), f"{path}.results")):
-        links([result], f"{path}.results[{index}]")
+        known_keys(result, f"{path}.results[{index}]", ("label", "url", "access"))
+        text(result.get("label"), f"{path}.results[{index}].label")
+        url(result.get("url"), f"{path}.results[{index}].url")
         if "access" in result:
             text(result["access"], f"{path}.results[{index}].access")
     if "required" in row and not isinstance(row["required"], bool):
         raise ValueError(f"{path}.required must be a boolean")
     if state in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
-        raise ValueError(f"{path}: terminal work cannot retain active blockers; keep history in the program record")
+        raise ValueError(f"{path}: terminal work cannot retain active blockers; keep their history in decisions or discoveries")
     if state in ACTIVE and "owner" not in row:
         raise ValueError(f"{path}: {state} work needs its owner")
 
     if kind == "support":
-        for key in ("finishLine", "effectiveFinishLine", "layers", "provisional"):
+        for key in ("finishLine", "layers", "provisional"):
             if key in row:
                 raise ValueError(f"{path}.{key}: support work has no finish line or layers; give a repository change its own outcome")
         if state not in {"planned", "building", "done", "scrapped", "unknown"}:
@@ -154,17 +225,10 @@ def validate_work(row, layers):
     if state == "done":
         raise ValueError(f"{path}: an outcome ends landed, at its shown Try, or at its PR state, not done")
     if "provisional" in row:
-        provisional = row["provisional"]
-        if not isinstance(provisional, dict):
-            raise ValueError(f"{path}.provisional must be an object")
+        provisional = known_keys(obj(row["provisional"], f"{path}.provisional"), f"{path}.provisional", ("basis", "clears", "on"))
         for key in ("basis", "clears"):
             text(provisional.get(key), f"{path}.provisional.{key}")
         strings(provisional.get("on", []), f"{path}.provisional.on")
-        if finish == "land" and row.get("effectiveFinishLine") != "try":
-            raise ValueError(f"{path}: provisional work never merges; set effectiveFinishLine to try")
-    if "effectiveFinishLine" in row and not (
-            "provisional" in row and finish == "land" and row["effectiveFinishLine"] == "try"):
-        raise ValueError(f"{path}.effectiveFinishLine is only Try, for provisional work whose finish line is Land")
     validate_layers(row, path, layers)
     effective = effective_finish(row)
     published = [layer for layer in row.get("layers", []) if "url" in layer]
@@ -185,10 +249,10 @@ def validate_work(row, layers):
         raise ValueError(f"{path}: landed needs a Land finish line and every layer merged")
 
 
-def halted_by_need(needs):
-    """IDs of work an open Need holds at a phase that stops its work."""
-    return {entry["id"] for need in needs if need["status"] == "open"
-            for entry in need.get("blocks", []) if entry["phase"] in HALTING}
+def held(decisions):
+    """IDs of work an open decision holds at a phase that stops its work."""
+    return {entry["id"] for decision in decisions if decision["status"] == "open"
+            for entry in decision.get("blocks", []) if entry["phase"] in HALTING}
 
 
 LIVE_LAYERS = {"local", "draft", "open", "ready"}
@@ -223,16 +287,22 @@ def validate_edges(work, by_id, layers, halted):
         for identity in row.get("provisional", {}).get("on", []):
             if identity == row["id"] or identity not in by_id:
                 raise ValueError(f"{path}.provisional.on must name other work; a decision names what it blocks")
+    branches = {}
     for identity, (layer, row) in layers.items():
+        branches.setdefault((row["repo"], layer["branch"]), []).append(identity)
+    for identity, (layer, row) in layers.items():
+        where = f"work[{row['id']}].layers[{identity}].stackedOn"
+        if "stackedOn" in layer and (layer["stackedOn"] == identity or layer["stackedOn"] not in layers):
+            raise ValueError(f"{where} must name another layer")
+        below = [other for other in branches.get((row["repo"], layer.get("base")), []) if other != identity]
+        if layer["status"] in LIVE_LAYERS and below and layer.get("stackedOn") not in below:
+            raise ValueError(f"work[{row['id']}].layers[{identity}].base is {below[0]}'s branch; name {below[0]} in stackedOn")
         if "stackedOn" not in layer:
             continue
-        where = f"work[{row['id']}].layers[{identity}].stackedOn"
-        if layer["stackedOn"] == identity or layer["stackedOn"] not in layers:
-            raise ValueError(f"{where} must name another layer")
         parent, parent_row = layers[layer["stackedOn"]]
         if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
                 and row["id"] not in halted):
-            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its Need")
+            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its decision")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
@@ -241,7 +311,7 @@ def validate_edges(work, by_id, layers, halted):
         for identity in bases(row, layers):
             reason = dead_base(by_id[identity])
             if reason and row["id"] not in halted:
-                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase Need or record its new base")
+                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase decision or record its new base")
 
     def depends_on(row):
         found = list(row.get("blockedBy", []))
@@ -271,24 +341,26 @@ def check_cycles(graph, name):
         visit(identity)
 
 
-def validate_need(row, by_id):
-    path = f"needs[{row['id']}]"
-    text(row.get("ask"), f"{path}.ask")
-    status = one_of(row.get("status"), ("open", "answered", "resolved"), f"{path}.status")
-    if status != "open":
+def validate_decision(row, by_id):
+    path = f"decisions[{row['id']}]"
+    known_keys(row, path, DECISION_KEYS)
+    fields(row, path, ("question", "date", "source"), ("recommendation", "meanwhile", "answer", "rationale"))
+    status = one_of(row.get("status"), DECISION_STATES, f"{path}.status")
+    if status in {"answered", "resolved"}:
         text(row.get("answer"), f"{path}.answer")
-    if status == "resolved":
-        text(row.get("basis"), f"{path}.basis")
-    elif "basis" in row:
-        raise ValueError(f"{path}.basis applies only to resolved decisions")
-    for key in ("recommendation", "answer", "meanwhile"):
-        if key in row:
-            text(row[key], f"{path}.{key}")
+    for key, owner in (("answerSource", "answered"), ("basis", "resolved")):
+        if status == owner:
+            text(row.get(key), f"{path}.{key}")
+        elif key in row:
+            raise ValueError(f"{path}.{key} applies only to {owner} decisions")
+    if status == "withdrawn":
+        text(row.get("rationale"), f"{path}.rationale")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
         raise ValueError(f"{path}.weight must be quick or judgment")
     strings(row.get("context", []), f"{path}.context")
     blocked = set()
     for index, entry in enumerate(records(row.get("blocks", []), f"{path}.blocks")):
+        known_keys(entry, f"{path}.blocks[{index}]", ("id", "phase"))
         identity = text(entry.get("id"), f"{path}.blocks[{index}].id")
         phase = one_of(entry.get("phase"), PHASES, f"{path}.blocks[{index}].phase")
         if identity not in by_id:
@@ -300,7 +372,8 @@ def validate_need(row, by_id):
             raise ValueError(f"{path}: an open decision cannot block terminal work")
         if status == "open" and phase == "start" and by_id[identity]["state"] != "planned":
             raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
-    for option in records(row.get("options", []), f"{path}.options"):
+    for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
+        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended"))
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
         if "recommended" in option and not isinstance(option["recommended"], bool):
@@ -315,35 +388,65 @@ def validate_need(row, by_id):
     links(row.get("links", []), f"{path}.links")
 
 
+def validate_landing(row, by_id):
+    path = f"landings[{row['id']}]"
+    known_keys(row, path, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
+    fields(row, path, ("date", "chief", "lander", "target"), ("keep", "note"))
+    one_of(row.get("state"), LANDING_STATES, f"{path}.state")
+    if not row.get("work") or not row.get("prs"):
+        raise ValueError(f"{path} needs its work and PRs")
+    for identity in strings(row["work"], f"{path}.work"):
+        known(identity, f"{path}.work", by_id)
+    for index, pr in enumerate(records(row["prs"], f"{path}.prs")):
+        known_keys(pr, f"{path}.prs[{index}]", ("url", "head", "base"))
+        url(pr.get("url"), f"{path}.prs[{index}].url")
+        fields(pr, f"{path}.prs[{index}]", ("head", "base"))
+
+
+def known(identity, path, by_id):
+    if identity not in by_id:
+        raise ValueError(f"{path} names missing work {identity}")
+
+
 def validate(state):
-    if not isinstance(state, dict):
-        raise ValueError("state must be an object")
-    for key in ("title", "goal"):
-        text(state.get(key), key)
-    timestamp(state.get("updatedAt"), "updatedAt")
-    if "finishLine" in state:
-        text(state["finishLine"], "finishLine")
+    known_keys(obj(state, "program"), "", PROGRAM_KEYS)
+    fields(state, "", ("title", "goal", "chief", "next"), ("finishLine",))
     if "demo" in state and not isinstance(state["demo"], bool):
         raise ValueError("demo must be a boolean")
+    if "hosting" in state:
+        url(state["hosting"], "hosting")
+    request = fields(known_keys(obj(state.get("request"), "request"), "request", ("text", "sources")), "request", ("text",))
+    strings(request.get("sources", []), "request.sources")
+    if "landingAuthority" in state:
+        fields(known_keys(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY), "landingAuthority", ENTRY)
+
     work = records(state.get("work"), "work")
-    needs = records(state.get("needs"), "needs")
-    revisits = records(state.get("revisits", []), "revisits")
-    for name, rows in (("work", work), ("needs", needs), ("revisits", revisits)):
-        ids = [text(row.get("id"), f"{name}[{i}].id") for i, row in enumerate(rows)]
-        if len(ids) != len(set(ids)):
-            raise ValueError(f"{name} contains duplicate IDs")
+    decisions = records(state.get("decisions"), "decisions")
+    for name in ("work", "decisions", "revisits", "approvals", "landings"):
+        unique_ids(records(state.get(name, []), name), name)
     by_id = {row["id"]: row for row in work}
     layers = {}
     for row in work:
         validate_work(row, layers)
-    for row in needs:
-        validate_need(row, by_id)
-    validate_edges(work, by_id, layers, halted_by_need(needs))
-    for row in revisits:
-        for key in ("title", "tradeoff", "revisit"):
-            text(row.get(key), f"revisits[{row['id']}].{key}")
-        if "source" in row:
-            text(row["source"], f"revisits[{row['id']}].source")
+    for row in decisions:
+        validate_decision(row, by_id)
+    validate_edges(work, by_id, layers, held(decisions))
+    for row in state.get("revisits", []):
+        known_keys(row, f"revisits[{row['id']}]", ("id", "title", "tradeoff", "revisit", "source"))
+        fields(row, f"revisits[{row['id']}]", ("title", "tradeoff", "revisit"), ("source",))
+    for name, required, optional in (
+        ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
+        ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
+        ("waits", ("date", "on", "event"), ("work",)),
+        ("discoveries", ("date", "origin", "text", "route"), ()),
+    ):
+        for index, row in enumerate(records(state.get(name, []), name)):
+            known_keys(row, f"{name}[{index}]", (*required, *optional))
+            fields(row, f"{name}[{index}]", required, optional)
+            if "work" in row:
+                known(row["work"], f"{name}[{index}].work", by_id)
+    for row in state.get("landings", []):
+        validate_landing(row, by_id)
     return state
 
 
@@ -354,7 +457,7 @@ ICONS = {
     "scrapped": "ban", "unknown": "circle-question-mark", "provisional": "git-branch",
     "blocked": "triangle-alert", "waits": "hourglass", "copy": "copy", "copied": "check",
     "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
-    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "snapshot": "clock", "tradeoff": "scale",
+    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "updated": "clock", "tradeoff": "scale",
     "result": "external-link",
 }
 
@@ -385,17 +488,24 @@ def hexed(identity):
     return identity.encode().hex()
 
 
-def when(value, age=False):
-    return f'<time datetime="{e(value)}"{" data-age" if age else ""}>{e(value)}</time>'
+def when(value):
+    return f'<time datetime="{e(value)}">{e(value)}</time>'
+
+
+UPDATED = re.compile(r'<time id="updated" datetime="[^"]*" data-age>[^<]*</time>')
+
+
+def updated_time(value):
+    return f'<time id="updated" datetime="{e(value)}" data-age>{e(value)}</time>'
 
 
 def quoted(value):
     return json.dumps(" ".join(value.split()), ensure_ascii=False)
 
 
-def revision(need):
+def revision(decision):
     """Digest of the decision content a copied choice answers."""
-    return digest(json.dumps(need, sort_keys=True))[:10]
+    return digest(json.dumps({key: value for key, value in decision.items() if key not in HISTORY}, sort_keys=True))[:10]
 
 
 def display_stage(row):
@@ -415,7 +525,7 @@ def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", a
 def decision_prompt(row, state, action):
     return (
         f'Decision {json.dumps(row["id"], ensure_ascii=False)} (revision {revision(row)}) in {quoted(state["title"])}\n'
-        f'Question: {quoted(row["ask"])}\n'
+        f'Question: {quoted(row["question"])}\n'
         f'{action}'
     )
 
@@ -489,7 +599,7 @@ def tradeoff_label(row):
 
 def need_card(row, state, selected=False):
     classes = "card need" + (" quick" if row["status"] == "open" and row.get("weight") == "quick" else "") + (" selected" if selected else "")
-    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["ask"])}</h3>'
+    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["question"])}</h3>'
     if row.get("context"):
         content += '<ul class="context">' + "".join(f"<li>{e(item)}</li>" for item in row["context"]) + "</ul>"
     if row["status"] == "open" and row.get("meanwhile"):
@@ -527,7 +637,7 @@ def inbox_group(heading_id, title, tone, rows):
 
 def needs_view(state, judgment, quick, resolved, answered):
     """Decision cards in reading order, with the list that shows one card at a time in the dual-pane inbox."""
-    empty = '<p class="empty">Nothing needs you in this snapshot.</p>'
+    empty = '<p class="empty">Nothing needs you right now.</p>'
     revisits = state.get("revisits", [])
     open_needs = judgment + quick
     if not (open_needs or resolved or revisits or answered):
@@ -541,15 +651,15 @@ def needs_view(state, judgment, quick, resolved, answered):
     groups = ""
     for heading_id, title, rows in (("judgment-list", "Judgment calls", judgment), ("quick-list", "Quick picks", quick)):
         if rows:
-            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["ask"], selected=row is selected) for row in rows])
+            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["question"], selected=row is selected) for row in rows])
     if resolved:
-        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["ask"]) for row in resolved])
+        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in resolved])
         cards += collapsible("resolved-heading", "Chief decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>')
     if revisits:
         groups += inbox_group("revisits-list", "Worth a second look", "revisit", [inbox_row(card_id("tradeoff", row), row["id"], row["title"]) for row in revisits])
         cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>')
     if answered:
-        groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["ask"]) for row in answered])
+        groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in answered])
         cards += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{"".join(need_card(row, state) for row in answered)}</div>')
     return f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
 
@@ -558,7 +668,7 @@ class Program:
     """Lookups the work board needs across outcomes, layers, and decisions."""
 
     def __init__(self, state):
-        self.needs = state["needs"]
+        self.decisions = state["decisions"]
         self.by_id = {row["id"]: row for row in state["work"]}
         self.layers = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
 
@@ -572,10 +682,10 @@ class Program:
     def blockers(self, row):
         """(halts, kind, identity, text) for each open blocker; waits let building continue."""
         items = []
-        for need in self.needs:
-            entry = next((entry for entry in need.get("blocks", []) if entry["id"] == row["id"]), None)
-            if need["status"] == "open" and entry:
-                items.append((entry["phase"] in HALTING, f'Decision · blocks {entry["phase"]}', need["id"], need["ask"]))
+        for decision in self.decisions:
+            entry = next((entry for entry in decision.get("blocks", []) if entry["id"] == row["id"]), None)
+            if decision["status"] == "open" and entry:
+                items.append((entry["phase"] in HALTING, f'Decision · blocks {entry["phase"]}', decision["id"], decision["question"]))
         items += [(True, STATES[self.by_id[identity]["state"]], identity, self.by_id[identity]["title"]) for identity in row.get("blockedBy", [])]
         if row.get("blocked"):
             items.append((True, "Other", "", row["blocked"]))
@@ -612,8 +722,8 @@ def finish_line(row):
     if "finishLine" not in row:
         return ""
     value = FINISH_LINES[row["finishLine"]]
-    if "effectiveFinishLine" in row:
-        value += f' → {FINISH_LINES[row["effectiveFinishLine"]]} while provisional'
+    if effective_finish(row) != row["finishLine"]:
+        value += f' → {FINISH_LINES[effective_finish(row)]} while provisional'
     return f'<p class="finish">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(value)}</span></p>'
 
 
@@ -696,12 +806,10 @@ def work_card(row, program):
         content += link_list(row.get("evidence", []))
         content += "</div></details>"
     content += '<div class="work-footer"><div class="assignee">'
-    if row.get("owner"):
-        owner = link(row["owner"], row["sessionUrl"]) if row.get("sessionUrl") else e(row["owner"])
-        content += f'<p class="owner">{owner}</p>'
-    elif row.get("sessionUrl"):
-        content += f'<p class="owner">{link("Owner session", row["sessionUrl"])}</p>'
-    content += f'<p class="observation">Checked {when(row["updatedAt"])}</p></div>'
+    if "owner" in row:
+        owner = row["owner"]
+        content += f'<p class="owner">{link(owner["name"], owner["session"]) if "session" in owner else e(owner["name"])}</p>'
+    content += f'<p class="observation">Checked {when(row["checkedAt"])}</p></div>'
     return content + "</div></article>"
 
 
@@ -725,13 +833,15 @@ def overview(work):
     )
 
 
-def render(state):
+def render(state, updated=None):
+    """Validate the program and render its page, stamped with the time its content last changed."""
     validate(state)
-    open_needs = [row for row in state["needs"] if row["status"] == "open"]
+    decisions = state["decisions"]
+    open_needs = [row for row in decisions if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
     quick = [row for row in open_needs if row.get("weight") == "quick"]
-    resolved = [row for row in state["needs"] if row["status"] == "resolved"]
-    answered = [row for row in state["needs"] if row["status"] == "answered"]
+    resolved = [row for row in decisions if row["status"] == "resolved"]
+    answered = [row for row in decisions if row["status"] == "answered"]
     program = Program(state)
 
     needs_html = needs_view(state, judgment, quick, resolved, answered)
@@ -744,12 +854,13 @@ def render(state):
             alert = f'<span class="state blocked"><span class="sr-only">, </span>{icon("blocked")}{blocked} blocked</span>' if blocked else ""
             cards = "".join(work_card(row, program) for row in rows)
             stages += collapsible(f"stage-{key}", STATES[key], len(rows), f'<div class="section-body stage-cards">{cards}</div>', level=3, state=key, mark=icon(key), alert=alert)
-    work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded in this snapshot.</p>'
+    work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded yet.</p>'
 
     facts = ""
     if state.get("finishLine"):
         facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(state["finishLine"])}</span></p>'
-    facts += f'<p class="fact">{icon("snapshot")}<span><span class="fact-label">Snapshot</span> {when(state["updatedAt"], age=True)}</span></p>'
+    if updated:
+        facts += f'<p class="fact">{icon("updated")}<span><span class="fact-label">Updated</span> {updated_time(updated)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
     content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
@@ -761,36 +872,70 @@ def render(state):
         f'<section id="needs-panel" role="tabpanel" aria-labelledby="needs-tab" tabindex="0"><h2 class="sr-only">Needs you</h2>{needs_html}</section>'
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
-    template = (Path(__file__).resolve().parents[1] / "assets" / "command-center.html").read_text()
-    page = template.replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
-    return page.replace("<!--SNAPSHOT-->", digest(page)).replace("<!--TEMPLATE-->", digest(template))
+    return TEMPLATE.read_text().replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
+
+
+def git(state_file, *args):
+    result = subprocess.run(["git", "-C", str(state_file.parent), *args], capture_output=True, encoding="utf-8")
+    if result.returncode:
+        raise ValueError(result.stderr.strip() or f"git {args[0]} exited with status {result.returncode}")
+    return result.stdout
+
+
+def committed(state_file):
+    """The state file's program at HEAD of its git repository."""
+    return json.loads(git(state_file, "show", f"HEAD:./{state_file.name}"))
+
+
+def stage_page(state_file, page_file):
+    """Render HEAD to page_file's .next sibling; return whether it differs from page_file, ignoring the updated time.
+
+    The updated time is HEAD's commit time, or the staged page's when it already holds this content.
+    """
+    staged = page_file.with_name(f"{page_file.stem}.next{page_file.suffix}")
+    if state_file.resolve() in (page_file.resolve(), staged.resolve()):
+        raise ValueError(f"{page_file}: the page would overwrite the state file")
+    page = render(committed(state_file), git(state_file, "log", "-1", "--format=%cI").strip())
+
+    def holds(path):
+        return path.exists() and UPDATED.sub(lambda _: UPDATED.search(page)[0], path.read_text(), count=1) == page
+
+    if holds(page_file):
+        staged.unlink(missing_ok=True)
+        return False
+    if not holds(staged):
+        staged.write_text(page)
+    return True
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--output", type=Path)
-    action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's current revision")
+    action.add_argument("--check", action="store_true", help="Validate the working state file; write nothing")
+    action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's revision at HEAD")
+    action.add_argument("--page", type=Path, metavar="FILE",
+                        help="Render HEAD to FILE's .next sibling; print changed when it differs from FILE")
     args = parser.parse_args()
-    if args.revision is not None:
-        try:
-            state = validate(json.loads(args.state.read_text()))
-            print(revision(next(row for row in state["needs"] if row["id"] == args.revision)))
-        except StopIteration:
-            parser.error(f"no decision {args.revision}")
-        except (OSError, ValueError) as error:
-            parser.error(str(error))
-        return
-    if args.state.resolve() == args.output.resolve():
-        parser.error("--output must differ from --state")
     try:
-        result = render(json.loads(args.state.read_text()))
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(result)
+        if args.page:
+            print("changed" if stage_page(args.state, args.page) else "unchanged")
+        elif args.check:
+            text = args.state.read_text()
+            state = json.loads(text)
+            render(state)
+            if text != json.dumps(state, indent=2, ensure_ascii=False) + "\n":
+                path = shlex.quote(str(args.state))
+                raise ValueError(f"{args.state}: not one value per line; rewrite it with: "
+                                 f"python3 -m json.tool --indent 2 --no-ensure-ascii {path} > {path}.fmt && mv {path}.fmt {path}")
+            print(f"{args.state}: valid")
+        else:
+            state = validate(committed(args.state))
+            print(revision(next(row for row in state["decisions"] if row["id"] == args.revision)))
+    except StopIteration:
+        parser.error(f"no decision {args.revision}")
     except (OSError, ValueError) as error:
         parser.error(str(error))
-    print(args.output.resolve())
 
 
 if __name__ == "__main__":

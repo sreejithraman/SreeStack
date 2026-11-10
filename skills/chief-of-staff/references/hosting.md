@@ -1,37 +1,25 @@
-# Host the command center
+# Publish the command center
 
-The command center is hosted only: give the user a link to return to, not an
-inline render in the chat. The page is a read-only snapshot. The chief owns its data; hosting serves the
-file and adds no coordinator, database, or wakeups. A static file server is enough.
+The command center is one private Claude artifact per program, and `hosting`
+holds its link.
 
-1. Choose a task-owned directory that survives worktree cleanup. Keep the
-   program record, snapshot JSON, logs, and hosting details outside a dedicated
-   public folder, and publish only the rendered page there.
-2. Render each snapshot to a staging file. When it validates, move it over the
-   public `index.html` on the same filesystem, so the last valid page stays up
-   and no partial file is served.
-3. Use Show Me's [web sharing](../../show-me/references/web-sharing.md) to choose
-   hosting. For Tailscale, follow its procedure: a
-   loopback-only origin on an unused port, existing Serve mappings preserved,
-   verification, lifetime, and teardown. A small Python static file server is
-   enough when the project has no server to reuse; serve only the public folder.
-4. Return the actual HTTPS URL after checking its normal hostname and page
-   content, ideally from the user's phone or another tailnet client. A check
-   with an explicit IP or DNS override proves only that path; label the rest
-   unverified.
+After each commit under [write the record](program-state.md#write-the-record),
+render `HEAD` from this skill's folder:
 
-Record the URL, public path, origin process and start time, Serve mapping,
-exact stop commands, and access limits in the program record. The hosting
-machine must stay awake and connected, and viewers need tailnet access.
+```bash
+python3 scripts/render_dashboard.py --state /absolute/path/program.json --page /absolute/path/command-center.html
+```
 
-On each meaningful result or decision, replace the page at the same path.
-An open page fetches that URL every 20 seconds while visible and when the user
-returns to it, then shows a new snapshot in place with its tab, selection,
-sections, and scroll position kept. Each browser tab keeps that view for the
-URL, so a manual refresh returns to it too; a new tab starts at Needs you.
-Only the chief's next publish changes what any page shows, and answers still go
-through chat.
+It writes `command-center.next.html` beside the page file and prints `changed`
+when that differs from `command-center.html`, the last page you published. On
+`changed`, publish the `.next` file to the artifact in `hosting`, then move it
+over the page file:
 
-For teardown, follow the
-[web sharing](../../show-me/references/web-sharing.md#take-it-down)'s take-down
-rules. Keep the state and any page the chief still needs.
+```bash
+mv /absolute/path/command-center.next.html /absolute/path/command-center.html
+```
+
+A failed or skipped publish leaves the page file as it was, so the next render
+still prints `changed`. Create the artifact only when `hosting` has none, then
+record its link. On every resume and chief move, publish the page file even when
+unchanged, so skill updates reach it.

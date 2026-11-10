@@ -1,67 +1,187 @@
 # Program record and command center
 
 Specs, tickets, snips, PRs, and user decisions stay where the project already
-keeps them. The **program record** links those sources and adds coordination
-state. The **command center** is a rendered snapshot of that record, not a second
-tracker.
+keeps them. The **program record** is one file, `program.json`, that links those
+sources and holds the program's coordination state, organized by topic. The
+**command center** renders it; the renderer picks what the page shows. Each fact
+has one home in the file.
 
 ## Program record
 
-Reuse an established record, or choose a task-owned directory that the chief and
-its owners can read and that survives worktree cleanup. Put its absolute path in
-the chief's handoff and every owner kickoff. It needs no wiki or committed state
-file.
+Keep `program.json` and a `reports/` folder in a task-owned directory that the
+chief and its owners can read and that survives worktree cleanup. Adopt an
+existing program's folder rather than starting another. Put the folder's
+absolute path in the chief's handoff and every owner kickoff.
+
+The program folder is a git repository. Its last commit is the record: the
+command center and every reader use `HEAD`, and the log is its history. The
+working `program.json` is only the chief's edit buffer. A new program starts
+from a new `program.json`: run `git -C /absolute/path init`, then add and
+commit `program.json` once it passes the check.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
-current chief alone writes the rest of the record and the snapshot. Before each
-write, confirm the record still names this thread as chief; otherwise follow
-[chief move](chief-move.md).
+current chief alone writes `program.json`, after it
+[checks the chief](chief-move.md#check-the-chief).
 
-Keep, for the program:
+### Write the record
 
-- The goal, original request and message sources, accepted corrections,
-  preserved requirements, the agreed scope that Land's authority covers, and
-  holds with their source and release condition.
-- Standing approvals, accepted tradeoffs with what would prompt revisiting them,
-  and decision requests with their dispositions.
-- Discoveries with origin and destination, and support work with the owners it
-  affects.
-- The current chief thread, the snapshot state and HTML paths, hosting details,
-  and the next useful action.
+Record each owner report, answer, direction, and decision in one write, before
+you reply or move on:
 
-Keep, for each outcome under its stable ID:
+1. Look for an earlier uncommitted change:
 
-- **Sources:** the ticket, snip, PR, or message IDs it came from.
-- **Scope:** the result, the code it covers, its proof, and what it leaves to
-  other outcomes.
-- **Finish line:** the picked line (Land, Try, review-ready PR, or draft PR) and
-  why, and the effective line while it is provisional.
-- **Owner:** identity, thread or task IDs and links, start mode (top-level,
-  delegated, or adopted), return route, report path, model, and workspace. An
-  outcome can be planned without one.
-- **Inputs:** logical dependencies, branch-order constraints, and any blocks
-  with what is missing, who can supply it, and what it blocks.
-- **Provisional:** the branch, PR, or assumption it rests on, the decision or
-  landing that clears it, and what may continue meanwhile.
-- **Layers:** each PR, branch, or local artifact, with its link, head, base,
-  and stack parent.
-- **Results:** what the owner showed and how to open it, with what that needs.
-- **Waits:** pending PRs, live helpers and watchers, and the events they await.
-- **Landing:** the merge set, its one lander, target branch, pending submission
-  or queue state, and the landing release (issuing chief, lander, accepted
-  head/base per PR, resources dependents still need, active or withdrawn).
-- **Disposition:** acceptance evidence, the delivery state, and any stop for the
-  user.
+   ```bash
+   git -C /absolute/path status --porcelain -- program.json
+   ```
 
-Date decisions and cite their sources. Code claims name the repository and
-revision they describe. Keep superseded reasoning when it explains a tradeoff,
-and recheck current facts at their source before acting on them.
+   Any output means a failed commit or an outside edit. Show the user
+   `git -C /absolute/path diff HEAD -- program.json` and settle it with them
+   before you build on it. If they keep it, check and commit it; otherwise run
+   `git -C /absolute/path checkout HEAD -- program.json`.
+2. Edit `program.json` in place, changing only what the event changed. Never
+   regenerate the whole file; that silently drops history.
+3. Check it from this skill's folder, and fix every error it reports. When only
+   the layout is wrong, run the command it prints.
 
-Each decision request keeps its ID, originating owner and message, exact
-question, affected outcomes with the phase each one blocks, and disposition
-under Orchestration's [decision requests](../../orchestration/SKILL.md#return).
-[Decisions](decisions.md) say when a Need is answered, resolved, reopened, or
-withdrawn.
+   ```bash
+   python3 scripts/render_dashboard.py --state /absolute/path/program.json --check
+   ```
+
+4. Read `git -C /absolute/path diff -- program.json`. A removed or changed line
+   the event didn't call for is a mistake. Restore it and check again. Mark a
+   change to a history entry in place instead of deleting it.
+5. Commit with a message naming the event:
+
+   ```bash
+   git -C /absolute/path commit -m "R2 report: PR 12 open" program.json
+   ```
+
+6. [Publish the command center](hosting.md), except after a
+   [chief move](chief-move.md), where the new chief publishes.
+
+A write is done when its commit lands and its page is published. On a git or
+publish error, stop and report it to the user.
+
+### File format
+
+`program.json` is one JSON object. Fields without `?` are required, and
+`--check` rejects fields the sketch doesn't name. Times are ISO timestamps with
+a timezone, such as `2026-11-02T17:00:00Z`; dates are `YYYY-MM-DD` or
+timestamps. Prose is markdown. Omit absent optional fields rather than sending
+empty strings. IDs are unique within each collection, and layer IDs
+are unique across the program. The [example file](../assets/example-state.json)
+uses fictional work.
+
+```ts
+type Program = {
+  title: string; goal: string;
+  finishLine?: string; // a program-wide note, such as who decides merges
+  demo?: boolean; // true only for an illustrative example
+  chief: string; // the current chief thread
+  hosting?: string; // the command center artifact's link
+  next: string; // the next useful action
+  request: { text: string; sources?: string[] }; // the original request and its message sources
+  corrections?: Entry[]; // accepted corrections
+  requirements?: Entry[]; // preserved requirements
+  approvals?: (Entry & { id: string; covers: string; picks: string })[]; // standing approvals
+  directions?: (Entry & { until?: string })[]; // standing directions; until: what releases a hold
+  landingAuthority?: Entry; // the agreed scope Land covers, and its gates
+  decisions: Decision[];
+  work: Work[];
+  revisits?: Revisit[];
+  discoveries?: { date: string; origin: string; text: string; route: string }[];
+  landings?: Landing[];
+  waits?: { date: string; on: string; event: string; work?: string }[];
+};
+type Entry = { date: string; source: string; text: string };
+type Link = { label: string; url: string };
+type Phase = "start" | "access" | "proof" | "acceptance" | "landing";
+
+type Decision = {
+  id: string; question: string;
+  date: string; source: string; // when it arrived, and the report or message that raised it
+  status: "open" | "answered" | "resolved" | "withdrawn"; // resolved: the chief settled it
+  context?: string[];
+  meanwhile?: string; // what continues while it is open
+  recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
+  options?: { label: string; effect: string; recommended?: boolean }[]; // at most one recommended
+  weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
+  blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
+  links?: Link[];
+  answer?: string; // required when answered or resolved
+  answerSource?: string; // required when answered: the user's message that answered it
+  basis?: string; // required when resolved: what settled it and why it is reversible
+  rationale?: string; // dated reasoning the page omits, such as why it reopened; when withdrawn, why and any replacement
+};
+
+type Work = {
+  id: string; title: string; repo: string;
+  kind: "outcome" | "follow-up" | "support";
+  state: "planned" | "building" | "shown" | "in-review" | "ready"
+    | "landed" | "done" | "scrapped" | "unknown";
+  description?: string; // the result it delivers, in one or two sentences
+  scope?: string; // the code it covers, its proof, and what it leaves to other outcomes
+  sources?: string[]; // snip and message sources
+  tickets?: Link[];
+  finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // required unless support
+  finishLineReason?: string;
+  owner?: Owner; // required while building, shown, in review, or ready
+  provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
+  layers?: Layer[]; // bottom first; not on support
+  results?: (Link & { access?: string })[]; // what the owner showed, and what opening it needs
+  evidence?: Link[]; // acceptance evidence
+  acceptance?: string; // blocked or untested assertions in its proof
+  blockedBy?: string[]; // logical inputs not yet satisfied
+  blocked?: string; // another active blocker, with what is missing and who can supply it
+  unknownReason?: string; // why the state could not be read; unknown rows only
+  checkedAt: string; // when its state was last observed
+  required?: boolean; // false marks proposed work outside committed scope
+  origin?: string; // the outcome or discovery it came from
+};
+type Owner = {
+  name: string; session?: string; // session: the owner's thread link
+  start: "top-level" | "delegated" | "adopted"; route: string;
+  tasks?: string[]; workspace?: string;
+  resources?: string; // servers, ports, and databases, with their stop actions
+  handled?: string[]; // follow-up messages already handled
+};
+type Layer = {
+  id: string; branch: string;
+  status: "local" | "draft" | "open" | "ready" | "merged" | "closed"; // closed: without merge
+  url?: string; // the PR; required unless local
+  head?: string; base?: string;
+  stackedOn?: string; // the layer below, in this or another outcome
+};
+type Revisit = { // an accepted tradeoff
+  id: string; title: string; tradeoff: string; revisit: string;
+  source?: string; // decision ID or source reference
+};
+type Landing = {
+  id: string; date: string; chief: string; lander: string; target: string;
+  work: string[]; prs: { url: string; head: string; base: string }[]; // accepted head and base per PR
+  state: "released" | "submitted" | "landed" | "withdrawn";
+  keep?: string; // resources dependents still need
+  note?: string; // such as the queue state, or why it was withdrawn
+};
+```
+
+Each decision request is a **Need**: one `decisions` entry from arrival to
+answer, kept after it settles so it stays reopenable. Some facts have a less
+obvious home:
+
+| Fact | Home |
+| --- | --- |
+| A stop for the user, including a Try choice | An open Need |
+| A chief call on the plan with no question for the user | A `resolved` decision |
+| A discovery that became work | That row's `origin` and `description` |
+| Support work, and the outcomes it unblocks | A `support` row, named in their `blockedBy` or `blocked` |
+| Branch order | Each layer's `stackedOn`, apart from `blockedBy` |
+| What provisional work continues meanwhile | `provisional`, or the Need's `meanwhile` |
+
+Date entries and cite their sources. Code claims name the repository and
+revision they describe. Recheck current facts at their source before acting on
+them. [Decisions](decisions.md) say when a Need is answered, resolved, reopened,
+or withdrawn.
 
 ### Owner reports
 
@@ -70,24 +190,23 @@ fields; ask no other format. Record, from each:
 
 | Report field | Record it under |
 | --- | --- |
-| Outcome and finish line | The outcome's finish line and delivery state |
-| Layers | Layers, after checking each head and base at the forge |
-| Proof | Acceptance evidence, with every blocked or untested assertion kept visible |
-| Shown | Results, with access limits, servers, and stop actions |
-| Waits | Waits, and which pending PRs this thread watches |
-| Decisions | Needs, with the phase each blocks, and provisional assumptions |
-| Follow-ups | Discoveries, each with its disposition |
-| Sources | Handled follow-up messages, so none is answered twice |
+| Outcome and finish line | `finishLine` and `state` |
+| Layers | `layers`, after checking each head and base at the forge |
+| Proof | `evidence`, and every blocked or untested assertion in `acceptance` |
+| Shown | `results` with access limits; servers and stop actions in `owner.resources` |
+| Waits | `waits`, with the work each one holds |
+| Decisions | `decisions` with the phase each blocks, and `provisional` assumptions |
+| Follow-ups | A work row or `discoveries`, each with its disposition |
+| Sources | `owner.handled`, so no message is answered twice |
 
-Also record task IDs an owner returns when it resumes.
+Also record task IDs an owner returns when it resumes in `owner.tasks`.
 
 ## Command center
 
-Before each refresh, read the relevant owner reports, user direction, tickets,
-and live forge state. Each work row carries the time its state was last
-observed, separate from the snapshot's assembly time. Keep an unchecked row's
-old observation time; use `unknown` with `unknownReason` when its state cannot be
-read.
+Before each write, read the relevant owner reports, user direction, tickets,
+and live forge state. Set a row's `checkedAt` when you observe its state. Keep an
+unchecked row's old time; use `unknown` with `unknownReason` when its state
+cannot be read.
 
 A row is an outcome, a follow-up (an outcome that came from another one, with
 its own finish line), or a support task. Count an outcome once whatever its
@@ -103,7 +222,7 @@ layers. Outcome states:
   stays `in-review` with its Provisional badge. Shown under In review with a
   readiness badge.
 - `landed`: every layer confirmed merged. `scrapped`: the user scrapped it, or it
-  was declined or made obsolete; the record says which.
+  was declined or made obsolete.
 - `done`: completed support work. An outcome never uses `done`.
 
 `blockedBy` lists logical inputs not yet satisfied under the
@@ -118,10 +237,12 @@ A base is the outcome that work rests on through `provisional.on` or a live
 layer's `stackedOn`. A base is **dead** when it was scrapped, or when it has not
 landed and every one of its layers is closed; one closed layer beside a live or
 merged one does not count. Active work on a dead base, whether provisional or
-the same owner's stack, needs an open Need, such as its scrap-or-rebase choice,
-that halts it at `start`, `access`, or `proof`. The card shows the base once, as
-a Scrapped base or Closed base blocker. A live layer stacked on a closed layer of
-a base that is still alive needs the same Need, or a restack.
+the same owner's stack, needs an open Need that halts it at `start`, `access`,
+or `proof`, such as its scrap-or-rebase choice. Its answer moves the work off the
+dead base in the same commit, under [Base scrapped](dependencies.md#provisional-work).
+The card shows the base once, as a Scrapped base or Closed base blocker. A live
+layer stacked on a closed layer of a base that is still alive needs the same
+Need, or a restack.
 Before marking a row terminal, clear its active blockers and open Needs; history
 stays in the record. Unresolved work stays visible even after its owner failed
 or its PR was abandoned.
@@ -131,89 +252,13 @@ waits at: `start`, `access`, `proof`, `acceptance`, or `landing`. The first thre
 halt that outcome's work. `acceptance` and `landing` let building and proof
 continue, so a shown Try waiting for its choice or a provisional build carries
 an open Need without being blocked. Put what continues meanwhile in
-`meanwhile`.
+`meanwhile`. If work lands while a Need about it is open, keep the landed row and
+point the Need's `blocks` at a follow-up row for any change the answer requires.
 
-Every snapshot carries all open and resolved Needs, so each resolved one stays
-reopenable; answered ones may remain. Omit a withdrawn or superseded Need only
-after recording its disposition. If work lands while a Need about it is open,
-keep the landed row and point the Need's `blocks` at a follow-up row for any
-change the answer requires.
-
-### Snapshot format
-
-The renderer reads one JSON object. Fields without `?` are required. Times are
-ISO timestamps with a timezone, such as `2026-11-02T17:00:00Z`. Omit absent
-optional fields rather than sending empty strings. IDs are unique within each
-collection, and layer IDs are unique across the program.
-
-```ts
-type Link = { label: string; url: string };
-type Snapshot = {
-  title: string;
-  goal: string;
-  finishLine?: string; // a program-wide note, such as who decides merges
-  updatedAt: string; // snapshot assembly time
-  demo?: boolean;   // true only for an illustrative example
-  needs: Need[];
-  work: Work[];
-  revisits?: Revisit[];
-};
-type Phase = "start" | "access" | "proof" | "acceptance" | "landing";
-type Need = {
-  id: string; ask: string;
-  context?: string[];
-  meanwhile?: string; // what continues while it is open
-  recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
-  options?: { label: string; effect: string; recommended?: boolean }[]; // at most one recommended
-  weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
-  blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
-  links?: Link[];
-  status: "open" | "answered" | "resolved"; // resolved: the chief settled it
-  answer?: string; // required unless open
-  basis?: string; // required when resolved: what settled it and why it is reversible
-};
-type Work = {
-  id: string; title: string; repo: string;
-  description?: string; // one or two sentences of scope
-  kind: "outcome" | "follow-up" | "support";
-  state: "planned" | "building" | "shown" | "in-review" | "ready"
-    | "landed" | "done" | "scrapped" | "unknown";
-  finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // required unless support
-  effectiveFinishLine?: "try"; // required when provisional work's finish line is land; it keeps any PR it already has
-  owner?: string; sessionUrl?: string; // owner required while building, shown, in review, or ready
-  provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
-  layers?: Layer[]; // bottom first; not on support
-  results?: (Link & { access?: string })[]; // what the owner showed, and what opening it needs
-  tickets?: Link[];
-  blockedBy?: string[];
-  blocked?: string; // another active blocker, such as an external dependency
-  unknownReason?: string; // why the state could not be read; unknown rows only
-  updatedAt: string; // last observation supporting this row
-  evidence?: Link[];
-  required?: boolean; // false marks proposed work outside committed scope
-  origin?: string;
-};
-type Layer = {
-  id: string; branch: string;
-  status: "local" | "draft" | "open" | "ready" | "merged" | "closed"; // closed: without merge
-  url?: string; // the PR; required unless local
-  head?: string; base?: string;
-  stackedOn?: string; // the layer below, in this or another outcome
-};
-type Revisit = {
-  id: string; title: string; tradeoff: string; revisit: string;
-  source?: string; // decision ID or source reference
-};
-```
-
-The renderer rejects a snapshot that claims more than the record supports:
-provisional work that merged, keeps Land, or claims ready on any finish line; a
-Try finish line with a published PR; a shown Try with nothing to open; a ready
-outcome with a layer short of its finish line; a landed outcome with an unmerged
-layer; active work with no owner; a layer on another owner's unmerged layer
-without a provisional mark; active work on a dead base, or a live layer on a
-closed one, without a halting Need; a `start` Need on work that started; and
-dangling or cyclic edges, including work blocked by itself.
+The page shows open, answered, and resolved Needs, work, and tradeoffs, and
+leaves out withdrawn Needs, decision history, owner plumbing, and program facts
+other than the title, goal, and finish line. Its Updated time is the commit that
+last changed it.
 
 Write each `description` from the outcome's scope, not its title or the owner's
 next step. Store returned T3 thread links verbatim and use only real ticket, PR,
@@ -221,24 +266,13 @@ result, and artifact links.
 
 ### Render and show
 
-From this skill's folder, with Python 3 and no third-party packages:
-
-```bash
-python3 scripts/render_dashboard.py --state /absolute/path/program.json --output /absolute/path/command-center.html
-```
-
-The renderer validates the snapshot, escapes content, and writes standalone
-HTML stamped with a digest of the page, which open pages compare to spot a new
-publication. It makes no tracker, forge, or session changes. The
-[example snapshot](../assets/example-state.json) uses fictional work.
+The scripts need Python 3 and no third-party packages. They make no tracker,
+forge, or session changes.
 
 Each copied choice or reopen request names its decision's revision, a digest of
-the whole Need. Two or more open quick picks add a batch prompt that takes every
-recommendation. Print a Need's current revision with:
+what the page shows for that Need. Two or more open quick picks add a batch
+prompt that takes every recommendation. Print a Need's revision at `HEAD` with:
 
 ```bash
 python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>
 ```
-
-Deliver the page through [dashboard hosting](hosting.md). Do not render it
-inline in T3 or another chat surface.
