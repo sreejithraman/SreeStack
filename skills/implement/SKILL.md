@@ -195,17 +195,21 @@ and lets its parent watch; it doesn't claim completion.
 work without asking. Nobody grows a PR's scope or asks the user to: not you, a
 chief, or a review pass. Fix defects and real-use edge cases in the requested
 change in place, including bugs in its own earlier repairs; an edge case that
-can't happen in real use needs no fix. A finding that would add a guarantee
-beyond the request, or that concerns code the base already had, becomes a
-follow-up, even when it is labeled security or correctness, unless the requested
-change is unsafe to land without it.
+can't happen in real use needs no fix. The requested change is the code that
+delivers the request, not code added for a new guarantee or under the exception
+below. A finding about anything else, such as a guarantee beyond the request or
+code the base already had, becomes a follow-up, even when it is labeled security
+or correctness. The exception: fix a finding in place when merging the change
+without that fix would itself create or expose a security hole, data loss, or
+breakage. A risk the base already had, and that the change doesn't make worse,
+is not one.
 
 Route work that leaves the PR, each item with its origin, evidence, and its own
 Land or Try finish line:
 
 | Work is | Goes to |
 | --- | --- |
-| Part of a chief's program | A report to the chief, which picks where it runs: this session, another owner, or later |
+| Part of a chief's program | A report to the chief, which picks where it runs: a later PR from this session, another owner, or later |
 | Related, and helped by this session's context | A follow-up PR from this session |
 | Independent | A separate session, offered to the user or returned to the caller |
 | Useful but unrelated | [Snip Snap](../snip-snap/SKILL.md) |
@@ -234,7 +238,9 @@ The owner report carries every field that applies:
 - **Waits:** pending PRs, live helpers and watchers, and the events they await.
 - **Decisions:** open decision requests with their IDs, and each provisional
   assumption with what depends on it.
-- **Follow-ups:** each routed item, with its destination and finish line.
+- **Follow-ups:** each routed item and every Defer from your review loop, with
+  its destination and finish line, and each fix kept under the scope exception,
+  with its reason.
 - **Sources:** follow-up messages received and handled.
 
 Write the full report to the path the caller gave, or put it in your final

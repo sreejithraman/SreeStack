@@ -146,15 +146,6 @@ assumption or a material design or
 ownership change. Expand the pass when a fix reaches further or retained coverage
 cannot be justified.
 
-**Narrow the route as the diff shrinks.** From the second repair pass on, a pass
-gets one reviewer: the one whose finding the repair fixes, or Primary when it
-fixes several reviewers' findings. A small repair, one component with no new
-behavior, gets one reviewer from the first repair pass. That reviewer assesses
-every criterion the repair made stale, with the prior evidence for each, and its
-assessment refreshes that coverage. Add a second reviewer only when a repair
-reaches a component no earlier pass reviewed. This limit overrides the reviewers the table and the
-extensions above would add.
-
 When a repair cycle returns to an invariant the loop has already repaired, or a
 second pass finds new issues in the same component, pause further review of it.
 The parent applies
@@ -163,6 +154,16 @@ keeps the counterexamples, and records the design decision or split before the
 next pass. Route a changed design as an ownership or guarantee fix. This
 checkpoint is diagnostic, never a round limit or a reason to ship a known
 defect in the requested change.
+
+**Narrow the route as the diff shrinks.** From the second repair pass on, a pass
+gets one reviewer: the one whose finding the repair fixes, or Primary when it
+fixes several reviewers' findings. A small repair, one component with no new
+behavior, gets one reviewer from the first repair pass. That reviewer assesses
+every criterion the repair made stale or newly required, with any prior
+evidence for each, and its assessment refreshes that coverage. Add a second
+reviewer only when a repair reaches a component no earlier pass reviewed. This
+limit overrides the reviewers that the table, the extensions, and the checkpoint
+above would add.
 
 Repeat steps 3 and 4 until no selected, routed, or checkpoint work remains.
 
@@ -176,10 +177,9 @@ after it, is this check.
 
 Process its results through step 3; route any repairs through step 4.
 
-A later code or substantive instruction fix routes through step 4, whose one
-reviewer also takes the criteria the fix made stale. If Primary did not review
-the last repair, Primary rechecks the repairs since this check once, on the final
-snapshot. Repeat the whole check only when a fix invalidates its conclusions.
+A later code or substantive instruction fix routes through step 4. If Primary
+did not review the last repair, Primary rechecks the repairs since this check
+once, on the final snapshot. Repeat the whole check only when a fix invalidates its conclusions.
 
 ## 6. Finish
 

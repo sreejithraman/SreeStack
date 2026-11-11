@@ -22,7 +22,8 @@ when all three hold:
   private input, and every Try choice.
 
 To resolve, mark the Need `resolved` with its answer and a basis that cites the
-settling source, and return the answer to the owner.
+settling source, and return the answer to the owner. A reserved decision the
+user already answered is settled by that answer: reply with it, and don't ask again.
 
 Everything else goes into Needs you under its ID, and you ask the user. Mark it
 `quick` when they can answer from the card: a recommended option with a bounded

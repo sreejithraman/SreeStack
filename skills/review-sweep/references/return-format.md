@@ -20,7 +20,7 @@ Defer:
 - [id] location - claim
   Reason:
   Origin and evidence:
-  Follow-up:
+  Home:
 
 Acknowledge:
 - ...

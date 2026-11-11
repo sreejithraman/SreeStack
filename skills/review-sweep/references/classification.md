@@ -30,8 +30,8 @@ or style preference alone does not establish a blocker.
 
 `Defer`, `Acknowledge`, and `Won't do` need a reason.
 
-`Defer` must name its owner, such as an issue, a snip, or a follow-up, with the finding's
-origin and evidence. A user decision needed before this work can finish is a stop.
+`Defer` names its durable home, with the finding's origin and evidence: an issue, a snip, or the
+Follow-ups in Implement's [owner report](../../implement/SKILL.md#report), which a chief records. A user decision needed before this work can finish is a stop.
 
 For example, two reports of the same reachable data-loss bug produce one
 Must-fix issue and one repair, with both reports retained. A repeat after a
@@ -51,14 +51,14 @@ fix settled and reversible?
 | A fix inside Implement's [scope rule](../../implement/SKILL.md#keep-scope-and-decisions), including one for a security or data-loss bug in the requested change | It needs a design decision or changes the outcome |
 | A clean rebase | It conflicts with another change to the same behavior |
 | A simple conflict with an obvious resolution | Applying the fix carries security or data-loss risk, or can't be undone |
-| A Defer with its named follow-up | It needs an approval or permission you lack |
+| A Defer with its named home | It needs an approval or permission you lack |
 | | The same repair has failed twice |
 
 When an issue fits both columns, the stop wins. The parent settles a stop itself only when it is
 an implementation-design choice that keeps the requested behavior and every user gate, and reports
-every other stop to its caller. A stop that also changes or disputes behavior the user asked for,
-tried, or kept, or that needs a decision reserved for the user, such as a product tradeoff, finish
-line, landing, Try choice, or permission, is the user's to settle, even if you disagree.
+every other stop to its caller. A stop that also touches what the user asked for, tried, or kept,
+or that needs a decision [reserved for the user](../../chief-of-staff/references/decisions.md#triage),
+is the user's to settle, even if you disagree.
 
 Rerun a proven infrastructure or flaky failure once, and record the result. If it fails again,
 it's a stop. A stop keeps its evidence and states the decision needed. Leave it unfixed and report
