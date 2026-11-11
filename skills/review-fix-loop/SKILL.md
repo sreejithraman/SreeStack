@@ -81,8 +81,9 @@ the required assessments and all additional reviews that have not been skipped.
 Substantial work runs in stages, using steps 3 and 4 between them:
 
 1. Run wave 1, then validate and settle its findings.
-2. Settle scope and design using existing triage authority, and record the results
-   as accepted scope changes in the brief.
+2. Settle design, split out findings under Implement's
+   [scope rule](../implement/SKILL.md#keep-scope-and-decisions), and record the
+   splits as accepted scope changes in the brief.
 3. Route wave 1 fixes through step 4. Wave 2 satisfies any Adversarial route.
 4. Run Adversarial over the complete change on the settled snapshot. It stays first
    discovery: use the brief's first-round rules plus accepted scope changes, and
@@ -107,8 +108,9 @@ settles findings and checks accepted fixes, carrying canonical issue IDs and the
 per-issue repair/check evidence forward. Reopen a settled finding only with new
 evidence; report stalled disputes rather than repeating equivalent passes. A
 [stop](../review-sweep/references/classification.md#continue-or-stop) blocks
-completion. Finish what doesn't depend on it, then report it to your caller with the decision
-it needs.
+completion. Make a stop's design decision yourself, under Implement's
+[scope rule](../implement/SKILL.md#keep-scope-and-decisions). Finish what doesn't
+depend on the other stops, then report them to your caller with the decision each needs.
 
 ## 4. Route repairs
 
@@ -139,15 +141,25 @@ whether fixes invalidate earlier conclusions.
 When the work crosses into another angle, the reviewer reports it and the parent
 extends the route to that angle. Add a new outside perspective for a disputed
 assumption or a material design or
-ownership change. Expand the scope when a fix reaches further or retained coverage
+ownership change. Expand the pass when a fix reaches further or retained coverage
 cannot be justified.
 
+**Narrow the route as the diff shrinks.** From the second repair pass on, a pass
+gets one reviewer: the one whose finding the repair fixes, or Primary when it
+fixes several reviewers' findings. A small repair, one component with no new
+behavior, gets one reviewer from the first repair pass. Add a second reviewer
+only when a repair reaches a component no earlier pass reviewed. This limit
+overrides the table and the extensions above, including routes from step 5.
+
 When a repair cycle returns to an invariant the loop has already repaired, or a
-second pass finds new issues in the same component, pause further review of it. The parent applies
+second pass finds new issues in the same component, pause further review of it.
+The parent decides the pause itself, under Implement's
+[scope rule](../implement/SKILL.md#keep-scope-and-decisions): it applies
 [Attack the Premise](../engineering-principles/references/attack-the-premise.md),
-keeps the counterexamples, and records the design decision before the next pass.
-Route a changed design as an ownership or guarantee fix. This checkpoint is
-diagnostic, never a round limit or a reason to ship a known defect.
+keeps the counterexamples, and records the design decision or split before the
+next pass. Route a changed design as an ownership or guarantee fix. This
+checkpoint is diagnostic, never a round limit or a reason to ship a known
+defect in the requested change.
 
 Repeat steps 3 and 4 until no selected, routed, or checkpoint work remains.
 
@@ -164,8 +176,9 @@ Process its results through step 3; route any repairs through step 4.
 When repairs invalidate an earlier guarantee, structural conclusion, simplicity
 judgment, or failure assumption, route that work back to the Thermo, Ponytail, or
 Adversarial reviewer. A later code or substantive instruction fix keeps its route
-and always includes Primary on that change, which carries this check forward.
-Repeat the whole check only when such a fix invalidates its conclusions.
+under step 4's limit. When Primary reviews it, that carries this check forward;
+otherwise rerun this check on the final snapshot. Repeat the whole check only
+when such a fix invalidates its conclusions.
 
 ## 6. Finish
 

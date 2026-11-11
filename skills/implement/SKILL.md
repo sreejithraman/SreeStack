@@ -190,8 +190,16 @@ and lets its parent watch; it doesn't claim completion.
 
 ## Keep scope and decisions
 
-Fix what the outcome needs to be correct. Route work that leaves it, each item
-with its origin, evidence, and its own Land or Try finish line:
+**Scope only shrinks.** You or a chief may split, defer, or make a follow-up of
+work without asking. Nobody grows a PR's scope or asks the user to: not you, a
+chief, or a review pass. A finding that would add a new guarantee, or that
+concerns code an earlier round added or the base already had, becomes a
+follow-up, even when it is labeled security or correctness. Fix it in place only
+when the requested change itself is unsafe to land without it. Fix an edge case
+only when it can happen in real use.
+
+Route work that leaves the PR, each item with its origin, evidence, and its own
+Land or Try finish line:
 
 | Work is | Goes to |
 | --- | --- |
@@ -200,7 +208,7 @@ with its origin, evidence, and its own Land or Try finish line:
 | Part of a chief's program | The chief, who picks the route |
 | Useful but unrelated | [Snip Snap](../snip-snap/SKILL.md) |
 
-Never grow the current scope silently.
+Under a chief, you still run your own review loop and decide its pauses.
 
 Return decisions and shared or cross-repo blockers through Orchestration's
 [return](../orchestration/SKILL.md#return) as they arise; ask the user directly
@@ -217,8 +225,7 @@ The owner report carries every field that applies:
 
 - **Outcome and finish line:** the line you picked and why, and the actual
   delivery state against it.
-- **Layers:** each PR, branch, or local artifact, with its link, head, base,
-  revisions, and working-tree state.
+- **Layers:** each PR, branch, or local artifact, with its link, head, and base.
 - **Proof:** each required assertion's verdict and evidence, the kept proof's
   absolute path, and what is blocked or untested.
 - **Shown:** what you showed and how to open it, with what it needs, such as a
@@ -231,8 +238,8 @@ The owner report carries every field that applies:
 
 Write the full report to the path the caller gave, or put it in your final
 message when you can't write there. Write nothing else in a caller's records.
-For the user, lead with what they can use, what needs their action, and limits
-that matter. A Land report ends at what landed.
+Lead with what the reader can use, what needs their action, and limits that
+matter. A Land report ends at what landed.
 
 ## Pause, transfer, or adoption
 

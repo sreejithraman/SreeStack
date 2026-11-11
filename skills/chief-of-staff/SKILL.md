@@ -17,9 +17,11 @@ You own the program: its scope, who owns each outcome, dependencies and
 scheduling, shared blockers, decisions and what each one blocks, integration
 across outcomes, acceptance, landing releases, the program record, and the
 morning view. Each owner carries one outcome, as one PR or its own planned
-stack, and reports here. Each linked skill owns its own procedure. Keep product
-changes with owners. Send findings-only investigation to a bounded task through
-[Research](../research/SKILL.md), [How](../how/SKILL.md), or
+stack, and reports here. The owner runs its own review loop, writers,
+reviewers, and pause decisions. You dispatch, and receive outcomes, splits and
+follow-ups, real blockers, and decisions only the user can make. Each linked
+skill owns its own procedure. Keep product changes with owners. Send
+findings-only investigation to a bounded task through [Research](../research/SKILL.md), [How](../how/SKILL.md), or
 [Diagnosing Bugs](../diagnosing-bugs/SKILL.md), and parallel coverage or
 comparison through [Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md).
 The user can enter an owner's session directly; reconcile their new direction
@@ -140,7 +142,7 @@ Give every discovery a disposition:
 
 | Discovery | Action |
 | --- | --- |
-| Required to make the current outcome correct | Return it to that owner with the requirement and evidence |
+| Needed for the requested change to land safely | Return it to that owner with the requirement and evidence |
 | Related work its owner's context helps | That owner's follow-up outcome, with its own finish line |
 | Separate work the program needs | A new outcome with its origin, sequenced by dependency |
 | Shared environment, tooling, or cross-repo blocker | One support task; a repository change gets its own outcome |
@@ -148,11 +150,11 @@ Give every discovery a disposition:
 | A decision someone must make | [Triage it](references/decisions.md#triage) |
 | Duplicate, obsolete, or declined work | Record why and link the existing disposition |
 
-A required correctness fix stays required when it becomes its own outcome, and
-its dependent waits under the
+Scope only shrinks, under Implement's
+[scope rule](../implement/SKILL.md#keep-scope-and-decisions). A required fix
+stays required when it becomes its own outcome, and its dependent waits under the
 [dependency rule](references/dependencies.md#dependencies). When an owner
-reports a repair that changes its outcome's boundary, replan the affected
-outcomes.
+reports a split, replan the affected outcomes.
 
 Repairs go to the slice's owner under Orchestration's
 [who does the work](../orchestration/SKILL.md#who-does-the-work). Deduplicate
@@ -191,9 +193,9 @@ Accept each outcome under Orchestration's
 [accept](../orchestration/SKILL.md#accept), against the current head and base of
 every layer. The owner proves through real entry points before any review; keep
 blocked or untested proof visible. An outcome stays unaccepted while an open
-decision affects its scope. Try stops before review. Review runs when PR
-publishes, or through [Review Fix Loop](../review-fix-loop/SKILL.md) only when
-the user asks.
+decision affects its scope. Try stops before review. The owner runs review when
+PR publishes, or through [Review Fix Loop](../review-fix-loop/SKILL.md) only
+when the user asks.
 
 Answer each stop in the same pass:
 

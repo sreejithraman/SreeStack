@@ -6,8 +6,13 @@ that grants exactly what they chose.
 
 ## Triage
 
-Judge each request before it reaches the user. Resolve it yourself only when all
-three hold:
+Scope needs no triage. Under Implement's
+[scope rule](../../implement/SKILL.md#keep-scope-and-decisions), you or the owner
+split, defer, or make a follow-up without asking, and a request to grow a PR
+becomes a follow-up.
+
+Judge each other request before it reaches the user. Resolve it yourself only
+when all three hold:
 
 - **Settled:** the brief, a spec or ticket, a project rule, an earlier user
   answer, or a [standing approval](#standing-approvals) already answers it. An
@@ -15,7 +20,7 @@ three hold:
 - **Reversible:** a later change can undo it at a cost the owner stated, and it
   has no outward-facing or destructive effect.
 - **Unreserved:** it leaves these with the user: who may land and each merge
-  set, finish lines, scope, priority, product tradeoffs, holds and user gates,
+  set, finish lines, priority, product tradeoffs, holds and user gates,
   private input, and every Try choice.
 
 To resolve, mark the Need `resolved` with its answer and a basis that cites the

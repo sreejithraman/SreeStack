@@ -4,7 +4,7 @@ Classify each canonical issue once after merging equivalent source reports:
 
 - **Must-fix**: a material bug, security or data-integrity failure, required build/test failure, explicit requirement or contract violation, or structural code-quality blocker under the active review bar.
 - **Worth-fixing**: high-confidence maintainability work that materially simplifies the current change without changing intended behavior.
-- **Defer**: valid concern that may be worth doing, but belongs to a separate change, issue, or parent decision.
+- **Defer**: valid concern that leaves this change under Implement's [scope rule](../../implement/SKILL.md#keep-scope-and-decisions), however severe.
 - **Acknowledge**: valid context recorded for awareness.
 - **Won't do**: rejected finding: weak, speculative, line-impossible, contradicted by code, or more churn than clarity.
 
@@ -30,15 +30,15 @@ or style preference alone does not establish a blocker.
 
 `Defer`, `Acknowledge`, and `Won't do` need a reason.
 
-`Defer` must name its owner: an issue, a snip, or the parent, with any parent decision
-needed. A decision needed before this work can finish is a stop.
+`Defer` must name its owner, such as an issue, a snip, or a follow-up, with the finding's
+origin and evidence. A user decision needed before this work can finish is a stop.
 
 For example, two reports of the same reachable data-loss bug produce one
 Must-fix issue and one repair, with both reports retained. A repeat after a
 verified repair links to that history; a fresh reproduction of the failure
 reopens the issue. A proposed cut with no demonstrated behavioral or maintenance
 benefit does not become Worth-fixing just because it removes lines. Valid broader
-work outside the current change belongs in Defer with an owner decision.
+work outside the current change belongs in Defer as a follow-up.
 
 ## Continue or stop
 
@@ -49,10 +49,10 @@ fix settled and reversible?
 | Continue | Stop for the parent |
 | --- | --- |
 | Nothing real needs changing: an invalid finding dismissed with a reason, or a flaky run that passes on rerun | It would change or dispute behavior the user asked for, tried, or kept |
-| A fix that keeps the same outcome and behavior, including one for a security or data-loss bug | It needs a design decision or changes the outcome |
+| A fix inside Implement's [scope rule](../../implement/SKILL.md#keep-scope-and-decisions), including one for a security or data-loss bug in the requested change | It needs a design decision or changes the outcome |
 | A clean rebase | It conflicts with another change to the same behavior |
 | A simple conflict with an obvious resolution | Applying the fix carries security or data-loss risk, or can't be undone |
-| Valid work that belongs elsewhere, deferred to a named owner | It needs an approval or permission you lack |
+| Valid work outside the scope rule, deferred as a follow-up, even when labeled security or correctness | It needs an approval or permission you lack |
 | | The same repair has failed twice |
 
 When an issue fits both columns, the stop wins. A dispute over what the user chose is theirs to
