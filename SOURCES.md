@@ -521,7 +521,7 @@ Adds preflight through Agent Login, Show Me baselines and showing at each stop,
 provisional work that stops at Try, the upstream pstack measurable-target
 pursuit that keeps hard targets and rejects regressions (its host-specific wake
 loop and broad side-fix authority are omitted), invariant escalation through
-Attack the Premise, a scope rule under which scope only shrinks, follow-up
+Attack the Premise, a shrink-only scope rule, follow-up
 routing with separate finish lines, owners running their own review loops under
 a chief, promotion to Chief of Staff for several outcomes, adoption without a
 second writer, and an outcome-based owner report with early partial reports. In a top-level thread, a

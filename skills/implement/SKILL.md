@@ -199,10 +199,8 @@ can't happen in real use needs no fix. The requested change is the code that
 delivers the request, not code added for a new guarantee or under the exception
 below. A finding about anything else, such as a guarantee beyond the request or
 code the base already had, becomes a follow-up, even when it is labeled security
-or correctness. The exception: fix a finding in place when merging the change
-without that fix would itself create or expose a security hole, data loss, or
-breakage. A risk the base already had, and that the change doesn't make worse,
-is not one.
+or correctness. The exception: when the change exposes or worsens a security
+hole, data-loss risk, or breakage in code the base already had, fix it in place.
 
 Route work that leaves the PR, each item with its origin, evidence, and its own
 Land or Try finish line:
