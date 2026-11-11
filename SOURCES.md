@@ -431,6 +431,9 @@ without a report; where the host cannot launch sessions, a delegated owner runs
 in its own worktree and the chief watches its PR. A running Implement session is adopted, never duplicated. The
 chief reads Implement's owner report fields, accepts outcomes under
 Orchestration, and routes discoveries through an explicit disposition table.
+The chief dispatches: owners run their own review loops, helpers, and pause
+decisions. Splits and follow-ups are the chief's or owner's own calls, and
+growing a PR's scope is never a decision request.
 
 Each outcome takes Implement's Land, Try, or PR finish line. Land picked under
 that policy authorizes merging within the agreed program scope, with Merge's
@@ -518,9 +521,10 @@ Adds preflight through Agent Login, Show Me baselines and showing at each stop,
 provisional work that stops at Try, the upstream pstack measurable-target
 pursuit that keeps hard targets and rejects regressions (its host-specific wake
 loop and broad side-fix authority are omitted), invariant escalation through
-Attack the Premise, follow-up routing with separate finish lines, promotion to
-Chief of Staff for several outcomes, adoption without a second writer, and an
-outcome-based owner report with early partial reports. In a top-level thread, a
+Attack the Premise, a shrink-only scope rule, follow-up
+routing with separate finish lines, owners running their own review loops under
+a chief, promotion to Chief of Staff for several outcomes, adoption without a
+second writer, and an outcome-based owner report with early partial reports. In a top-level thread, a
 subagent writes the change under Orchestration, and a child writes it itself.
 Native goal tracking stays optional and explicitly requested.
 
@@ -561,7 +565,8 @@ on request, to match `pr`. Branch deletion after a merge goes through `repo-clea
 rather than `sync --prune`, which doesn't check merge-time heads. Layers split only
 for dependency order and reviewability, and can emerge as the work takes shape;
 tests and docs stay with the behavior they prove, and independent outcomes get
-separate stacks or PRs even inside one feature.
+separate stacks or PRs even inside one feature. Incidental fixes follow
+Implement's scope rule rather than riding along.
 
 The entrypoint keeps common calls and first-action guards inline; installation,
 state fields, and exit-code details live with command behavior. Existing recovery
@@ -1098,9 +1103,9 @@ other nonignored untracked source.
   staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
   Fixes route by what they change to new tasks on the original reviewers'
   models for those angles, under Orchestration's review-pass rule; Primary's
-  integrated check covers cumulative repairs; and repeated repairs to an
-  invariant or new issues from a second pass on the same component trigger a
-  parent design checkpoint. The first independent pass adds one random optional
+  integrated check covers cumulative repairs; later repair passes narrow to one
+  reviewer; and repeated repairs to an invariant or new issues from a second pass
+  on the same component trigger a parent design checkpoint. The first independent pass adds one random optional
   reviewer from each provider pool. The loop owns provider-reference delivery,
   skips, and stable snapshots. Generic delegation and handoff use Orchestration,
   with tasks mapped to review assignments and workflow/pass identities; findings
@@ -1144,6 +1149,8 @@ on conflicts, and verify hashes after success or recovery.
   follow orchestration's repair routing.
   Settlement weighs supported exposure and impact, preserving rare material and
   required failures while deferring low-impact work and rejecting hypotheticals.
+  Findings outside Implement's scope rule defer as follow-ups whatever their
+  severity.
 
 ## setup-sreestack
 

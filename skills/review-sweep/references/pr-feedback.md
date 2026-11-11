@@ -19,9 +19,9 @@ Reply to a thread with `addPullRequestReviewThreadReply` and close it with
 
 - **No edit needed:** reply with the reason and evidence, then resolve rejected, handled,
   duplicate, or noise threads.
-- **Deferred:** reply with the decision and its owner, then resolve.
-- **Stop:** reply that the user will decide, and keep the thread open. See
-  [continue or stop](classification.md#continue-or-stop).
+- **Deferred:** reply with the decision and its home, linked or named, then resolve.
+- **Stop:** reply naming who decides under [continue or stop](classification.md#continue-or-stop),
+  and keep the thread open. Once the stop is settled, reply and resolve as for its result.
 - **Accepted edit:** return a held reply to your caller. Once the fix is in the remote head, the
   caller replies with that head and evidence, and resolves. Read feedback again for anything new.
 

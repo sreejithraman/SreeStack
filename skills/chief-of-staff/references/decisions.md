@@ -6,8 +6,11 @@ that grants exactly what they chose.
 
 ## Triage
 
-Judge each request before it reaches the user. Resolve it yourself only when all
-three hold:
+Scope needs no triage: apply Implement's
+[scope rule](../../implement/SKILL.md#keep-scope-and-decisions).
+
+Judge each other request before it reaches the user. Resolve it yourself only
+when all three hold:
 
 - **Settled:** the brief, a spec or ticket, a project rule, an earlier user
   answer, or a [standing approval](#standing-approvals) already answers it. An
@@ -15,11 +18,12 @@ three hold:
 - **Reversible:** a later change can undo it at a cost the owner stated, and it
   has no outward-facing or destructive effect.
 - **Unreserved:** it leaves these with the user: who may land and each merge
-  set, finish lines, scope, priority, product tradeoffs, holds and user gates,
+  set, finish lines, priority, product tradeoffs, holds and user gates,
   private input, and every Try choice.
 
 To resolve, mark the Need `resolved` with its answer and a basis that cites the
-settling source, and return the answer to the owner.
+settling source, and return the answer to the owner. A reserved decision the
+user already answered is settled: reply with that answer instead of asking again.
 
 Everything else goes into Needs you under its ID, and you ask the user. Mark it
 `quick` when they can answer from the card: a recommended option with a bounded

@@ -13,7 +13,9 @@ Report material issues noticed outside the assigned lens.
 | Additional reviewer | General review across Review's applicable criteria |
 
 Primary also owns Review's applicable indirect-consumer and React/Next checks,
-including react-best-practices and React Doctor evidence.
+including react-best-practices and React Doctor evidence. A narrowed repair pass
+gives its one reviewer the criteria and reference of every row the repair made
+stale or newly required.
 
 ## Select reviewers
 

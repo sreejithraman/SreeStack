@@ -101,5 +101,5 @@ later result needs two independent outcomes, put both below it in one stack, in 
 mix efforts into one stack just because you happened to work on both. Use `gh stack init` for the
 new effort, or `gh stack checkout <target>` to move between existing stacks.
 
-A trivial incidental fix can ride along in the current stack. Once it grows into its own project, it
-deserves its own stack.
+Work found along the way follows Implement's
+[scope rule](../../implement/SKILL.md#keep-scope-and-decisions).

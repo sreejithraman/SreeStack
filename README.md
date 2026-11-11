@@ -259,17 +259,19 @@ result, and stops before review for you to merge, change, or scrap it. It states
 the pick up front so you can override it, and “open a PR” stops at the PR. It
 also pursues measurable targets: “Reduce search p95 to 200 ms while preserving
 results and resource limits” keeps a correct 300 ms improvement as progress and
-continues toward 200 ms. Work outside the outcome becomes a follow-up with its
-own finish line, or a snip when unrelated.
+continues toward 200 ms. Scope only shrinks: work outside the requested change,
+including review findings labeled security or correctness, becomes a follow-up
+with its own finish line, or a snip when unrelated.
 
 [Chief of Staff](skills/chief-of-staff/SKILL.md) carries several outcomes to
 their finish lines. Its input is any set of work: a spec, a list in chat, saved
 snips, follow-ups, or existing PRs. It splits the work into outcomes, starts or
 adopts one Implement owner per outcome, starts only ready work, and keeps
 blocked work moving on provisional bases or recommended options that can be
-undone. It reads owner reports, watches pending PRs, and routes discoveries and
-shared blockers. It settles reversible decisions that a recorded source or your
-standing approval already answers, and you can reopen any of them; the rest come
+undone. Owners run their own review loops; the chief reads their reports,
+watches pending PRs, and routes discoveries and shared blockers. It settles
+reversible decisions that a recorded source or your standing approval already
+answers, and you can reopen any of them; the rest come
 to you, with judgment calls ahead of quick picks. Each outcome has its own
 **Land**, **Try**, or PR finish line: an owner lands its accepted outcome once
 the chief releases it, the chief lands only sets that span owners, and each
@@ -370,9 +372,9 @@ Sample requests and expected results:
 - “Implement this change”: the model table supplies the subagent's model and options;
   parallel children have disjoint ownership in the same checkout.
 - “Review and fix this shared-contract change”: Primary, Ponytail, Thermo, and
-  optional pool reviewers assess the initial snapshot. The parent settles scope
-  and design, then Adversarial assesses the settled snapshot. Accepted fixes go
-  back to the slice's owner.
+  optional pool reviewers assess the initial snapshot. The parent settles design
+  and splits out-of-scope findings into follow-ups, then Adversarial assesses the
+  settled snapshot. Accepted fixes go back to the slice's owner.
 - “Review this small fix”: one required Primary plus initial optional pool
   reviewers for contained ordinary work; contained risky work adds a fitting
   lens. An ordinary prose or wording-only edit with no procedure change uses
@@ -382,8 +384,9 @@ Sample requests and expected results:
 - A substantive fix gets a new pass: new tasks on the original reviewers' models
   for the angles it touches, with the prior evidence. Each pass checks the current
   snapshot, bounded to affected behavior, prior findings, and relevant proof.
-  Primary's integrated check covers cumulative repairs. Retain earlier coverage
-  only where it still applies. Keep the original base for context.
+  From the second repair pass, or sooner for a small repair, one reviewer checks
+  each pass. Primary's integrated check covers cumulative repairs. Retain
+  earlier coverage only where it still applies. Keep the original base for context.
   A changed snapshot supersedes in-flight review; dispatch alone is not a pass.
 - Ordinary delegation does not create goals or recurring schedules. Explicit
   goal or swarm work can use ordinary tasks; requested native tracking follows

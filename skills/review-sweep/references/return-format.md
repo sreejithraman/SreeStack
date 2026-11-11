@@ -19,8 +19,8 @@ Worth-fixing:
 Defer:
 - [id] location - claim
   Reason:
-  Parent decision needed:
-  Suggested follow-up:
+  Origin and evidence:
+  Home:
 
 Acknowledge:
 - ...
@@ -41,6 +41,6 @@ Include:
 - verification results and the snapshot they apply to
 - review coverage gaps
 - blockers
-- every stop with its decision needed, under `Stops:` above the classes, and parent-owned defers
+- every stop with its decision needed, under `Stops:` above the classes
 
-The parent should be able to see what was fixed, what remains, and which deferred decisions it owns.
+The parent should be able to see what was fixed, what remains, and which follow-ups to route.
