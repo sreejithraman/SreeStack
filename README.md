@@ -281,7 +281,9 @@ trackers stay authoritative. Claude chiefs publish a private Claude artifact;
 Codex chiefs publish a private ChatGPT Site when the Sites plugin is available.
 The chief reuses its backend target and republishes after each commit that
 changes the page, and on resume or chief move. A backend change updates the
-current page link after successful publication. On reload,
+current page link after successful publication. Open Sites check for updates
+every 20 seconds while visible and when you return, then replace the page with
+validated new content. Failed checks leave the page available. On reload,
 the page restores your tab, open sections, selected decision, and scroll
 position; local browser tests cover this. In Claude's web viewer, an open page
 moved to a newly published version without a reload, kept its selected tab, and

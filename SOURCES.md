@@ -473,6 +473,15 @@ private Claude artifact; Codex chiefs use the available
 plugin-managed `sites:sites` skill for a private ChatGPT Site with the existing
 HTML as buildless `dist/index.html`. Chiefs need their backend's tools. Each
 backend reuses its target; Site identity persists in `.openai/hosting.json`.
+`prepare_sites.py` adds a removable Sites-only refresh script and content version
+file to the rendered page. Visible Sites check every 20 seconds and on return or
+focus, consume matching fetched HTML as a full document, and restore the existing
+view. Hidden pages abort checks; failed or sign-in responses keep the page available,
+without a second document request that could fail after validation. Preparation
+inlines the updater and scopes view initialization, saving the view and clearing
+its clock before replacement. Claude keeps its native viewer without polling.
+All Site files publish together through Sites;
+the helper leaves the renderer, canonical record, and publication markers alone.
 `hosting` holds the current successful publication's URL, with no extra
 provider-switch approval or parallel program record. Existing chief ownership
 and takeover coordination remain. Hosting-link commits render normally without
@@ -482,7 +491,11 @@ failures remain visible. `render_dashboard.py --page` renders the
 last commit beside the last published page, says whether it changed, and stamps
 the commit time that changed it; the chief republishes on a change and on every
 resume and chief move. The page keeps the viewer's place in session storage;
-the chief stays the only writer.
+the chief stays the only writer. Local Chrome tests serve prepared committed
+pages and exercise full document replacement, restoration, visibility, request
+overlap, rejected responses, cache mismatches, repeated initialization, and
+same-origin resources. Header-dependent failure responses verify that updates
+use the validated HTML without another document request.
 
 ## implement
 
