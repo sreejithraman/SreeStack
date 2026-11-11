@@ -475,10 +475,12 @@ HTML as buildless `dist/index.html`. Chiefs need their backend's tools. Each
 backend reuses its target; Site identity persists in `.openai/hosting.json`.
 `prepare_sites.py` adds a removable Sites-only refresh script and content version
 file to the rendered page. Visible Sites check every 20 seconds and on return or
-focus, validate matching HTML before navigation, and restore the existing view.
-Hidden pages abort checks; failed or sign-in responses keep the page available,
-and stale navigation responses cannot loop on the same version. Claude keeps its
-native viewer without polling. All Site files publish together through Sites;
+focus, consume matching fetched HTML as a full document, and restore the existing
+view. Hidden pages abort checks; failed or sign-in responses keep the page available,
+without a second document request that could fail after validation. Preparation
+inlines the updater and scopes view initialization, saving the view and clearing
+its clock before replacement. Claude keeps its native viewer without polling.
+All Site files publish together through Sites;
 the helper leaves the renderer, canonical record, and publication markers alone.
 `hosting` holds the current successful publication's URL, with no extra
 provider-switch approval or parallel program record. Existing chief ownership
@@ -490,8 +492,10 @@ last commit beside the last published page, says whether it changed, and stamps
 the commit time that changed it; the chief republishes on a change and on every
 resume and chief move. The page keeps the viewer's place in session storage;
 the chief stays the only writer. Local Chrome tests serve prepared committed
-pages and exercise automatic HTTP navigation, restoration, visibility, request
-overlap, rejected responses, and cache mismatches.
+pages and exercise full document replacement, restoration, visibility, request
+overlap, rejected responses, cache mismatches, repeated initialization, and
+same-origin resources. Header-dependent failure responses verify that updates
+use the validated HTML without another document request.
 
 ## implement
 

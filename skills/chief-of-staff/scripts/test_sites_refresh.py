@@ -1,4 +1,4 @@
-"""Publish committed pages to static output and navigate them in real Chrome."""
+"""Publish committed pages to static output and update an open page in real Chrome."""
 
 from datetime import datetime, timedelta, timezone
 import functools
@@ -73,9 +73,24 @@ class SitesRefreshTests(center.CommandCenterCase):
         rendered = self.program.run("--page", str(marker))
         self.assertEqual(rendered.returncode, 0, rendered.stderr)
         page = marker.with_name("command-center.next.html")
+        self.prepare_page(page)
+
+    def prepare_page(self, page):
         result = subprocess.run([sys.executable, str(PREPARE), "--page", str(page),
                                  "--output", str(self.page_file.parent)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def open_page(self, *args, **kwargs):
+        page = super().open_page(*args, **kwargs)
+        page.send("Runtime.enable")
+        self.addCleanup(self.assert_no_browser_exceptions, page)
+        return page
+
+    def assert_no_browser_exceptions(self, page):
+        page.run("document.readyState")
+        errors = [event for event in center.browser.events
+                  if event.get("sessionId") == page.session and event.get("method") == "Runtime.exceptionThrown"]
+        self.assertEqual(errors, [])
 
     def wait_until(self, condition, timeout=5):
         deadline = time.monotonic() + timeout
@@ -121,7 +136,7 @@ class SitesRefreshTests(center.CommandCenterCase):
         self.assertTrue(page.run(f"document.querySelector('{center.EVIDENCE}').parentElement.open"))
         self.assertFalse(page.run("document.querySelector('.collapsible.planned details').open"))
         self.assertAlmostEqual(page.top_of(self.card("W1")), before, delta=1)
-        self.assertEqual(len(self.documents()), 2, "The browser must really navigate over HTTP")
+        self.assertEqual(len(self.documents()), 1, "Only validated fetch responses replace the document")
         self.assertEqual(page.run("pageErrors"), [])
 
     def test_focus_keeps_unchanged_page_then_updates_selected_decision(self):
@@ -137,7 +152,7 @@ class SitesRefreshTests(center.CommandCenterCase):
         self.focus(page)
         self.wait_until(lambda: "Automatically published program" in page.text())
         self.assertEqual(page.selected_decision(), selected)
-        self.assertEqual(len(self.documents()), 2)
+        self.assertEqual(len(self.documents()), 1)
 
     def test_hidden_page_stops_requests_and_updates_immediately_on_return(self):
         page = self.open_page()
@@ -156,7 +171,7 @@ class SitesRefreshTests(center.CommandCenterCase):
         self.focus(page)
         self.wait_until(lambda: "Automatically published program" in page.text())
         self.assertEqual(page.selected_tab(), "work-tab")
-        self.assertEqual(len(self.documents()), 2)
+        self.assertEqual(len(self.documents()), 1)
 
     def test_failed_checks_and_login_responses_leave_page_available_then_recover(self):
         page = self.open_page()
@@ -212,29 +227,76 @@ class SitesRefreshTests(center.CommandCenterCase):
         self.wait_until(lambda: "Automatically published program" in page.text())
         self.assertEqual(page.selected_tab(), "work-tab")
 
-    def test_stale_navigation_response_does_not_reload_in_a_loop(self):
+    def test_validated_update_does_not_risk_a_second_document_request(self):
         page = self.open_page()
         page.click("#work-tab")
-        stale = self.page_file.read_bytes()
-        self.publish(self.retitled("Automatically published program"))
-        fresh = self.page_file.read_bytes()
+        page.click(center.EVIDENCE)
         path = urlsplit(self.page_url).path
-        PublishedFiles.responses[path] = lambda request: (
-            200, "text/html", stale if request.headers.get("Sec-Fetch-Dest") == "document" else fresh, {})
         self.addCleanup(PublishedFiles.responses.pop, path, None)
-        self.focus(page)
-        self.wait_until(lambda: len(self.documents()) == 2)
-        self.wait_until(lambda: page.run("document.readyState") == "complete")
-        for _ in range(3):
+        for failure in (
+            (503, "text/html", b"<h1>Gateway unavailable</h1>", {}),
+            (401, "text/html", b"<h1>Authentication required</h1>", {}),
+            (302, "text/html", b"", {"Location": "/signin-with-chatgpt"}),
+            (200, "text/html", b"<h1>Sign in</h1>", {}),
+        ):
+            with self.subTest(document_response=failure):
+                title = f"Validated update {self.publications} stays available"
+                self.publish(self.retitled(title))
+                fresh = self.page_file.read_bytes()
+                PublishedFiles.responses[path] = lambda request: (
+                    failure if request.headers.get("Sec-Fetch-Dest") == "document"
+                    else (200, "text/html", fresh, {}))
+                self.focus(page)
+                self.wait_until(lambda: len(self.documents()) > 1 or page.run("document.title") == title)
+                if len(self.documents()) > 1:
+                    page.wait_for_load()
+                self.assertEqual(page.run("document.querySelector('h1')?.textContent"), title)
+                self.assertEqual(page.selected_tab(), "work-tab")
+                self.assertTrue(page.run(f"document.querySelector('{center.EVIDENCE}').parentElement.open"))
+                self.assertEqual(len(self.documents()), 1, "Use the validated response without another document GET")
+                page.click("#needs-tab")
+                page.click("#work-tab")
+
+    def test_repeated_replacements_initialize_scripts_and_relative_resources_without_leaking_timers(self):
+        timers = """
+window.activeIntervals = new Set();
+const nativeInterval = window.setInterval;
+const nativeClear = window.clearInterval;
+window.setInterval = (...args) => {const id = nativeInterval(...args); activeIntervals.add(id); return id;};
+window.clearInterval = id => {activeIntervals.delete(id); nativeClear(id);};
+"""
+        page = self.open_page(before_load=timers)
+        selected = page.run("document.querySelectorAll('.inbox-row')[3].getAttribute('aria-controls')")
+        page.click(f'.inbox-row[aria-controls="{selected}"]')
+        page.run("document.cookie = 'refresh-test=same-origin; SameSite=Strict'; navigator.clipboard.writeText = async text => {window.copied = text;}")
+        (self.page_file.parent / "probe.js").write_text("window.resourceLoads = (window.resourceLoads || 0) + 1;")
+        (self.page_file.parent / "probe.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>')
+        for index in range(1, 4):
+            title = f"Publication with working scripts {index}"
+            self.publish(self.retitled(title))
+            raw = self.program.folder / "command-center.next.html"
+            raw.write_text(raw.read_text().replace("</head>", '<script async src="./probe.js"></script></head>')
+                           .replace("</body>", '<img id="probe" src="./probe.svg" alt=""></body>'))
+            self.prepare_page(raw)
             self.focus(page)
-            time.sleep(.15)
-        self.assertEqual(len(self.documents()), 2)
-        self.assertEqual(page.selected_tab(), "work-tab")
-        # A later publication can still advance beyond the failed one.
-        PublishedFiles.responses.pop(path)
-        self.publish(self.retitled("Next publication after stale navigation"))
-        self.focus(page)
-        self.wait_until(lambda: "Next publication after stale navigation" in page.text())
+            self.wait_until(lambda: page.run("document.title") == title)
+            self.wait_until(lambda: page.run("window.resourceLoads") == index)
+            self.wait_until(lambda: page.run("document.querySelector('#probe').complete && document.querySelector('#probe').naturalWidth === 1"))
+            self.assertEqual(page.selected_decision(), selected)
+            self.assertEqual(page.run("activeIntervals.size"), 1)
+            page.run("window.copied = null")
+            page.click('.inbox-row[aria-selected="true"]')
+            page.click('.need.selected .copy-prompt')
+            self.wait_until(lambda: bool(page.run("window.copied")))
+            self.assertIn('I choose option', page.run("window.copied"))
+            page.click("#work-tab")
+            page.click("#needs-tab")
+            self.assertEqual(page.visible_panels(), ["needs-panel"])
+            self.assertEqual(page.run("location.href"), self.page_url)
+            self.assertEqual(len(self.documents()), 1)
+        resources = self.requests_for("probe.js")
+        self.assertEqual(len(resources), 3)
+        self.assertTrue(all("refresh-test=same-origin" in headers.get("Cookie", "") for headers in resources))
 
     def test_slow_request_is_bounded_and_overlapping_focus_does_not_duplicate_it(self):
         page = self.open_page()
@@ -288,7 +350,7 @@ class SitesRefreshTests(center.CommandCenterCase):
         page.set_visible(True)
         self.wait_until(lambda: "Automatically published program" in page.text(), timeout=3)
         self.assertEqual(page.selected_tab(), "work-tab")
-        self.assertEqual(len(self.documents()), 2)
+        self.assertEqual(len(self.documents()), 1)
         release.set()
 
 
@@ -313,7 +375,7 @@ class PreparationTests(unittest.TestCase):
             first = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(first.returncode, 0, first.stderr)
             files = {path.name: path.read_bytes() for path in (site / "dist").iterdir()}
-            self.assertEqual(set(files), {"index.html", "chief-refresh.js", "chief-version.json"})
+            self.assertEqual(set(files), {"index.html", "chief-version.json"})
             self.assertEqual({path: path.read_bytes() for path in originals}, originals)
             again = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(again.returncode, 0, again.stderr)

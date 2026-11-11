@@ -70,22 +70,26 @@ unchanged publication:
 python3 scripts/prepare_sites.py --page /absolute/path/command-center.next.html --output /absolute/path/site-source/dist
 ```
 
-It writes `index.html`, `chief-refresh.js`, and `chief-version.json` together in
-`dist/` and prints their content version. Keep all three in the same deployment.
+It writes `index.html` and `chief-version.json` together in `dist/` and prints
+their content version. Keep both in the same deployment. The refresh script is
+inline, so replacing the page needs no separate script request. Preparation also
+removes the obsolete generated `chief-refresh.js` file from earlier output.
 The helper leaves the rendered input, program record, and Site manifest alone;
 Sites still owns registration, source synchronization, packaging, and deployment.
 Keep the published-page marker as the original renderer output, and advance it
 only after publication succeeds.
 
 An open Site checks every 20 seconds while visible and on return or focus. It
-navigates only after a different version and matching HTML pass same-origin
-checks, using the page's existing view restoration. Failed, malformed, timed-out,
-or sign-in responses leave the open page available. Hidden pages stop checks and
-abort pending requests. A stale navigation response gets at most one automatic
-navigation per version; refresh manually if it remains stale, or let the next
-publication advance it.
+replaces the full document with matching fetched HTML after same-origin checks,
+without a second document request that could fail after validation. It keeps the
+URL and uses the page's existing view restoration. Failed, malformed, timed-out,
+sign-in, or mismatched responses leave the page available for the next check.
+Hidden pages stop checks and abort pending requests. Preparation scopes each
+view's script and clears its clock before replacement, because
+[`document.open()`](https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open)
+reuses the document and its window.
 
 To remove live refresh, stop preparing the output and copy the original rendered
-HTML to `dist/index.html` again. Remove `chief-refresh.js` and
-`chief-version.json` from the Site source and deploy through Sites. The renderer,
+HTML to `dist/index.html` again. Remove `chief-version.json` and any old
+`chief-refresh.js` from the Site source and deploy through Sites. The renderer,
 program record, and Claude publication path need no changes.
