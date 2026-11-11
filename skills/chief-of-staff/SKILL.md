@@ -142,7 +142,7 @@ Give every discovery a disposition:
 
 | Discovery | Action |
 | --- | --- |
-| Needed for the requested change to land safely | Return it to that owner with the requirement and evidence |
+| A defect in the requested change, or a fix it needs to land safely | Return it to that owner with the requirement and evidence |
 | Related work its owner's context helps | That owner's follow-up outcome, with its own finish line |
 | Separate work the program needs | A new outcome with its origin, sequenced by dependency |
 | Shared environment, tooling, or cross-repo blocker | One support task; a repository change gets its own outcome |

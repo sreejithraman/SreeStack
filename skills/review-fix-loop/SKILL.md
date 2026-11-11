@@ -59,8 +59,9 @@ Coverage counts for the final snapshot only when an assessment of it, or proof
 that still applies to it, supports that angle:
 
 - **Never covered:** a newly required angle assesses the complete current change.
-- **Stale:** an angle with earlier coverage assesses changed behavior and affected
-  dependencies, and whatever an edit invalidated.
+- **Stale:** an assessment of the angle's criteria covers changed behavior and
+  affected dependencies, and whatever an edit invalidated. Step 4 picks who
+  assesses it.
 - **Retained:** coverage carries forward where its source, assumptions, and proof
   still apply, with the reason recorded. Pre-edit coverage from an agent that later
   wrote or directed the work follows this rule too.
@@ -106,9 +107,10 @@ Invalid or lost required coverage needs a new assessment under the
 Give every result and partial finding to Review Sweep with its provenance. It
 settles findings and checks accepted fixes, carrying canonical issue IDs and their
 per-issue repair/check evidence forward. Reopen a settled finding only with new
-evidence; report stalled disputes rather than repeating equivalent passes. A
-[stop](../review-sweep/references/classification.md#continue-or-stop) blocks
-completion. Make a stop's design decision yourself, under Implement's
+evidence; report stalled disputes rather than repeating equivalent passes. A stop
+blocks completion. Settle the stops that
+[continue or stop](../review-sweep/references/classification.md#continue-or-stop)
+leaves to you, within Implement's
 [scope rule](../implement/SKILL.md#keep-scope-and-decisions). Finish what doesn't
 depend on the other stops, then report them to your caller with the decision each needs.
 
@@ -147,14 +149,15 @@ cannot be justified.
 **Narrow the route as the diff shrinks.** From the second repair pass on, a pass
 gets one reviewer: the one whose finding the repair fixes, or Primary when it
 fixes several reviewers' findings. A small repair, one component with no new
-behavior, gets one reviewer from the first repair pass. Add a second reviewer
-only when a repair reaches a component no earlier pass reviewed. This limit
-overrides the table and the extensions above, including routes from step 5.
+behavior, gets one reviewer from the first repair pass. That reviewer assesses
+every criterion the repair made stale, with the prior evidence for each, and its
+assessment refreshes that coverage. Add a second reviewer only when a repair
+reaches a component no earlier pass reviewed. This limit overrides the reviewers the table and the
+extensions above would add.
 
 When a repair cycle returns to an invariant the loop has already repaired, or a
 second pass finds new issues in the same component, pause further review of it.
-The parent decides the pause itself, under Implement's
-[scope rule](../implement/SKILL.md#keep-scope-and-decisions): it applies
+The parent applies
 [Attack the Premise](../engineering-principles/references/attack-the-premise.md),
 keeps the counterexamples, and records the design decision or split before the
 next pass. Route a changed design as an ownership or guarantee fix. This
@@ -173,17 +176,15 @@ after it, is this check.
 
 Process its results through step 3; route any repairs through step 4.
 
-When repairs invalidate an earlier guarantee, structural conclusion, simplicity
-judgment, or failure assumption, route that work back to the Thermo, Ponytail, or
-Adversarial reviewer. A later code or substantive instruction fix keeps its route
-under step 4's limit. When Primary reviews it, that carries this check forward;
-otherwise rerun this check on the final snapshot. Repeat the whole check only
-when such a fix invalidates its conclusions.
+A later code or substantive instruction fix routes through step 4, whose one
+reviewer also takes the criteria the fix made stale. If Primary did not review
+the last repair, Primary rechecks the repairs since this check once, on the final
+snapshot. Repeat the whole check only when a fix invalidates its conclusions.
 
 ## 6. Finish
 
-Finish when coverage holds for every required angle on the actual final snapshot,
-accepted findings and checks are settled on it, and the final
+Finish when the [coverage rule](#coverage-rule) holds for every required angle on
+the actual final snapshot, accepted findings and checks are settled on it, and the final
 code/substantive-instruction pass needs no fixes. Missing required coverage and
 accepted findings block completion.
 

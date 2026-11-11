@@ -446,8 +446,7 @@ shown but never lands. A shown Try waits for the user's merge, changes, or scrap
 choice, one outcome at a time unless the user names a set, after seeing the
 effect on dependents. The chief triages decision requests: it resolves
 reversible, unreserved ones that a recorded source or the user's standing
-approval settles; scope is not on the reserved list. The user can reopen any of
-them. Holds, project rules, and
+approval settles, and the user can reopen any of them. Holds, project rules, and
 a calling workflow's finish line narrow the default. `references/dependencies.md`
 keeps the upstream frontier scheduling, adds verification at the dependent's
 base and provisional bases, and linearizes fork-and-join inputs into reviewable
@@ -522,13 +521,10 @@ Adds preflight through Agent Login, Show Me baselines and showing at each stop,
 provisional work that stops at Try, the upstream pstack measurable-target
 pursuit that keeps hard targets and rejects regressions (its host-specific wake
 loop and broad side-fix authority are omitted), invariant escalation through
-Attack the Premise, a scope rule under which scope only shrinks (findings that add
-a guarantee or concern earlier-round or base code become follow-ups unless the
-requested change is unsafe without them, and edge cases are fixed only when they
-can happen in real use), follow-up routing with separate finish lines, owners
-running their own review loops under a chief, promotion to
-Chief of Staff for several outcomes, adoption without a second writer, and an
-outcome-based owner report with early partial reports. In a top-level thread, a
+Attack the Premise, a scope rule under which scope only shrinks, follow-up
+routing with separate finish lines, owners running their own review loops under
+a chief, promotion to Chief of Staff for several outcomes, adoption without a
+second writer, and an outcome-based owner report with early partial reports. In a top-level thread, a
 subagent writes the change under Orchestration, and a child writes it itself.
 Native goal tracking stays optional and explicitly requested.
 
@@ -569,7 +565,8 @@ on request, to match `pr`. Branch deletion after a merge goes through `repo-clea
 rather than `sync --prune`, which doesn't check merge-time heads. Layers split only
 for dependency order and reviewability, and can emerge as the work takes shape;
 tests and docs stay with the behavior they prove, and independent outcomes get
-separate stacks or PRs even inside one feature.
+separate stacks or PRs even inside one feature. Incidental fixes follow
+Implement's scope rule rather than riding along.
 
 The entrypoint keeps common calls and first-action guards inline; installation,
 state fields, and exit-code details live with command behavior. Existing recovery
@@ -1106,13 +1103,10 @@ other nonignored untracked source.
   staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
   Fixes route by what they change to new tasks on the original reviewers'
   models for those angles, under Orchestration's review-pass rule; Primary's
-  integrated check covers cumulative repairs. From the second repair pass, or
-  from the first for a one-component repair with no new behavior, a pass gets one
-  reviewer unless a repair reaches an unreviewed component. Repeated repairs to an
-  invariant or new issues from a second pass on the same component trigger a
-  design checkpoint that the parent decides under Implement's scope rule. The
-  first independent pass adds one random optional reviewer from each provider
-  pool. The loop owns provider-reference delivery,
+  integrated check covers cumulative repairs; later repair passes narrow to one
+  reviewer; and repeated repairs to an invariant or new issues from a second pass
+  on the same component trigger a parent design checkpoint. The first independent pass adds one random optional
+  reviewer from each provider pool. The loop owns provider-reference delivery,
   skips, and stable snapshots. Generic delegation and handoff use Orchestration,
   with tasks mapped to review assignments and workflow/pass identities; findings
   use Review Sweep with stable issue IDs and per-issue repair/check evidence.
@@ -1156,7 +1150,7 @@ on conflicts, and verify hashes after success or recovery.
   Settlement weighs supported exposure and impact, preserving rare material and
   required failures while deferring low-impact work and rejecting hypotheticals.
   Findings outside Implement's scope rule defer as follow-ups whatever their
-  severity, and design stops go to the loop's parent rather than its caller.
+  severity.
 
 ## setup-sreestack
 

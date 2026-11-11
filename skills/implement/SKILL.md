@@ -179,10 +179,11 @@ request on this outcome's scope blocks landing. Coordinate stack changes that
 affect other layers with the caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
 under Orchestration's [who does the work](../orchestration/SKILL.md#who-does-the-work).
 
-**Under a chief,** stop at readiness and return it for acceptance. Land only on
-the chief's recorded release, as the kickoff describes: you land your own PR or
-stack, and the chief lands sets that span several owners. The record names
-exactly one lander.
+**Under a chief,** you still run your own review loop and decide its pauses.
+Stop at readiness and return it for acceptance. Land only on the chief's
+recorded release, as the kickoff describes: you land your own PR or stack, and
+the chief lands sets that span several owners. The record names exactly one
+lander.
 
 **While a PR is pending,** follow PR's [wait](../pr/references/watch.md#wait).
 A top-level owner watches its own PR. A delegated owner returns a pending report
@@ -192,23 +193,22 @@ and lets its parent watch; it doesn't claim completion.
 
 **Scope only shrinks.** You or a chief may split, defer, or make a follow-up of
 work without asking. Nobody grows a PR's scope or asks the user to: not you, a
-chief, or a review pass. A finding that would add a new guarantee, or that
-concerns code an earlier round added or the base already had, becomes a
-follow-up, even when it is labeled security or correctness. Fix it in place only
-when the requested change itself is unsafe to land without it. Fix an edge case
-only when it can happen in real use.
+chief, or a review pass. Fix defects and real-use edge cases in the requested
+change in place, including bugs in its own earlier repairs; an edge case that
+can't happen in real use needs no fix. A finding that would add a guarantee
+beyond the request, or that concerns code the base already had, becomes a
+follow-up, even when it is labeled security or correctness, unless the requested
+change is unsafe to land without it.
 
 Route work that leaves the PR, each item with its origin, evidence, and its own
 Land or Try finish line:
 
 | Work is | Goes to |
 | --- | --- |
+| Part of a chief's program | A report to the chief, which picks where it runs: this session, another owner, or later |
 | Related, and helped by this session's context | A follow-up PR from this session |
 | Independent | A separate session, offered to the user or returned to the caller |
-| Part of a chief's program | The chief, who picks the route |
 | Useful but unrelated | [Snip Snap](../snip-snap/SKILL.md) |
-
-Under a chief, you still run your own review loop and decide its pauses.
 
 Return decisions and shared or cross-repo blockers through Orchestration's
 [return](../orchestration/SKILL.md#return) as they arise; ask the user directly
@@ -225,7 +225,8 @@ The owner report carries every field that applies:
 
 - **Outcome and finish line:** the line you picked and why, and the actual
   delivery state against it.
-- **Layers:** each PR, branch, or local artifact, with its link, head, and base.
+- **Layers:** each PR, branch, or local artifact, with its link, head, base,
+  and any uncommitted work the proof covers.
 - **Proof:** each required assertion's verdict and evidence, the kept proof's
   absolute path, and what is blocked or untested.
 - **Shown:** what you showed and how to open it, with what it needs, such as a

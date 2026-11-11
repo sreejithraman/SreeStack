@@ -6,10 +6,8 @@ that grants exactly what they chose.
 
 ## Triage
 
-Scope needs no triage. Under Implement's
-[scope rule](../../implement/SKILL.md#keep-scope-and-decisions), you or the owner
-split, defer, or make a follow-up without asking, and a request to grow a PR
-becomes a follow-up.
+Scope needs no triage: apply Implement's
+[scope rule](../../implement/SKILL.md#keep-scope-and-decisions).
 
 Judge each other request before it reaches the user. Resolve it yourself only
 when all three hold:
