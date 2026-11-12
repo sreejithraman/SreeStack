@@ -4,7 +4,11 @@ Publish one private command center per program. Claude sessions use a private
 Claude artifact; Codex sessions use a private ChatGPT Site through the available
 Sites plugin. The chief must have the selected publishing tools. If they are
 unavailable, stop and report the blocker; do not install plugins automatically.
-`hosting` holds the current published page's URL. Keep one canonical
+`hosting` holds the current published page's URL. When you give the user a
+Claude artifact link, append `#no_universal_links` so iOS opens it in the
+browser, not the Claude app, per Claude's
+[app-site association](https://claude.ai/.well-known/apple-app-site-association).
+Keep `hosting` without the fragment. Keep one canonical
 `program.json` and git history, without a parallel backend mirror.
 
 ## Render and publish
