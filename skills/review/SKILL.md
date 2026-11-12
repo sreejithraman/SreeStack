@@ -61,7 +61,6 @@ assignments, including executable skill scripts, cover both:
 Use [Adversarial](references/adversarial.md) as the criteria when adversarial
 review is requested or assigned.
 
-For an OpenCode harness review, also read [OpenCode review](references/opencode.md).
 For a Gemini model review, also read [Gemini review](references/gemini.md). The
 caller supplies the provider, model, and reference when you cannot determine them.
 These supplement the assigned criteria. This skill and the caller's scope,

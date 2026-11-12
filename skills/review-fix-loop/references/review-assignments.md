@@ -35,7 +35,7 @@ first pass unless the user changes the selection policy.
 
 Run a read-only Review assignment in the selected provider's harness through
 Orchestration. Include the applicable checked-in provider reference linked from
-[Review](../../review/SKILL.md), alongside any assigned lens. OpenCode and Gemini
+[Review](../../review/SKILL.md), alongside any assigned lens. Gemini
 reviews use these repository instructions without installing plugins or invoking
 native review commands. Keep the selected model, effort, complete snapshot, and
 common review contract. Record which references the reviewer read; an unread

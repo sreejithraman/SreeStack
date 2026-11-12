@@ -22,13 +22,11 @@ model the user picked, and no running agent is replaced because its model differ
 | Ponytail review | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
 | Thermo review | Codex | GPT-6.1 Sol | High | — | — |
 | Adversarial review | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Additional review | OpenCode | `opencode-go/deepseek-v4.1-flash` | Max | — | OpenCode Go |
-| Additional review | OpenCode | `opencode-go/glm-5.3-flash` | Max | — | OpenCode Go |
 | Additional review | Antigravity | Gemini 4 Argon | High | — | Gemini |
 | Additional review | Antigravity | Gemini 3.8 Flash | High | — | Gemini |
 
 The primary-review row also sets the model for cross-judges, single-reviewer audits, and second
-opinions. Use the exact OpenCode Go IDs above to keep the subscription route.
+opinions.
 
 Resolve names and effort through `orchestrator_capabilities` to exact available IDs and options.
 A caller or project choice settles multiple matches; otherwise report the ambiguity. Gemini's
