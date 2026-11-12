@@ -342,7 +342,7 @@ resolves their exact instance/model IDs and supported options from the live
 catalog; an ambiguous match needs an explicit selection. Gemini's effort selection
 is encoded in its model ID, while other providers may expose an option. Catalog availability does
 not establish quota or successful access. T3's injected MCP tools or supported
-ACP bridge must be reachable from the agent. OpenCode and Gemini reviewers read
+ACP bridge must be reachable from the agent. Gemini reviewers read
 their review references from this stack; provider plugins are not needed.
 
 [Review](skills/review/SKILL.md) assesses a snapshot without fixes.
@@ -351,14 +351,13 @@ failing checks the same way, by outcome, and sends accepted fixes through
 [Orchestration](skills/orchestration/SKILL.md#who-does-the-work).
 [Review Fix Loop](skills/review-fix-loop/SKILL.md) owns review coverage, reviewer
 selection, harness review, optional skips, and fix rounds. It uses Orchestration's
-model table and delegation rules. Enable the OpenCode Go subscription routes
-named in that table for its OpenCode pool.
+model table and delegation rules.
 Substantial changes also receive a required adversarial assessment that tests
 assumptions and failure paths. The loop records its coverage decision from the
 change's behavior and consequences.
 
 When migrating an installed setup, remove only the links and rank presets you
-previously installed for the retired Gemini/OpenCode skills and Codex ranks;
+previously installed for the retired provider skills and Codex ranks;
 keep unrelated provider settings and custom agents. These repository edits do
 not update live skill folders or host configuration. Keep installed skill links
 on a stable clone rather than a temporary worktree.
@@ -682,7 +681,6 @@ uses and adapts:
 - [Maze](https://x.com/mazeincoding/status/2115575731585507796) — architecture signals informing exploration and structural review; guidance is independently written.
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
-- [OpenCode](https://github.com/anomalyco/opencode) — general review criteria used by OpenCode reviewers.
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `chief-of-staff`, `swarm`, and `orchestration`.
 - [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
