@@ -117,6 +117,28 @@ class MergeTests(SettingsFixture):
         self.assertNotIn(SECRET, result.stdout + result.stderr)
         self.assertIn("up to date", self.run_sync("--check").stdout)
 
+    def test_merges_enabled_plugins_and_keeps_local_entries(self):
+        managed = {"shared@marketplace": True, "disabled@marketplace": False}
+        template = {**CLAUDE_TEMPLATE, "enabledPlugins": managed}
+        self.write("claude/settings.json", json.dumps(template))
+        cases = {
+            "missing": {},
+            "existing": {"enabledPlugins": {
+                "shared@marketplace": False, "local@marketplace": True,
+                "local-disabled@marketplace": False,
+            }},
+        }
+        for label, local in cases.items():
+            with self.subTest(label):
+                path = self.config(CLAUDE, json.dumps({**LOCAL_JSON, **local}))
+
+                self.run_sync()
+
+                expected_plugins = {**local.get("enabledPlugins", {}), **managed}
+                self.assertEqual(json.loads(path.read_text()),
+                                 {**MERGED_JSON, "enabledPlugins": expected_plugins})
+                self.assertIn("up to date", self.run_sync("--check").stdout)
+
     def test_replacement_keeps_exact_independent_private_backup(self):
         _, codex, _ = self.local_configs()
         codex.chmod(0o644)
