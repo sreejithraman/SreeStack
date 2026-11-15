@@ -272,16 +272,9 @@ option is marked `reversible` and halts startable work that is not provisional
 on it is runnable: build on that option provisionally under
 [dependencies](dependencies.md#provisional-work).
 
-When the verdict is `waiting`, `status` also prints a `say:` line. It names
-each Inbox item, wait, and blocker, with its age, and says nothing is runnable.
-End a waiting turn with that line.
-
-`status --heartbeat` observes the forge and threads without committing. It
-prints `heartbeat: quiet` while the verdict is `waiting` or `working` and the
-digest matches the last one seen, `heartbeat: done` when the program is done,
-and otherwise `heartbeat: wake` with the status lines. The last digest seen
-lives in the program's git directory, and a passing `--turn-end` updates it
-too.
+When the verdict is `waiting`, `status` also prints the `say:` line that ends a
+waiting turn. `status --heartbeat` runs each [heartbeat](../SKILL.md#heartbeat)
+tick.
 
 `status --turn-end` commits nothing. It fails while the verdict is `runnable`.
 An open row with no running owner, recorded wait, blocker, or open Need that

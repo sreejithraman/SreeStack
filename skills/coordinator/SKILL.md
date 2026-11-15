@@ -104,11 +104,9 @@ On "heartbeat: wake", re-read <this skill's absolute folder>/SKILL.md, then act 
 On "heartbeat: done", delete the scheduled task in the record's grant.heartbeat, then finish the program.
 ```
 
-Record the returned task ID in `grant.heartbeat`. A tick commits nothing. It
-stays quiet while the verdict is waiting or working and the facts are
-unchanged since the last tick or passing `--turn-end`. It wakes you on
-runnable work or changed facts, such as an owner gone idle while it owes work.
-When the host has no scheduled tasks, say so in the grant. Then, before you end
+Record the returned task ID in `grant.heartbeat`. A tick wakes you only on
+runnable work or facts that changed since the last tick or passing
+`--turn-end`. When the host has no scheduled tasks, say so in the grant. Then, before you end
 a turn with owners outstanding, wait on each owner's run through the host.
 
 ## 1. Set up the program
