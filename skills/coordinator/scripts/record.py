@@ -24,7 +24,7 @@ from urllib.parse import unquote, urlsplit
 from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, IMAGE_SUFFIXES, LAYER_KEYS, OWNER_KEYS,
                               PENDING_LANDINGS, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS,
                               assess, committed, content_name, effective_finish, fields, git, known_keys, layout, now,
-                              observation, open_blocks, page_files, pending_landing, quoted, records, revision,
+                              observation, open_blocks, page_files, pending_landing, place, quoted, records, revision,
                               stage_page, unsatisfied, validate)
 
 
@@ -581,7 +581,7 @@ def observe(state, at, read_pr, threads):
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
     for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
-        if row["id"] in threads and "owner" in row:
+        if row["id"] in threads:
             put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
               if layer["status"] == "merged" and "url" in layer}
@@ -678,15 +678,8 @@ class Record:
         created = []
         try:
             for name, content in files.items():
-                target = self.file.parent / name
-                if target.exists() and target.read_bytes() == content:
-                    continue
-                if not target.exists():
+                if place(target := self.file.parent / name, content):
                     created.append(target)
-                target.parent.mkdir(exist_ok=True)
-                partial = target.with_name(f".{target.name}.partial")
-                partial.write_bytes(content)
-                partial.replace(target)
             self.file.write_text(layout(state))
             if files:
                 self.git("add", "--", *files)
@@ -698,8 +691,6 @@ class Record:
                     self.git("reset", "-q", "--", *files)
             for target in created:
                 target.unlink(missing_ok=True)
-            for name in files:
-                (self.file.parent / name).with_name(f".{Path(name).name}.partial").unlink(missing_ok=True)
             raise
         print(f"committed: {message}")
 

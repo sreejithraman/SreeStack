@@ -718,7 +718,7 @@ class CommandTests(unittest.TestCase):
 
         beside = self.program.folder / "command-center.html"
         (self.program.folder / second).write_bytes(b"\x89PNG edited after its commit")
-        self.assertIn(f"differs from the committed {second}", self.program.run("--page", str(beside)).stderr)
+        self.assertIn(f"{second} does not hold the bytes its name records", self.program.run("--page", str(beside)).stderr)
         self.assertEqual((self.program.folder / second).read_bytes(), b"\x89PNG edited after its commit", "an edit is never overwritten")
 
         misnamed = "files/0123456789abcdef.png"

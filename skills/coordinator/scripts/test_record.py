@@ -1,10 +1,8 @@
 import copy
 from datetime import datetime, timezone
-from html import unescape
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -13,7 +11,7 @@ import unittest
 
 from record import observe
 from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
-from test_render_dashboard import GIT_ENV, Program, decision, example, work
+from test_render_dashboard import GIT_ENV, Program, decision, example, now_line, work
 
 
 SCRIPT = Path(__file__).with_name("record.py")
@@ -276,6 +274,21 @@ class ReportTests(RecordCase):
         hook.unlink()
         self.event("report", "--work", "W1")
         self.assertEqual((self.program.folder / name).read_bytes(), b"\x89PNG history")
+
+    def test_a_report_never_overwrites_an_edited_image(self):
+        shot = self.program.folder.parent / "owner-screenshot.png"
+        shot.write_bytes(b"\x89PNG history")
+        edited = self.program.folder / content_name(shot.read_bytes(), ".png")
+        edited.parent.mkdir()
+        edited.write_bytes(b"\x89PNG edited by hand")
+        self.write_report({"outcome": "W1", "state": "in-review", "shown": [
+            {"label": "History view", "url": "https://example.com/previews/history", "image": str(shot)}]})
+        before, record = self.commits(), self.program.source.read_text()
+        result = self.run_record("report", "--work", "W1")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("does not hold the bytes its name records", result.stderr)
+        self.assertEqual((self.commits(), self.program.source.read_text()), (before, record))
+        self.assertEqual(edited.read_bytes(), b"\x89PNG edited by hand")
 
     def test_a_shown_image_must_be_an_absolute_picture_path(self):
         before = self.commits()
@@ -751,9 +764,7 @@ class VerdictTests(unittest.TestCase):
         for row in state["work"]:
             if row["id"] in threads:
                 row["owner"]["seen"] = observation(threads[row["id"]], self.AT)
-        html = render(state)
-        block = re.search(r'<div class="now">(.*?)</div>', html.split(f'aria-labelledby="work-{identity.encode().hex()}"')[1])[1]
-        return " ".join(unescape(re.sub(r"<[^>]+>", " ", block)).split())
+        return now_line(render(state), identity)
 
     def test_the_now_line_follows_what_status_finds_before_raw_holds(self):
         planned = program([outcome("A", "planned")], [need("A-D1", "A", "start", reversible=True)])

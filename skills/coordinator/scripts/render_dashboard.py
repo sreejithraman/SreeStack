@@ -1279,21 +1279,26 @@ def content_name(content, suffix):
     return f"files/{hashlib.sha256(content).hexdigest()[:16]}{suffix.lower()}"
 
 
+def place(target, content):
+    """Write content-named bytes at target; return whether it wrote. Other bytes already there are refused."""
+    if target.exists():
+        if target.read_bytes() != content:
+            raise ValueError(f"{target} does not hold the bytes its name records; restore it with git checkout")
+        return False
+    target.parent.mkdir(exist_ok=True)
+    target.write_bytes(content)
+    return True
+
+
 def stage_images(state_file, state, folder):
     """Write each result image at HEAD into folder's files/, under its content name."""
     for path in dict.fromkeys(result["image"] for row in state["work"] for result in row.get("results", []) if "image" in result):
         blob = subprocess.run(["git", "-C", str(state_file.parent), "cat-file", "blob", f"HEAD:./{path}"], capture_output=True)
         if blob.returncode:
             raise ValueError(f"{path} is not committed in the program folder; commit it with the record")
-        if content_name(blob.stdout, Path(path).suffix) != path:
-            raise ValueError(f"{path} is not its content's name; name it {content_name(blob.stdout, Path(path).suffix)}")
-        target = folder / path
-        if target.exists():
-            if target.read_bytes() != blob.stdout:
-                raise ValueError(f"{target} differs from the committed {path}; restore it with git checkout")
-            continue
-        target.parent.mkdir(exist_ok=True)
-        target.write_bytes(blob.stdout)
+        if (name := content_name(blob.stdout, Path(path).suffix)) != path:
+            raise ValueError(f"{path} is not its content's name; name it {name}")
+        place(folder / path, blob.stdout)
 
 
 def page_files(page):
