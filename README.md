@@ -601,7 +601,12 @@ into these private config files:
 | Template | Destination | Keys |
 |---|---|---|
 | [config.toml](codex/config.toml) | `~/.codex/config.toml`, `~/.codex-t3/config.toml` | Parent settings and the native concurrency ceiling |
-| [settings.json](claude/settings.json) | `~/.claude/settings.json` | Parent settings and instruction-file selection |
+| [settings.json](claude/settings.json) | `~/.claude/settings.json` | Parent settings, instruction-file selection, and enabled plugins |
+
+Enabling a plugin does not install it or its language servers; on a new machine,
+run `brew install pyright typescript-language-server`, while Swift's
+`sourcekit-lsp` ships with Xcode. TypeScript's server uses each project's own
+`typescript` package.
 
 Shared instructions are not a template: sync links them, as described in [Use](#use).
 

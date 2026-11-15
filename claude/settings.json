@@ -8,5 +8,11 @@
         "instructionFiles": "claude-md-and-agents-md"
       }
     }
+  },
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "swift-lsp@claude-plugins-official": true
   }
 }
