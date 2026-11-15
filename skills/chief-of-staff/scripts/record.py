@@ -711,7 +711,7 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
         elif decision.get("applied") is False:
             affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
-            runnable.append(item("apply answer", decision["id"], f"pass the {decision['status']} answer to {affected}, then run applied"))
+            runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
     for wait in state.get("waits", []):
         waiting.append(item("wait", wait.get("work", "program"), f"{wait['on']} until {wait['event']}", wait["date"]))
     blocking = {entry["id"] for decision in state["decisions"] if decision["status"] == "open" for entry in decision.get("blocks", [])}
