@@ -264,8 +264,8 @@ fact it reports the rules reject. Use `unknown` with `unknownReason` when a
 row's state cannot be read.
 
 `status` ends with one verdict: `runnable` when you must act now, `working`
-while an owner runs, `waiting` when everything left waits on a Need or an
-external wait, or `done`. It prints a digest of the facts behind the verdict,
+while an owner runs, `waiting` when everything left waits on a Need, a
+dependency, a blocker, or an external wait, or `done`. It prints a digest of the facts behind the verdict,
 which changes only when they do. `--json` prints them as one object, and
 `--exit-code` gives each verdict its own exit code. A Need whose recommended
 option is marked `reversible` and halts startable work that is not provisional

@@ -712,9 +712,9 @@ class VerdictCommandTests(RecordCase):
         self.assertRegex(line, r"^say: Waiting on A: Needs the user's App Store login; Inbox A-D1 \([0-9dhm]+\); "
                                r"A: CI on #44 until checks finish \([0-9dhm]+\)\. Nothing is runnable\.$")
 
-    def heartbeat(self):
+    def heartbeat(self, *extra):
         before = self.commits()
-        result = self.run_record("status", "--heartbeat", "--json")
+        result = self.run_record("status", "--heartbeat", "--json", *extra)
         self.assertEqual((result.returncode, self.commits()), (0, before), "a heartbeat tick commits nothing")
         self.assertEqual(json.loads(self.program.source.read_text()), self.head(), "nor touches the record")
         return json.loads(result.stdout)["heartbeat"], result.stderr
@@ -734,10 +734,11 @@ class VerdictCommandTests(RecordCase):
 
     def test_a_passing_turn_end_is_the_baseline_a_heartbeat_compares(self):
         self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof")]), "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}})
         self.run_record("status", "--turn-end")
         (self.program.folder / "command-center.next.html").replace(self.program.folder / "command-center.html")
-        self.assertEqual(self.run_record("status", "--turn-end").returncode, 0)
-        self.assertEqual(self.heartbeat()[0], "quiet")
+        self.assertEqual(self.run_record("status", "--turn-end", "--stale-hours", "1000000").returncode, 0)
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000")[0], "quiet")
 
     def test_a_heartbeat_on_a_done_program_says_to_remove_itself(self):
         self.program.write(program([outcome("A", "landed")]), "2026-11-15T13:00:00Z")
@@ -787,6 +788,25 @@ class VerdictCommandTests(RecordCase):
         tick, output = self.heartbeat()
         self.assertEqual(tick, "wake", "done waits until the record shows it")
         self.assertIn("note: L1: landed", output)
+
+    def test_a_failing_read_wakes_once_and_again_when_its_row_goes_stale(self):
+        self.program.write(program([outcome("A", "in-review")], waits=[{"date": "2026-11-15T13:00:00Z", "on": "CI",
+                                                                        "event": "Green", "work": "A"}]), "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}})
+        fresh = ("--stale-hours", "1000000")
+        tick, output = self.heartbeat(*fresh)
+        self.assertEqual(tick, "wake")
+        self.assertIn("note: A: could not read https://example.com/app/pull/A", output)
+        self.assertEqual(self.heartbeat(*fresh)[0], "quiet", "the same failure does not wake every tick")
+        tick, output = self.heartbeat()
+        self.assertEqual(tick, "wake", "a row the heartbeat cannot see goes stale")
+        self.assertIn("note: A: not observed since 2026-11-15T12:00:00Z", output)
+        self.assertEqual(self.heartbeat()[0], "quiet")
+
+    def test_proposed_work_waiting_on_a_stopped_outcome_lets_the_program_finish(self):
+        state = program([outcome("A", "ready", finish="pr-review"),
+                         outcome("B", "planned", required=False, blockedBy=["A"])])
+        self.assertEqual(assess(state, VerdictTests.AT, {"A": {"status": "idle"}})["verdict"], "done")
 
     def test_a_dependency_alone_still_names_what_the_program_waits_on(self):
         self.program.write(program([outcome("A", "ready", finish="pr-review"), outcome("B", "planned", blockedBy=["A"])]),

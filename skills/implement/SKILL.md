@@ -162,8 +162,8 @@ reported as a gap, and the user can open what you showed.
   [Review Fix Loop](../review-fix-loop/SKILL.md) here only when the request asks
   for review. Show the result. When the caller is the user, ask through the
   host's question tool: merge, changes, or scrap. Otherwise return the Try
-  result and that choice through the caller's recorded route; a coordinator's
-  acceptance and release stay the landing gate. `/merge` in this thread means
+  result and that choice through the caller's recorded route; in a coordinator's
+  program, its acceptance and release stay the landing gate. `/merge` in this thread means
   keep: go to Merge, which runs review, opens the PR, and lands it. Changes go
   back to stage 3. Scrap goes to [Repo Cleanup](../repo-cleanup/SKILL.md).
 - **PR:** PR runs review, publishes, and watches to the requested state.
@@ -179,10 +179,10 @@ request on this outcome's scope blocks landing. Coordinate stack changes that
 affect other layers with the caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
 under Orchestration's [who does the work](../orchestration/SKILL.md#who-does-the-work).
 
-**Under a coordinator,** you still run your own review loop and decide its
-pauses. Decide reversible method choices yourself and list them in your report;
-send up only scope, irreversible, and taste calls. Stop at readiness and return
-it for acceptance. Land only on the coordinator's recorded release, as the
+**In a coordinator's program,** your kickoff names its record. You still run
+your own review loop and decide its pauses. Decide reversible method choices
+yourself and list them in your report; send up only scope, irreversible, and
+taste calls. Stop at readiness and return it for acceptance. Land only on the coordinator's recorded release, as the
 kickoff describes: you land your own PR or stack, and the coordinator lands sets
 that span several owners. The record names exactly one lander.
 

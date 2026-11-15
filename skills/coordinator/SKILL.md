@@ -17,7 +17,13 @@ with a recorded need, and every follow-up has a route.
 
 ## Light by default
 
-For a request that spans threads, take the lightest route that settles it:
+Only a program's current coordinator acts on its items and writes its record.
+Before you act on a request, direction, report, event, or pasted answer, check
+whether it touches a program's work, including its owners. If it does and this
+thread is not that program's coordinator, forward the item under
+[move the coordinator](references/coordinator-move.md).
+
+For other requests that span threads, take the lightest route that settles it:
 
 - **Answer it yourself** when you can, such as a status question you can read
   from the threads and forge.
@@ -36,11 +42,6 @@ and keep going on what doesn't depend on the answer.
 user asks for one. The rest of this skill applies to programs. A program has one
 [program record](references/program-state.md), a published command center with
 its **Inbox**, a grant, and a heartbeat.
-
-Only the record's current coordinator acts on program items and writes the
-record. Check it before you act on a request, direction, report, event, or
-pasted answer. A thread that is not the coordinator forwards the item under
-[move the coordinator](references/coordinator-move.md).
 
 ## Keep moving
 

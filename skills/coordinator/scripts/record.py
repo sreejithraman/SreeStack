@@ -736,7 +736,7 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             attention.append(item("approval", identity, f"{row['owner']['name']} waits on an approval in its thread"))
         if row.get("blocked"):
             waiting.append(item("blocked", identity, row["blocked"]))
-        if needs := unsatisfied(state, row):
+        if not at_stop(row) and (needs := unsatisfied(state, row)):
             waiting.append(item("dependency", identity, f"needs {', '.join(needs)}"))
         if (parse_time(at) - parse_time(row["checkedAt"])).total_seconds() > stale_hours * 3600:
             attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
@@ -773,7 +773,7 @@ def waiting_line(assessment):
     """The one line a waiting coordinator ends its turn with."""
     parts = [(f"Inbox {entry['id']}" if entry["kind"] == "need" else f"{entry['id']}: {entry['text']}")
              + (f" ({entry['age']})" if "age" in entry else "") for entry in assessment["waiting"]]
-    return f"Waiting on {'; '.join(parts) or 'owners at their stops'}. Nothing is runnable."
+    return f"Waiting on {'; '.join(parts)}. Nothing is runnable."
 
 
 def show(assessment):
@@ -814,7 +814,7 @@ class Record:
 
     def remember(self, digest, notes=None):
         """Record what was seen; notes default to those already seen, since only a heartbeat observes them."""
-        seen = {"digest": digest, "notes": sorted(self.seen()["notes"] if notes is None else notes)}
+        seen = {"digest": digest, "notes": self.seen()["notes"] if notes is None else notes}
         self.seen_file().write_text(json.dumps(seen) + "\n")
 
     def load(self):
@@ -1002,15 +1002,18 @@ def check_status(args, record, read_pr, read_thread):
 def heartbeat(args, record, read_pr, read_thread, at):
     """One heartbeat tick: observe without committing, and compare with what the coordinator last saw.
 
-    It wakes on runnable work, a changed digest, or a forge note not seen before, such as a base
-    closing under provisional work, which leaves the digest alone. It says done only when the
-    committed record is done too, so the woken coordinator records the last merges first.
+    It wakes on runnable work, a changed digest, or a note not seen before: a forge fact the digest
+    leaves alone, such as a base closing under provisional work, a failed read, or a row gone stale
+    because reads keep failing. It says done only when the committed record is done too, so the
+    woken coordinator records the last merges first.
     """
     committed_state = validate(committed(record.file))
     threads = read_owners(committed_state, read_thread)
     state = copy.deepcopy(committed_state)
-    notes = sorted({re.sub(r"(could not read \S+): .*", r"\1", note) for note in observe(state, at, read_pr, threads)})
+    observed = {re.sub(r"(could not read \S+): .*", r"\1", note) for note in observe(state, at, read_pr, threads)}
     result = assess(state, at, threads, args.stale_hours)
+    stale = {f"{entry['id']}: not observed since {entry['since']}" for entry in result["attention"] if entry["kind"] == "stale"}
+    notes = sorted(observed | stale)
     seen = record.seen()
     fresh = [note for note in notes if note not in seen["notes"]]
     record.remember(result["digest"], notes)

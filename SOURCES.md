@@ -467,10 +467,12 @@ in the saved prompt. A tick observes without committing and compares its digest
 and forge notes with what was last seen, kept in the program's git directory;
 a passing `--turn-end` updates the digest. It stays quiet on waiting or working
 with an unchanged digest and no new note, wakes the coordinator on runnable
-work, a changed digest, or a new note (such as a base closing under provisional
-work), and says done only when the committed record is done too. A live
+work, a changed digest, or a new note (a base closing under provisional work, a
+failed read, or a row gone stale), and says done only when the committed record is done too. A live
 owner's running or waiting sub-status stays out of the digest. A waiting
-dependency names itself in the `say:` line. A move or takeover deletes the old thread's heartbeat
+dependency names itself in the `say:` line, except on proposed work at its
+stop. Light owners land on their own finish line; Implement's release gate
+applies only in a program. A move or takeover deletes the old thread's heartbeat
 and the new coordinator sets up its own. Hosts without scheduled tasks fall
 back to waiting on owner runs through the host.
 
