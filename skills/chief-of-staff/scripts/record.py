@@ -20,7 +20,7 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
-from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, LAYER_KEYS, PROGRAM_KEYS, READY_LAYERS, STATES,
+from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, LAYER_KEYS, OWNER_KEYS, PROGRAM_KEYS, READY_LAYERS, STATES,
                               TERMINAL, WORK_KEYS, committed, effective_finish, fields, git, known_keys, layout,
                               quoted, records, revision, stage_page, validate)
 
@@ -96,6 +96,12 @@ def open_blocks(state, identity, phases=None):
             for entry in decision.get("blocks", []) if entry["id"] == identity and (phases is None or entry["phase"] in phases)]
 
 
+def waits_on_need(state, row):
+    """An open Need that halts this work, or that it waits on at its stop (a shown Try or ready work)."""
+    phases = None if row["state"] in {"shown", "ready"} else HALTING
+    return open_blocks(state, row["id"], phases)
+
+
 def unsatisfied(state, row):
     by_id = {other["id"]: other for other in state["work"]}
     return [identity for identity in row.get("blockedBy", []) if by_id[identity]["state"] not in SATISFIED]
@@ -117,8 +123,11 @@ def start(state, at, work, owner, mode="top-level", session=None, route=None, wo
     row = work_row(state, work)
     if row["state"] in TERMINAL:
         raise Refused(f"{work} is {row['state']}")
-    if "owner" in row and row["state"] in ACTIVE and not replace:
-        raise Refused(f"{work} already has owner {row['owner']['name']}; reconcile it, then pass --replace")
+    recorded = row.get("owner", {})
+    if recorded and recorded["name"] != owner and not replace:
+        raise Refused(f"{work} already has owner {recorded['name']}; reconcile it, then pass --replace")
+    if recorded and row["state"] in ACTIVE and not replace:
+        raise Refused(f"{work} is already {row['state']} under {owner}")
     waiting = unsatisfied(state, row)
     if waiting:
         raise Refused(f"{work} is blocked by {', '.join(waiting)}; start it when they land, or record a provisional base")
@@ -128,12 +137,11 @@ def start(state, at, work, owner, mode="top-level", session=None, route=None, wo
     notes = []
     if "blockedBy" in row:
         notes.append(f"dropped satisfied blockedBy {', '.join(row.pop('blockedBy'))}")
-    record = {"name": owner}
-    if session:
-        record["session"] = session
-    record |= {"start": mode, "route": route or ROUTES[mode]}
-    if workspace:
-        record["workspace"] = workspace
+    record = {} if replace else copy.deepcopy(recorded)
+    record["name"] = owner
+    for key, value in (("session", session), ("start", mode), ("route", route or ROUTES[mode]), ("workspace", workspace)):
+        if value:
+            put(record, key, value, OWNER_KEYS)
     put(row, "owner", record, WORK_KEYS)
     if row["state"] in {"planned", "unknown"}:
         row["state"] = "building"
@@ -176,6 +184,14 @@ def report(state, at, work, block, source):
         raise Refused(f"the report block names outcome {block.get('outcome')!r}, not {work}")
     if block.get("state") not in STATES:
         raise Refused(f"report state must be one of {', '.join(STATES)}")
+    if block["state"] in TERMINAL:
+        raise Refused(f"a report cannot record {block['state']}: run status, which reads merges at the forge, "
+                      "or record a scrap by hand")
+    merged = {layer["id"] for layer in row.get("layers", []) if layer["status"] == "merged"}
+    for layer in objects(block.get("layers", []), "layers"):
+        if layer.get("status") == "merged" and layer.get("id") not in merged:
+            raise Refused(f"report layer {layer.get('id')} claims merged; report it ready and run status, "
+                          "which reads merges at the forge")
     notes = []
     row["state"] = block["state"]
     if block["state"] != "unknown":
@@ -474,8 +490,8 @@ def read_layers(row, read_pr, forge, notes):
             recorded = layer.get(key, "")
             if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
                 put(layer, key, value, LAYER_KEYS)
+                moved = True
                 if recorded:
-                    moved = True
                     notes.append(f"{row['id']}: {layer['id']} {key} moved to {value[:7] if key == 'head' else value}")
         status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
         status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
@@ -497,11 +513,16 @@ def derived_state(row):
 
 
 def first_valid(state, candidates):
-    """Use each row's first candidate the whole program accepts; return why each row fell back."""
-    levels, reasons = {index: 0 for index in candidates}, {}
+    """Raise each row from its original toward its best candidate while the whole program stays valid.
 
-    def attempt():
-        for index, level in levels.items():
+    Rows go in ID order and passes repeat until none moves, so a row stays back only when its own
+    change fails against everything else that was accepted. Return why each row stayed back.
+    """
+    levels = {index: len(options) - 1 for index, options in candidates.items()}
+    reasons = {}
+
+    def accepts(trial):
+        for index, level in trial.items():
             state["work"][index] = candidates[index][level]
         try:
             validate(state)
@@ -509,23 +530,21 @@ def first_valid(state, candidates):
         except ValueError as error:
             return error
 
-    problem = attempt()
-    while problem:
-        movable = [index for index, level in levels.items() if level < len(candidates[index]) - 1]
-        if not movable:
-            raise problem
-        named = [index for index in movable if f"work[{state['work'][index]['id']}]" in str(problem)]
-        order = named + [index for index in movable if index not in named]
+    order = sorted(candidates, key=lambda index: candidates[index][-1]["id"])
+    moved = True
+    while moved:
+        moved = False
         for index in order:
-            levels[index] += 1
-            if not attempt():
-                reasons[index] = problem
-                return reasons
-            levels[index] -= 1
-        levels[order[0]] += 1
-        reasons[order[0]] = problem
-        problem = attempt()
-    return reasons
+            for level in range(levels[index]):
+                problem = accepts(levels | {index: level})
+                if problem is None:
+                    levels[index], moved = level, True
+                    reasons.pop(index, None)
+                    break
+                if level == 0:
+                    reasons[index] = problem
+    accepts(levels)
+    return {index: reasons[index] for index in candidates if levels[index] > 0}
 
 
 def observe(state, at, read_pr, threads):
@@ -571,7 +590,7 @@ def observe(state, at, read_pr, threads):
 
 
 def orphans(state, threads):
-    """Open work with no live owner, recorded wait, open decision, blocker, or pending landing."""
+    """Open work with no live owner, recorded wait, holding Need, or blocker."""
     waits = {row.get("work") for row in state.get("waits", [])}
     found = []
     for row in state["work"]:
@@ -579,7 +598,7 @@ def orphans(state, threads):
         at_pr_state = row["state"] == "ready" and effective_finish(row) != "land"  # stopped for the user
         if row["state"] in TERMINAL or proposed or at_pr_state:
             continue
-        if (live(threads.get(row["id"])) or row["id"] in waits or open_blocks(state, row["id"])
+        if (live(threads.get(row["id"])) or row["id"] in waits or waits_on_need(state, row)
                 or unsatisfied(state, row) or row.get("blocked")):
             continue
         thread = threads.get(row["id"])
@@ -613,7 +632,7 @@ def todo(state, at, threads, stale_hours=STALE_HOURS):
         if isinstance(thread, dict) and thread.get("pendingRequestCount"):
             groups["approvals"].append(f"{identity}: {row['owner']['name']} waits on an approval in its thread")
         owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
-        if owes and not live(thread) and identity not in waits and not held:
+        if owes and not live(thread) and identity not in waits and not waits_on_need(state, row):
             if isinstance(thread, dict):
                 idle = f" for {age(thread['updatedAt'], at)}" if thread.get("updatedAt") else ""
                 why = f"{thread['status']}{idle} with no recorded wait"
@@ -663,14 +682,24 @@ class Record:
 
     def save(self, state, message):
         validate(state)
+        previous = self.file.read_text()
         self.file.write_text(layout(state))
-        self.git("commit", "-q", "-m", message, "--", self.file.name)
+        try:
+            self.git("commit", "-q", "-m", message, "--", self.file.name)
+        except (Refused, ValueError):
+            self.file.write_text(previous)
+            raise
         print(f"committed: {message}")
 
     def render(self):
         """Stage HEAD's page and say whether the published page is behind it."""
-        head = self.git("rev-parse", "--short", "HEAD").strip()
-        if stage_page(self.file, self.page):
+        try:
+            head = self.git("rev-parse", "--short", "HEAD").strip()
+            behind = stage_page(self.file, self.page)
+        except (OSError, ValueError) as error:
+            print(f"page: render failed after the record was saved: {error}. Retry with render_dashboard.py --page.")
+            return False
+        if behind:
             staged = self.page.with_name(f"{self.page.stem}.next{self.page.suffix}")
             print(f"page: behind record {head}. Publish {staged}, then move it over {self.page}.")
             return False

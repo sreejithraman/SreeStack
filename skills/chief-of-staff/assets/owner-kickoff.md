@@ -21,8 +21,8 @@ Delegation allowance: you may start the bounded helpers your workflow needs as y
 Owner report: write it to <program directory>/reports/<ID>.md. Start it with a fenced `json` block holding only the fields that apply, then write the report in prose below it. Each field replaces that part of the record; an empty list clears it:
 
 ```json
-{"outcome": "<ID>", "state": "building | shown | in-review | ready | landed",
- "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | merged | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
+{"outcome": "<ID>", "state": "building | shown | in-review | ready",
+ "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
  "proof": [{"assertion": "<what was checked>", "verdict": "pass | fail | blocked | untested", "url": "<evidence>"}],
  "shown": [{"label": "<result>", "url": "<link>", "access": "<what opening it needs>"}],
  "asks": [{"id": "<ID>-D1", "question": "<one question>", "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "recommended": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],

@@ -209,7 +209,7 @@ The [kickoff](../assets/owner-kickoff.md) asks for it. `report` reads the block:
 ```ts
 type ReportBlock = {
   outcome: string; // the work ID
-  state: Work["state"];
+  state: Work["state"]; // not landed, done, or scrapped
   finishLine?: Work["finishLine"]; // recorded only when the row has none
   layers?: Layer[]; // bottom first, each with its head and base
   proof?: { assertion: string; verdict: "pass" | "fail" | "blocked" | "untested"; url?: string }[];
@@ -226,8 +226,9 @@ Each field in the block replaces that part of the row. An absent field leaves it
 as it was, and an empty list clears it. Proof with a `url` becomes `evidence`,
 and every verdict other than `pass` goes into `acceptance`. Each new ask becomes
 an open Need dated by the command; [triage](decisions.md#triage) it. A wait the
-owner still reports keeps its first date. After `report`, run `status` to check
-each layer's head and base at the forge.
+owner still reports keeps its first date. A report cannot mark a layer merged;
+after `report`, run `status`, which checks each layer's head, base, and merge at
+the forge.
 
 Record the prose parts by hand:
 
@@ -249,8 +250,12 @@ fact it reports the rules reject. Use `unknown` with `unknownReason` when a
 row's state cannot be read.
 
 `status --turn-end` commits nothing. It fails while an open row has no running
-owner, recorded wait, open Need, blocker, or pending landing, or while the
-published page is behind the record.
+owner, recorded wait, blocker, or open Need that holds it. A Need holds a row
+when it halts the row's work, or when the row waits on it as a shown Try or
+ready work; a landing release alone holds nothing. It also fails while
+`program.json` has an uncommitted change or the published page is behind the
+record. Right after a [chief move](chief-move.md), leave the page to the new
+chief.
 
 A row is an outcome, a follow-up (an outcome that came from another one, with
 its own finish line), or a support task. Count an outcome once whatever its

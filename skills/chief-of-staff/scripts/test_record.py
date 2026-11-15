@@ -149,6 +149,22 @@ class EventTests(RecordCase):
         self.commit(lambda s: work(s, "W4").update(blockedBy=["W2"]))
         self.refused("start", "--work", "W4", "--owner", "X", message="blocked by W2")
 
+    def test_start_keeps_a_recorded_owner_and_refuses_another_without_replace(self):
+        self.commit(lambda s: work(s, "W4").update(owner={"name": "Progress owner", "start": "top-level", "route": "r",
+                                                          "resources": "Preview on port 8100", "handled": ["msg 1"]}))
+        self.refused("start", "--work", "W4", "--owner", "Someone else", message="already has owner Progress owner")
+        _, after, _ = self.event("start", "--work", "W4", "--owner", "Progress owner", "--session", SESSION.format("w4"))
+        self.assertEqual({key: work(after, "W4")["owner"].get(key) for key in ("resources", "handled", "session")},
+                         {"resources": "Preview on port 8100", "handled": ["msg 1"], "session": SESSION.format("w4")})
+
+    def test_a_failed_render_after_the_commit_says_the_record_changed(self):
+        page = self.program.folder / "command-center.html"
+        page.mkdir()
+        result = self.run_record("wait", "--on", "CI", "--event", "Done")
+        self.assertEqual(self.commits()[0], "wait: CI")
+        self.assertIn("page: render failed after the record was saved", result.stdout)
+        self.assertNotIn("refused", result.stderr)
+
     def test_start_drops_satisfied_edges_and_defaults_the_route_by_mode(self):
         self.commit(lambda s: work(s, "W4").update(blockedBy=["W0"]))
         changed, after, result = self.event("start", "--work", "W4", "--owner", "Helper", "--mode", "delegated")
@@ -264,6 +280,12 @@ class ReportTests(RecordCase):
         _, after, _ = self.event("report", "--work", "W1")
         self.assertNotIn("waits", after)
 
+    def test_a_report_leaves_merges_to_the_forge(self):
+        layers = copy.deepcopy(work(self.state, "W1")["layers"])
+        layers[1]["status"] = "merged"
+        self.write_report({"outcome": "W1", "state": "in-review", "layers": layers})
+        self.refused("report", "--work", "W1", message="report layer W1-L2 claims merged")
+
     def test_a_malformed_report_is_refused(self):
         self.refused("report", "--work", "W1", message="cannot read")
         self.write_report({"outcome": "W1", "state": "in-review"}, prose="")
@@ -273,7 +295,7 @@ class ReportTests(RecordCase):
         for block, message in (({"outcome": "W2", "state": "building"}, "names outcome 'W2'"),
                                ({"outcome": "W1", "state": "blocked"}, "report state must be one of"),
                                ({"outcome": "W1", "state": "in-review", "proof": [{"assertion": "x", "verdict": "ok"}]}, "verdict"),
-                               ({"outcome": "W1", "state": "landed"}, "landed needs"),
+                               ({"outcome": "W1", "state": "landed"}, "cannot record landed"),
                                ({"outcome": "W1", "state": "in-review", "waits": [{"on": "CI"}]}, "waits[0].event must be")):
             self.write_report(block)
             with self.subTest(message=message):
@@ -397,6 +419,49 @@ class StatusTests(RecordCase):
         self.assertEqual(results[0], results[1])
         self.assertEqual(results[0], {"P": ("in-review", "closed"), "C": ("landed", "merged")})
 
+    def test_a_first_recorded_head_needs_readiness_again(self):
+        def headless(state):
+            ready(state)
+            for layer in work(state, "W1")["layers"]:
+                layer.pop("head")
+        self.commit(headless)
+        w1 = work(self.state, "W1")["layers"]
+        self.serve(prs={layer["url"]: {"state": "OPEN", "headRefOid": "b" * 40, "baseRefName": layer["base"]} for layer in w1})
+        _, after, result = self.event("status")
+        self.assertEqual(work(after, "W1")["state"], "in-review")
+        self.assertNotIn("release: W1", result.stdout)
+
+    def test_a_rejected_change_holds_back_only_its_own_row(self):
+        def program(order):
+            state = example()
+            held = []
+            for identity in ("A", "C"):
+                row = {"id": identity, "title": identity, "repo": "example/exports", "kind": "outcome", "finishLine": "land",
+                       "state": "ready", "owner": {"name": f"Owner {identity}", "start": "top-level", "route": "r"},
+                       "layers": [{"id": f"{identity}-L1", "branch": identity, "status": "ready", "url": f"https://example.com/pull/{identity}",
+                                   "head": "aaaaaaa", "base": "main"}], "checkedAt": "2026-11-02T17:00:00Z"}
+                held.append(row)
+                state["decisions"].append({"id": f"{identity}-D1", "question": "Hold?", "date": "2026-11-02", "source": "msg",
+                                           "status": "open", "blocks": [{"id": identity, "phase": "landing"}]})
+            state["work"] += held if order == "AC" else held[::-1]
+            return validate(state)
+        forge = {"https://example.com/pull/A": {"state": "MERGED", "headRefOid": "a" * 40, "baseRefName": "main"},
+                 "https://example.com/pull/C": {"state": "MERGED", "headRefOid": "a" * 40, "baseRefName": "main"},
+                 "https://example.com/exports/pull/44": {"state": "OPEN", "headRefOid": "c" * 40, "baseRefName": "export-retry-queue"}}
+        outcomes = []
+        for order in ("AC", "CA"):
+            state = program(order)
+            notes = observe(state, "2026-11-15T17:00:00Z", lambda url: forge.get(url) or {"state": "OPEN", "headRefOid": "4d1c9e2"}, {})
+            rows = {row["id"]: (row["state"], row["layers"][0]["status"], row["layers"][-1].get("head")) for row in state["work"]
+                    if row["id"] in {"A", "C", "W1"}}
+            blamed = sorted(note.split(":")[0] for note in notes if "settle by hand" in note)
+            outcomes.append((rows, blamed))
+        self.assertEqual(outcomes[0], outcomes[1])
+        rows, blamed = outcomes[0]
+        self.assertEqual(blamed, ["A", "C"])
+        self.assertEqual((rows["A"][:2], rows["C"][:2]), (("ready", "merged"), ("ready", "merged")))
+        self.assertEqual(rows["W1"][2], "c" * 40, "an unrelated row keeps its forge facts")
+
     def test_merged_layers_land_the_outcome_and_its_release(self):
         self.commit(ready)
         self.event("land", "--work", "W1")
@@ -495,9 +560,17 @@ class TurnEndTests(RecordCase):
                                   "work": ["W1"], "prs": [{"url": "https://example.com/exports/pull/42", "head": "4d1c9e2", "base": "main"}],
                                   "state": "released"})
         work(state, "W1")["owner"]["session"] = SESSION.format("w1")
-        threads = {"W2": {"status": "running"}, "W1": {"status": "idle"}}
+        threads = {"W2": {"status": "running"}, "W6": {"status": "running"}, "W1": {"status": "idle"}}
         self.assertEqual(orphans(state, threads), ["W1 (ready): owner idle with landing L2 released"])
         self.assertEqual(orphans(state, threads | {"W1": {"status": "running"}}), [])
+
+    def test_a_need_that_lets_work_continue_does_not_cover_an_idle_owner(self):
+        state = example()
+        work(state, "W6")["owner"]["session"] = SESSION.format("w6")
+        threads = {"W6": {"status": "idle"}}
+        self.assertIn("W6 (building): owner idle", orphans(state, threads))
+        decision(state, "W6-D1")["blocks"] = [{"id": "W6", "phase": "proof"}]
+        self.assertNotIn("W6 (building): owner idle", orphans(state, threads), "a halting Need covers it")
 
     def test_turn_end_fails_while_the_record_has_an_uncommitted_change(self):
         self.state["next"] = "Hand edit in progress"
@@ -508,17 +581,18 @@ class TurnEndTests(RecordCase):
         state = example()
         work(state, "W4")["required"] = True
         found = orphans(state, {})
-        self.assertEqual(found, ["W2 (building): owner has no session to read", "W3 (building): owner has no session to read",
-                                 "W4 (planned): not started"])
+        self.assertEqual(found, ["W2 (building): owner has no session to read", "W6 (building): owner has no session to read",
+                                 "W3 (building): owner has no session to read", "W4 (planned): not started"],
+                         "W6's open Need blocks only acceptance, so its owner should still be building")
         state["waits"].append({"date": "2026-11-02", "on": "Fixture", "event": "Repaired", "work": "W3"})
         work(state, "W4")["blocked"] = "Needs a design pass"
-        self.assertEqual(orphans(state, {"W2": {"status": "running"}}), [])
+        self.assertEqual(orphans(state, {"W2": {"status": "running"}, "W6": {"status": "running"}}), [])
         landing = copy.deepcopy(state)
         ready(landing)
-        self.assertEqual(orphans(landing, {"W2": {"status": "running"}, "W1": {"status": "idle"}}),
+        self.assertEqual(orphans(landing, {"W2": {"status": "running"}, "W6": {"status": "running"}, "W1": {"status": "idle"}}),
                          ["W1 (ready): ready with no landing release"])
         work(landing, "W1")["finishLine"] = "pr-review"
-        self.assertEqual(orphans(landing, {"W2": {"status": "running"}}), [], "a requested PR state is a stop for the user")
+        self.assertEqual(orphans(landing, {"W2": {"status": "running"}, "W6": {"status": "running"}}), [], "a requested PR state is a stop for the user")
 
 
 if __name__ == "__main__":
