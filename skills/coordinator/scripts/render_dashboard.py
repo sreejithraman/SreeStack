@@ -835,7 +835,7 @@ def decision_label(row):
     settled = row["status"] != "open"
     name, mark = {
         "answered": ("Answered", "decision"),
-        "resolved": ("Chief decided", "resolved"),
+        "resolved": ("Coordinator decided", "resolved"),
     }.get(row["status"], ("Quick pick", "quick") if row.get("weight") == "quick" else ("Decision", "decision"))
     content = f'<span class="need-id{" settled" if settled else ""}">{icon(mark)}{name} {e(row["id"])}</span>'
     if not settled:
@@ -862,7 +862,7 @@ def need_card(row, state, selected=False):
     if row["status"] == "answered":
         content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{prose(row["answer"])}</p></div>'
     elif row["status"] == "resolved":
-        content += f'<div class="answer"><p class="answer-label">Chief\'s call</p><p>{prose(row["answer"])}</p><p class="answer-label">Basis</p><p>{prose(row["basis"])}</p></div>'
+        content += f'<div class="answer"><p class="answer-label">Coordinator\'s call</p><p>{prose(row["answer"])}</p><p class="answer-label">Basis</p><p>{prose(row["basis"])}</p></div>'
         reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
         content += f'<div class="reopen">{reopen}</div>'
     elif row.get("options"):
@@ -909,8 +909,8 @@ def needs_view(state, judgment, quick, resolved, answered):
         if rows:
             groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["question"], selected=row is selected, asked=row["date"]) for row in rows])
     if resolved:
-        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in resolved])
-        cards += collapsible("resolved-heading", "Chief decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>', closed=True)
+        groups += inbox_group("resolved-list", "Coordinator decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in resolved])
+        cards += collapsible("resolved-heading", "Coordinator decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>', closed=True)
     if revisits:
         groups += inbox_group("revisits-list", "Worth a second look", "revisit", [inbox_row(card_id("tradeoff", row), row["id"], row["title"]) for row in revisits])
         cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>', closed=True)

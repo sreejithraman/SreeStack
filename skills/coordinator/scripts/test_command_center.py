@@ -472,7 +472,7 @@ class ViewTests(CommandCenterCase):
             need.update(status="resolved", answer="Three retries", basis="Matches the recorded policy.")
         self.republish(page, self.changed(resolve))
         self.assertEqual(page.selected_decision(), target)
-        self.assertEqual(page.run("document.querySelector('.inbox-row[aria-selected=true]').closest('.inbox-group').querySelector('.inbox-group-title').innerText").split()[0:2], ["Chief", "decided"])
+        self.assertEqual(page.run("document.querySelector('.inbox-row[aria-selected=true]').closest('.inbox-group').querySelector('.inbox-group-title').innerText").split()[0:2], ["Coordinator", "decided"])
 
     def test_removed_section_keeps_the_others_as_saved(self):
         page = self.open_page()

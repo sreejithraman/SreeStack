@@ -513,6 +513,11 @@ class PageTests(unittest.TestCase):
         self.assertNotIn('class="collapsible landed"', html)
         self.assertEqual(html.count('<section class="collapsible ') - 1, html.count("<details open><summary class=\"section-toggle\" id=\"toggle-stage-"))
 
+    def test_the_page_names_the_coordinator_not_a_chief(self):
+        visible = " ".join(OutsideTimes(render(self.state)).parts)
+        self.assertIn("Coordinator decided", visible)
+        self.assertNotIn("chief", visible.lower())
+
     def test_settled_inbox_sections_start_closed_and_open_items_show_their_age(self):
         html = render(self.state)
         for heading in ("resolved-heading", "revisits-heading", "answered-heading"):
