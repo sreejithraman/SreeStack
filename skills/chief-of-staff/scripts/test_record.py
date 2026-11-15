@@ -459,6 +459,15 @@ class StatusTests(RecordCase):
         self.assertNotIn("release: W1", result.stdout)
         self.refused("land", "--work", "W1", message="W1 is not ready to land")
 
+    def test_readiness_lapses_when_a_ready_base_closes_under_its_dependent(self):
+        self.commit(ready)
+        w1 = work(self.state, "W1")["layers"]
+        self.serve(prs={layer["url"]: {"state": "CLOSED", "headRefOid": layer["head"], "baseRefName": layer["base"]} for layer in w1})
+        _, after, result = self.event("status")
+        self.assertEqual(work(after, "W1")["state"], "in-review")
+        self.assertIn("W1: recorded that its readiness lapsed from the forge; settle by hand", result.stdout)
+        self.assertNotIn("release: W1", result.stdout)
+
     def test_a_rejected_change_holds_back_only_its_own_row(self):
         def program(order):
             state = example()

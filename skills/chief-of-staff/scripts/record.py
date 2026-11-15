@@ -522,8 +522,9 @@ def lapsed(row, facts):
     """The recorded row, with readiness withdrawn from each layer whose observed facts no longer support it."""
     unready = copy.deepcopy(row)
     observed = {layer["id"]: layer for layer in facts.get("layers", [])}
+    allowed = READY_LAYERS.get(effective_finish(row), (set(),))[0]
     for layer in unready.get("layers", []):
-        if layer["status"] == "ready" and observed[layer["id"]]["status"] in {"open", "draft"}:
+        if layer["status"] == "ready" and observed[layer["id"]]["status"] not in allowed:
             layer["status"] = "open"
     if unready["state"] == "ready" and unready["layers"] != row["layers"]:
         unready["state"] = "in-review"
