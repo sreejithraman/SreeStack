@@ -9,19 +9,19 @@ has one home in the file.
 ## Program record
 
 Keep `program.json` and a `reports/` folder in a task-owned directory that the
-chief and its owners can read and that survives worktree cleanup. Adopt an
+coordinator and its owners can read and that survives worktree cleanup. Adopt an
 existing program's folder rather than starting another. Put the folder's
-absolute path in the chief's handoff and every owner kickoff.
+absolute path in the coordinator's handoff and every owner kickoff.
 
 The program folder is a git repository. Its last commit is the record: the
 command center and every reader use `HEAD`, and the log is its history. The
-working `program.json` is only the chief's edit buffer. A new program starts
+working `program.json` is only the coordinator's edit buffer. A new program starts
 from a new `program.json`: run `git -C /absolute/path init`, then add and
 commit `program.json` once it passes the check.
 
 **One writer:** owners write only their own `reports/<outcome ID>.md`. The
-current chief alone writes `program.json`, after it
-[checks the chief](chief-move.md#check-the-chief).
+current coordinator alone writes `program.json`, after it
+[checks the coordinator](coordinator-move.md#check-the-coordinator).
 
 ### Write the record
 
@@ -40,7 +40,9 @@ you reply or move on. Run the event's command from this skill's folder as
 | A landing moves | `land --landing L2 --to submitted`, `landed`, or `withdrawn --note "<why>"` |
 | You passed an answer to the owners it affects | `applied --decision W6-D1` |
 | A wait starts or ends | `wait --on "PR 44 checks" --event "Required checks finish" --work W1`; add `--clear` to end it |
-| A heartbeat, wake, or resume | `status` |
+| A wake or resume | `status` |
+| A heartbeat tick | `status --heartbeat` |
+| The end of every turn | `status --turn-end` |
 
 Add `--next "<action>"` to set the program's `next` in the same commit. Run
 `--help` on a command for its other options.
@@ -53,9 +55,9 @@ prints and settle it with them before you build on it. If they keep it, check
 it with step 3 below and commit it; otherwise run
 `git -C /absolute/path checkout HEAD -- program.json`.
 
-For a change no command covers, such as a new work row, a correction, a reopen,
-a withdrawal, a scrap-or-rebase answer, or a [chief move](chief-move.md), edit
-by hand:
+For a change no command covers, such as a new work row, the grant, a
+correction, a reopen, a withdrawal, a scrap-or-rebase answer, or a
+[coordinator move](coordinator-move.md), edit by hand:
 
 1. Run `git -C /absolute/path status --porcelain -- program.json`. Settle any
    output with the user, as above.
@@ -76,7 +78,7 @@ by hand:
 
 A write is done when its commit lands and the published page matches the
 record: publish whenever the output says `page: behind record`, except after a
-[chief move](chief-move.md), where the new chief publishes. Hosting-link
+[coordinator move](coordinator-move.md), where the new coordinator publishes. Hosting-link
 commits follow [publication bookkeeping](hosting.md#render-and-publish). On a
 git or publish error, stop and report it to the user.
 
@@ -87,7 +89,8 @@ git or publish error, stop and report it to the user.
 a timezone, such as `2026-11-02T17:00:00Z`; dates are `YYYY-MM-DD` or
 timestamps. Prose is markdown. Omit absent optional fields rather than sending
 empty strings. IDs are unique within each collection, and layer IDs
-are unique across the program. The [example file](../assets/example-state.json)
+are unique across the program. Never reuse an ID, even one whose row was
+withdrawn or scrapped; take the next number. The [example file](../assets/example-state.json)
 uses fictional work.
 
 ```ts
@@ -95,15 +98,22 @@ type Program = {
   title: string; goal: string;
   finishLine?: string; // a program-wide note, such as who decides merges
   demo?: boolean; // true only for an illustrative example
-  chief: string; // the current chief thread
+  chief: string; // the current coordinator thread; the key keeps its first name so older records validate
   hosting?: string; // the current published command center's URL
   next: string; // the next useful action
   request: { text: string; sources?: string[] }; // the original request and its message sources
+  grant?: { // what the coordinator may do without asking; changes only on the user's word
+    date: string; source: string; // the user's message that set it
+    start: string; // which owners and support tasks it may start
+    resolve: string; // which decisions it settles itself
+    user: string; // what stays with the user
+    heartbeat?: string; // its interval and scheduled task ID, or why there is none
+  };
   corrections?: Entry[]; // accepted corrections
   requirements?: Entry[]; // preserved requirements
-  approvals?: (Entry & { id: string; covers: string; picks: string })[]; // standing approvals
+  approvals?: (Entry & { id: string; covers: string; picks: string })[]; // standing approvals, part of the grant's resolve
   directions?: (Entry & { until?: string })[]; // standing directions; until: what releases a hold
-  landingAuthority?: Entry; // the agreed scope Land covers, and its gates
+  landingAuthority?: Entry; // the grant's landing part: the agreed scope Land covers, and its gates
   decisions: Decision[];
   work: Work[];
   revisits?: Revisit[];
@@ -118,7 +128,7 @@ type Phase = "start" | "access" | "proof" | "acceptance" | "landing";
 type Decision = {
   id: string; question: string;
   date: string; source: string; // when it arrived, and the report or message that raised it
-  status: "open" | "answered" | "resolved" | "withdrawn"; // resolved: the chief settled it
+  status: "open" | "answered" | "resolved" | "withdrawn"; // resolved: the coordinator settled it
   context?: string[];
   meanwhile?: string; // what continues while it is open
   recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
@@ -186,13 +196,14 @@ type Landing = {
 ```
 
 Each decision request is a **Need**: one `decisions` entry from arrival to
-answer, kept after it settles so it stays reopenable. Some facts have a less
+answer, kept after it settles so it stays reopenable. An open Need is an
+[Inbox item](decisions.md#inbox-items). Some facts have a less
 obvious home:
 
 | Fact | Home |
 | --- | --- |
 | A stop for the user, including a Try choice | An open Need |
-| A chief call on the plan with no question for the user | A `resolved` decision |
+| A coordinator call on the plan with no question for the user | A `resolved` decision |
 | A discovery that became work | That row's `origin` and `description` |
 | Support work, and the outcomes it unblocks | A `support` row, named in their `blockedBy` or `blocked` |
 | Branch order | Each layer's `stackedOn`, apart from `blockedBy` |
@@ -261,14 +272,25 @@ option is marked `reversible` and halts startable work that is not provisional
 on it is runnable: build on that option provisionally under
 [dependencies](dependencies.md#provisional-work).
 
+When the verdict is `waiting`, `status` also prints a `say:` line. It names
+each Inbox item, wait, and blocker, with its age, and says nothing is runnable.
+End a waiting turn with that line.
+
+`status --heartbeat` observes the forge and threads without committing. It
+prints `heartbeat: quiet` while the verdict is `waiting` or `working` and the
+digest matches the last one seen, `heartbeat: done` when the program is done,
+and otherwise `heartbeat: wake` with the status lines. The last digest seen
+lives in the program's git directory, and a passing `--turn-end` updates it
+too.
+
 `status --turn-end` commits nothing. It fails while the verdict is `runnable`.
 An open row with no running owner, recorded wait, blocker, or open Need that
 holds it is runnable. A Need holds a row
 when it halts the row's work, or when the row waits on it as a shown Try or
 ready work; a landing release alone holds nothing. It also fails while
 `program.json` has an uncommitted change or the published page is behind the
-record. Right after a [chief move](chief-move.md), leave the page to the new
-chief.
+record. Right after a [coordinator move](coordinator-move.md), leave the page to the new
+coordinator.
 
 A row is an outcome, a follow-up (an outcome that came from another one, with
 its own finish line), or a support task. Count an outcome once whatever its

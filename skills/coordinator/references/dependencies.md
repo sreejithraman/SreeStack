@@ -62,7 +62,7 @@ When the base or decision moves:
 - **Decision answered another way:** the owner rebuilds on the answer, or
   offers the work for scrap.
 - **Base scrapped:** each dependent gets its own scrap or rebase choice in
-  Needs you. Nothing continues on the scrapped base. Answering "scrap" scraps
+  the Inbox. Nothing continues on the scrapped base. Answering "scrap" scraps
   the dependent. Answering "rebase onto X" records X in the same commit and sets
   the dependent's `base`:
   - X is another outcome's unmerged layer: retarget `stackedOn` to that layer, and
@@ -116,7 +116,7 @@ After A changes, B's owner restacks and verifies first, then C's. Record the new
 heads and bases and recheck affected evidence. Serialize these operations, one
 writer per branch. If the repository cannot support the chain, make the batch
 one cohesive outcome with one owner and bounded workers, or put the topology
-constraint in Needs you. Never wait indefinitely for merges outside the finish
+constraint in the Inbox. Never wait indefinitely for merges outside the finish
 line, and never invent multi-parent stacks in a linear-chain tool.
 
 ## Integration
@@ -133,4 +133,4 @@ cohesive batch delivered through one integration PR has one owner, who uses
 bounded workers inside it.
 
 When the program grows, classify each addition as required or optional, and put
-limits that need the user's decision in Needs you.
+limits that need the user's decision in the Inbox.

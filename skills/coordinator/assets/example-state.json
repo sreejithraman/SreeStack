@@ -1,9 +1,9 @@
 {
   "title": "Export reliability",
   "goal": "Make exports dependable and let people see and regenerate their export history.",
-  "finishLine": "Each outcome has its own finish line. Land outcomes merge on the chief's release; Try outcomes wait for your choice.",
+  "finishLine": "Each outcome has its own finish line. Land outcomes merge on the coordinator's release; Try outcomes wait for your choice.",
   "demo": true,
-  "chief": "Chief thread (example)",
+  "chief": "Coordinator thread (example)",
   "hosting": "https://claude.ai/artifact/ExampleCommandCenter",
   "next": "Release W1's landing once PR 44 is ready.",
   "request": {
@@ -15,6 +15,14 @@
       "EXP-103",
       "Chat message 2026-11-01"
     ]
+  },
+  "grant": {
+    "date": "2026-11-01",
+    "source": "Chat message 2026-11-01",
+    "start": "Owners for EXP-100 to EXP-103, and support tasks they need.",
+    "resolve": "Reversible calls a recorded source or SA-1 settles.",
+    "user": "Try choices, product tradeoffs, priority, and any merge outside landingAuthority.",
+    "heartbeat": "Every 10 minutes, scheduled task example-heartbeat."
   },
   "corrections": [
     {
@@ -95,7 +103,7 @@
       "options": [
         {
           "label": "Merge",
-          "effect": "The owner opens the PR, runs review, and lands it on the chief's release."
+          "effect": "The owner opens the PR, runs review, and lands it on the coordinator's release."
         },
         {
           "label": "Changes",
@@ -234,7 +242,7 @@
       "owner": {
         "name": "Retry owner",
         "start": "top-level",
-        "route": "`t3_thread_send` to the chief",
+        "route": "`t3_thread_send` to the coordinator",
         "workspace": "Worktree on `retry-export`"
       },
       "layers": [
@@ -282,7 +290,7 @@
       "owner": {
         "name": "API owner",
         "start": "top-level",
-        "route": "`t3_thread_send` to the chief"
+        "route": "`t3_thread_send` to the coordinator"
       },
       "provisional": {
         "basis": "W1-L2, the Retry owner's unmerged cancellation layer.",
@@ -318,7 +326,7 @@
       "owner": {
         "name": "History owner",
         "start": "top-level",
-        "route": "`t3_thread_send` to the chief",
+        "route": "`t3_thread_send` to the coordinator",
         "resources": "History preview server on port 8105; stop with `kill` on its recorded PID."
       },
       "layers": [
@@ -354,7 +362,7 @@
       "owner": {
         "name": "Expiry owner",
         "start": "top-level",
-        "route": "`t3_thread_send` to the chief"
+        "route": "`t3_thread_send` to the coordinator"
       },
       "provisional": {
         "basis": "W6-D1's recommended option: expired entries stay visible.",
@@ -412,7 +420,7 @@
       "owner": {
         "name": "Idempotency owner",
         "start": "adopted",
-        "route": "`t3_thread_send` to the chief"
+        "route": "`t3_thread_send` to the coordinator"
       },
       "layers": [
         {
@@ -460,7 +468,7 @@
     {
       "id": "L1",
       "date": "2026-11-02",
-      "chief": "Chief thread (example)",
+      "chief": "Coordinator thread (example)",
       "lander": "Idempotency owner",
       "target": "main",
       "work": [

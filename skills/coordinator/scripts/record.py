@@ -4,8 +4,9 @@
 Each event command refuses an uncommitted program.json change, stamps the time
 from this machine's clock, changes only what its event changes, validates,
 commits, and renders. `status` reads PRs through `gh` and owner threads through
-the T3 CLI; with --turn-end it commits nothing and fails while work is orphaned
-or the page is behind the record.
+the T3 CLI. With --turn-end it commits nothing and fails while the verdict is
+runnable, the record is dirty, or the page is behind. With --heartbeat it
+commits nothing and says whether the coordinator should wake.
 """
 
 import argparse
@@ -34,9 +35,9 @@ VERDICTS = ("pass", "fail", "blocked", "untested")
 REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "waits", "blocked")
 ASK_KEYS = ("id", "question", "context", "meanwhile", "recommendation", "options", "weight", "phase", "links")
 ROUTES = {
-    "top-level": "`t3_thread_send` to the chief",
-    "adopted": "`t3_thread_send` to the chief",
-    "delegated": "End its turn with the report; the chief watches its PR",
+    "top-level": "`t3_thread_send` to the coordinator",
+    "adopted": "`t3_thread_send` to the coordinator",
+    "delegated": "End its turn with the report; the coordinator watches its PR",
 }
 REPORT_BLOCK = re.compile(r"\A\s*```json[ \t]*\n(.*?)\n```", re.S)
 DECISION_LINE = re.compile(r'^Decision ("(?:[^"\\]|\\.)*") \(revision ([0-9a-f]+)\)(?:: (.*)| in .*)$')
@@ -268,7 +269,7 @@ def replace_list(row, key, value, order=WORK_KEYS):
 
 
 def settle(state, at, identity, answer, status, source=None, basis=None):
-    """Record an answer: answered when it is the user's, resolved when it is the chief's call."""
+    """Record an answer: answered when it is the user's, resolved when it is the coordinator's call."""
     row = decision_row(state, identity)
     if row["status"] == "withdrawn":
         raise Refused(f"{identity} was withdrawn")
@@ -342,7 +343,7 @@ def answer_pasted(state, at, text, source):
 
 
 def applied(state, identities):
-    """The chief passed these answers to the owners they affect."""
+    """The coordinator passed these answers to the owners they affect."""
     for identity in identities:
         row = decision_row(state, identity)
         if row.pop("applied", None) is not False:
@@ -652,6 +653,7 @@ def orphaned(state, threads):
 
 
 VERDICT_EXIT = {"done": 0, "waiting": 3, "working": 4, "runnable": 5}
+QUIET = {"waiting", "working"}  # a heartbeat stays quiet on these while the digest holds
 
 
 def item(kind, identity, text, since=None, detail=None):
@@ -765,12 +767,21 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             "attention": attention}
 
 
+def waiting_line(assessment):
+    """The one line a waiting coordinator ends its turn with."""
+    parts = [(f"Inbox {entry['id']}" if entry["kind"] == "need" else f"{entry['id']}: {entry['text']}")
+             + (f" ({entry['age']})" if "age" in entry else "") for entry in assessment["waiting"]]
+    return f"Waiting on {'; '.join(parts)}. Nothing is runnable."
+
+
 def show(assessment):
     print(f"verdict: {assessment['verdict']} (digest {assessment['digest']})")
     for group in ("runnable", "working", "waiting", "attention"):
         for entry in assessment[group]:
             since = f" ({entry['age']})" if "age" in entry else ""
             print(f"{entry['kind']}: {entry['id']}: {entry['text']}{since}")
+    if assessment["verdict"] == "waiting":
+        print(f"say: {waiting_line(assessment)}")
 
 
 # Command line.
@@ -787,6 +798,17 @@ class Record:
 
     def dirty(self):
         return self.git("status", "--porcelain", "--", self.file.name).strip()
+
+    def seen(self, digest=None):
+        """The digest the coordinator last saw; with digest, remember it instead.
+
+        It lives in the program's git directory, so it never shows as a record change.
+        """
+        path = Path(self.git("rev-parse", "--absolute-git-dir").strip()) / "coordinator-digest"
+        if digest:
+            path.write_text(digest + "\n")
+            return digest
+        return path.read_text().strip() if path.exists() else None
 
     def load(self):
         """The committed program. An uncommitted change stops the command with its diff."""
@@ -857,7 +879,7 @@ def arguments():
     choice.add_argument("--text", help="The answer in the user's words")
     command.add_argument("--pasted", action="store_true", help="Read a copied page prompt from stdin")
 
-    command = commands.add_parser("resolve", parents=[shared], help="The chief settled a decision under triage")
+    command = commands.add_parser("resolve", parents=[shared], help="The coordinator settled a decision under triage")
     command.add_argument("--decision", required=True)
     command.add_argument("--basis", required=True, help="The recorded source that settles it, and why it is reversible")
     choice = command.add_mutually_exclusive_group(required=True)
@@ -883,12 +905,15 @@ def arguments():
     command.add_argument("--clear", action="store_true")
 
     command = commands.add_parser("status", parents=[shared], help="Read PRs and owner threads; list what to do now")
-    command.add_argument("--turn-end", action="store_true",
-                         help="Commit nothing; fail while the verdict is runnable, the record is dirty, or the page is behind")
+    mode = command.add_mutually_exclusive_group()
+    mode.add_argument("--turn-end", action="store_true",
+                      help="Commit nothing; fail while the verdict is runnable, the record is dirty, or the page is behind")
+    mode.add_argument("--heartbeat", action="store_true",
+                      help="Commit nothing; print heartbeat: quiet, wake, or done against the digest last seen")
     command.add_argument("--stale-hours", type=float, default=STALE_HOURS)
     command.add_argument("--json", action="store_true", help="Print one JSON object on stdout; other output goes to stderr")
     command.add_argument("--exit-code", action="store_true",
-                         help="Exit 0 done, 3 waiting, 4 working, 5 runnable (not with --turn-end)")
+                         help="Exit 0 done, 3 waiting, 4 working, 5 runnable (not with --turn-end or --heartbeat)")
     return parser
 
 
@@ -931,11 +956,13 @@ def status(args, record, read_pr=gh_pr, read_thread=t3_thread):
         print(json.dumps(result, ensure_ascii=False))
     if args.turn_end:
         return 0 if result["passes"] else 1
-    return VERDICT_EXIT[result["verdict"]] if args.exit_code else 0
+    return VERDICT_EXIT[result["verdict"]] if args.exit_code and not args.heartbeat else 0
 
 
 def check_status(args, record, read_pr, read_thread):
     at = now()
+    if args.heartbeat:
+        return heartbeat(args, record, read_pr, read_thread, at)
     if args.turn_end:
         state = validate(committed(record.file))
         threads = read_owners(state, read_thread)
@@ -946,7 +973,9 @@ def check_status(args, record, read_pr, read_thread):
             print(f"uncommitted: {record.file.name} has a change; settle it before the turn ends")
         result |= {"uncommitted": dirty, "notes": [], "page": "current" if record.render() else "behind"}
         result["passes"] = result["page"] == "current" and not dirty and result["verdict"] != "runnable"
-        if not result["passes"]:
+        if result["passes"]:
+            record.seen(result["digest"])
+        else:
             print("Before ending the turn, act on each runnable line, and publish the page.")
         return result
     state = record.load()
@@ -962,6 +991,30 @@ def check_status(args, record, read_pr, read_thread):
     result = assess(state, at, threads, args.stale_hours)
     show(result)
     return result | {"notes": notes, "page": "current" if record.render() else "behind"}
+
+
+def heartbeat(args, record, read_pr, read_thread, at):
+    """One heartbeat tick: observe without committing, and compare the digest with the last one seen.
+
+    The woken coordinator records what this observed by running status.
+    """
+    state = validate(committed(record.file))
+    threads = read_owners(state, read_thread)
+    observe(state, at, read_pr, threads)
+    result = assess(state, at, threads, args.stale_hours)
+    unchanged = record.seen() == result["digest"]
+    record.seen(result["digest"])
+    if result["verdict"] == "done":
+        tick = "done"
+        print("heartbeat: done. Delete this heartbeat's scheduled task, then hand off and clean up.")
+    elif result["verdict"] in QUIET and unchanged:
+        tick = "quiet"
+        print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). End the turn without a message.")
+    else:
+        tick = "wake"
+        print("heartbeat: wake. Re-read the coordinator's SKILL.md, run status, and act on what it lists.")
+        show(result)
+    return result | {"heartbeat": tick}
 
 
 def main():

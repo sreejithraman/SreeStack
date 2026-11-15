@@ -120,7 +120,7 @@ class EventTests(RecordCase):
         row = work(after, "W4")
         self.assertEqual(row["state"], "building")
         self.assertEqual(row["owner"], {"name": "Progress owner", "session": SESSION.format("w4"), "start": "top-level",
-                                        "route": "`t3_thread_send` to the chief"})
+                                        "route": "`t3_thread_send` to the coordinator"})
         self.assertTrue(row["checkedAt"].endswith("Z"))
         self.assertTrue(earlier <= utc(row["checkedAt"]) <= later, row["checkedAt"])
         self.assertEqual(self.commits()[0], "W4 start: Progress owner")
@@ -170,7 +170,7 @@ class EventTests(RecordCase):
         changed, after, result = self.event("start", "--work", "W4", "--owner", "Helper", "--mode", "delegated")
         self.assertNotIn("blockedBy", work(after, "W4"))
         self.assertIn("work[W4].blockedBy", changed)
-        self.assertEqual(work(after, "W4")["owner"]["route"], "End its turn with the report; the chief watches its PR")
+        self.assertEqual(work(after, "W4")["owner"]["route"], "End its turn with the report; the coordinator watches its PR")
         self.assertIn("dropped satisfied blockedBy W0", result.stdout)
 
     def test_answer_and_resolve_pick_the_status_from_who_answered(self):
@@ -187,7 +187,7 @@ class EventTests(RecordCase):
         self.assertNotIn("answerSource", resolved)
         self.refused("resolve", "--decision", open_need["id"], "--text", "Again", "--basis", "b", message="only an open decision")
 
-    def test_a_user_answer_over_the_chiefs_call_keeps_the_call_in_its_rationale(self):
+    def test_a_user_answer_over_the_coordinators_call_keeps_the_call_in_its_rationale(self):
         resolved = next(row for row in self.state["decisions"] if row["status"] == "resolved")
         _, after, _ = self.event("answer", "--decision", resolved["id"], "--text", "Do the other thing", "--source", "msg 9")
         row = decision(after, resolved["id"])
@@ -523,7 +523,7 @@ class StatusTests(RecordCase):
         self.assertEqual((work(after, "W1")["state"], after["landings"][-1]["state"]), ("landed", "landed"))
         self.assertIn("L2: landed", result.stdout)
 
-    def test_a_forge_fact_the_rules_reject_waits_for_the_chief(self):
+    def test_a_forge_fact_the_rules_reject_waits_for_the_coordinator(self):
         def merged_with_open_need(state):
             ready(state)
             state["decisions"].append({"id": "W1-D8", "question": "Hold it?", "date": "2026-11-02", "source": "msg",
@@ -601,7 +601,7 @@ class VerdictTests(unittest.TestCase):
     def verdict(self, state, threads=None):
         return assess(state, self.AT, threads or {}, 100000)
 
-    def test_runnable_names_each_kind_of_work_the_chief_must_act_on(self):
+    def test_runnable_names_each_kind_of_work_the_coordinator_must_act_on(self):
         state = program([outcome("A", "planned"), outcome("B", "ready"), outcome("C", "building"),
                          outcome("D", "in-review")],
                         [need("D-D1", "D", "landing", status="answered", answer="Yes", answerSource="msg", applied=False)])
@@ -701,6 +701,50 @@ class VerdictCommandTests(RecordCase):
                 self.assertEqual(result.returncode, {"done": 0, "waiting": 3, "working": 4, "runnable": 5}[verdict])
                 self.assertIn(f"verdict: {verdict}", result.stderr, "human output moves to stderr with --json")
                 self.assertEqual(self.run_record("status").returncode, 0, "without --exit-code status exits 0")
+
+    def test_a_waiting_status_says_what_it_waits_on_with_ages(self):
+        state = program([outcome("A", "building", blocked="Needs the user's App Store login")],
+                        [need("A-D1", "A", "proof")],
+                        waits=[{"date": "2026-11-15T13:00:00Z", "on": "CI on #44", "event": "checks finish", "work": "A"}])
+        self.program.write(state, "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "idle"}})
+        line = next(text for text in self.run_record("status").stdout.splitlines() if text.startswith("say: "))
+        self.assertRegex(line, r"^say: Waiting on A: Needs the user's App Store login; Inbox A-D1 \([0-9dhm]+\); "
+                               r"A: CI on #44 until checks finish \([0-9dhm]+\)\. Nothing is runnable\.$")
+
+    def heartbeat(self):
+        before = self.commits()
+        result = self.run_record("status", "--heartbeat", "--json")
+        self.assertEqual((result.returncode, self.commits()), (0, before), "a heartbeat tick commits nothing")
+        self.assertEqual(json.loads(self.program.source.read_text()), self.head(), "nor touches the record")
+        return json.loads(result.stdout)["heartbeat"], result.stderr
+
+    def test_a_heartbeat_stays_quiet_until_the_facts_change_and_wakes_on_runnable_work(self):
+        self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "acceptance")]), "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}})
+        self.assertEqual(self.heartbeat()[0], "wake", "the first tick has no digest to compare")
+        tick, output = self.heartbeat()
+        self.assertEqual(tick, "quiet")
+        self.assertIn("End the turn without a message", output)
+        self.serve(threads={"thread:A": {"status": "idle"}})
+        tick, output = self.heartbeat()
+        self.assertEqual(tick, "wake", "an owner that went idle while owing work")
+        self.assertIn("Re-read the coordinator's SKILL.md", output)
+        self.assertEqual(self.heartbeat()[0], "wake", "runnable work wakes every tick")
+
+    def test_a_passing_turn_end_is_the_baseline_a_heartbeat_compares(self):
+        self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof")]), "2026-11-15T13:00:00Z")
+        self.run_record("status", "--turn-end")
+        (self.program.folder / "command-center.next.html").replace(self.program.folder / "command-center.html")
+        self.assertEqual(self.run_record("status", "--turn-end").returncode, 0)
+        self.assertEqual(self.heartbeat()[0], "quiet")
+
+    def test_a_heartbeat_on_a_done_program_says_to_remove_itself(self):
+        self.program.write(program([outcome("A", "landed")]), "2026-11-15T13:00:00Z")
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}})
+        tick, output = self.heartbeat()
+        self.assertEqual(tick, "done")
+        self.assertIn("Delete this heartbeat's scheduled task", output)
 
     def test_applied_clears_an_answer_once_its_owners_have_it(self):
         self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "msg")

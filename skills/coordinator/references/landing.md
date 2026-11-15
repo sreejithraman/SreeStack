@@ -13,7 +13,7 @@ heads, nothing in it is provisional, and no open decision or hold affects it.
 Later outcomes need not wait for unrelated ones. A stacked layer lands with every
 unmerged layer below it, so each of those layers must meet the same conditions.
 
-Where the user decides merges, first put the accepted merge set in Needs you,
+Where the user decides merges, first put the accepted merge set in the Inbox,
 naming its PRs and heads. The outcomes stay accepted, and the answer grants that
 set at those heads.
 
@@ -22,11 +22,11 @@ set at those heads.
 Record exactly one lander for each merge set.
 
 - **The owner,** for a set within its own outcome. Record a **landing release**
-  in `landings` from the current chief, naming the owner, each PR with
+  in `landings` from the current coordinator, naming the owner, each PR with
   its accepted head and base, and any resources dependents still need, then
   resume the owner with it.
   The record's last commit is authoritative. Immediately before submitting a
-  merge, the owner re-reads it to confirm the current chief, its active
+  merge, the owner re-reads it to confirm the current coordinator, its active
   release, itself as the one lander, and no affecting decision or hold, and
   matches the forge's head and base to the release. A mismatch returns to you
   for reconciliation. If the owner cannot act, replace it under Orchestration's
@@ -54,7 +54,7 @@ closed without merge did not land.
 
 ## Withdraw a release
 
-When a release's head, base, chief, lander, finish line, provisional state,
+When a release's head, base, coordinator, lander, finish line, provisional state,
 decision, or hold changes, withdraw it in the record before you notify its
 owner. Reconcile any in-flight submission at the forge, and cancel pending
 automatic or queued landing through Merge's supported controls. Confirm it

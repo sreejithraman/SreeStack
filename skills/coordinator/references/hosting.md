@@ -2,7 +2,7 @@
 
 Publish one private command center per program. Claude sessions use a private
 Claude artifact; Codex sessions use a private ChatGPT Site through the available
-Sites plugin. The chief must have the selected publishing tools. If they are
+Sites plugin. The coordinator must have the selected publishing tools. If they are
 unavailable, stop and report the blocker; do not install plugins automatically.
 `hosting` holds the current published page's URL. When you give the user a
 Claude artifact link, append `#no_universal_links` so iOS opens it in the
@@ -24,13 +24,13 @@ python3 scripts/render_dashboard.py --state /absolute/path/program.json --page /
 ```
 
 It prints `changed` in that case. When the page is behind, publish the `.next`
-file. On every resume and chief move, force publication even when unchanged,
+file. On every resume and coordinator move, force publication even when unchanged,
 using the page file in that case, so skill updates reach it.
 
 Reuse the selected backend's existing target on successive updates. If
 `hosting` is absent or points to the other backend, create or use the selected
 target and publish there. Changing backend needs no extra provider-switch
-approval; [chief ownership](chief-move.md) still needs its existing coordination
+approval; [coordinator ownership](coordinator-move.md) still needs its existing coordination
 and takeover authorization.
 
 - **Claude:** update the private artifact in `hosting`. Create one when there is
@@ -67,7 +67,7 @@ identity so a retry uses the same target.
 
 ## Prepare Sites output
 
-Before Sites packages the source, run this from the chief skill's folder. Pass
+Before Sites packages the source, run this from the coordinator skill's folder. Pass
 the rendered `.next` file on `changed`, or the last published page on a forced
 unchanged publication:
 

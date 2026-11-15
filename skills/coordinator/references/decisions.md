@@ -7,7 +7,9 @@ that grants exactly what they chose.
 ## Triage
 
 Scope needs no triage: apply Implement's
-[scope rule](../../implement/SKILL.md#keep-scope-and-decisions).
+[scope rule](../../implement/SKILL.md#keep-scope-and-decisions). An owner's
+reversible method choice needs none either: the owner makes it and reports it.
+Only scope, irreversible, and taste calls come up.
 
 Judge each other request before it reaches the user. Resolve it yourself only
 when all three hold:
@@ -19,28 +21,55 @@ when all three hold:
   has no outward-facing or destructive effect.
 - **Unreserved:** it leaves these with the user: who may land and each merge
   set, finish lines, priority, product tradeoffs, holds and user gates,
-  private input, and every Try choice.
+  private input, every Try choice, and anything the
+  [grant](../SKILL.md#the-grant) keeps with the user.
 
 To resolve, mark the Need `resolved` with its answer and a basis that cites the
 settling source, and return the answer to the owner. A reserved decision the
 user already answered is settled: reply with that answer instead of asking again.
 
-Everything else goes into Needs you under its ID, and you ask the user. Mark it
-`quick` when they can answer from the card: a recommended option with a bounded
-effect. Otherwise it is a `judgment` call. Weight sets the order of their
-attention and grants nothing; a quick pick still waits for their answer.
+Everything else becomes an [Inbox item](#inbox-items). Never ask it through a
+blocking question tool, unless the user is present and in a live back-and-forth
+with you.
 
-Record each outcome the Need holds and the earliest phase it waits at: `start`,
-`access`, `proof`, `acceptance`, or `landing`. When its recommended option is
-reversible, the owner can keep building on it under To Tasks'
+## Inbox items
+
+An open Need is an Inbox item. Each one asks one question. Split a request that
+bundles several into one Need per question, each with its own ID. Never reuse
+an ID. Fill each item from the owner's ask and your own reading:
+
+| Part | Record field |
+| --- | --- |
+| ID, prefixed with the outcome it came from | `id` |
+| One question | `question` |
+| What the user needs to know to answer | `context` |
+| Two or more options, each with its effect and how to reverse it | `options` |
+| Exactly one recommended option, and why | `recommended` on one option, `recommendation` |
+| Screenshots, previews, or other visuals, when they help | `links` |
+| Each outcome it holds, and the earliest phase it waits at | `blocks` |
+| What continues meanwhile | `meanwhile` |
+| When it was asked | `date`, stamped by `report` |
+
+When an owner's ask lacks a part, fill it from the evidence or return the ask to
+the owner. Mark `reversible: true` on an option only when undoing it costs only
+rework.
+
+The phases are `start`, `access`, `proof`, `acceptance`, and `landing`. When the
+recommended option is reversible, the owner keeps building on it under To Tasks'
 [provisional start](../../to-tasks/SKILL.md#ready); say so in `meanwhile`. An
 outcome stays unaccepted while an open Need affects its scope.
+
+Mark an item `quick` when the user can answer from the card: a recommended
+option with a bounded effect. Otherwise it is a `judgment` call. Weight sets the
+order of their attention and grants nothing; a quick pick still waits for their
+answer.
 
 ## Try choices
 
 A shown Try waits for the user's merge, changes, or scrap choice. Put it in
-Needs you as a judgment call, since the user decides after trying it: link the
-results, give each option's effect, and block the outcome at `landing`.
+the Inbox as a judgment call, since the user decides after trying it: link the
+results, give each option's effect, recommend one, and block the outcome at
+`landing`.
 
 - **One outcome by default.** Each shown Try gets its own choice.
 - **A named set when the user asks,** such as a stack plus its dependents.

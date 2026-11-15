@@ -39,7 +39,7 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   automatic publication or merging from a setup request.
 - **Delegation:** link `orchestration` for shared delegation mechanics and
   `swarm` for bounded parallel assignments. `implement` carries one outcome,
-  as one PR or a stack; `chief-of-staff` coordinates several outcomes and their
+  as one PR or a stack; `coordinator` coordinates several outcomes and their
   dependencies.
   Link orchestration's shared model policy for agent defaults;
   preserve explicit project/user overrides. Do not infer new model or effort
