@@ -1228,7 +1228,7 @@ in one host reference; the live host contract remains authoritative. Panel or
 metadata failures block dependent work, while authorized independent supported
 project runners may continue under ownership rules and explicit holds. Runner
 success does not prove panel recovery or replace required visual proof. Keeps
-Xcode and platform tool routes for reaching a device. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
+Xcode and platform tool routes for reaching a device. Explains when an iOS run needs a full lease or kept slim categories, and records the lease mode. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
 with `simlock instructions`. Technical citations use checked upstream source
 documents rather than inaccessible deployed documentation routes.
 
