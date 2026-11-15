@@ -59,8 +59,8 @@ command from this skill's folder as
   [finish](#6-finish-pause-or-resume).
 
 End every turn with `status --turn-end`. It fails while the verdict is
-runnable, `program.json` has an uncommitted change, or the page is behind the
-record.
+runnable, `program.json` has an uncommitted change, an owner's thread state
+differs from the record, or the page is behind the record.
 
 Never stop on a decision whose recommended option is reversible. Build on that
 option provisionally, keep the decision open in the Inbox, and say so in its

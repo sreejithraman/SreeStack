@@ -180,8 +180,8 @@ type Owner = {
   tasks?: string[]; workspace?: string;
   resources?: string; // servers, ports, and databases, with their stop actions
   handled?: string[]; // follow-up messages already handled
-  seen?: { state: "running" | "idle" | "unknown"; at: string; // set by status: its thread when last read
-    approvals?: number }; // requests waiting in its thread for the user
+  seen?: { state: "running" | "idle" | "unknown"; at: string; // set by status: its thread when last read;
+    approvals?: number }; // unknown: unreadable since at. approvals: requests waiting for the user in its thread
 };
 type Layer = {
   id: string; branch: string;
@@ -292,7 +292,8 @@ holds it is runnable. A Need holds a row
 when it halts the row's work, or when the row waits on it as a shown Try or
 ready work; a landing release alone holds nothing. It also fails while
 `program.json` has an uncommitted change or the published page is behind the
-record. Right after a [coordinator move](coordinator-move.md), leave the page to the new
+record, or while an owner's thread state differs from its `owner.seen`, so the
+page shows the state the turn ended on. Right after a [coordinator move](coordinator-move.md), leave the page to the new
 coordinator.
 
 A row is an outcome, a follow-up (an outcome that came from another one, with

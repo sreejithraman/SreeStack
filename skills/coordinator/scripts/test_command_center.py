@@ -381,6 +381,9 @@ class PageTests(CommandCenterCase):
         manual = page.run(f"new Promise(resolve => setTimeout(() => {{ const box = document.querySelector('{target} .manual-prompt'); resolve([box.hidden, box.value]); }}))")
         self.assertFalse(manual[0])
         self.assertEqual(manual[1].splitlines()[::2], [heading, 'I choose option 1: "Merge"'])
+        page.click(f"{target} .pick:last-of-type input")
+        self.assertEqual(page.run(f"document.querySelector('{target} .manual-prompt').value").splitlines()[::2],
+                         [heading, 'I choose option 3: "Scrap"'], "the text to copy follows the pick")
         self.assertEqual(page.run("pageErrors"), [])
 
     def test_a_pick_survives_a_republish_until_its_decision_changes(self):

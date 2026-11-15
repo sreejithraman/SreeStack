@@ -12,7 +12,9 @@ import sys
 import tempfile
 import unittest
 
-from render_dashboard import ISO_TIME, content_name, render, revision, url, validate
+from unittest import mock
+
+from render_dashboard import ISO_TIME, content_name, place, render, revision, url, validate
 
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
@@ -381,6 +383,22 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(url("<t3-thread://v2/env/thread>", "url"), "t3-thread://v2/env/thread")
 
 
+class PlaceTests(unittest.TestCase):
+    def test_an_interrupted_write_leaves_no_image_and_a_retry_places_it(self):
+        def disk_full(path, content):
+            with path.open("wb") as file:
+                file.write(content[:4])
+            raise OSError(28, "No space left on device")
+
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / content_name(b"\x89PNG whole", ".png")
+            with mock.patch.object(Path, "write_bytes", disk_full), self.assertRaises(OSError):
+                place(target, b"\x89PNG whole")
+            self.assertFalse(target.exists())
+            self.assertTrue(place(target, b"\x89PNG whole"))
+            self.assertEqual(target.read_bytes(), b"\x89PNG whole")
+
+
 class PageTests(unittest.TestCase):
     def setUp(self):
         self.state = example()
@@ -458,8 +476,17 @@ class PageTests(unittest.TestCase):
         self.assertEqual(now_line(html, "W3"), "Support worker has no session to read. Owner state unknown")
         self.assertEqual(now_line(html, "W4"), "Proposed, outside the committed scope.")
         self.assertEqual(now_line(html, "W0"), "Landed.")
+        work(self.state, "W2")["owner"]["seen"] = {"state": "unknown", "at": "2026-11-02T16:30:00Z"}
+        self.assertEqual(now_line(render(self.state), "W2"),
+                         "API owner's thread could not be read. Owner thread unreadable · since 2026-11-02T16:30:00Z")
+
+    def test_an_owner_status_has_not_read_yet_is_not_counted_idle(self):
+        before = tallies(render(self.state))
         work(self.state, "W2")["owner"].pop("seen")
-        self.assertEqual(now_line(render(self.state), "W2"), "API owner's thread could not be read. Owner not observed yet")
+        html = render(self.state)
+        self.assertEqual(tallies(html), before | {"running": before["running"] - 1}, "neither running nor idle")
+        self.assertTrue(now_line(html, "W2").endswith("Owner not observed yet"))
+        self.assertNotIn("could not be read", now_line(html, "W2"))
 
     def test_no_utc_time_shows_outside_a_local_time_element(self):
         stamp = "2026-11-02T17:00:00Z"

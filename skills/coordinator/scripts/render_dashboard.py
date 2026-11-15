@@ -511,6 +511,9 @@ def live(thread):
     return isinstance(thread, dict) and thread.get("status") in LIVE_THREADS
 
 
+UNOBSERVED = {"status": "not observed yet"}  # an owner session that status has not read yet
+
+
 def observation(thread, at):
     """What status records of an owner thread read at a time: its facts, or the error string from a failed read."""
     state = "running" if live(thread) else "unknown" if isinstance(thread, str) else "idle"
@@ -525,8 +528,8 @@ def recorded_threads(state):
         owner = row.get("owner", {})
         if row["state"] in TERMINAL or "session" not in owner:
             continue
-        seen = owner.get("seen", {"state": "unknown"})
-        threads[row["id"]] = ("its thread state is unknown" if seen["state"] == "unknown"
+        seen = owner.get("seen")
+        threads[row["id"]] = (UNOBSERVED if not seen else "its thread could not be read" if seen["state"] == "unknown"
                               else {"status": seen["state"], "pendingRequestCount": seen.get("approvals", 0)})
     return threads
 
@@ -544,7 +547,7 @@ def orphaned(state, threads):
         at_pr_state = row["state"] == "ready" and effective_finish(row) != "land"  # stopped for the user
         if row["state"] in TERMINAL or proposed or at_pr_state:
             continue
-        if (live(threads.get(row["id"])) or row["id"] in waits or waits_on_need(state, row)
+        if (live(threads.get(row["id"])) or threads.get(row["id"]) is UNOBSERVED or row["id"] in waits or waits_on_need(state, row)
                 or unsatisfied(state, row) or row.get("blocked")):
             continue
         thread = threads.get(row["id"])
@@ -626,7 +629,7 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             runnable.append(item("release", identity, row["title"]))
         owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
         covered = identity in waits or waits_on_need(state, row) or unsatisfied(state, row) or row.get("blocked")
-        if owes and not live(thread) and not covered:
+        if owes and not live(thread) and thread is not UNOBSERVED and not covered:
             if isinstance(thread, dict):
                 runnable.append(item("idle owner", identity, f"{row['owner']['name']} is {thread['status']} with no recorded wait",
                                      thread.get("updatedAt")))
@@ -1042,7 +1045,8 @@ def blocker_list(items, label, mark, cls):
     return content + "</ul></div>"
 
 
-LIVE_LABELS = {"running": "Owner running", "idle": "Owner idle", "unknown": "Owner state unknown"}
+LIVE_LABELS = {"running": ("Owner running", "seen"), "idle": ("Owner idle", "seen"),
+               "unknown": ("Owner thread unreadable", "since")}
 
 
 def now_sentence(row, state, found):
@@ -1098,8 +1102,10 @@ def live_view(row):
         return ""
     seen = owner.get("seen") if "session" in owner else None
     state = seen["state"] if seen else "unknown"
-    label = LIVE_LABELS[state] if seen or "session" not in owner else "Owner not observed yet"
-    observed = f' · seen {when(seen["at"], "relative")}' if seen else ""
+    label, since = LIVE_LABELS[state]
+    if not seen:
+        label = "Owner not observed yet" if "session" in owner else "Owner state unknown"
+    observed = f' · {since} {when(seen["at"], "relative")}' if seen else ""
     return f'<p class="live {state}"><span class="live-dot" aria-hidden="true"></span><span>{e(label)}{observed}</span></p>'
 
 
@@ -1283,10 +1289,14 @@ def place(target, content):
     """Write content-named bytes at target; return whether it wrote. Other bytes already there are refused."""
     if target.exists():
         if target.read_bytes() != content:
-            raise ValueError(f"{target} does not hold the bytes its name records; restore it with git checkout")
+            raise ValueError(f"{target} does not hold the bytes its name records; restore it with git checkout or remove it")
         return False
     target.parent.mkdir(exist_ok=True)
-    target.write_bytes(content)
+    try:
+        target.write_bytes(content)
+    except OSError:
+        target.unlink(missing_ok=True)
+        raise
     return True
 
 

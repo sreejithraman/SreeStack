@@ -5,7 +5,8 @@ Each event command refuses an uncommitted program.json change, stamps the time
 from this machine's clock, changes only what its event changes, validates,
 commits, and renders. `status` reads PRs through `gh` and owner threads through
 the T3 CLI. With --turn-end it commits nothing and fails while the verdict is
-runnable, the record is dirty, or the page is behind. With --heartbeat it
+runnable, the record is dirty, an owner's thread state differs from the record,
+or the page is behind. With --heartbeat it
 commits nothing and says whether the coordinator should wake.
 """
 
@@ -102,6 +103,8 @@ def start(state, at, work, owner, mode="top-level", session=None, route=None, wo
         notes.append(f"dropped satisfied blockedBy {', '.join(row.pop('blockedBy'))}")
     record = {} if replace else copy.deepcopy(recorded)
     record["name"] = owner
+    if session:
+        record.pop("seen", None)
     for key, value in (("session", session), ("start", mode), ("route", route or ROUTES[mode]), ("workspace", workspace)):
         if value:
             put(record, key, value, OWNER_KEYS)
@@ -553,6 +556,13 @@ def first_valid(state, candidates):
     return {index: reasons[index] for index in candidates if levels[index] > 0}
 
 
+def seen_moved(row, thread, at):
+    """Whether a thread read tells something other than the owner state the record holds, whenever each was read."""
+    recorded = row["owner"].get("seen", {})
+    return {key: value for key, value in observation(thread, at).items() if key != "at"} != {
+        key: value for key, value in recorded.items() if key != "at"}
+
+
 def observe(state, at, read_pr, threads):
     """Apply forge facts and owner thread states to open work and pending landings; return notes on what changed or needs a hand."""
     notes, forge, candidates, kept = [], {}, {}, {}
@@ -581,7 +591,7 @@ def observe(state, at, read_pr, threads):
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
     for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
-        if row["id"] in threads:
+        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
             put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
               if layer["status"] == "merged" and "url" in layer}
@@ -675,18 +685,19 @@ class Record:
         validate(state)
         files = files or {}
         previous = self.file.read_text()
-        created = []
+        created, staged = [], False
         try:
             for name, content in files.items():
                 if place(target := self.file.parent / name, content):
                     created.append(target)
             self.file.write_text(layout(state))
             if files:
+                staged = True
                 self.git("add", "--", *files)
             self.git("commit", "-q", "-m", message, "--", self.file.name, *files)
         except (Refused, ValueError, OSError):
             self.file.write_text(previous)
-            if files:
+            if staged:
                 with contextlib.suppress(ValueError):
                     self.git("reset", "-q", "--", *files)
             for target in created:
@@ -833,8 +844,12 @@ def check_status(args, record, read_pr, read_thread):
         dirty = bool(record.dirty())
         if dirty:
             print(f"uncommitted: {record.file.name} has a change; settle it before the turn ends")
-        result |= {"uncommitted": dirty, "notes": [], "page": "current" if record.render() else "behind"}
-        result["passes"] = result["page"] == "current" and not dirty and result["verdict"] != "runnable"
+        moved = [row["id"] for row in state["work"] if row["id"] in threads and seen_moved(row, threads[row["id"]], at)]
+        if moved:
+            print(f"unrecorded: the owner state of {', '.join(moved)} moved since status recorded it; run status and publish")
+        result |= {"uncommitted": dirty, "unrecorded": moved, "notes": [],
+                   "page": "current" if record.render() else "behind"}
+        result["passes"] = result["page"] == "current" and not dirty and not moved and result["verdict"] != "runnable"
         if result["passes"]:
             record.remember(result["digest"])
         else:

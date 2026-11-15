@@ -151,11 +151,13 @@ class EventTests(RecordCase):
 
     def test_start_keeps_a_recorded_owner_and_refuses_another_without_replace(self):
         self.commit(lambda s: work(s, "W4").update(owner={"name": "Progress owner", "start": "top-level", "route": "r",
-                                                          "resources": "Preview on port 8100", "handled": ["msg 1"]}))
+                                                          "resources": "Preview on port 8100", "handled": ["msg 1"],
+                                                          "seen": {"state": "idle", "at": "2026-11-02T16:00:00Z"}}))
         self.refused("start", "--work", "W4", "--owner", "Someone else", message="already has owner Progress owner")
         _, after, _ = self.event("start", "--work", "W4", "--owner", "Progress owner", "--session", SESSION.format("w4"))
         self.assertEqual({key: work(after, "W4")["owner"].get(key) for key in ("resources", "handled", "session")},
                          {"resources": "Preview on port 8100", "handled": ["msg 1"], "session": SESSION.format("w4")})
+        self.assertNotIn("seen", work(after, "W4")["owner"], "a new session has not been read")
 
     def test_a_failed_render_after_the_commit_says_the_record_changed(self):
         page = self.program.folder / "command-center.html"
@@ -281,6 +283,7 @@ class ReportTests(RecordCase):
         edited = self.program.folder / content_name(shot.read_bytes(), ".png")
         edited.parent.mkdir()
         edited.write_bytes(b"\x89PNG edited by hand")
+        subprocess.run(["git", "-C", str(self.program.folder), "add", "files"], check=True)
         self.write_report({"outcome": "W1", "state": "in-review", "shown": [
             {"label": "History view", "url": "https://example.com/previews/history", "image": str(shot)}]})
         before, record = self.commits(), self.program.source.read_text()
@@ -289,6 +292,9 @@ class ReportTests(RecordCase):
         self.assertIn("does not hold the bytes its name records", result.stderr)
         self.assertEqual((self.commits(), self.program.source.read_text()), (before, record))
         self.assertEqual(edited.read_bytes(), b"\x89PNG edited by hand")
+        staged = subprocess.run(["git", "-C", str(self.program.folder), "diff", "--cached", "--name-only"],
+                                capture_output=True, text=True).stdout.split()
+        self.assertEqual(staged, [edited.relative_to(self.program.folder).as_posix()], "a refusal leaves the index alone")
 
     def test_a_shown_image_must_be_an_absolute_picture_path(self):
         before = self.commits()
@@ -474,6 +480,10 @@ class StatusTests(RecordCase):
         self.assertNotEqual(at, work(self.state, "W1")["owner"]["seen"]["at"])
         self.assertIn("work[W2].checkedAt", changed, "a read thread checks its row")
         self.assertNotIn("work[W5].checkedAt", changed, "a failed read leaves its checked time")
+        unreadable = {"state": "unknown", "at": "2026-11-02T16:00:00Z"}
+        self.commit(lambda state: work(state, "W5")["owner"].update(seen=unreadable))
+        _, again, _ = self.event("status")
+        self.assertEqual(work(again, "W5")["owner"]["seen"], unreadable, "a thread still unreadable keeps when it became so")
 
     def test_a_moved_head_takes_ready_work_back_to_review(self):
         self.commit(ready)
@@ -862,7 +872,7 @@ class VerdictCommandTests(RecordCase):
     def test_a_passing_turn_end_is_the_baseline_a_heartbeat_compares(self):
         self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof")]), "2026-11-15T13:00:00Z")
         self.serve(threads={"thread:A": {"status": "running"}})
-        self.run_record("status", "--turn-end")
+        self.run_record("status")
         (self.program.folder / "command-center.next.html").replace(self.program.folder / "command-center.html")
         self.assertEqual(self.run_record("status", "--turn-end", "--stale-hours", "1000000").returncode, 0)
         self.assertEqual(self.heartbeat("--stale-hours", "1000000")[0], "quiet")
@@ -974,7 +984,7 @@ class TurnEndTests(RecordCase):
         self.commit(self.covered)
         live = {f"thread:{row['id']}": {"status": "running"} for row in self.state["work"]}
         self.serve(threads=live)
-        self.turn_end()
+        self.run_record("status")
         self.publish()
         self.assertEqual(self.turn_end().returncode, 0)
 
@@ -982,9 +992,15 @@ class TurnEndTests(RecordCase):
         result = self.turn_end()
         self.assertEqual(result.returncode, 1)
         self.assertIn("idle owner: W3: Support worker is idle with no recorded wait", result.stdout)
+        self.assertIn("unrecorded: the owner state of W3 moved since status recorded it", result.stdout)
 
         self.event("wait", "--on", "Fixture repair", "--event", "Owner reports", "--work", "W3")
         self.publish()  # the page shows the wait
+        result = self.turn_end()
+        self.assertEqual(result.returncode, 1, "the page still shows W3 running")
+        self.assertNotIn("idle owner", result.stdout)
+        self.run_record("status")
+        self.publish()
         self.assertEqual(self.turn_end().returncode, 0, "a recorded wait covers an idle owner")
 
         self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "msg")

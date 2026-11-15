@@ -419,6 +419,9 @@ function choosePick(choice) {
   button.dataset.prompt = choice.dataset.prompt;
   button.disabled = false;
   button.setAttribute('aria-label', `Copy answer: ${choice.dataset.label}`);
+  const manual = button.parentElement.querySelector('.manual-prompt');
+  if (!manual.hidden) manual.value = choice.dataset.prompt;
+  manual.setAttribute('aria-label', `Prompt: ${button.getAttribute('aria-label')}`);
 }
 
 function connectPicks() {
