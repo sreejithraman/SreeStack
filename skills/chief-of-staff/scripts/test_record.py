@@ -651,6 +651,8 @@ class VerdictTests(unittest.TestCase):
         self.assertEqual([entry["id"] for entry in self.verdict(built_on("A-D10's recommended option."),
                                                                 {"A": {"status": "running"}})["runnable"]], ["A"],
                          "A-D10 is not A-D1")
+        login = program([outcome("A", "planned")], [need("A-D1", "A", "start", reversible=True), need("A-LOGIN", "A", "access")])
+        self.assertEqual(self.verdict(login)["verdict"], "waiting", "a halting Need that is not reversible still holds it")
         for gate in ({"required": False}, {"blocked": "Needs a login"}):
             gated = program([outcome("A", "planned", **gate)], [need("A-D1", "A", "start", reversible=True)])
             with self.subTest(gate=gate):
@@ -673,9 +675,14 @@ class VerdictTests(unittest.TestCase):
         before = self.verdict(review)["digest"]
         review["work"][0]["layers"][0]["status"] = "closed"
         self.assertNotEqual(self.verdict(review)["digest"], before, "a forge change under a wait changes the digest")
-        unread = program([outcome("C", "building")])
-        self.assertEqual(self.verdict(unread, {"C": "could not read its thread: timeout"})["digest"],
-                         self.verdict(unread, {"C": "could not read its thread: refused"})["digest"])
+        for current in ("building", "unknown"):
+            fields = {"unknownReason": "Owner went quiet"} if current == "unknown" else {}
+            unread = program([outcome("C", current, **fields)])
+            with self.subTest(state=current):
+                self.assertEqual(self.verdict(unread, {"C": "could not read its thread: timeout"})["digest"],
+                                 self.verdict(unread, {"C": "could not read its thread: refused"})["digest"])
+                self.assertNotEqual(self.verdict(unread, {"C": "could not read its thread: timeout"})["digest"],
+                                    self.verdict(unread, {"C": {"status": "running"}})["digest"])
 
 
 class VerdictCommandTests(RecordCase):

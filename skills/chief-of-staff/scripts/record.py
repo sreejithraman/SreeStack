@@ -625,7 +625,7 @@ def observe(state, at, read_pr, threads):
 
 def orphans(state, threads):
     """Open work with no live owner, recorded wait, holding Need, or blocker."""
-    return [f"{identity} ({current}): {why}" for identity, current, why in orphaned(state, threads)]
+    return [f"{identity} ({current}): {why}" for identity, current, why, _ in orphaned(state, threads)]
 
 
 def orphaned(state, threads):
@@ -643,11 +643,11 @@ def orphaned(state, threads):
         landing = pending_landing(state, row["id"])
         why = ("not started" if row["state"] == "planned"
                else "ready with no landing release" if row["state"] == "ready" and not landing
-               else thread if isinstance(thread, str) else f"owner {thread['status']}" if thread
+               else "owner thread could not be read" if isinstance(thread, str) else f"owner {thread['status']}" if thread
                else "owner has no session to read" if "owner" in row else "no owner")
         if landing:
             why += f" with landing {landing['id']} {landing['state']}"
-        found.append((row["id"], row["state"], why))
+        found.append((row["id"], row["state"], why, thread if isinstance(thread, str) else None))
     return found
 
 
@@ -664,18 +664,32 @@ def names(text, identity):
     return re.search(rf"(?<![\w-]){re.escape(identity)}(?![\w-])", text) is not None
 
 
+def reversible(decision):
+    return any(option.get("recommended") and option.get("reversible") for option in decision.get("options", []))
+
+
 def reversible_halts(state):
-    """Open Needs whose recommended option is reversible and halts startable work not yet built on it."""
+    """Open Needs whose recommended option is reversible and halts startable work not yet built on it.
+
+    Work qualifies only when every Need that halts it is reversible, so building on the recommendations
+    is all it still lacks.
+    """
     found = []
+    halts = {}
     for decision in state["decisions"]:
-        if decision["status"] != "open" or not any(
-                option.get("recommended") and option.get("reversible") for option in decision.get("options", [])):
+        if decision["status"] == "open":
+            for entry in decision.get("blocks", []):
+                if entry["phase"] in HALTING:
+                    halts.setdefault(entry["id"], []).append(decision)
+    for decision in state["decisions"]:
+        if decision["status"] != "open" or not reversible(decision):
             continue
         for entry in decision.get("blocks", []):
             row = work_row(state, entry["id"])
             provisional = row.get("provisional", {})
             on_it = names(f"{provisional.get('basis', '')} {provisional.get('clears', '')}", decision["id"])
-            startable = (row.get("required") is not False and not unsatisfied(state, row) and not row.get("blocked"))
+            startable = (row.get("required") is not False and not unsatisfied(state, row) and not row.get("blocked")
+                         and all(reversible(other) for other in halts.get(row["id"], [])))
             if entry["phase"] in HALTING and row["state"] not in TERMINAL and startable and not on_it:
                 found.append(item("provisional start", row["id"],
                                   f"build on {decision['id']}'s recommended option provisionally; it halts {entry['phase']}"))
@@ -724,8 +738,8 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
     runnable += reversible_halts(state)
     listed = {entry["id"] for entry in runnable}
-    runnable += [item("orphan", identity, f"({current}) {why}") for identity, current, why in orphaned(state, threads)
-                 if identity not in listed]
+    runnable += [item("orphan", identity, f"({current}) {why}", detail=detail)
+                 for identity, current, why, detail in orphaned(state, threads) if identity not in listed]
     for decision in state["decisions"]:
         if decision["status"] == "open":
             waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
