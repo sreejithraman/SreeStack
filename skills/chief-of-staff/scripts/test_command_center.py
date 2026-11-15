@@ -324,6 +324,15 @@ class PageTests(CommandCenterCase):
         self.assertEqual(page.selected_decision(), rows[2])
         self.assertEqual(page.run("pageErrors"), [])
 
+    def test_times_in_prose_read_in_local_time(self):
+        self.publish(self.changed(lambda state: self.work(state, "W1").update(description="Paused at 2026-11-02T17:00:00Z.")))
+        page = self.open_page()
+        page.click("#work-tab")
+        title, shown = page.run("(time => [time.title, time.textContent])(document.querySelector('.work-description time'))")
+        self.assertEqual(title, "2026-11-02T17:00:00Z")
+        self.assertNotIn("T17:00", shown)
+        self.assertEqual(page.run("pageErrors"), [])
+
     def test_copy_prompt_copies_its_choice_or_offers_the_text(self):
         page = self.open_page()
         target = "#decision-" + "W5-T".encode().hex()

@@ -380,6 +380,15 @@ class PageTests(unittest.TestCase):
         self.assertIn("Finish line Land", text_of(card(html, "W1")))
         self.assertNotIn("while provisional", text_of(card(html, "W1")))
 
+    def test_iso_times_in_prose_become_time_elements(self):
+        state = example()
+        work(state, "W1")["description"] = "Paused at 2026-11-02T17:00:00Z until the 2026-11-03 review."
+        decision(state, "W6-D1")["meanwhile"] = "Checks resumed 2026-11-02T18:30:00+05:30."
+        html = render(state)
+        self.assertIn('<p class="work-description">Paused at <time datetime="2026-11-02T17:00:00Z">2026-11-02T17:00:00Z</time>'
+                      ' until the 2026-11-03 review.</p>', html)
+        self.assertIn('<time datetime="2026-11-02T18:30:00+05:30">2026-11-02T18:30:00+05:30</time>.', html)
+
     def test_updated_time_shows_only_when_given(self):
         self.assertNotIn("Updated", text_of(render(self.state)))
         page = text_of(render(self.state, "2026-11-03T09:30:00Z"))

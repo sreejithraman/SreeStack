@@ -132,7 +132,8 @@ recorded dependency, Need, or block.
 
 On each owner report, user direction, or watcher wake, read the linked artifacts
 and the current tracker and forge state before you change the plan. Record the
-report under [owner reports](references/program-state.md#owner-reports).
+report with `report`, under [owner reports](references/program-state.md#owner-reports),
+then run `status` to check its heads at the forge.
 
 [Triage each decision request](references/decisions.md#triage), and record the
 outcomes it blocks with the phase each waits at. Meanwhile, resume the owner for
@@ -169,7 +170,8 @@ later kickoffs or the environment when that serves the program.
 Check integration as results arrive, and have dependents restack and recheck
 when a base changes, under [integration](references/dependencies.md#integration).
 Recompute ready work after each accepted result, landing, answer, or dependency
-change, and start what became ready.
+change, and start what became ready. `status` lists it, with ready landings and
+idle owners.
 
 A top-level owner watches its own PR and sends its reports, decision requests,
 and blockers to this thread with `t3_thread_send`. It gives you no completion
@@ -182,7 +184,8 @@ it under Orchestration's
 [recover work](../orchestration/references/reuse-and-recovery.md#recover-work),
 or record the outcome blocked with what is missing. For a delegated owner, this
 thread is the watching parent under PR's [wait](../pr/references/watch.md#wait).
-Keep watching pending PRs while you ask the user something.
+Keep watching pending PRs while you ask the user something. Before you end a
+turn, run `status --turn-end` and act on every line it prints.
 
 Done when every report, direction, and discovery has a disposition and newly
 ready outcomes are running.
@@ -252,8 +255,9 @@ reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
 retained work and active dependents no longer need the resources.
 
 Before pausing or moving, bring the record current. On resume, start from the
-record's `next`, reconcile the record with current files, threads, and forge
-state, and [publish the page](references/hosting.md), before dispatching. To
+record's `next`, run `status`, reconcile the record with current files,
+threads, and forge state, and [publish the page](references/hosting.md) before
+you dispatch. To
 move the program to another thread or take over from a chief that cannot act,
 follow [chief move](references/chief-move.md). This skill supplies no background
 wakeups: native goal tracking, recurring checks, and other automation need an

@@ -69,10 +69,13 @@ matches its resolved Need the same way. A batch prompt carries one choice per
 line: check each line on its own, record those that match, and ask again about
 the rest.
 
-Mark a Need `answered` only with the user's answer and, in `answerSource`, the
-message it came from. Mark it `resolved` only under [triage](#triage), citing
-the source that settled it. Then update the affected owners, dependencies, and
-landing releases. Record a scrap-or-rebase answer in the same commit, under
+Record the user's answer with `answer` and the message it came from; it marks
+the Need `answered`. With `--pasted` and the prompt on stdin, it does the
+matching above and lists each line to ask again. Record your own call under
+[triage](#triage) with `resolve`, citing the source that settled it. Both are
+[record commands](program-state.md#write-the-record). Then update the affected
+owners, dependencies, and landing releases. Record a scrap-or-rebase answer in
+the same commit, under
 [Base scrapped](dependencies.md#provisional-work). Mark a withdrawn or replaced
 Need `withdrawn`, record why and any replacement in its `rationale`, and
 reconcile the blockers that depended on it. Move any answer, `answerSource`, and
