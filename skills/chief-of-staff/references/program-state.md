@@ -38,6 +38,7 @@ you reply or move on. Run the event's command from this skill's folder as
 | You settle a Need under [triage](decisions.md#triage) | `resolve --decision W6-D2 --option 1 --basis "<settling source; why it is reversible>"` |
 | You release a landing | `land --work W1` |
 | A landing moves | `land --landing L2 --to submitted`, `landed`, or `withdrawn --note "<why>"` |
+| You passed an answer to the owners it affects | `applied --decision W6-D1` |
 | A wait starts or ends | `wait --on "PR 44 checks" --event "Required checks finish" --work W1`; add `--clear` to end it |
 | A heartbeat, wake, or resume | `status` |
 
@@ -129,6 +130,7 @@ type Decision = {
   answerSource?: string; // required when answered: the user's message that answered it
   basis?: string; // required when resolved: what settled it and why it is reversible
   rationale?: string; // dated reasoning the page omits, such as why it reopened; when withdrawn, why and any replacement
+  applied?: false; // set by answer and resolve; cleared by applied once the affected owners have the answer
 };
 
 type Work = {
@@ -249,8 +251,17 @@ row it fully read. An unread row keeps its old time. Settle by hand each forge
 fact it reports the rules reject. Use `unknown` with `unknownReason` when a
 row's state cannot be read.
 
-`status --turn-end` commits nothing. It fails while an open row has no running
-owner, recorded wait, blocker, or open Need that holds it. A Need holds a row
+`status` ends with one verdict: `runnable` when you must act now, `working`
+while an owner runs, `waiting` when everything left waits on a Need or an
+external wait, or `done`. It prints a digest of the facts behind the verdict,
+which changes only when they do. `--json` prints them as one object, and
+`--exit-code` gives each verdict its own exit code. A quick Need whose
+recommended option halts work that is not provisional on it is runnable: build
+on that option provisionally under [dependencies](dependencies.md#provisional-work).
+
+`status --turn-end` commits nothing. It fails while the verdict is `runnable`,
+or while an open row has no running owner, recorded wait, blocker, or open Need
+that holds it. A Need holds a row
 when it halts the row's work, or when the row waits on it as a shown Try or
 ready work; a landing release alone holds nothing. It also fails while
 `program.json` has an uncommitted change or the published page is behind the

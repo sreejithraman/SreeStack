@@ -35,12 +35,12 @@ ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
-HISTORY = {"date", "source", "answerSource", "rationale"}  # Decision fields the page never shows.
+HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields the page never shows.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
 DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanwhile", "recommendation", "options",
-                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale")
+                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
              "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
              "blocked", "unknownReason", "checkedAt", "required", "origin")
@@ -355,6 +355,8 @@ def validate_decision(row, by_id):
             raise ValueError(f"{path}.{key} applies only to {owner} decisions")
     if status == "withdrawn":
         text(row.get("rationale"), f"{path}.rationale")
+    if "applied" in row and (row["applied"] is not False or status not in {"answered", "resolved"}):
+        raise ValueError(f"{path}.applied is false on an answer not yet passed to its owners, and absent otherwise")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
         raise ValueError(f"{path}.weight must be quick or judgment")
     strings(row.get("context", []), f"{path}.context")

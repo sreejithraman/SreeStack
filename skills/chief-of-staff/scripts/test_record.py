@@ -9,7 +9,7 @@ import tempfile
 import textwrap
 import unittest
 
-from record import observe, orphans, revision
+from record import assess, observe, orphans, revision
 from render_dashboard import decision_prompt, quoted, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, work
 
@@ -175,7 +175,8 @@ class EventTests(RecordCase):
 
     def test_answer_and_resolve_pick_the_status_from_who_answered(self):
         changed, after, _ = self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "User message 18:02")
-        self.assertEqual(changed, {"decisions[W6-D1].status", "decisions[W6-D1].answer", "decisions[W6-D1].answerSource"})
+        self.assertEqual(changed, {"decisions[W6-D1].status", "decisions[W6-D1].answer", "decisions[W6-D1].answerSource",
+                                   "decisions[W6-D1].applied"})
         self.assertEqual((decision(after, "W6-D1")["status"], decision(after, "W6-D1")["answerSource"]),
                          ("answered", "User message 18:02"))
         self.assertEqual(self.commits()[0], "W6-D1 answered")
@@ -203,7 +204,8 @@ class EventTests(RecordCase):
         self.refused("answer", "--pasted", "--source", "msg", stdin=stale, message="ask again: W6-D1")
         changed, after, _ = self.event("answer", "--pasted", "--source", "User message 18:05", stdin=prompt)
         self.assertEqual(decision(after, "W6-D1")["answer"], need["options"][1]["label"])
-        self.assertEqual(changed, {"decisions[W6-D1].status", "decisions[W6-D1].answer", "decisions[W6-D1].answerSource"})
+        self.assertEqual(changed, {"decisions[W6-D1].status", "decisions[W6-D1].answer", "decisions[W6-D1].answerSource",
+                                   "decisions[W6-D1].applied"})
 
     def test_a_page_prompt_round_trips_a_label_the_page_reflows(self):
         self.commit(lambda s: decision(s, "W6-D1")["options"][1].update(label="Keep  links\nvisible"))
@@ -528,12 +530,130 @@ class StatusTests(RecordCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         lines = result.stdout.splitlines()
         self.assertIn("start: W4: Improve export progress estimates", lines)
-        self.assertTrue(any(line.startswith("idle owners: W2: API owner idle for ") for line in lines), lines)
-        self.assertIn("approvals: W3: Support worker waits on an approval in its thread", lines)
-        self.assertFalse(any(line.startswith("idle owners: W3") for line in lines), "a running owner is not idle")
-        self.assertTrue(any(line.startswith("needs open: W6-D1: waiting ") for line in lines))
+        self.assertTrue(any(line.startswith("idle owner: W2: API owner is idle with no recorded wait (") for line in lines), lines)
+        self.assertIn("approval: W3: Support worker waits on an approval in its thread", lines)
+        self.assertFalse(any(line.startswith("idle owner: W3") for line in lines), "a running owner is not idle")
+        self.assertTrue(any(line.startswith("need: W6-D1: Should expired export links remain visible? (") for line in lines))
+        self.assertTrue(lines[[line.startswith("verdict:") for line in lines].index(True)].startswith("verdict: runnable"))
         self.assertFalse(any(line.startswith("stale:") for line in lines))
         self.assertTrue(any(line.startswith("stale:") for line in self.run_record("status").stdout.splitlines()))
+
+
+def outcome(identity, state, finish="land", **fields):
+    """A self-contained outcome with an owner session and the layer its state needs."""
+    row = {"id": identity, "title": f"Work {identity}", "repo": "example/app", "kind": "outcome", "finishLine": finish,
+           "state": state, "checkedAt": "2026-11-15T12:00:00Z"}
+    if state != "planned":
+        row["owner"] = {"name": f"Owner {identity}", "session": SESSION.format(identity), "start": "top-level", "route": "r"}
+    if state in {"in-review", "ready", "landed"}:
+        status = {"in-review": "open", "ready": "ready", "landed": "merged"}[state]
+        row["layers"] = [{"id": f"{identity}-L1", "branch": f"b-{identity}", "status": status,
+                          "url": f"https://example.com/app/pull/{identity}", "head": "aaaaaaa", "base": "main"}]
+    if state == "shown":
+        row["results"] = [{"label": "Preview", "url": "https://example.com/preview"}]
+    return row | fields
+
+
+def need(identity, blocks, phase, quick=False, **fields):
+    row = {"id": identity, "question": f"Question {identity}?", "date": "2026-11-15T10:00:00Z", "source": "msg",
+           "status": "open", "blocks": [{"id": blocks, "phase": phase}]}
+    if quick:
+        row |= {"weight": "quick", "options": [{"label": "Yes", "effect": "Reversible", "recommended": True},
+                                               {"label": "No", "effect": "Other"}]}
+    return row | fields
+
+
+def program(work_rows, decisions=(), waits=()):
+    state = {"title": "Small", "goal": "Goal", "chief": "c", "next": "n", "request": {"text": "r"},
+             "decisions": list(decisions), "work": list(work_rows)}
+    if waits:
+        state["waits"] = list(waits)
+    return validate(state)
+
+
+class VerdictTests(unittest.TestCase):
+    AT = "2026-11-15T14:00:00Z"
+
+    def verdict(self, state, threads=None):
+        return assess(state, self.AT, threads or {}, 100000)
+
+    def test_runnable_names_each_kind_of_work_the_chief_must_act_on(self):
+        state = program([outcome("A", "planned"), outcome("B", "ready"), outcome("C", "building"),
+                         outcome("D", "in-review")],
+                        [need("D-D1", "D", "landing", status="answered", answer="Yes", answerSource="msg", applied=False)])
+        result = self.verdict(state, {"C": {"status": "idle", "updatedAt": "2026-11-15T11:00:00Z"},
+                                      "D": {"status": "running"}})
+        self.assertEqual(result["verdict"], "runnable", "runnable wins over a running owner")
+        self.assertEqual({(entry["kind"], entry["id"]) for entry in result["runnable"]},
+                         {("start", "A"), ("release", "B"), ("idle owner", "C"), ("apply answer", "D-D1")})
+        self.assertEqual(next(entry for entry in result["runnable"] if entry["id"] == "C")["age"], "3h00m")
+
+    def test_working_when_an_owner_runs_and_nothing_is_runnable(self):
+        state = program([outcome("A", "building"), outcome("B", "planned", blockedBy=["A"])])
+        result = self.verdict(state, {"A": {"status": "running"}})
+        self.assertEqual((result["verdict"], result["runnable"]), ("working", []))
+
+    def test_waiting_lists_each_need_and_wait_with_its_age(self):
+        state = program([outcome("A", "building"), outcome("B", "in-review")], [need("A-D1", "A", "proof")],
+                        [{"date": "2026-11-15T13:30:00Z", "on": "PR B checks", "event": "CI finishes", "work": "B"}])
+        result = self.verdict(state, {"A": {"status": "idle"}, "B": {"status": "completed"}})
+        self.assertEqual(result["verdict"], "waiting", "working wins over waiting only while an owner runs")
+        self.assertEqual([(entry["kind"], entry["id"], entry["age"]) for entry in result["waiting"]],
+                         [("need", "A-D1", "4h00m"), ("wait", "B", "30m")])
+
+    def test_done_when_every_outcome_is_terminal_or_at_its_stop(self):
+        state = program([outcome("A", "landed"), outcome("B", "ready", finish="pr-review"),
+                         outcome("C", "shown", finish="try")])
+        self.assertEqual(self.verdict(state)["verdict"], "done")
+        with_choice = program([outcome("A", "landed"), outcome("C", "shown", finish="try")], [need("C-T", "C", "landing")])
+        self.assertEqual(self.verdict(with_choice)["verdict"], "waiting", "a shown Try's open choice wins over done")
+
+    def test_a_reversible_halting_need_is_runnable_until_work_builds_on_it(self):
+        state = program([outcome("A", "building")], [need("A-D1", "A", "proof", quick=True)])
+        result = self.verdict(state, {"A": {"status": "running"}})
+        self.assertEqual(result["verdict"], "runnable")
+        self.assertEqual([(entry["kind"], entry["id"]) for entry in result["runnable"]], [("provisional start", "A")])
+        judgment = program([outcome("A", "building")], [need("A-D1", "A", "proof")])
+        self.assertEqual(self.verdict(judgment, {"A": {"status": "running"}})["verdict"], "working",
+                         "a judgment call is not marked reversible")
+        provisional = program([outcome("A", "building", provisional={"basis": "A-D1's recommended option.", "clears": "A-D1 is answered."})],
+                              [need("A-D1", "A", "acceptance", quick=True)])
+        self.assertEqual(self.verdict(provisional, {"A": {"status": "running"}})["runnable"], [])
+
+    def test_the_digest_follows_facts_not_the_clock(self):
+        state = program([outcome("A", "building")], [need("A-D1", "A", "proof")])
+        first = self.verdict(state)
+        later = assess(state, "2026-11-16T09:00:00Z", {}, 100000)
+        self.assertEqual(first["digest"], later["digest"])
+        self.assertNotEqual(first["waiting"][0]["age"], later["waiting"][0]["age"])
+        state["decisions"].append(need("A-D2", "A", "access"))
+        self.assertNotEqual(self.verdict(state)["digest"], first["digest"])
+
+
+class VerdictCommandTests(RecordCase):
+    def test_exit_codes_and_json_carry_the_verdict(self):
+        cases = {"done": program([outcome("A", "landed")]),
+                 "waiting": program([outcome("A", "building")], [need("A-D1", "A", "proof")]),
+                 "working": program([outcome("A", "building")]),
+                 "runnable": program([outcome("A", "planned")])}
+        for verdict, state in cases.items():
+            self.program.write(state, "2026-11-15T13:00:00Z")
+            self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                       threads={"thread:A": {"status": "running" if verdict == "working" else "idle"}})
+            result = self.run_record("status", "--json", "--exit-code")
+            with self.subTest(verdict=verdict):
+                self.assertEqual(json.loads(result.stdout)["verdict"], verdict, result.stderr)
+                self.assertEqual(result.returncode, {"done": 0, "waiting": 3, "working": 4, "runnable": 5}[verdict])
+                self.assertIn(f"verdict: {verdict}", result.stderr, "human output moves to stderr with --json")
+                self.assertEqual(self.run_record("status").returncode, 0, "without --exit-code status exits 0")
+
+    def test_applied_clears_an_answer_once_its_owners_have_it(self):
+        self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "msg")
+        self.assertIn("apply answer: W6-D1", self.run_record("status").stdout)
+        changed, after, _ = self.event("applied", "--decision", "W6-D1")
+        self.assertEqual(changed, {"decisions[W6-D1].applied"})
+        self.assertNotIn("apply answer", self.run_record("status").stdout)
+        self.refused("applied", "--decision", "W6-D1", message="no answer waiting to be applied")
 
 
 class TurnEndTests(RecordCase):
@@ -574,7 +694,9 @@ class TurnEndTests(RecordCase):
         self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "msg")
         result = self.turn_end()
         self.assertEqual(result.returncode, 1)
+        self.assertIn("apply answer: W6-D1", result.stdout)
         self.assertIn("page: behind record", result.stdout)
+        self.event("applied", "--decision", "W6-D1")
         self.publish()
         self.assertEqual(self.turn_end().returncode, 0)
 
@@ -597,6 +719,16 @@ class TurnEndTests(RecordCase):
         self.assertIn("W6 (building): owner idle", orphans(state, threads))
         decision(state, "W6-D1")["blocks"] = [{"id": "W6", "phase": "proof"}]
         self.assertNotIn("W6 (building): owner idle", orphans(state, threads), "a halting Need covers it")
+
+    def test_turn_end_fails_while_the_verdict_is_runnable(self):
+        self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof", quick=True)]), "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}})
+        self.turn_end()
+        self.publish()
+        result = self.turn_end()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("provisional start: A: build on A-D1's recommended option provisionally", result.stdout)
+        self.assertNotIn("orphaned:", result.stdout)
 
     def test_turn_end_fails_while_the_record_has_an_uncommitted_change(self):
         self.state["next"] = "Hand edit in progress"

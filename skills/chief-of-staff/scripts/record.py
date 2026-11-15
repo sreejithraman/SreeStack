@@ -9,8 +9,10 @@ or the page is behind the record.
 """
 
 import argparse
+import contextlib
 import copy
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -282,8 +284,9 @@ def settle(state, at, identity, answer, status, source=None, basis=None):
         put(row, "answerSource", source, DECISION_KEYS)
     else:
         put(row, "basis", basis, DECISION_KEYS)
+    put(row, "applied", False, DECISION_KEYS)
     affected = ", ".join(f"{entry['id']} ({entry['phase']})" for entry in row.get("blocks", []))
-    return f"{identity} {status}", [f"update the owners of {affected}"] if affected else []
+    return f"{identity} {status}", [f"update the owners of {affected or 'the work it affects'}, then run applied"]
 
 
 def option_label(row, number):
@@ -334,9 +337,17 @@ def answer_pasted(state, at, text, source):
     if not recorded:
         raise Refused("; ".join(notes))
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
-    if affected:
-        notes.append(f"update the owners of {', '.join(affected)}")
+    notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
     return f"{', '.join(recorded)} answered", notes
+
+
+def applied(state, identities):
+    """The chief passed these answers to the owners they affect."""
+    for identity in identities:
+        row = decision_row(state, identity)
+        if row.pop("applied", None) is not False:
+            raise Refused(f"{identity} has no answer waiting to be applied")
+    return f"{', '.join(identities)} applied", []
 
 
 def wait(state, at, on, event=None, work=None, clear=False):
@@ -633,42 +644,95 @@ def orphans(state, threads):
     return found
 
 
-def todo(state, at, threads, stale_hours=STALE_HOURS):
-    """What the chief should do now, grouped by kind."""
+VERDICT_EXIT = {"done": 0, "waiting": 3, "working": 4, "runnable": 5}
+
+
+def item(kind, identity, text, since=None):
+    return {"kind": kind, "id": identity, "text": text} | ({"since": since} if since else {})
+
+
+def reversible_halts(state):
+    """Open quick Needs whose recommended option halts work that is not yet built on it provisionally."""
+    found = []
+    for decision in state["decisions"]:
+        if (decision["status"] != "open" or decision.get("weight") != "quick"
+                or not any(option.get("recommended") for option in decision.get("options", []))):
+            continue
+        for entry in decision.get("blocks", []):
+            row = work_row(state, entry["id"])
+            provisional = row.get("provisional", {})
+            on_it = decision["id"] in f"{provisional.get('basis', '')} {provisional.get('clears', '')}"
+            if entry["phase"] in HALTING and row["state"] not in TERMINAL and not on_it:
+                found.append(item("provisional start", row["id"],
+                                  f"build on {decision['id']}'s recommended option provisionally; it halts {entry['phase']}"))
+    return found
+
+
+def at_stop(row):
+    """Terminal, or stopped for the user at its finish line."""
+    return (row["state"] in TERMINAL or row["state"] == "shown"
+            or (row["state"] == "ready" and effective_finish(row) != "land")
+            or (row["state"] == "planned" and row.get("required") is False))
+
+
+def assess(state, at, threads, stale_hours=STALE_HOURS):
+    """The program verdict and the items behind it."""
     waits = {row.get("work") for row in state.get("waits", [])}
-    groups = {name: [] for name in ("start", "release", "idle owners", "approvals", "stale", "needs open", "needs answered")}
+    runnable, working, waiting, attention = [], [], [], []
     for row in state["work"]:
         identity, current = row["id"], row["state"]
         if current in TERMINAL:
             continue
-        held = open_blocks(state, identity)
+        thread = threads.get(identity)
+        if live(thread):
+            working.append(item("running", identity, f"{row['owner']['name']} is {thread['status']}"))
         if (current == "planned" and row.get("required") is not False and not unsatisfied(state, row)
                 and not row.get("blocked") and not open_blocks(state, identity, HALTING)):
-            groups["start"].append(f"{identity}: {row['title']}")
-        if (current == "ready" and effective_finish(row) == "land" and not held and not unsatisfied(state, row)
-                and not row.get("blocked") and not pending_landing(state, identity)):
-            groups["release"].append(f"{identity}: {row['title']}")
-        thread = threads.get(identity)
-        if isinstance(thread, dict) and thread.get("pendingRequestCount"):
-            groups["approvals"].append(f"{identity}: {row['owner']['name']} waits on an approval in its thread")
+            runnable.append(item("start", identity, row["title"]))
+        if (current == "ready" and effective_finish(row) == "land" and not open_blocks(state, identity)
+                and not unsatisfied(state, row) and not row.get("blocked") and not pending_landing(state, identity)):
+            runnable.append(item("release", identity, row["title"]))
         owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
         if owes and not live(thread) and identity not in waits and not waits_on_need(state, row):
             if isinstance(thread, dict):
-                idle = f" for {age(thread['updatedAt'], at)}" if thread.get("updatedAt") else ""
-                why = f"{thread['status']}{idle} with no recorded wait"
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']} is {thread['status']} with no recorded wait",
+                                     thread.get("updatedAt")))
             else:
-                why = thread or "has no session to read"
-            groups["idle owners"].append(f"{identity}: {row['owner']['name']} {why}")
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']} {thread or 'has no session to read'}"))
+        if isinstance(thread, dict) and thread.get("pendingRequestCount"):
+            attention.append(item("approval", identity, f"{row['owner']['name']} waits on an approval in its thread"))
+        if row.get("blocked"):
+            waiting.append(item("blocked", identity, row["blocked"], row["checkedAt"]))
         if (parse_time(at) - parse_time(row["checkedAt"])).total_seconds() > stale_hours * 3600:
-            groups["stale"].append(f"{identity}: checked {age(row['checkedAt'], at)} ago")
+            attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
+    runnable += reversible_halts(state)
     for decision in state["decisions"]:
-        affected = [entry["id"] for entry in decision.get("blocks", [])
-                    if work_row(state, entry["id"])["state"] not in TERMINAL]
         if decision["status"] == "open":
-            groups["needs open"].append(f"{decision['id']}: waiting {age(decision['date'], at)}: {decision['question']}")
-        elif decision["status"] == "answered" and affected:
-            groups["needs answered"].append(f"{decision['id']}: confirm {', '.join(affected)} follow the answer")
-    return {name: rows for name, rows in groups.items() if rows}
+            waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
+        elif decision.get("applied") is False:
+            affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
+            runnable.append(item("apply answer", decision["id"], f"pass the {decision['status']} answer to {affected}, then run applied"))
+    for wait in state.get("waits", []):
+        waiting.append(item("wait", wait.get("work", "program"), f"{wait['on']} until {wait['event']}", wait["date"]))
+    blocking = {entry["id"] for decision in state["decisions"] if decision["status"] == "open" for entry in decision.get("blocks", [])}
+    done = all(at_stop(row) for row in state["work"]) and not blocking
+    verdict = "runnable" if runnable else "working" if working else "done" if done else "waiting"
+    facts = [{key: value for key, value in entry.items() if key != "since"}
+             for entry in (*runnable, *working, *waiting, *(entry for entry in attention if entry["kind"] != "stale"))]
+    digest = hashlib.sha256(json.dumps([verdict, facts], sort_keys=True).encode()).hexdigest()[:12]
+    for entry in (*runnable, *working, *waiting, *attention):
+        if "since" in entry:
+            entry["age"] = age(entry["since"], at)
+    return {"verdict": verdict, "digest": digest, "runnable": runnable, "working": working, "waiting": waiting,
+            "attention": attention}
+
+
+def show(assessment):
+    print(f"verdict: {assessment['verdict']} (digest {assessment['digest']})")
+    for group in ("runnable", "working", "waiting", "attention"):
+        for entry in assessment[group]:
+            since = f" ({entry['age']})" if "age" in entry else ""
+            print(f"{entry['kind']}: {entry['id']}: {entry['text']}{since}")
 
 
 # Command line.
@@ -762,6 +826,9 @@ def arguments():
     choice.add_argument("--option", type=int)
     choice.add_argument("--text")
 
+    command = commands.add_parser("applied", parents=[shared], help="You passed answers to the owners they affect")
+    command.add_argument("--decision", action="append", required=True)
+
     command = commands.add_parser("land", parents=[shared], help="Release a merge set, or move a landing")
     command.add_argument("--work", action="append", help="Release these ready rows as one set")
     command.add_argument("--lander")
@@ -781,6 +848,9 @@ def arguments():
     command.add_argument("--turn-end", action="store_true",
                          help="Commit nothing; fail while open work is orphaned or the page is behind")
     command.add_argument("--stale-hours", type=float, default=STALE_HOURS)
+    command.add_argument("--json", action="store_true", help="Print one JSON object on stdout; other output goes to stderr")
+    command.add_argument("--exit-code", action="store_true",
+                         help="Exit 0 done, 3 waiting, 4 working, 5 runnable (not with --turn-end)")
     return parser
 
 
@@ -802,6 +872,8 @@ def event(args, state, at):
         row = decision_row(state, args.decision)
         return settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
                       "resolved", basis=args.basis)
+    if args.command == "applied":
+        return applied(state, args.decision)
     if args.command == "land":
         if args.landing:
             if not args.to:
@@ -814,18 +886,33 @@ def event(args, state, at):
 
 
 def status(args, record, read_pr=gh_pr, read_thread=t3_thread):
+    human = sys.stderr if args.json else sys.stdout
+    with contextlib.redirect_stdout(human):
+        result = check_status(args, record, read_pr, read_thread)
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False))
+    if args.turn_end:
+        return 0 if result["passes"] else 1
+    return VERDICT_EXIT[result["verdict"]] if args.exit_code else 0
+
+
+def check_status(args, record, read_pr, read_thread):
     at = now()
     if args.turn_end:
         state = validate(committed(record.file))
-        found = orphans(state, read_owners(state, read_thread))
+        threads = read_owners(state, read_thread)
+        result = assess(state, at, threads, args.stale_hours)
+        found = orphans(state, threads)
         if record.dirty():
             found.append(f"{record.file.name} has an uncommitted change; settle it before the turn ends")
+        show(result)
         for line in found:
             print(f"orphaned: {line}")
-        current = record.render()
-        if found:
-            print("Before ending the turn, start, message, or recover an owner, or record a wait or decision.")
-        return 0 if current and not found else 1
+        result |= {"orphans": found, "notes": [], "page": "current" if record.render() else "behind"}
+        result["passes"] = result["page"] == "current" and not found and result["verdict"] != "runnable"
+        if not result["passes"]:
+            print("Before ending the turn, act on each runnable and orphaned line, and publish the page.")
+        return result
     state = record.load()
     before = copy.deepcopy(state)
     threads = read_owners(state, read_thread)
@@ -836,14 +923,9 @@ def status(args, record, read_pr=gh_pr, read_thread=t3_thread):
         record.save(state, f"status: {summary or 'checked'}")
     for line in notes:
         print(f"note: {line}")
-    groups = todo(state, at, threads, args.stale_hours)
-    for name, rows in groups.items():
-        for row in rows:
-            print(f"{name}: {row}")
-    if not groups:
-        print("now: nothing waits on the chief")
-    record.render()
-    return 0
+    result = assess(state, at, threads, args.stale_hours)
+    show(result)
+    return result | {"notes": notes, "page": "current" if record.render() else "behind"}
 
 
 def main():

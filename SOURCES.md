@@ -464,9 +464,12 @@ repo; its last commit is the record and its log the history.
 wait) with its own clock: it refuses an uncommitted record, changes only what
 the event changes, validates, commits, and renders. Its `status` reads PRs from
 `gh` and owner threads from the T3 CLI, records forge facts, and lists what to
-do now; `status --turn-end` commits nothing and fails while open work has no
-running owner, wait, blocker, or Need that holds it, or the page is behind
-the record. A report cannot record a merge; `status` reads merges at the forge. The renderer turns ISO times in prose into localized time elements. The original command center
+do now. It reports one verdict (runnable, working, waiting, or done) with a
+digest of its facts, as JSON or an exit code on request; a quick Need whose
+recommendation halts work counts as runnable. `status --turn-end` commits
+nothing and fails while the verdict is runnable, open work has no running owner,
+wait, blocker, or Need that holds it, or the page is behind the record. Answers
+stay `applied: false` until the chief runs `applied`. A report cannot record a merge; `status` reads merges at the forge. The renderer turns ISO times in prose into localized time elements. The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
 decision prompts that name one recorded option, judgment calls ahead of quick
