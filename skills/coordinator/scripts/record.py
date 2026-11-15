@@ -789,7 +789,7 @@ def arguments():
 
 
 def event(args, state, at, files):
-    """Apply the command's event to state; files gains any file the commit must add, by record path and source."""
+    """Apply the command's event to state; files gains each file the commit must add: its record path and content."""
     if args.command == "start":
         return start(state, at, args.work, args.owner, args.mode, args.session, args.route, args.workspace, args.replace)
     if args.command == "report":
