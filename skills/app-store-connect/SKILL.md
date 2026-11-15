@@ -77,7 +77,7 @@ Native single-resource and child-list reads include `asc localizations view`, `a
 
 ## Authentication and defaults
 
-- Prefer an existing keychain API profile; use `asc auth login` when authentication needs setup.
+- Use the existing `asc` profile, whether in the Keychain or the config file (`asc auth status` shows it); run `asc auth login` only when no working profile exists.
 - Fallback env vars: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_PATH`, `ASC_PRIVATE_KEY`, `ASC_PRIVATE_KEY_B64`.
 - `ASC_APP_ID` can provide a default app ID.
 - App Store Server API reads live under `asc storekit` and use separate In-App Purchase keys registered with `asc storekit auth login`, rather than `asc auth` profiles.
