@@ -2,7 +2,7 @@
 """Check a program state file and render its command center."""
 
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 from html import escape
 import json
@@ -35,7 +35,7 @@ ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
-HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields the page never shows.
+HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
@@ -45,9 +45,12 @@ DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanw
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
              "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
              "blocked", "unknownReason", "checkedAt", "required", "origin")
-OWNER_KEYS = ("name", "session", "start", "route", "tasks", "workspace", "resources", "handled")
+OWNER_KEYS = ("name", "session", "start", "route", "tasks", "workspace", "resources", "handled", "seen")
+SEEN = ("running", "idle", "unknown")  # an owner thread as status last observed it
 LAYER_KEYS = ("id", "branch", "status", "url", "head", "base", "stackedOn")
 TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif")
+IMAGE = re.compile(r"files/[0-9a-f]{16}(?:%s)" % "|".join(re.escape(suffix) for suffix in IMAGE_SUFFIXES))
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
 
@@ -184,6 +187,12 @@ def validate_owner(owner, path):
         url(owner["session"], f"{path}.session")
     for key in ("tasks", "handled"):
         strings(owner.get(key, []), f"{path}.{key}")
+    if "seen" in owner:
+        seen = known_keys(obj(owner["seen"], f"{path}.seen"), f"{path}.seen", ("state", "at", "approvals"))
+        one_of(seen.get("state"), SEEN, f"{path}.seen.state")
+        timestamp(seen.get("at"), f"{path}.seen.at")
+        if "approvals" in seen and not (type(seen["approvals"]) is int and seen["approvals"] > 0):
+            raise ValueError(f"{path}.seen.approvals must be a positive count")
 
 
 def validate_work(row, layers):
@@ -203,11 +212,14 @@ def validate_work(row, layers):
     for key in ("tickets", "evidence"):
         links(row.get(key, []), f"{path}.{key}")
     for index, result in enumerate(records(row.get("results", []), f"{path}.results")):
-        known_keys(result, f"{path}.results[{index}]", ("label", "url", "access"))
+        known_keys(result, f"{path}.results[{index}]", ("label", "url", "access", "image"))
         text(result.get("label"), f"{path}.results[{index}].label")
         url(result.get("url"), f"{path}.results[{index}].url")
         if "access" in result:
             text(result["access"], f"{path}.results[{index}].access")
+        if "image" in result and not (isinstance(result["image"], str) and IMAGE.fullmatch(result["image"])):
+            raise ValueError(f"{path}.results[{index}].image must be files/ and its content name: the first 16 hex digits "
+                             f"of its sha256 and one of {', '.join(IMAGE_SUFFIXES)}, such as files/0123456789abcdef.png")
     if "required" in row and not isinstance(row["required"], bool):
         raise ValueError(f"{path}.required must be a boolean")
     if state in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
@@ -456,6 +468,212 @@ def validate(state):
     return state
 
 
+# Program verdict: what status prints, derived from the record and each owner thread's facts.
+
+SATISFIED = {"landed", "done"}
+PENDING_LANDINGS = {"released", "submitted"}
+LIVE_THREADS = {"running", "waiting"}  # waiting: on its own helpers
+STALE_HOURS = 2
+
+
+def parse_time(value):
+    return datetime.fromisoformat(value.replace("Z", "+00:00") if "T" in value else value + "T00:00:00+00:00")
+
+
+def age(since, at):
+    minutes = max(0, int((parse_time(at) - parse_time(since)).total_seconds() // 60))
+    days, minutes = divmod(minutes, 1440)
+    hours, minutes = divmod(minutes, 60)
+    return f"{days}d{hours}h" if days else f"{hours}h{minutes:02d}m" if hours else f"{minutes}m"
+
+def open_blocks(state, identity, phases=None):
+    """Open decisions that hold this work, at any phase or only the given ones."""
+    return [decision["id"] for decision in state["decisions"] if decision["status"] == "open"
+            for entry in decision.get("blocks", []) if entry["id"] == identity and (phases is None or entry["phase"] in phases)]
+
+
+def waits_on_need(state, row):
+    """An open Need that halts this work, or that it waits on at its stop (a shown Try or ready work)."""
+    phases = None if row["state"] in {"shown", "ready"} else HALTING
+    return open_blocks(state, row["id"], phases)
+
+
+def unsatisfied(state, row):
+    by_id = {other["id"]: other for other in state["work"]}
+    return [identity for identity in row.get("blockedBy", []) if by_id[identity]["state"] not in SATISFIED]
+
+
+def pending_landing(state, identity):
+    return next((landing for landing in state.get("landings", [])
+                 if landing["state"] in PENDING_LANDINGS and identity in landing["work"]), None)
+
+def live(thread):
+    return isinstance(thread, dict) and thread.get("status") in LIVE_THREADS
+
+
+UNOBSERVED = {"status": "not observed yet"}  # an owner session that status has not read yet
+
+
+def observation(thread, at):
+    """What status records of an owner thread read at a time: its facts, or the error string from a failed read."""
+    state = "running" if live(thread) else "unknown" if isinstance(thread, str) else "idle"
+    approvals = thread.get("pendingRequestCount", 0) if isinstance(thread, dict) else 0
+    return {"state": state, "at": at} | ({"approvals": approvals} if approvals else {})
+
+
+def recorded_threads(state):
+    """The owner thread facts status last recorded, in the form assess reads them live."""
+    threads = {}
+    for row in state["work"]:
+        owner = row.get("owner", {})
+        if row["state"] in TERMINAL or "session" not in owner:
+            continue
+        seen = owner.get("seen")
+        threads[row["id"]] = (UNOBSERVED if not seen else "its thread could not be read" if seen["state"] == "unknown"
+                              else {"status": seen["state"], "pendingRequestCount": seen.get("approvals", 0)})
+    return threads
+
+
+def orphans(state, threads):
+    """Open work with no live owner, recorded wait, holding Need, or blocker."""
+    return [f"{identity} ({current}): {why}" for identity, current, why, _ in orphaned(state, threads)]
+
+
+def orphaned(state, threads):
+    waits = {row.get("work") for row in state.get("waits", [])}
+    found = []
+    for row in state["work"]:
+        proposed = row["state"] == "planned" and row.get("required") is False
+        at_pr_state = row["state"] == "ready" and effective_finish(row) != "land"  # stopped for the user
+        if row["state"] in TERMINAL or proposed or at_pr_state:
+            continue
+        if (live(threads.get(row["id"])) or threads.get(row["id"]) is UNOBSERVED or row["id"] in waits or waits_on_need(state, row)
+                or unsatisfied(state, row) or row.get("blocked")):
+            continue
+        thread = threads.get(row["id"])
+        landing = pending_landing(state, row["id"])
+        why = ("not started" if row["state"] == "planned"
+               else "ready with no landing release" if row["state"] == "ready" and not landing
+               else "owner thread could not be read" if isinstance(thread, str) else f"owner {thread['status']}" if thread
+               else "owner has no session to read" if "owner" in row else "no owner")
+        if landing:
+            why += f" with landing {landing['id']} {landing['state']}"
+        found.append((row["id"], row["state"], why, thread if isinstance(thread, str) else None))
+    return found
+
+def item(kind, identity, text, since=None, detail=None):
+    """One status line; since and detail stay out of the digest."""
+    return ({"kind": kind, "id": identity, "text": text} | ({"since": since} if since else {})
+            | ({"detail": detail} if detail else {}))
+
+
+def names(text, identity):
+    return re.search(rf"(?<![\w-]){re.escape(identity)}(?![\w-])", text) is not None
+
+
+def reversible(decision):
+    return any(option.get("recommended") and option.get("reversible") for option in decision.get("options", []))
+
+
+def reversible_halts(state):
+    """Open Needs whose recommended option is reversible and halts startable work not yet built on it.
+
+    Work qualifies only when every Need that halts it is reversible, so building on the recommendations
+    is all it still lacks.
+    """
+    found, halts = [], {}
+    by_id = {row["id"]: row for row in state["work"]}
+    for decision in state["decisions"]:
+        if decision["status"] == "open":
+            for entry in decision.get("blocks", []):
+                if entry["phase"] in HALTING:
+                    halts.setdefault(entry["id"], []).append(decision)
+    for decision in state["decisions"]:
+        if decision["status"] != "open" or not reversible(decision):
+            continue
+        for entry in decision.get("blocks", []):
+            row = by_id[entry["id"]]
+            provisional = row.get("provisional", {})
+            on_it = names(f"{provisional.get('basis', '')} {provisional.get('clears', '')}", decision["id"])
+            startable = (row.get("required") is not False and not unsatisfied(state, row) and not row.get("blocked")
+                         and all(reversible(other) for other in halts.get(row["id"], [])))
+            if entry["phase"] in HALTING and row["state"] not in TERMINAL and startable and not on_it:
+                found.append(item("provisional start", row["id"],
+                                  f"build on {decision['id']}'s recommended option provisionally; it halts {entry['phase']}"))
+    return found
+
+
+def at_stop(row):
+    """Terminal, or stopped for the user at its finish line."""
+    return (row["state"] in TERMINAL or row["state"] == "shown"
+            or (row["state"] == "ready" and effective_finish(row) != "land")
+            or (row["state"] == "planned" and row.get("required") is False))
+
+
+def assess(state, at, threads, stale_hours=STALE_HOURS):
+    """The program verdict and the items behind it."""
+    waits = {row.get("work") for row in state.get("waits", [])}
+    runnable, working, waiting, attention = [], [], [], []
+    for row in state["work"]:
+        identity, current = row["id"], row["state"]
+        if current in TERMINAL:
+            continue
+        thread = threads.get(identity)
+        if live(thread):
+            working.append(item("running", identity, f"{row['owner']['name']} is working", detail=thread["status"]))
+        if (current == "planned" and row.get("required") is not False and not unsatisfied(state, row)
+                and not row.get("blocked") and not open_blocks(state, identity, HALTING)):
+            runnable.append(item("start", identity, row["title"]))
+        if (current == "ready" and effective_finish(row) == "land" and not open_blocks(state, identity)
+                and not unsatisfied(state, row) and not row.get("blocked") and not pending_landing(state, identity)):
+            runnable.append(item("release", identity, row["title"]))
+        owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
+        covered = identity in waits or waits_on_need(state, row) or unsatisfied(state, row) or row.get("blocked")
+        if owes and not live(thread) and thread is not UNOBSERVED and not covered:
+            if isinstance(thread, dict):
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']} is {thread['status']} with no recorded wait",
+                                     thread.get("updatedAt")))
+            elif thread:
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']}'s thread could not be read", detail=thread))
+            else:
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']} has no session to read"))
+        if isinstance(thread, dict) and thread.get("pendingRequestCount"):
+            attention.append(item("approval", identity, f"{row['owner']['name']} waits on an approval in its thread"))
+        if row.get("blocked"):
+            waiting.append(item("blocked", identity, row["blocked"]))
+        if not at_stop(row) and (needs := unsatisfied(state, row)):
+            waiting.append(item("dependency", identity, f"needs {', '.join(needs)}"))
+        if (parse_time(at) - parse_time(row["checkedAt"])).total_seconds() > stale_hours * 3600:
+            attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
+    runnable += reversible_halts(state)
+    listed = {entry["id"] for entry in runnable}
+    runnable += [item("orphan", identity, f"({current}) {why}", detail=detail)
+                 for identity, current, why, detail in orphaned(state, threads) if identity not in listed]
+    for decision in state["decisions"]:
+        if decision["status"] == "open":
+            waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
+        elif decision.get("applied") is False:
+            affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
+            runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
+    open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
+    for wait in state.get("waits", []):
+        if wait.get("work", "program") in open_rows | {"program"}:
+            waiting.append(item("wait", wait.get("work", "program"), f"{wait['on']} until {wait['event']}", wait["date"]))
+    done = all(at_stop(row) for row in state["work"]) and not waiting
+    verdict = "runnable" if runnable else "working" if working else "done" if done else "waiting"
+    rows = [[row["id"], row["state"], [[layer["id"], layer["status"], layer.get("head"), layer.get("base")]
+                                       for layer in row.get("layers", [])]]
+            for row in state["work"] if row["id"] in open_rows]
+    facts = [{key: value for key, value in entry.items() if key not in {"since", "detail"}}
+             for entry in (*runnable, *working, *waiting, *(entry for entry in attention if entry["kind"] != "stale"))]
+    digest = hashlib.sha256(json.dumps([verdict, facts, rows], sort_keys=True).encode()).hexdigest()[:12]
+    for entry in (*runnable, *working, *waiting, *attention):
+        if "since" in entry:
+            entry["age"] = age(entry["since"], at)
+    return {"verdict": verdict, "digest": digest, "runnable": runnable, "working": working, "waiting": waiting,
+            "attention": attention}
+
+
 STAGE_ORDER = ("planned", "building", "shown", "in-review", "landed", "done", "unknown", "scrapped")
 ICONS = {
     "planned": "circle-dashed", "building": "hammer", "shown": "hand", "in-review": "scan-eye",
@@ -463,8 +681,9 @@ ICONS = {
     "scrapped": "ban", "unknown": "circle-question-mark", "provisional": "git-branch",
     "blocked": "triangle-alert", "waits": "hourglass", "copy": "copy", "copied": "check",
     "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
-    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "updated": "clock", "tradeoff": "scale",
-    "result": "external-link",
+    "recommended": "star", "pr": "git-pull-request", "finish": "flag", "record": "git-commit-horizontal",
+    "tradeoff": "scale", "result": "external-link", "asked": "clock", "next": "arrow-right", "finished": "archive",
+    "runnable": "play", "working": "activity", "waiting": "hourglass",
 }
 
 
@@ -472,10 +691,13 @@ def e(value):
     return escape(str(value), quote=True)
 
 
-def link(label, target, cls="", icon_name=None):
+def anchor(target, content, cls=""):
     attribute = f' class="{cls}"' if cls else ""
-    mark = icon(icon_name) if icon_name else ""
-    return f'<a{attribute} href="{e(url(target, "link"))}" target="_blank" rel="noopener noreferrer">{mark}{e(label)}</a>'
+    return f'<a{attribute} href="{e(url(target, "link"))}" target="_blank" rel="noopener noreferrer">{content}</a>'
+
+
+def link(label, target, cls="", icon_name=None):
+    return anchor(target, (icon(icon_name) if icon_name else "") + e(label), cls)
 
 
 def link_list(rows):
@@ -494,8 +716,9 @@ def hexed(identity):
     return identity.encode().hex()
 
 
-def when(value):
-    return f'<time datetime="{e(value)}">{e(value)}</time>'
+def when(value, form=""):
+    """A time the page shows in local time; form "age" adds how long ago, and "relative" shows only that."""
+    return f'<time datetime="{e(value)}"{f" data-{form}" if form else ""}>{e(value)}</time>'
 
 
 def prose(value):
@@ -503,11 +726,11 @@ def prose(value):
     return ISO_TIME.sub(lambda match: when(match[0]), e(value))
 
 
-UPDATED = re.compile(r'<time id="updated" datetime="[^"]*" data-age>[^<]*</time>')
+STAMP = re.compile(r'<span id="record-stamp">.*?</span>')
 
 
-def updated_time(value):
-    return f'<time id="updated" datetime="{e(value)}" data-age>{e(value)}</time>'
+def record_stamp(commit, at):
+    return f'<span id="record-stamp"><code>{e(commit)}</code> · {when(at, "age")}</span>'
 
 
 def quoted(value):
@@ -524,10 +747,10 @@ def display_stage(row):
     return "in-review" if row["state"] == "ready" else row["state"]
 
 
-def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", alert=""):
+def collapsible(heading_id, title, count, body, *, level=2, state="", mark="", alert="", closed=False):
     """A section whose heading stays visible, and whose count stays readable, when collapsed."""
     return (
-        f'<section class="collapsible{" " + state if state else ""}" aria-labelledby="{heading_id}"><details open>'
+        f'<section class="collapsible{" " + state if state else ""}" aria-labelledby="{heading_id}"><details{"" if closed else " open"}>'
         f'<summary class="section-toggle" id="toggle-{heading_id}"><h{level} id="{heading_id}" class="section-title">{mark}{e(title)} <span class="count">{count}</span>{alert}</h{level}></summary>'
         f"{body}</details></section>"
     )
@@ -543,7 +766,7 @@ def decision_prompt(row, state, action):
 
 def copy_control(prompt, status_id, aria_label, idle, mark="copy"):
     return (
-        f'<button type="button" class="copy-prompt" data-prompt="{e(prompt)}" '
+        f'<button type="button" class="copy-prompt" data-prompt="{e(prompt)}"{"" if prompt else " disabled"} '
         f'aria-label="{e(aria_label)}" aria-describedby="{e(status_id)}">'
         f'<span class="idle">{icon(mark)}{e(idle)}</span><span class="done">{icon("copied")}Copied</span></button>'
         f'<span class="copy-status" id="{e(status_id)}" role="status"></span>'
@@ -551,17 +774,36 @@ def copy_control(prompt, status_id, aria_label, idle, mark="copy"):
     )
 
 
-def choice(row, option, index, state):
-    prompt = decision_prompt(row, state, f'I choose option {index + 1}: {quoted(option["label"])}')
+def choice_prompt(row, state, index):
+    return decision_prompt(row, state, f'I choose option {index + 1}: {quoted(row["options"][index]["label"])}')
+
+
+def pick(row, option, index, state):
     recommended = option.get("recommended", False)
-    content = f'<li class="{"recommended" if recommended else "choice"}"><div class="choice-body"><p class="choice-heading"><strong>{e(option["label"])}</strong>'
+    content = (
+        f'<label class="pick"><input type="radio" name="pick-{hexed(row["id"])}" autocomplete="off" '
+        f'value="{index + 1}" data-prompt="{e(choice_prompt(row, state, index))}" data-label="{e(option["label"])}"'
+        f'{" checked" if recommended else ""}><span class="pick-body"><span class="pick-heading"><strong>{e(option["label"])}</strong>'
+    )
     if recommended:
         content += f'<span class="recommended-label">{icon("recommended")}Recommended</span>'
-    content += f'</p><p class="choice-effect">{prose(option["effect"])}</p>'
+    content += f'</span><span class="pick-effect">{prose(option["effect"])}</span>'
     if recommended and row.get("recommendation"):
-        content += f'<p class="choice-rationale">{prose(row["recommendation"])}</p>'
-    status_id = f'prompt-{hexed(row["id"])}-{index}'
-    return content + f'</div>{copy_control(prompt, status_id, "Copy prompt: " + option["label"], "Copy prompt")}</li>'
+        content += f'<span class="pick-rationale">{prose(row["recommendation"])}</span>'
+    return content + "</span></label>"
+
+
+def picks(row, state):
+    """The options as one pick list, with one action that copies the picked option's prompt."""
+    chosen = next((index for index, option in enumerate(row["options"]) if option.get("recommended")), None)
+    prompt, label = ("", "Pick an option first") if chosen is None else (
+        choice_prompt(row, state, chosen), "Copy answer: " + row["options"][chosen]["label"])
+    action = copy_control(prompt, f'prompt-{hexed(row["id"])}', label, "Copy answer")
+    return (
+        f'<fieldset class="picks" data-revision="{revision(row)}"><legend class="sr-only">Options for {e(row["id"])}</legend>'
+        + "".join(pick(row, option, index, state) for index, option in enumerate(row["options"]))
+        + f'</fieldset><div class="answer-action">{action}</div>'
+    )
 
 
 def recommended_choice(row):
@@ -593,9 +835,11 @@ def decision_label(row):
     settled = row["status"] != "open"
     name, mark = {
         "answered": ("Answered", "decision"),
-        "resolved": ("Chief decided", "resolved"),
+        "resolved": ("Coordinator decided", "resolved"),
     }.get(row["status"], ("Quick pick", "quick") if row.get("weight") == "quick" else ("Decision", "decision"))
     content = f'<span class="need-id{" settled" if settled else ""}">{icon(mark)}{name} {e(row["id"])}</span>'
+    if not settled:
+        content += f'<span class="asked">{icon("asked")}<span>Asked {when(row["date"], "relative")}</span></span>'
     if row.get("blocks"):
         content += f'<span>{"Affected" if settled else "Blocks"} {e(blocked_work(row))}</span>'
     return content
@@ -618,11 +862,11 @@ def need_card(row, state, selected=False):
     if row["status"] == "answered":
         content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{prose(row["answer"])}</p></div>'
     elif row["status"] == "resolved":
-        content += f'<div class="answer"><p class="answer-label">Chief\'s call</p><p>{prose(row["answer"])}</p><p class="answer-label">Basis</p><p>{prose(row["basis"])}</p></div>'
+        content += f'<div class="answer"><p class="answer-label">Coordinator\'s call</p><p>{prose(row["answer"])}</p><p class="answer-label">Basis</p><p>{prose(row["basis"])}</p></div>'
         reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
         content += f'<div class="reopen">{reopen}</div>'
     elif row.get("options"):
-        content += '<ul class="options">' + "".join(choice(row, option, index, state) for index, option in enumerate(row["options"])) + "</ul>"
+        content += picks(row, state)
     elif row.get("recommendation"):
         content += f'<div class="suggested-answer"><p class="answer-label">Suggested answer</p><p>{prose(row["recommendation"])}</p></div>'
     return content + link_list(row.get("links", [])) + "</article>"
@@ -632,10 +876,11 @@ def revisit_card(row):
     return f'<article id="{card_id("tradeoff", row)}" class="card need"><p class="need-meta">{tradeoff_label(row)}</p><h3>{prose(row["title"])}</h3><p class="context">{prose(row["tradeoff"])}</p><div class="answer"><p class="answer-label">Revisit</p><p>{prose(row["revisit"])}</p></div></article>'
 
 
-def inbox_row(target, identity, title, selected=False):
+def inbox_row(target, identity, title, selected=False, asked=None):
+    age = f' · {when(asked, "relative")}' if asked else ""
     return (
         f'<button type="button" class="inbox-row" id="row-{target}" role="option" aria-selected="{str(selected).lower()}" aria-controls="{target}">'
-        f'<span class="inbox-row-title">{e(title)}</span><span class="inbox-row-id">{e(identity)}</span></button>'
+        f'<span class="inbox-row-title">{e(title)}</span><span class="inbox-row-id">{e(identity)}{age}</span></button>'
     )
 
 
@@ -662,16 +907,16 @@ def needs_view(state, judgment, quick, resolved, answered):
     groups = ""
     for heading_id, title, rows in (("judgment-list", "Judgment calls", judgment), ("quick-list", "Quick picks", quick)):
         if rows:
-            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["question"], selected=row is selected) for row in rows])
+            groups += inbox_group(heading_id, title, "open", [inbox_row(card_id("decision", row), row["id"], row["question"], selected=row is selected, asked=row["date"]) for row in rows])
     if resolved:
-        groups += inbox_group("resolved-list", "Chief decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in resolved])
-        cards += collapsible("resolved-heading", "Chief decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>')
+        groups += inbox_group("resolved-list", "Coordinator decided", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in resolved])
+        cards += collapsible("resolved-heading", "Coordinator decided", len(resolved), f'<div class="section-body">{"".join(need_card(row, state) for row in resolved)}</div>', closed=True)
     if revisits:
         groups += inbox_group("revisits-list", "Worth a second look", "revisit", [inbox_row(card_id("tradeoff", row), row["id"], row["title"]) for row in revisits])
-        cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>')
+        cards += collapsible("revisits-heading", "Worth a second look", len(revisits), f'<div class="section-body">{"".join(revisit_card(row) for row in revisits)}</div>', closed=True)
     if answered:
         groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in answered])
-        cards += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{"".join(need_card(row, state) for row in answered)}</div>')
+        cards += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{"".join(need_card(row, state) for row in answered)}</div>', closed=True)
     return f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
 
 
@@ -749,14 +994,22 @@ def provisional_note(row):
     )
 
 
+def result_card(result):
+    """A result as a card: its image's thumbnail when it has one, otherwise a link mark and the host it opens."""
+    if "image" in result:
+        media = f'<img class="result-thumb" src="{e(result["image"])}" alt="" loading="lazy">'
+    else:
+        media = f'<span class="result-mark">{icon("result")}</span>'
+    host = urlsplit(url(result["url"], "url")).netloc
+    content = f'{media}<span class="result-text"><span class="result-label">{e(result["label"])}</span><span class="result-host">{e(host)}</span></span>'
+    access = f'<span class="result-access">{prose(result["access"])}</span>' if result.get("access") else ""
+    return f'<li>{anchor(result["url"], content, "result-card" + (" has-image" if "image" in result else ""))}{access}</li>'
+
+
 def results_view(row):
     if not row.get("results"):
         return ""
-    items = "".join(
-        f'<li>{link(result["label"], result["url"], "result-link", "result")}'
-        + (f'<span class="result-access">{prose(result["access"])}</span>' if result.get("access") else "") + "</li>"
-        for result in row["results"]
-    )
+    items = "".join(result_card(result) for result in row["results"])
     return f'<div class="results"><p class="note-label">Results</p><ul>{items}</ul></div>'
 
 
@@ -792,7 +1045,75 @@ def blocker_list(items, label, mark, cls):
     return content + "</ul></div>"
 
 
-def work_card(row, program):
+LIVE_LABELS = {"running": ("Owner running", "seen"), "idle": ("Owner idle", "seen"),
+               "unknown": ("Owner thread unreadable", "since")}
+
+
+def now_sentence(row, state, found):
+    """One sentence on what is happening to this work, or what it waits on, from the facts status uses.
+
+    What status finds for the row comes first: a running owner or a provisional start supersedes a
+    halting Need, and an idle owner who owes work supersedes a Need that lets work continue.
+    """
+    kinds = {entry["kind"]: entry for entry in reversed(found)}
+    owner = row.get("owner", {}).get("name", "The owner")
+    halting = open_blocks(state, row["id"], HALTING)
+    later = [identity for identity in open_blocks(state, row["id"]) if identity not in halting]
+    landing = pending_landing(state, row["id"])
+    if "approval" in kinds:
+        return f"{owner} waits on an approval in its thread."
+    if "running" in kinds:
+        return f"{owner} is working."
+    if "provisional start" in kinds:
+        return f"Ready to start provisionally on {', '.join(halting)}'s recommended option."
+    if halting:
+        return f"Held until you answer {', '.join(halting)}."
+    if "dependency" in kinds:
+        return f"Waits for {', '.join(unsatisfied(state, row))} to finish first."
+    if "blocked" in kinds:
+        return f"Blocked: {row['blocked']}"
+    if "wait" in kinds:
+        return f"Waits on {kinds['wait']['text']}."
+    for kind in ("idle owner", "orphan"):
+        if kind in kinds:
+            return f"{kinds[kind]['text']}."
+    if later:
+        return f"Waits on your answer to {', '.join(later)}."
+    if "release" in kinds:
+        return "Ready to land once the coordinator releases it."
+    if landing:
+        return f"Landing {landing['id']} is {landing['state']}; {landing['lander']} lands it."
+    if "start" in kinds:
+        return "Ready to start."
+    if row["state"] == "unknown":
+        return row.get("unknownReason", "Its state could not be read.")
+    if row["state"] == "planned" and row.get("required") is False:
+        return "Proposed, outside the committed scope."
+    if row["state"] == "ready" and effective_finish(row) != "land":
+        return f"At its finish line: {READY_LABELS[effective_finish(row)].lower()}."
+    return {"planned": "Not started.", "building": "Building.", "shown": "Shown; waits on your merge, changes, or scrap choice.",
+            "in-review": "In review.", "ready": "Ready.", "landed": "Landed.", "done": "Done.", "scrapped": "Scrapped."}[row["state"]]
+
+
+def live_view(row):
+    """The owner's thread state as status last observed it."""
+    owner = row.get("owner")
+    if not owner or row["state"] in TERMINAL:
+        return ""
+    seen = owner.get("seen") if "session" in owner else None
+    state = seen["state"] if seen else "unknown"
+    label, since = LIVE_LABELS[state]
+    if not seen:
+        label = "Owner not observed yet" if "session" in owner else "Owner state unknown"
+    observed = f' · {since} {when(seen["at"], "relative")}' if seen else ""
+    return f'<p class="live {state}"><span class="live-dot" aria-hidden="true"></span><span>{e(label)}{observed}</span></p>'
+
+
+def now_view(row, state, found):
+    return f'<div class="now"><p class="now-text">{prose(now_sentence(row, state, found))}</p>{live_view(row)}</div>'
+
+
+def work_card(row, program, state, found):
     reasons = program.blockers(row)
     heading_id = "work-" + hexed(row["id"])
     content = f'<article class="card work" id="{card_id("work-card", row)}" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">{state_badges(row, program)}</p></div>'
@@ -801,7 +1122,7 @@ def work_card(row, program):
         tags.append("Proposed · outside committed scope")
     if tags or row.get("tickets"):
         content += '<p class="tags">' + "".join(f'<span class="tag">{e(tag)}</span>' for tag in tags) + "".join(link(t["label"], t["url"], "ticket") for t in row.get("tickets", [])) + "</p>"
-    content += f'<h4 id="{heading_id}" class="work-title">{prose(row["title"])}</h4>'
+    content += f'<h4 id="{heading_id}" class="work-title">{prose(row["title"])}</h4>' + now_view(row, state, found)
     if row.get("description"):
         content += f'<p class="work-description">{prose(row["description"])}</p>'
     content += finish_line(row)
@@ -844,9 +1165,58 @@ def overview(work):
     )
 
 
-def render(state, updated=None):
-    """Validate the program and render its page, stamped with the time its content last changed."""
+VERDICT_NOTES = {
+    "runnable": "The coordinator has work to act on now.",
+    "working": "Owners are working; the coordinator waits on them.",
+    "waiting": "Everything left waits on you or on an outside event.",
+    "done": "Every outcome is at its finish line.",
+}
+TALLIES = (  # (key, label, the status findings it counts)
+    ("running", "Running", lambda found: found["working"]),
+    ("idle", "Idle, owing work", lambda found: [entry for entry in found["runnable"] if entry["kind"] == "idle owner"]),
+    ("start", "Ready to start", lambda found: [entry for entry in found["runnable"] if entry["kind"] == "start"]),
+    ("land", "Ready to land", lambda found: [entry for entry in found["runnable"] if entry["kind"] == "release"]),
+)
+
+
+def health_view(state, found):
+    """The program verdict and its counts, from the status findings for the rendered record."""
+    verdict = found["verdict"]
+    tallies = ""
+    for key, label, select in TALLIES:
+        count = len(select(found))
+        tone = " attention" if key == "idle" and count else " zero" if not count else ""
+        tallies += f'<div class="tally{tone}"><dt>{e(label)}</dt><dd data-count="{key}">{count}</dd></div>'
+    content = (
+        f'<section class="health card {verdict}" aria-labelledby="health-heading"><div class="health-top">'
+        f'<h2 id="health-heading" class="verdict">{icon(verdict)}<span class="sr-only">Program </span>{verdict.title()}</h2>'
+        f'<p class="verdict-note">{VERDICT_NOTES[verdict]}</p></div><dl class="tallies">{tallies}</dl><div class="health-lines">'
+    )
+    waiting = [row for row in state["decisions"] if row["status"] == "open"]
+    if waiting:
+        oldest = min(waiting, key=lambda row: parse_time(row["date"]))
+        target = card_id("decision", oldest)
+        content += (f'<p class="health-line" data-oldest-wait>{icon("asked")}<span><span class="fact-label">Oldest Inbox item</span> '
+                    f'<a href="#{target}">{e(oldest["id"])}</a>, asked {when(oldest["date"], "relative")}</span></p>')
+    else:
+        content += f'<p class="health-line" data-oldest-wait>{icon("asked")}<span><span class="fact-label">Inbox</span> Empty</span></p>'
+    content += f'<p class="health-line">{icon("next")}<span><span class="fact-label">Next</span> {prose(state["next"])}</span></p>'
+    return content + "</div></section>"
+
+
+def now():
+    """The current time in UTC. Event times always come from this clock, never from the caller."""
+    return datetime.now(timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def render(state, stamp=None):
+    """Validate the program and render its page; stamp is the (commit, commit time) of the record it renders."""
     validate(state)
+    found = assess(state, stamp[1] if stamp else now(), recorded_threads(state))
+    by_work = {}
+    for group in ("runnable", "working", "waiting", "attention"):
+        for entry in found[group]:
+            by_work.setdefault(entry["id"], []).append(entry)
     decisions = state["decisions"]
     open_needs = [row for row in decisions if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
@@ -857,23 +1227,30 @@ def render(state, updated=None):
 
     needs_html = needs_view(state, judgment, quick, resolved, answered)
 
+    def cards(rows):
+        return f'<div class="section-body stage-cards">{"".join(work_card(row, program, state, by_work.get(row["id"], [])) for row in rows)}</div>'
+
     stages = ""
     for key in STAGE_ORDER:
         rows = [row for row in state["work"] if display_stage(row) == key]
-        if rows:
+        if rows and key not in TERMINAL:
             blocked = sum(program.halted(row) for row in rows)
             alert = f'<span class="state blocked"><span class="sr-only">, </span>{icon("blocked")}{blocked} blocked</span>' if blocked else ""
-            cards = "".join(work_card(row, program) for row in rows)
-            stages += collapsible(f"stage-{key}", STATES[key], len(rows), f'<div class="section-body stage-cards">{cards}</div>', level=3, state=key, mark=icon(key), alert=alert)
+            stages += collapsible(f"stage-{key}", STATES[key], len(rows), cards(rows), level=3, state=key, mark=icon(key), alert=alert)
+    finished = [row for key in STAGE_ORDER if key in TERMINAL for row in state["work"] if row["state"] == key]
+    if finished:
+        stages += collapsible("stage-finished", "Finished", len(finished), cards(finished), level=3, state="finished",
+                              mark=icon("finished"), closed=True)
     work_html = f'{overview(state["work"])}<div class="stage-board">{stages}</div>' if stages else '<p class="empty">No work recorded yet.</p>'
 
     facts = ""
     if state.get("finishLine"):
         facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {prose(state["finishLine"])}</span></p>'
-    if updated:
-        facts += f'<p class="fact">{icon("updated")}<span><span class="fact-label">Updated</span> {updated_time(updated)}</span></p>'
+    if stamp:
+        facts += f'<p class="fact">{icon("record")}<span><span class="fact-label">Record</span> {record_stamp(*stamp)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
     content = f'<header class="masthead"><p class="eyebrow"><span>Coordinator</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{prose(state["goal"])}</p><div class="facts">{facts}</div></header>'
+    content += health_view(state, found)
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
@@ -903,18 +1280,57 @@ def committed(state_file):
     return json.loads(git(state_file, "show", f"HEAD:./{state_file.name}"))
 
 
-def stage_page(state_file, page_file):
-    """Render HEAD to page_file's .next sibling; return whether it differs from page_file, ignoring the updated time.
+def content_name(content, suffix):
+    """The files/ path for a picture, named by its content, so a changed picture gets a new name."""
+    return f"files/{hashlib.sha256(content).hexdigest()[:16]}{suffix.lower()}"
 
-    The updated time is HEAD's commit time, or the staged page's when it already holds this content.
+
+def place(target, content):
+    """Write content-named bytes at target; return whether it wrote. Other bytes already there are refused."""
+    if target.exists():
+        if target.read_bytes() != content:
+            raise ValueError(f"{target} does not hold the bytes its name records; restore it with git checkout or remove it")
+        return False
+    target.parent.mkdir(exist_ok=True)
+    try:
+        target.write_bytes(content)
+    except OSError:
+        target.unlink(missing_ok=True)
+        raise
+    return True
+
+
+def stage_images(state_file, state, folder):
+    """Write each result image at HEAD into folder's files/, under its content name."""
+    for path in dict.fromkeys(result["image"] for row in state["work"] for result in row.get("results", []) if "image" in result):
+        blob = subprocess.run(["git", "-C", str(state_file.parent), "cat-file", "blob", f"HEAD:./{path}"], capture_output=True)
+        if blob.returncode:
+            raise ValueError(f"{path} is not committed in the program folder; commit it with the record")
+        if (name := content_name(blob.stdout, Path(path).suffix)) != path:
+            raise ValueError(f"{path} is not its content's name; name it {name}")
+        place(folder / path, blob.stdout)
+
+
+def page_files(page):
+    """The files beside the page that it shows, as paths relative to the page."""
+    return sorted(set(re.findall(r'<img class="result-thumb" src="(files/[^"]+)"', page)))
+
+
+def stage_page(state_file, page_file):
+    """Render HEAD to page_file's .next sibling; return whether it differs from page_file, ignoring the record stamp.
+
+    The stamp names HEAD's commit and its time, or the staged page's when it already holds this content.
+    Result images go beside the page under files/.
     """
     staged = page_file.with_name(f"{page_file.stem}.next{page_file.suffix}")
     if state_file.resolve() in (page_file.resolve(), staged.resolve()):
         raise ValueError(f"{page_file}: the page would overwrite the state file")
-    page = render(committed(state_file), git(state_file, "log", "-1", "--format=%cI").strip())
+    state = validate(committed(state_file))
+    stage_images(state_file, state, page_file.parent)
+    page = render(state, git(state_file, "log", "-1", "--format=%h %cI").split())
 
     def holds(path):
-        return path.exists() and UPDATED.sub(lambda _: UPDATED.search(page)[0], path.read_text(), count=1) == page
+        return path.exists() and STAMP.sub(lambda _: STAMP.search(page)[0], path.read_text(), count=1) == page
 
     if holds(page_file):
         staged.unlink(missing_ok=True)
@@ -935,7 +1351,11 @@ def main():
     args = parser.parse_args()
     try:
         if args.page:
-            print("changed" if stage_page(args.state, args.page) else "unchanged")
+            changed = stage_page(args.state, args.page)
+            print("changed" if changed else "unchanged")
+            shown = args.page.with_name(f"{args.page.stem}.next{args.page.suffix}") if changed else args.page
+            for name in page_files(shown.read_text()):
+                print(f"file: {name}")
         elif args.check:
             text = args.state.read_text()
             state = json.loads(text)

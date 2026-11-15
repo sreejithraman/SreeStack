@@ -12,7 +12,9 @@ import sys
 import tempfile
 import unittest
 
-from render_dashboard import render, revision, url, validate
+from unittest import mock
+
+from render_dashboard import ISO_TIME, content_name, place, render, revision, url, validate
 
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
@@ -93,6 +95,42 @@ def text_of(html):
     return Text(html).value
 
 
+class OutsideTimes(HTMLParser):
+    """Text the page shows before its script runs, outside time elements, and its tooltips and labels."""
+
+    def __init__(self, html):
+        super().__init__()
+        self.parts, self.skip = [], 0
+        self.feed(html)
+
+    def handle_starttag(self, tag, attributes):
+        self.skip += tag in ("style", "script", "textarea", "time")
+        self.parts += [value for name, value in attributes if name in ("title", "aria-label", "alt") and value]
+
+    def handle_endtag(self, tag):
+        self.skip -= tag in ("style", "script", "textarea", "time")
+
+    def handle_data(self, data):
+        if not self.skip:
+            self.parts.append(data)
+
+
+def health(html):
+    return html.split('<section class="health')[1].split("</section>")[0]
+
+
+def tallies(html):
+    return {key: int(count) for key, count in re.findall(r'<dd data-count="([a-z]+)">(\d+)</dd>', health(html))}
+
+
+def now_line(html, identity):
+    return text_of(re.search(r'<div class="now">(.*?)</div>', card(html, identity))[1])
+
+
+def finished_section(html):
+    return re.search(r'<section class="collapsible finished".*?</section>', html)[0]
+
+
 def card(html, identity):
     """The work card's HTML."""
     return html.split(f'aria-labelledby="work-{identity.encode().hex()}"')[1].split("</article>")[0]
@@ -103,7 +141,10 @@ def badges(html, identity):
 
 
 def copy_prompts(html):
-    return [attrs["data-prompt"] for _, attrs in Elements(html).elements if attrs.get("class") == "copy-prompt"]
+    """Each prompt the page can copy: a copy button's, or a picked option's."""
+    prompts = [attrs["data-prompt"] for _, attrs in Elements(html).elements
+               if attrs.get("class") == "copy-prompt" or attrs.get("type") == "radio"]
+    return [prompt for prompt in dict.fromkeys(prompts) if prompt]
 
 
 def decision_prompts(html, identity):
@@ -255,6 +296,15 @@ RULES = [
     ("required is a boolean", lambda s: work(s, "W4").update(required="no"), r"required must be a boolean"),
     ("provisional work says what clears it", lambda s: work(s, "W2")["provisional"].pop("clears"), r"provisional\.clears"),
     ("results say how to open them", lambda s: work(s, "W5")["results"][0].update(access=""), r"results\[0\]\.access"),
+    ("a result image is a file in the program's files folder", lambda s: work(s, "W5")["results"][0].update(image="../0123456789abcdef.png"),
+     r"results\[0\]\.image must be files/ and its content name"),
+    ("a result image is named by its content", lambda s: work(s, "W5")["results"][0].update(image="files/W5-after.png"),
+     r"results\[0\]\.image must be files/ and its content name"),
+    ("a result image is a picture", lambda s: work(s, "W5")["results"][0].update(image="files/0123456789abcdef.svg"),
+     r"results\[0\]\.image must be files/ and its content name"),
+    ("an owner's approvals are a positive count", lambda s: work(s, "W1")["owner"]["seen"].update(approvals=0), r"owner\.seen\.approvals must be"),
+    ("an owner's observed state is known", lambda s: work(s, "W1")["owner"]["seen"].update(state="busy"), r"owner\.seen\.state must be one of"),
+    ("an owner's observation is timed", lambda s: work(s, "W1")["owner"]["seen"].pop("at"), r"owner\.seen\.at must be"),
     ("landing authority is a dated entry", lambda s: s["landingAuthority"].pop("source"), r"landingAuthority\.source"),
     ("tradeoffs say when to revisit", lambda s: s["revisits"][0].pop("revisit"), r"revisits\[R1\]\.revisit"),
     ("waits name existing work", lambda s: s["waits"][0].update(work="W9"), r"waits\[0\]\.work names missing work W9"),
@@ -333,6 +383,22 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(url("<t3-thread://v2/env/thread>", "url"), "t3-thread://v2/env/thread")
 
 
+class PlaceTests(unittest.TestCase):
+    def test_an_interrupted_write_leaves_no_image_and_a_retry_places_it(self):
+        def disk_full(path, content):
+            with path.open("wb") as file:
+                file.write(content[:4])
+            raise OSError(28, "No space left on device")
+
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / content_name(b"\x89PNG whole", ".png")
+            with mock.patch.object(Path, "write_bytes", disk_full), self.assertRaises(OSError):
+                place(target, b"\x89PNG whole")
+            self.assertFalse(target.exists())
+            self.assertTrue(place(target, b"\x89PNG whole"))
+            self.assertEqual(target.read_bytes(), b"\x89PNG whole")
+
+
 class PageTests(unittest.TestCase):
     def setUp(self):
         self.state = example()
@@ -359,13 +425,11 @@ class PageTests(unittest.TestCase):
         base = render(self.state)
         changes = {
             "chief": lambda s: s.update(chief="Another thread"),
-            "next": lambda s: s.update(next="Something else"),
             "request": lambda s: s["request"].update(text="Reworded"),
             "landings": lambda s: s["landings"][0].update(state="withdrawn"),
-            "waits": lambda s: s.pop("waits"),
             "owner plumbing": lambda s: work(s, "W1")["owner"].update(route="Ends its turn", handled=["msg-1"]),
             "outcome scope": lambda s: work(s, "W1").update(scope="Reworded", finishLineReason="Reworded", acceptance="All proved"),
-            "decision history": lambda s: decision(s, "W6-D1").update(date="2026-11-03", source="Another report", rationale="Earlier reasoning."),
+            "decision history": lambda s: decision(s, "W6-D1").update(source="Another report", rationale="Earlier reasoning."),
             "answer source": lambda s: decision(s, "W0-D1").update(answerSource="Another message"),
             "a withdrawn decision": lambda s: decision(s, "W2-D1").update(question="Reworded"),
         }
@@ -375,6 +439,109 @@ class PageTests(unittest.TestCase):
             with self.subTest(change=name):
                 self.assertEqual(render(state), base)
         self.assertNotIn("Paginate history", text_of(base))
+
+    def test_health_strip_counts_what_status_finds(self):
+        html = render(self.state)
+        self.assertEqual(tallies(html), {"running": 2, "idle": 1, "start": 0, "land": 0})
+        self.assertIn("Runnable The coordinator has work to act on now.", text_of(health(html)))
+        self.assertIn("Next Release W1's landing once PR 44 is ready.", text_of(health(html)))
+        w1, w3 = work(self.state, "W1"), work(self.state, "W3")
+        w1["state"] = "ready"
+        for layer in w1["layers"]:
+            layer["status"] = "ready"
+        self.state["waits"] = []
+        decision(self.state, "W1-D2")["blocks"] = []
+        work(self.state, "W4").pop("required")
+        w3["owner"] |= {"session": "https://example.com/threads/w3", "seen": {"state": "running", "at": "2026-11-02T16:58:00Z"}}
+        html = render(self.state)
+        self.assertEqual(tallies(html), {"running": 3, "idle": 0, "start": 1, "land": 1})
+        work(self.state, "W2")["owner"]["seen"]["state"] = "idle"
+        self.assertEqual(tallies(render(self.state))["idle"], 1, "an idle owner of building work owes it")
+
+    def test_health_strip_names_the_oldest_inbox_item_and_its_age(self):
+        decision(self.state, "W5-T")["date"] = "2026-10-30T08:00:00Z"
+        line = re.search(r'<p class="health-line" data-oldest-wait>.*?</p>', render(self.state))[0]
+        self.assertIn('href="#decision-' + "W5-T".encode().hex(), line)
+        self.assertIn('<time datetime="2026-10-30T08:00:00Z" data-relative>', line)
+        for need in self.state["decisions"]:
+            if need["status"] == "open":
+                need.update(status="withdrawn", rationale="Superseded.")
+        self.assertIn("Inbox Empty", text_of(health(render(self.state))))
+
+    def test_each_card_says_what_happens_now_and_how_its_owner_was_seen(self):
+        html = render(self.state)
+        self.assertEqual(now_line(html, "W1"), "Waits on PR 44 checks until Required checks finish. Owner idle · seen 2026-11-02T16:55:00Z")
+        self.assertEqual(now_line(html, "W2"), "API owner is working. Owner running · seen 2026-11-02T16:50:00Z")
+        self.assertEqual(now_line(html, "W5"), "Waits on your answer to W5-T. Owner idle · seen 2026-11-02T16:40:00Z")
+        self.assertEqual(now_line(html, "W3"), "Support worker has no session to read. Owner state unknown")
+        self.assertEqual(now_line(html, "W4"), "Proposed, outside the committed scope.")
+        self.assertEqual(now_line(html, "W0"), "Landed.")
+        work(self.state, "W2")["owner"]["seen"] = {"state": "unknown", "at": "2026-11-02T16:30:00Z"}
+        self.assertEqual(now_line(render(self.state), "W2"),
+                         "API owner's thread could not be read. Owner thread unreadable · since 2026-11-02T16:30:00Z")
+
+    def test_an_owner_status_has_not_read_yet_is_not_counted_idle(self):
+        before = tallies(render(self.state))
+        work(self.state, "W2")["owner"].pop("seen")
+        html = render(self.state)
+        self.assertEqual(tallies(html), before | {"running": before["running"] - 1}, "neither running nor idle")
+        self.assertTrue(now_line(html, "W2").endswith("Owner not observed yet"))
+        self.assertNotIn("could not be read", now_line(html, "W2"))
+
+    def test_no_utc_time_shows_outside_a_local_time_element(self):
+        stamp = "2026-11-02T17:00:00Z"
+        work(self.state, "W1").update(description=f"Paused at {stamp}.", blocked=f"CI quota until {stamp}.")
+        work(self.state, "W5")["results"][0]["access"] = f"Up until {stamp}."
+        decision(self.state, "W6-D1").update(meanwhile=f"Checked {stamp}.", context=[f"Seen {stamp}."])
+        decision(self.state, "W6-D1")["options"][0]["effect"] = f"Visible from {stamp}."
+        self.state["next"] = f"Recheck at {stamp}."
+        self.state["waits"][0]["event"] = f"Checks finish by {stamp}"
+        html = render(self.state, ("1a2b3c4", "2026-11-03T09:30:00Z"))
+        leaks = [part for part in OutsideTimes(html).parts if ISO_TIME.search(part) or "UTC" in part]
+        self.assertEqual(leaks, [])
+        self.assertGreater(html.count(f'<time datetime="{stamp}"'), 7)
+
+    def test_finished_work_collapses_into_one_closed_section_with_its_count(self):
+        work(self.state, "W3")["state"] = "done"
+        work(self.state, "W4")["state"] = "scrapped"
+        html = render(self.state)
+        section = finished_section(html)
+        self.assertIn("<details><summary", section, "the section starts closed")
+        self.assertIn("Finished 3", text_of(section))
+        self.assertEqual([identity for identity in ("W0", "W3", "W4", "W1", "W2") if f'aria-labelledby="work-{identity.encode().hex()}"' in section],
+                         ["W0", "W3", "W4"])
+        self.assertNotIn('class="collapsible landed"', html)
+        self.assertEqual(html.count('<section class="collapsible ') - 1, html.count("<details open><summary class=\"section-toggle\" id=\"toggle-stage-"))
+
+    def test_the_page_names_the_coordinator_not_a_chief(self):
+        visible = " ".join(OutsideTimes(render(self.state)).parts)
+        self.assertIn("Coordinator decided", visible)
+        self.assertNotIn("chief", visible.lower())
+
+    def test_settled_inbox_sections_start_closed_and_open_items_show_their_age(self):
+        html = render(self.state)
+        for heading in ("resolved-heading", "revisits-heading", "answered-heading"):
+            self.assertIn(f'aria-labelledby="{heading}"><details><summary', html)
+        self.assertIn('Asked <time datetime="2026-11-02T16:40:00Z" data-relative>', html)
+        self.assertIn('<span class="inbox-row-id">W6-D1 · <time datetime="2026-11-02" data-relative>', html)
+
+    def test_options_are_one_pick_list_with_one_answer_action(self):
+        html = render(self.state)
+        need = html.split('id="decision-' + "W1-D2".encode().hex())[1].split("</article>")[0]
+        self.assertEqual(need.count('type="radio"'), 2)
+        self.assertEqual(need.count('class="copy-prompt"'), 1)
+        self.assertIn('value="1" data-prompt=', need)
+        self.assertRegex(need, r'<input type="radio"[^>]* checked>')
+        target = html.split('id="decision-' + "W5-T".encode().hex())[1].split("</article>")[0]
+        self.assertIn('class="copy-prompt" data-prompt="" disabled', target, "nothing is picked without a recommendation")
+
+    def test_results_show_a_thumbnail_or_a_link_card(self):
+        work(self.state, "W5")["results"][1]["image"] = "files/0123456789abcdef.png"
+        html = card(render(self.state), "W5")
+        self.assertIn('<img class="result-thumb" src="files/0123456789abcdef.png" alt="" loading="lazy">', html)
+        self.assertIn('Before and after screenshots example.com', text_of(html))
+        self.assertEqual(html.count('class="result-mark"'), 1, "the result without an image keeps a link card")
+        self.assertIn('href="https://example.com/previews/export-history"', html)
 
     def test_provisional_land_reads_as_try(self):
         html = render(self.state)
@@ -391,11 +558,11 @@ class PageTests(unittest.TestCase):
                       ' until the 2026-11-03 review.</p>', html)
         self.assertIn('<time datetime="2026-11-02T18:30:00+05:30">2026-11-02T18:30:00+05:30</time>.', html)
 
-    def test_updated_time_shows_only_when_given(self):
-        self.assertNotIn("Updated", text_of(render(self.state)))
-        page = text_of(render(self.state, "2026-11-03T09:30:00Z"))
-        self.assertIn("Updated 2026-11-03T09:30:00Z", page)
-        self.assertLess(page.index("Updated"), page.index("Inbox"))
+    def test_record_commit_and_time_show_only_when_given(self):
+        self.assertNotIn("record-stamp", render(self.state))
+        page = text_of(render(self.state, ("1a2b3c4", "2026-11-03T09:30:00Z")))
+        self.assertIn("Record 1a2b3c4 · 2026-11-03T09:30:00Z", page)
+        self.assertLess(page.index("Record"), page.index("Inbox"))
 
     def test_halting_phases_block_work_and_later_phases_let_it_continue(self):
         html = render(self.state)
@@ -518,10 +685,10 @@ class CommandTests(unittest.TestCase):
             return result.stdout.strip() or result.stderr
 
         def updated(path):
-            return re.search(r'<time id="updated" datetime="([^"]+)"', path.read_text())[1]
+            return re.search(r'<span id="record-stamp"><code>[0-9a-f]+</code> · <time datetime="([^"]+)"', path.read_text())[1]
 
         def record_only(note):
-            self.state["next"] = note
+            self.state["request"]["text"] = note
             return self.state
 
         self.assertIn("HEAD", render_page(), "a program with no commit has nothing to render")
@@ -546,6 +713,53 @@ class CommandTests(unittest.TestCase):
         staged.replace(page)
         self.assertIn("<title>Not committed</title>", page.read_text())
         self.assertEqual(render_page(), "unchanged")
+
+    def test_page_serves_each_committed_result_image_beside_it_by_content(self):
+        published = tempfile.TemporaryDirectory()
+        self.addCleanup(published.cleanup)
+        page = Path(published.name) / "command-center.html"
+        (self.program.folder / "files").mkdir()
+
+        def commit(at, *paths):
+            self.program.git("add", *paths)
+            self.program.git("commit", "-q", "-m", "write", env={**GIT_ENV, "GIT_COMMITTER_DATE": at})
+
+        def attach(content, at):
+            name = content_name(content, ".PNG")
+            (self.program.folder / name).write_bytes(content)
+            work(self.state, "W5")["results"][1]["image"] = name
+            self.program.write(self.state)
+            commit(at, "program.json", "files")
+            return name
+
+        first = content_name(b"\x89PNG first", ".png")
+        (self.program.folder / first).write_bytes(b"\x89PNG first")
+        work(self.state, "W5")["results"][1]["image"] = first
+        self.program.write(self.state, "2026-11-02T16:00:00Z")
+        self.assertIn(f"{first} is not committed", self.program.run("--page", str(page)).stderr)
+        commit("2026-11-02T17:00:00Z", "files")
+        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["changed", "file:", first])
+        self.assertEqual((page.parent / first).read_bytes(), b"\x89PNG first")
+        self.assertIn(f'src="{first}"', page.with_name("command-center.next.html").read_text())
+        page.with_name("command-center.next.html").replace(page)
+        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["unchanged", "file:", first])
+
+        second = attach(b"\x89PNG second", "2026-11-02T18:00:00Z")
+        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["changed", "file:", second],
+                         "a changed image has a new name, so the page changes")
+
+        beside = self.program.folder / "command-center.html"
+        (self.program.folder / second).write_bytes(b"\x89PNG edited after its commit")
+        self.assertIn(f"{second} does not hold the bytes its name records", self.program.run("--page", str(beside)).stderr)
+        self.assertEqual((self.program.folder / second).read_bytes(), b"\x89PNG edited after its commit", "an edit is never overwritten")
+
+        misnamed = "files/0123456789abcdef.png"
+        (self.program.folder / misnamed).write_bytes(b"\x89PNG third")
+        work(self.state, "W5")["results"][1]["image"] = misnamed
+        self.program.write(self.state)
+        commit("2026-11-02T19:00:00Z", "program.json", misnamed)
+        proper = content_name(b"\x89PNG third", ".png")
+        self.assertIn(f"name it {proper}", self.program.run("--page", str(page)).stderr)
 
     def test_page_never_overwrites_the_state_file(self):
         self.program.write(self.state, "2026-11-02T17:00:00Z")

@@ -59,8 +59,8 @@ command from this skill's folder as
   [finish](#6-finish-pause-or-resume).
 
 End every turn with `status --turn-end`. It fails while the verdict is
-runnable, `program.json` has an uncommitted change, or the page is behind the
-record.
+runnable, `program.json` has an uncommitted change, an owner's thread state
+differs from the record, or the page is behind the record.
 
 Never stop on a decision whose recommended option is reversible. Build on that
 option provisionally, keep the decision open in the Inbox, and say so in its
@@ -311,11 +311,14 @@ carries its options, its recommendation, what it blocks, and what continues
 meanwhile, under [Inbox items](references/decisions.md#inbox-items).
 
 [Publish the command center](references/hosting.md) after each record write and
-give the user its link, never an inline render. It shows every outcome once,
-with its finish line, results and how to open them, provisional condition,
-owner, layers, and what each Inbox item blocks. Results come from owners' Shown
-reports: link what they showed, say what opening it needs, and name the gaps.
-Keep each row's observation time honest.
+give the user its link, never an inline render. It opens with the program's
+health: the `status` verdict and counts, the oldest Inbox item's age, and
+`next`. It shows every outcome once, with what is happening now, its owner's
+last observed state, its finish line, results and how to open them,
+provisional condition, owner, layers, and what each Inbox item blocks. Results
+come from owners' Shown reports: link what they showed, say what opening it
+needs, and name the gaps. A shown picture becomes the result's thumbnail. Keep
+each row's observation time honest.
 
 Answers arrive in the user's messages, often as a prompt copied from the page.
 Record each under [record an answer](references/decisions.md#record-an-answer),

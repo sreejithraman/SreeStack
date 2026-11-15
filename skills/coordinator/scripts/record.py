@@ -5,15 +5,14 @@ Each event command refuses an uncommitted program.json change, stamps the time
 from this machine's clock, changes only what its event changes, validates,
 commits, and renders. `status` reads PRs through `gh` and owner threads through
 the T3 CLI. With --turn-end it commits nothing and fails while the verdict is
-runnable, the record is dirty, or the page is behind. With --heartbeat it
+runnable, the record is dirty, an owner's thread state differs from the record,
+or the page is behind. With --heartbeat it
 commits nothing and says whether the coordinator should wake.
 """
 
 import argparse
 import contextlib
 import copy
-from datetime import datetime, timezone
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -23,14 +22,13 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
-from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, LAYER_KEYS, OWNER_KEYS, PROGRAM_KEYS, READY_LAYERS, STATES,
-                              TERMINAL, WORK_KEYS, committed, effective_finish, fields, git, known_keys, layout,
-                              quoted, records, revision, stage_page, validate)
+from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, IMAGE_SUFFIXES, LAYER_KEYS, OWNER_KEYS,
+                              PENDING_LANDINGS, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS,
+                              assess, committed, content_name, effective_finish, fields, git, known_keys, layout, now,
+                              observation, open_blocks, page_files, pending_landing, place, quoted, records, revision,
+                              stage_page, unsatisfied, validate)
 
 
-SATISFIED = {"landed", "done"}
-PENDING_LANDINGS = {"released", "submitted"}
-LIVE_THREADS = {"running", "waiting"}  # waiting: on its own helpers
 VERDICTS = ("pass", "fail", "blocked", "untested")
 REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "waits", "blocked")
 ASK_KEYS = ("id", "question", "context", "meanwhile", "recommendation", "options", "weight", "phase", "links")
@@ -42,27 +40,11 @@ ROUTES = {
 REPORT_BLOCK = re.compile(r"\A\s*```json[ \t]*\n(.*?)\n```", re.S)
 DECISION_LINE = re.compile(r'^Decision ("(?:[^"\\]|\\.)*") \(revision ([0-9a-f]+)\)(?:: (.*)| in .*)$')
 CHOICE_LINE = re.compile(r'^I choose option (\d+): ("(?:[^"\\]|\\.)*")$')
-STALE_HOURS = 2
 
 
 class Refused(Exception):
     """The command changed nothing; its message says why."""
 
-
-def now():
-    """The current time in UTC. Event times always come from this clock, never from the caller."""
-    return datetime.now(timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def parse_time(value):
-    return datetime.fromisoformat(value.replace("Z", "+00:00") if "T" in value else value + "T00:00:00+00:00")
-
-
-def age(since, at):
-    minutes = max(0, int((parse_time(at) - parse_time(since)).total_seconds() // 60))
-    days, minutes = divmod(minutes, 1440)
-    hours, minutes = divmod(minutes, 60)
-    return f"{days}d{hours}h" if days else f"{hours}h{minutes:02d}m" if hours else f"{minutes}m"
 
 
 def put(row, key, value, order):
@@ -93,27 +75,6 @@ def decision_row(state, identity):
     return row
 
 
-def open_blocks(state, identity, phases=None):
-    """Open decisions that hold this work, at any phase or only the given ones."""
-    return [decision["id"] for decision in state["decisions"] if decision["status"] == "open"
-            for entry in decision.get("blocks", []) if entry["id"] == identity and (phases is None or entry["phase"] in phases)]
-
-
-def waits_on_need(state, row):
-    """An open Need that halts this work, or that it waits on at its stop (a shown Try or ready work)."""
-    phases = None if row["state"] in {"shown", "ready"} else HALTING
-    return open_blocks(state, row["id"], phases)
-
-
-def unsatisfied(state, row):
-    by_id = {other["id"]: other for other in state["work"]}
-    return [identity for identity in row.get("blockedBy", []) if by_id[identity]["state"] not in SATISFIED]
-
-
-def pending_landing(state, identity):
-    return next((landing for landing in state.get("landings", [])
-                 if landing["state"] in PENDING_LANDINGS and identity in landing["work"]), None)
-
 
 def set_next(state, value):
     if value:
@@ -142,6 +103,8 @@ def start(state, at, work, owner, mode="top-level", session=None, route=None, wo
         notes.append(f"dropped satisfied blockedBy {', '.join(row.pop('blockedBy'))}")
     record = {} if replace else copy.deepcopy(recorded)
     record["name"] = owner
+    if session:
+        record.pop("seen", None)
     for key, value in (("session", session), ("start", mode), ("route", route or ROUTES[mode]), ("workspace", workspace)):
         if value:
             put(record, key, value, OWNER_KEYS)
@@ -177,6 +140,25 @@ def objects(value, path):
 
 def only(item, keys, path):
     known_keys(item, f"report {path}", keys)
+
+
+def shown_images(block, files):
+    """Point each shown image at a copy in the program's files folder, named by its content.
+
+    files gains each copy's record path and content, for the commit that records the report.
+    """
+    for index, item in enumerate(block.get("shown") or []):
+        if not isinstance(item, dict) or "image" not in item:
+            continue
+        source = Path(item["image"]) if isinstance(item["image"], str) else Path()
+        if not source.is_absolute() or source.suffix.lower() not in IMAGE_SUFFIXES:
+            raise Refused(f"report shown[{index}].image must be an absolute path to a {', '.join(IMAGE_SUFFIXES)} file")
+        try:
+            content = source.read_bytes()
+        except OSError as error:
+            raise Refused(f"cannot read {source}: {error.strerror}") from None
+        item["image"] = content_name(content, source.suffix)
+        files[item["image"]] = content
 
 
 def report(state, at, work, block, source):
@@ -485,10 +467,6 @@ def read_owners(state, read_thread):
     return found
 
 
-def live(thread):
-    return isinstance(thread, dict) and thread.get("status") in LIVE_THREADS
-
-
 def read_layers(row, read_pr, forge, notes):
     """Apply forge facts to a copy of the row's layers; return it and whether every read succeeded."""
     facts, reads, failed = copy.deepcopy(row), 0, 0
@@ -578,8 +556,15 @@ def first_valid(state, candidates):
     return {index: reasons[index] for index in candidates if levels[index] > 0}
 
 
+def seen_moved(row, thread, at):
+    """Whether a thread read tells something other than the owner state the record holds, whenever each was read."""
+    recorded = row["owner"].get("seen", {})
+    return {key: value for key, value in observation(thread, at).items() if key != "at"} != {
+        key: value for key, value in recorded.items() if key != "at"}
+
+
 def observe(state, at, read_pr, threads):
-    """Apply forge facts to open work and pending landings; return notes on what changed or needs a hand."""
+    """Apply forge facts and owner thread states to open work and pending landings; return notes on what changed or needs a hand."""
     notes, forge, candidates, kept = [], {}, {}, {}
     for index, row in enumerate(state["work"]):
         if row["state"] in TERMINAL:
@@ -605,6 +590,9 @@ def observe(state, at, read_pr, threads):
             notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
+    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
+        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
+            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
               if layer["status"] == "merged" and "url" in layer}
     for landing in state.get("landings", []):
@@ -624,149 +612,10 @@ def observe(state, at, read_pr, threads):
     return notes
 
 
-def orphans(state, threads):
-    """Open work with no live owner, recorded wait, holding Need, or blocker."""
-    return [f"{identity} ({current}): {why}" for identity, current, why, _ in orphaned(state, threads)]
-
-
-def orphaned(state, threads):
-    waits = {row.get("work") for row in state.get("waits", [])}
-    found = []
-    for row in state["work"]:
-        proposed = row["state"] == "planned" and row.get("required") is False
-        at_pr_state = row["state"] == "ready" and effective_finish(row) != "land"  # stopped for the user
-        if row["state"] in TERMINAL or proposed or at_pr_state:
-            continue
-        if (live(threads.get(row["id"])) or row["id"] in waits or waits_on_need(state, row)
-                or unsatisfied(state, row) or row.get("blocked")):
-            continue
-        thread = threads.get(row["id"])
-        landing = pending_landing(state, row["id"])
-        why = ("not started" if row["state"] == "planned"
-               else "ready with no landing release" if row["state"] == "ready" and not landing
-               else "owner thread could not be read" if isinstance(thread, str) else f"owner {thread['status']}" if thread
-               else "owner has no session to read" if "owner" in row else "no owner")
-        if landing:
-            why += f" with landing {landing['id']} {landing['state']}"
-        found.append((row["id"], row["state"], why, thread if isinstance(thread, str) else None))
-    return found
-
 
 VERDICT_EXIT = {"done": 0, "waiting": 3, "working": 4, "runnable": 5}
 QUIET = {"waiting", "working"}  # a heartbeat stays quiet on these while the digest holds
 
-
-def item(kind, identity, text, since=None, detail=None):
-    """One status line; since and detail stay out of the digest."""
-    return ({"kind": kind, "id": identity, "text": text} | ({"since": since} if since else {})
-            | ({"detail": detail} if detail else {}))
-
-
-def names(text, identity):
-    return re.search(rf"(?<![\w-]){re.escape(identity)}(?![\w-])", text) is not None
-
-
-def reversible(decision):
-    return any(option.get("recommended") and option.get("reversible") for option in decision.get("options", []))
-
-
-def reversible_halts(state):
-    """Open Needs whose recommended option is reversible and halts startable work not yet built on it.
-
-    Work qualifies only when every Need that halts it is reversible, so building on the recommendations
-    is all it still lacks.
-    """
-    found = []
-    halts = {}
-    for decision in state["decisions"]:
-        if decision["status"] == "open":
-            for entry in decision.get("blocks", []):
-                if entry["phase"] in HALTING:
-                    halts.setdefault(entry["id"], []).append(decision)
-    for decision in state["decisions"]:
-        if decision["status"] != "open" or not reversible(decision):
-            continue
-        for entry in decision.get("blocks", []):
-            row = work_row(state, entry["id"])
-            provisional = row.get("provisional", {})
-            on_it = names(f"{provisional.get('basis', '')} {provisional.get('clears', '')}", decision["id"])
-            startable = (row.get("required") is not False and not unsatisfied(state, row) and not row.get("blocked")
-                         and all(reversible(other) for other in halts.get(row["id"], [])))
-            if entry["phase"] in HALTING and row["state"] not in TERMINAL and startable and not on_it:
-                found.append(item("provisional start", row["id"],
-                                  f"build on {decision['id']}'s recommended option provisionally; it halts {entry['phase']}"))
-    return found
-
-
-def at_stop(row):
-    """Terminal, or stopped for the user at its finish line."""
-    return (row["state"] in TERMINAL or row["state"] == "shown"
-            or (row["state"] == "ready" and effective_finish(row) != "land")
-            or (row["state"] == "planned" and row.get("required") is False))
-
-
-def assess(state, at, threads, stale_hours=STALE_HOURS):
-    """The program verdict and the items behind it."""
-    waits = {row.get("work") for row in state.get("waits", [])}
-    runnable, working, waiting, attention = [], [], [], []
-    for row in state["work"]:
-        identity, current = row["id"], row["state"]
-        if current in TERMINAL:
-            continue
-        thread = threads.get(identity)
-        if live(thread):
-            working.append(item("running", identity, f"{row['owner']['name']} is working", detail=thread["status"]))
-        if (current == "planned" and row.get("required") is not False and not unsatisfied(state, row)
-                and not row.get("blocked") and not open_blocks(state, identity, HALTING)):
-            runnable.append(item("start", identity, row["title"]))
-        if (current == "ready" and effective_finish(row) == "land" and not open_blocks(state, identity)
-                and not unsatisfied(state, row) and not row.get("blocked") and not pending_landing(state, identity)):
-            runnable.append(item("release", identity, row["title"]))
-        owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
-        covered = identity in waits or waits_on_need(state, row) or unsatisfied(state, row) or row.get("blocked")
-        if owes and not live(thread) and not covered:
-            if isinstance(thread, dict):
-                runnable.append(item("idle owner", identity, f"{row['owner']['name']} is {thread['status']} with no recorded wait",
-                                     thread.get("updatedAt")))
-            elif thread:
-                runnable.append(item("idle owner", identity, f"{row['owner']['name']}'s thread could not be read", detail=thread))
-            else:
-                runnable.append(item("idle owner", identity, f"{row['owner']['name']} has no session to read"))
-        if isinstance(thread, dict) and thread.get("pendingRequestCount"):
-            attention.append(item("approval", identity, f"{row['owner']['name']} waits on an approval in its thread"))
-        if row.get("blocked"):
-            waiting.append(item("blocked", identity, row["blocked"]))
-        if not at_stop(row) and (needs := unsatisfied(state, row)):
-            waiting.append(item("dependency", identity, f"needs {', '.join(needs)}"))
-        if (parse_time(at) - parse_time(row["checkedAt"])).total_seconds() > stale_hours * 3600:
-            attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
-    runnable += reversible_halts(state)
-    listed = {entry["id"] for entry in runnable}
-    runnable += [item("orphan", identity, f"({current}) {why}", detail=detail)
-                 for identity, current, why, detail in orphaned(state, threads) if identity not in listed]
-    for decision in state["decisions"]:
-        if decision["status"] == "open":
-            waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
-        elif decision.get("applied") is False:
-            affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
-            runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
-    open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
-    for wait in state.get("waits", []):
-        if wait.get("work", "program") in open_rows | {"program"}:
-            waiting.append(item("wait", wait.get("work", "program"), f"{wait['on']} until {wait['event']}", wait["date"]))
-    done = all(at_stop(row) for row in state["work"]) and not waiting
-    verdict = "runnable" if runnable else "working" if working else "done" if done else "waiting"
-    rows = [[row["id"], row["state"], [[layer["id"], layer["status"], layer.get("head"), layer.get("base")]
-                                       for layer in row.get("layers", [])]]
-            for row in state["work"] if row["id"] in open_rows]
-    facts = [{key: value for key, value in entry.items() if key not in {"since", "detail"}}
-             for entry in (*runnable, *working, *waiting, *(entry for entry in attention if entry["kind"] != "stale"))]
-    digest = hashlib.sha256(json.dumps([verdict, facts, rows], sort_keys=True).encode()).hexdigest()[:12]
-    for entry in (*runnable, *working, *waiting, *attention):
-        if "since" in entry:
-            entry["age"] = age(entry["since"], at)
-    return {"verdict": verdict, "digest": digest, "runnable": runnable, "working": working, "waiting": waiting,
-            "attention": attention}
 
 
 def waiting_line(assessment):
@@ -831,14 +680,28 @@ class Record:
             raise Refused(f"{self.file} is not one value per line; run render_dashboard.py --check for the fix")
         return state
 
-    def save(self, state, message):
+    def save(self, state, message, files=None):
+        """Commit state with files (record path: content) written into the program folder; a failure changes nothing."""
         validate(state)
+        files = files or {}
         previous = self.file.read_text()
-        self.file.write_text(layout(state))
+        created, staged = [], False
         try:
-            self.git("commit", "-q", "-m", message, "--", self.file.name)
-        except (Refused, ValueError):
+            for name, content in files.items():
+                if place(target := self.file.parent / name, content):
+                    created.append(target)
+            self.file.write_text(layout(state))
+            if files:
+                staged = True
+                self.git("add", "--", *files)
+            self.git("commit", "-q", "-m", message, "--", self.file.name, *files)
+        except (Refused, ValueError, OSError):
             self.file.write_text(previous)
+            if staged:
+                with contextlib.suppress(ValueError):
+                    self.git("reset", "-q", "--", *files)
+            for target in created:
+                target.unlink(missing_ok=True)
             raise
         print(f"committed: {message}")
 
@@ -852,7 +715,9 @@ class Record:
             return False
         if behind:
             staged = self.page.with_name(f"{self.page.stem}.next{self.page.suffix}")
-            print(f"page: behind record {head}. Publish {staged}, then move it over {self.page}.")
+            files = page_files(staged.read_text())
+            beside = f" with {', '.join(files)} from beside it" if files else ""
+            print(f"page: behind record {head}. Publish {staged}{beside}, then move it over {self.page}.")
             return False
         print(f"page: published page matches record {head}")
         return True
@@ -923,11 +788,13 @@ def arguments():
     return parser
 
 
-def event(args, state, at):
+def event(args, state, at, files):
+    """Apply the command's event to state; files gains each file the commit must add: its record path and content."""
     if args.command == "start":
         return start(state, at, args.work, args.owner, args.mode, args.session, args.route, args.workspace, args.replace)
     if args.command == "report":
         block, path = read_report(args.state, args.work)
+        shown_images(block, files)
         return report(state, at, args.work, block, f"reports/{path.name}")
     if args.command == "answer":
         if args.pasted:
@@ -977,8 +844,12 @@ def check_status(args, record, read_pr, read_thread):
         dirty = bool(record.dirty())
         if dirty:
             print(f"uncommitted: {record.file.name} has a change; settle it before the turn ends")
-        result |= {"uncommitted": dirty, "notes": [], "page": "current" if record.render() else "behind"}
-        result["passes"] = result["page"] == "current" and not dirty and result["verdict"] != "runnable"
+        moved = [row["id"] for row in state["work"] if row["id"] in threads and seen_moved(row, threads[row["id"]], at)]
+        if moved:
+            print(f"unrecorded: the owner state of {', '.join(moved)} moved since status recorded it; run status and publish")
+        result |= {"uncommitted": dirty, "unrecorded": moved, "notes": [],
+                   "page": "current" if record.render() else "behind"}
+        result["passes"] = result["page"] == "current" and not dirty and not moved and result["verdict"] != "runnable"
         if result["passes"]:
             record.remember(result["digest"])
         else:
@@ -1043,9 +914,10 @@ def main():
         if args.command == "status":
             return status(args, record)
         state = record.load()
-        message, notes = event(args, state, now())
+        files = {}
+        message, notes = event(args, state, now(), files)
         set_next(state, args.next)
-        record.save(state, message)
+        record.save(state, message, files)
         for note in notes:
             print(f"note: {note}")
         record.render()

@@ -27,15 +27,25 @@ It prints `changed` in that case. When the page is behind, publish the `.next`
 file. On every resume and coordinator move, force publication even when unchanged,
 using the page file in that case, so skill updates reach it.
 
+The page can show only its own files: the artifact blocks remote images. So
+the renderer writes each result image from the record's `HEAD` into `files/`
+beside the page, under its content name, and lists each one the page shows: as
+a `file:` line from `render_dashboard.py`, or in `record.py`'s `page: behind`
+note. Publish each with the page, at the same `files/` path. A changed image
+gets a new name, so the page changes too.
+
 Reuse the selected backend's existing target on successive updates. If
 `hosting` is absent or points to the other backend, create or use the selected
 target and publish there. Changing backend needs no extra provider-switch
 approval; [coordinator ownership](coordinator-move.md) still needs its existing coordination
 and takeover authorization.
 
-- **Claude:** update the private artifact in `hosting`. Create one when there is
-  no artifact target. Confirm the artifact update succeeded. Use its native
-  viewer; keep the rendered HTML without the Sites refresh assets.
+- **Claude:** publish with `publish_files`: the page file as `index.html`, and
+  each listed image as `files/<name>` from the `files/` folder beside the page.
+  Update the private artifact in `hosting` with its slug and current version,
+  in the default patch mode, so images already published stay. Create one when
+  there is no artifact target. Confirm the artifact update succeeded. Use its
+  native viewer; keep the rendered HTML without the Sites refresh assets.
 - **Codex:** discover and read the plugin-managed `sites:sites` skill. Give it
   the [prepared output](#prepare-sites-output) as a buildless static Site. Keep a
   durable Site source checkout with its tracked `.openai/hosting.json`; preserve
@@ -75,8 +85,8 @@ unchanged publication:
 python3 scripts/prepare_sites.py --page /absolute/path/command-center.next.html --output /absolute/path/site-source/dist
 ```
 
-It writes `index.html` and `chief-version.json` together in `dist/` and prints
-their content version. Keep both in the same deployment. The refresh script is
+It writes `index.html` and `chief-version.json` together in `dist/`, copies the
+page's result images into `dist/files/`, and prints their content version. Keep both in the same deployment. The refresh script is
 inline, so replacing the page needs no separate script request. Preparation also
 removes the obsolete generated `chief-refresh.js` file from earlier output.
 The helper leaves the rendered input, program record, and Site manifest alone;

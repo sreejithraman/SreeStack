@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Prepare a rendered command center and live refresh assets for a static Site."""
+"""Prepare a rendered command center, the result images beside it, and live refresh assets for a static Site."""
 
 import argparse
 import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
+
+from render_dashboard import page_files
 
 
 REFRESH = Path(__file__).resolve().parents[1] / "assets" / "chief-refresh.js"
@@ -44,6 +47,9 @@ def prepare(page_file: Path, output: Path) -> str:
     (output / "index.html").write_text(page, encoding="utf-8")
     (output / "chief-refresh.js").unlink(missing_ok=True)
     (output / "chief-version.json").write_text(json.dumps({"version": version}) + "\n", encoding="utf-8")
+    for name in page_files(page):
+        (output / name).parent.mkdir(exist_ok=True)
+        shutil.copyfile(page_file.parent / name, output / name)
     return version
 
 

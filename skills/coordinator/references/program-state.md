@@ -55,6 +55,11 @@ prints and settle it with them before you build on it. If they keep it, check
 it with step 3 below and commit it; otherwise run
 `git -C /absolute/path checkout HEAD -- program.json`.
 
+To add a picture to a result by hand, copy it into the program folder's
+`files/` under its content name: the first 16 hex digits of its sha256 (from
+`shasum -a 256`), then its lowercase extension. Commit it with the
+`program.json` change that names it.
+
 For a change no command covers, such as a new work row, the grant, a
 correction, a reopen, a withdrawal, a scrap-or-rebase answer, or a
 [coordinator move](coordinator-move.md), edit by hand:
@@ -158,7 +163,8 @@ type Work = {
   owner?: Owner; // required while building, shown, in review, or ready
   provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
   layers?: Layer[]; // bottom first; not on support
-  results?: (Link & { access?: string })[]; // what the owner showed, and what opening it needs
+  results?: (Link & { access?: string; image?: string })[]; // what the owner showed, what opening it needs,
+    // and image: a picture committed in the program folder as files/<content name>, shown as its thumbnail
   evidence?: Link[]; // acceptance evidence
   acceptance?: string; // blocked or untested assertions in its proof
   blockedBy?: string[]; // logical inputs not yet satisfied
@@ -174,6 +180,8 @@ type Owner = {
   tasks?: string[]; workspace?: string;
   resources?: string; // servers, ports, and databases, with their stop actions
   handled?: string[]; // follow-up messages already handled
+  seen?: { state: "running" | "idle" | "unknown"; at: string; // set by status: its thread when last read;
+    approvals?: number }; // unknown: unreadable since at. approvals: requests waiting for the user in its thread
 };
 type Layer = {
   id: string; branch: string;
@@ -227,7 +235,7 @@ type ReportBlock = {
   finishLine?: Work["finishLine"]; // recorded only when the row has none
   layers?: Layer[]; // bottom first, each with its head and base
   proof?: { assertion: string; verdict: "pass" | "fail" | "blocked" | "untested"; url?: string }[];
-  shown?: (Link & { access?: string })[]; // becomes results
+  shown?: (Link & { access?: string; image?: string })[]; // becomes results; image: an absolute path
   asks?: { id: string; question: string; phase?: Phase; // phase defaults to acceptance
     context?: string[]; meanwhile?: string; recommendation?: string;
     options?: Decision["options"]; weight?: Decision["weight"]; links?: Link[] }[];
@@ -239,7 +247,9 @@ type ReportBlock = {
 Each field in the block replaces that part of the row. An absent field leaves it
 as it was, and an empty list clears it. Proof with a `url` becomes `evidence`,
 and every verdict other than `pass` goes into `acceptance`. Each new ask becomes
-an open Need dated by the command; [triage](decisions.md#triage) it. A wait the
+an open Need dated by the command; [triage](decisions.md#triage) it. A
+shown `image` is copied into the program folder's `files/`, named by its
+content, and committed with the report. A wait the
 owner still reports keeps its first date. A report cannot mark a layer merged;
 after `report`, run `status`, which checks each layer's head, base, and merge at
 the forge.
@@ -258,8 +268,8 @@ Record the prose parts by hand:
 
 Before each write, read the relevant owner reports, user direction, tickets,
 and live forge state. `status` reads each PR through `gh` and each owner's
-thread through the T3 CLI, records what they show, and sets `checkedAt` on each
-row it fully read. An unread row keeps its old time. Settle by hand each forge
+thread through the T3 CLI, records what they show, including each owner's
+thread state in `owner.seen`, and sets `checkedAt` on each row it fully read. An unread row keeps its old time. Settle by hand each forge
 fact it reports the rules reject. Use `unknown` with `unknownReason` when a
 row's state cannot be read.
 
@@ -282,7 +292,8 @@ holds it is runnable. A Need holds a row
 when it halts the row's work, or when the row waits on it as a shown Try or
 ready work; a landing release alone holds nothing. It also fails while
 `program.json` has an uncommitted change or the published page is behind the
-record. Right after a [coordinator move](coordinator-move.md), leave the page to the new
+record, or while an owner's thread state differs from its `owner.seen`, so the
+page shows the state the turn ended on. Right after a [coordinator move](coordinator-move.md), leave the page to the new
 coordinator.
 
 A row is an outcome, a follow-up (an outcome that came from another one, with
@@ -332,10 +343,16 @@ an open Need without being blocked. Put what continues meanwhile in
 `meanwhile`. If work lands while a Need about it is open, keep the landed row and
 point the Need's `blocks` at a follow-up row for any change the answer requires.
 
-The page shows open, answered, and resolved Needs, work, and tradeoffs, and
-leaves out withdrawn Needs, decision history, owner plumbing, and program facts
-other than the title, goal, and finish line. Its Updated time is the commit that
-last changed it.
+The page opens with a health strip: the verdict and counts `status` would
+print for the rendered record, from each owner's `seen` state, the oldest open
+Inbox item's age, and `next`. Each work card says what is happening now and
+its owner's last observed state. The page shows open, answered, and resolved
+Needs, work, and tradeoffs, and collapses landed, done, and scrapped work. It
+leaves out withdrawn Needs, decision history, owner plumbing, and program
+facts other than the title, goal, finish line, and `next`. Its Record line
+names the commit that last changed it and that commit's time, so a page behind
+the record shows an older commit. Every time on the page reads in the viewer's time
+zone.
 
 Write each `description` from the outcome's scope, not its title or the owner's
 next step. Store returned T3 thread links verbatim and use only real ticket, PR,
