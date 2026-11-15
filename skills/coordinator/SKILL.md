@@ -106,7 +106,8 @@ python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --st
 and do what its first line says.
 ```
 
-Record the returned task ID in `grant.heartbeat`. A tick wakes you only on
+Record the interval and the returned task ID in `grant.heartbeat`, such as
+`Every 10 minutes, scheduled task <ID>`. A tick wakes you only on
 runnable work, facts that changed since you last looked, or a new forge note.
 When the host has no scheduled tasks, say so in the grant. Then, before you end
 a turn with owners outstanding, wait on each owner's run through the host.
