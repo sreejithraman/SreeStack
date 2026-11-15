@@ -60,7 +60,30 @@ h1 { font-size: clamp(28px, 6vw, 38px); font-weight: 700; line-height: 1.08; let
 .fact { display: flex; align-items: flex-start; gap: 7px; max-inline-size: 62ch; }
 .fact .icon { margin-block-start: 2px; color: var(--text-tertiary); }
 .fact-label { color: var(--text); font-weight: 600; }
+.fact code { font: 600 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 time { font-variant-numeric: tabular-nums; }
+
+/* Health strip */
+.health { --state-color: var(--text-secondary); margin-block-start: 22px; padding: 16px 18px 18px; }
+.health.runnable { --state-color: var(--attention); }
+.health.working { --state-color: var(--building); }
+.health.waiting { --state-color: var(--in-review); }
+.health.done { --state-color: var(--landed); }
+.health-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.verdict { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--state-color) 13%, transparent); color: color-mix(in srgb, var(--state-color) 85%, var(--text)); font-size: 15px; font-weight: 650; }
+.verdict-note { color: var(--text-secondary); font-size: 14px; }
+.tallies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+@media (min-width: 600px) { .tallies { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tally { display: flex; flex-direction: column-reverse; justify-content: flex-end; padding: 9px 12px 10px; border-radius: 12px; background: var(--fill); }
+.tally dt { color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.tally dd { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tally.zero dd { color: var(--text-tertiary); }
+.tally.attention { background: color-mix(in srgb, var(--attention) 13%, transparent); }
+.tally.attention :is(dt, dd) { color: color-mix(in srgb, var(--attention) 85%, var(--text)); }
+.health-lines { display: grid; gap: 6px; margin-block-start: 14px; color: var(--text-secondary); font-size: 14px; }
+.health-line { display: flex; align-items: flex-start; gap: 7px; }
+.health-line .icon { margin-block-start: 3px; color: var(--text-tertiary); }
+.health-line a { font-weight: 600; }
 
 /* Segmented control */
 .navigation { position: sticky; top: 0; z-index: 2; margin: 22px -4px 18px; padding: 8px 4px; background: var(--canvas); }
@@ -78,35 +101,40 @@ time { font-variant-numeric: tabular-nums; }
 .inbox-list { display: none; }
 
 /* Decisions */
-.need { container-type: inline-size; padding: clamp(20px, 5vw, 28px); }
-.need + .need { margin-block-start: 16px; }
-.need-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-block-end: 12px; font-size: 13px; color: var(--text-secondary); }
+.need { container-type: inline-size; padding: clamp(18px, 4.5vw, 26px); scroll-margin-block-start: 72px; }
+.need + .need { margin-block-start: 12px; }
+.need-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-block-end: 10px; font-size: 13px; color: var(--text-secondary); }
 .need-id { display: inline-flex; align-items: center; gap: 6px; color: var(--attention); font-weight: 600; }
 .need-id.settled { color: var(--text-secondary); }
-.need h3 { max-inline-size: 30ch; font-size: clamp(21px, 5vw, 25px); line-height: 1.2; font-weight: 650; letter-spacing: -.02em; text-wrap: balance; }
-.context { margin-block-start: 14px; color: var(--text-secondary); font-size: 15px; }
+.asked { display: inline-flex; align-items: center; gap: 5px; }
+.need h3 { max-inline-size: 32ch; font-size: clamp(19px, 4.6vw, 23px); line-height: 1.22; font-weight: 650; letter-spacing: -.02em; text-wrap: balance; }
+.context { margin-block-start: 12px; color: var(--text-secondary); font-size: 14px; }
 .context li { position: relative; padding-inline-start: 16px; }
 .context li::before { content: ""; position: absolute; inset-inline-start: 2px; inset-block-start: .62em; inline-size: 5px; block-size: 5px; border-radius: 50%; background: var(--text-tertiary); }
 .context li + li { margin-block-start: 6px; }
-.options { display: grid; gap: 10px; margin-block-start: 20px; }
-.options li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
-.options .recommended { background: var(--tint-soft); box-shadow: inset 0 0 0 1.5px var(--tint); }
-@container (min-width: 520px) {
-  .options li { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 20px; }
-  .options .copy-status, .options .manual-prompt { grid-column: 1 / -1; }
-}
-.choice-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
-.choice-heading strong { font-size: 16px; font-weight: 600; }
+.picks { display: grid; gap: 8px; min-inline-size: 0; margin: 16px 0 0; padding: 0; border: 0; }
+.pick { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px 14px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.pick:has(input:checked) { background: var(--tint-soft); box-shadow: inset 0 0 0 1.5px var(--tint); }
+.pick input { appearance: none; inline-size: 20px; block-size: 20px; margin: 1px 0 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--text-tertiary); cursor: pointer; transition: box-shadow .15s; }
+.pick input:checked { box-shadow: inset 0 0 0 6px var(--tint); }
+.pick input:focus-visible { outline-offset: 2px; border-radius: 50%; }
+.pick-body { display: grid; gap: 2px; min-inline-size: 0; }
+.pick-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+.pick-heading strong { font-size: 15px; font-weight: 600; }
 .recommended-label { display: inline-flex; align-items: center; gap: 4px; color: var(--tint-text); font-size: 12px; font-weight: 600; }
 .recommended-label .icon { fill: currentColor; inline-size: 12px; block-size: 12px; }
-.choice-effect { margin-block-start: 4px; color: var(--text-secondary); font-size: 14px; }
-.choice-rationale { margin-block-start: 8px; font-size: 14px; }
+.pick-effect { color: var(--text-secondary); font-size: 14px; }
+.pick-rationale { margin-block-start: 4px; font-size: 14px; }
+.answer-action { display: grid; gap: 10px; margin-block-start: 12px; }
+.answer-action .copy-prompt { justify-self: stretch; background: var(--tint); color: var(--on-tint); }
+@container (min-width: 520px) { .answer-action .copy-prompt { justify-self: start; } }
 .copy-prompt { display: inline-grid; justify-self: start; min-block-size: 44px; min-inline-size: 148px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--fill); color: var(--tint-text); font-size: 14px; font-weight: 600; cursor: pointer; }
 .recommended .copy-prompt { background: var(--tint); color: var(--on-tint); }
 .copy-prompt > span { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: opacity .15s; }
 .copy-prompt .done, .copy-prompt.copied .idle { opacity: 0; }
 .copy-prompt.copied .done { opacity: 1; }
-.copy-prompt:active { transform: scale(.98); }
+.copy-prompt:active:enabled { transform: scale(.98); }
+.copy-prompt:disabled { opacity: .45; cursor: default; }
 .copy-status:empty { display: none; }
 .copy-status { font-size: 13px; color: var(--text-secondary); }
 .manual-prompt { inline-size: 100%; min-block-size: 150px; padding: 10px 12px; resize: vertical; border: 0; border-radius: 10px; background: var(--fill); color: var(--text); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -146,6 +174,7 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 .done { --state-color: var(--done); }
 .scrapped { --state-color: var(--scrapped); }
 .unknown { --state-color: var(--unknown); }
+.finished { --state-color: var(--landed); }
 .provisional { --state-color: var(--attention); }
 .blocked { --state-color: var(--danger); }
 .segment { min-inline-size: 8px; background: var(--state-color); }
@@ -174,13 +203,28 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 .blocker-id { font-weight: 600; }
 .blocker-kind { color: var(--text-secondary); }
 .blocker-kind::after { content: " ·"; }
+.now { margin-block-start: 10px; padding: 10px 12px; border-radius: 12px; background: var(--fill); font-size: 14px; }
+.now-text { font-weight: 500; text-wrap: pretty; }
+.live { display: flex; align-items: center; gap: 7px; margin-block-start: 3px; color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+.live-dot { flex-shrink: 0; inline-size: 8px; block-size: 8px; border-radius: 50%; }
+.live.running .live-dot { background: var(--landed); box-shadow: 0 0 0 3px color-mix(in srgb, var(--landed) 22%, transparent); }
+.live.idle .live-dot { background: var(--attention); }
+.live.unknown .live-dot { box-shadow: inset 0 0 0 1.5px var(--text-tertiary); }
 .finish { display: flex; align-items: flex-start; gap: 7px; margin-block-start: 10px; color: var(--text-secondary); font-size: 13px; }
 .finish .icon { margin-block-start: 2px; color: var(--text-tertiary); }
 :is(.results, .provisional-note, .layers) { margin-block-start: 14px; font-size: 14px; }
 .note-label { display: flex; align-items: center; gap: 6px; margin-block-end: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
-.results li + li { margin-block-start: 4px; }
-.result-link { display: inline-flex; align-items: center; gap: 6px; min-block-size: 44px; font-weight: 600; }
-.result-access { display: block; color: var(--text-secondary); font-size: 13px; }
+.results ul { display: grid; gap: 10px; }
+.result-card { display: flex; align-items: center; gap: 12px; min-block-size: 56px; padding: 8px 12px 8px 8px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
+.result-card:hover { background: var(--tint-soft); text-decoration: none; }
+.result-mark { display: grid; place-items: center; flex-shrink: 0; inline-size: 40px; block-size: 40px; border-radius: 10px; background: var(--tint-soft); color: var(--tint-text); }
+.result-text { display: grid; min-inline-size: 0; }
+.result-label { color: var(--tint-text); font-weight: 600; }
+.result-host { overflow: hidden; color: var(--text-secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.result-card.has-image { display: grid; gap: 0; padding: 0; overflow: hidden; }
+.result-thumb { display: block; inline-size: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; background: var(--fill); }
+.has-image .result-text { padding: 9px 12px 10px; }
+.result-access { display: block; margin-block-start: 4px; padding-inline: 4px; color: var(--text-secondary); font-size: 13px; }
 .provisional-note { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--attention) 9%, transparent); }
 .provisional-note .note-label { color: color-mix(in srgb, var(--attention) 85%, var(--text)); }
 .provisional-note p + p { margin-block-start: 4px; }
@@ -243,8 +287,9 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 }
 
 @media (forced-colors: active) {
-  .card, .options li, .empty, .section-toggle, .inbox-group, .tabs button[aria-selected="true"], .layer, .provisional-note { border: 1px solid CanvasText; }
-  .options .recommended, .inbox-row[aria-selected="true"] { outline: 2px solid Highlight; }
+  .card, .pick, .result-card, .tally, .now, .empty, .section-toggle, .inbox-group, .tabs button[aria-selected="true"], .layer, .provisional-note { border: 1px solid CanvasText; }
+  .pick:has(input:checked), .inbox-row[aria-selected="true"] { outline: 2px solid Highlight; }
+  .pick input { appearance: auto; }
   .inbox-row-id::before { display: none; }
   .progress { display: none; }
 }
@@ -306,19 +351,38 @@ function selectInboxRow(row) {
 
 const ages = [['day', 86400], ['hour', 3600], ['minute', 60]];
 const relative = new Intl.RelativeTimeFormat(undefined, {numeric: 'auto'});
+const dayOnly = /^\d{4}-\d{2}-\d{2}$/;
+
+// A bare date names a calendar day, not UTC midnight, so it is read and shown as a local day.
+function readTime(value) {
+  if (!dayOnly.test(value)) return new Date(value);
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function describeAge(date, isDay) {
+  if (isDay) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return relative.format(Math.round((date - today) / 86400000), 'day');
+  }
+  const seconds = (date - Date.now()) / 1000;
+  const [unit, size] = ages.find(([, size]) => Math.abs(seconds) >= size) ?? ['minute', 60];
+  return relative.format(Math.round(seconds / size), unit);
+}
+
+// Every time on the page reads in the viewer's time zone; data-age adds how long ago, data-relative shows only that.
 function describeTimes() {
   for (const time of document.querySelectorAll('time[datetime]')) {
-    const date = new Date(time.dateTime);
+    const isDay = dayOnly.test(time.dateTime);
+    const date = readTime(time.dateTime);
     if (Number.isNaN(date.getTime())) continue;
-    time.title = time.dateTime;
-    const options = {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'};
+    const options = isDay ? {month: 'short', day: 'numeric'} : {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'};
     if (date.getFullYear() !== new Date().getFullYear()) options.year = 'numeric';
-    time.textContent = new Intl.DateTimeFormat(undefined, options).format(date);
-    if (time.hasAttribute('data-age')) {
-      const seconds = (date - Date.now()) / 1000;
-      const [unit, size] = ages.find(([, size]) => Math.abs(seconds) >= size) ?? ['minute', 60];
-      time.textContent += ' · ' + relative.format(Math.round(seconds / size), unit);
-    }
+    const shown = new Intl.DateTimeFormat(undefined, options).format(date);
+    time.title = new Intl.DateTimeFormat(undefined, isDay ? {dateStyle: 'full'} : {dateStyle: 'full', timeStyle: 'short'}).format(date);
+    const age = describeAge(date, isDay);
+    time.textContent = time.hasAttribute('data-relative') ? age : time.hasAttribute('data-age') ? `${shown} · ${age}` : shown;
   }
 }
 setInterval(describeTimes, 60000);
@@ -349,6 +413,31 @@ function connectCopyButtons() {
   }
 }
 
+// One answer action per decision copies the picked option's prompt.
+function connectPicks() {
+  for (const picks of document.querySelectorAll('.picks')) {
+    const button = picks.nextElementSibling.querySelector('.copy-prompt');
+    const follow = choice => {
+      button.dataset.prompt = choice.dataset.prompt;
+      button.disabled = false;
+      button.setAttribute('aria-label', `Copy answer: ${choice.dataset.label}`);
+    };
+    picks.addEventListener('change', event => follow(event.target));
+    const restored = picks.querySelector('input:checked');
+    if (restored) follow(restored);
+  }
+}
+
+function connectDecisionLinks() {
+  for (const jump of document.querySelectorAll('a[data-decision]')) {
+    jump.addEventListener('click', () => {
+      showTab(tabs.find(tab => tab.id === 'needs-tab'));
+      const row = inboxRows.find(candidate => candidate.getAttribute('aria-controls') === jump.dataset.decision);
+      if (row) showInboxRow(row);
+    });
+  }
+}
+
 function connectContent() {
   tabs = [...document.querySelectorAll('[role="tab"]')];
   connectSelection(tabs, selectTab, 'ArrowLeft', 'ArrowRight');
@@ -356,6 +445,8 @@ function connectContent() {
   inboxRows.forEach((row, index) => { row.tabIndex = index ? -1 : 0; });
   connectSelection(inboxRows, selectInboxRow, 'ArrowUp', 'ArrowDown');
   connectCopyButtons();
+  connectPicks();
+  connectDecisionLinks();
   describeTimes();
   renderIcons();
 }

@@ -11,6 +11,7 @@ import time
 import unittest
 from urllib.parse import urlsplit
 
+from render_dashboard import render
 import test_command_center as center
 from test_render_dashboard import Program, example
 
@@ -385,6 +386,22 @@ class PreparationTests(unittest.TestCase):
             changed = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(changed.returncode, 0, changed.stderr)
             self.assertNotEqual(changed.stdout, first.stdout)
+
+    def test_preparing_output_copies_the_result_images_the_page_shows(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            state = example()
+            state["work"][2]["results"][0]["image"] = "files/W5.png"
+            (root / "files").mkdir()
+            (root / "files/0123456789abcdef.png").write_bytes(b"\x89PNG history")
+            (root / "files/unused.png").write_bytes(b"\x89PNG old")
+            page = root / "command-center.html"
+            page.write_text(render(state, images={"files/W5.png": "files/0123456789abcdef.png"}))
+            result = subprocess.run([sys.executable, str(PREPARE), "--page", str(page), "--output", str(root / "dist")],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual([path.name for path in (root / "dist/files").iterdir()], ["0123456789abcdef.png"])
+            self.assertEqual((root / "dist/files/0123456789abcdef.png").read_bytes(), b"\x89PNG history")
 
 
 if __name__ == "__main__":

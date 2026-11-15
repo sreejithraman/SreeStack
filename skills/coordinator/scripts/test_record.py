@@ -1,5 +1,6 @@
 import copy
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -9,8 +10,8 @@ import tempfile
 import textwrap
 import unittest
 
-from record import assess, observe, orphans, revision
-from render_dashboard import decision_prompt, quoted, validate
+from record import observe
+from render_dashboard import assess, decision_prompt, orphans, quoted, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, work
 
 
@@ -241,6 +242,33 @@ class EventTests(RecordCase):
 
 
 class ReportTests(RecordCase):
+    def test_a_shown_image_is_copied_into_the_program_and_committed_with_the_report(self):
+        shot = self.program.folder.parent / "owner-screenshot.PNG"
+        shot.write_bytes(b"\x89PNG history")
+        name = f"files/{hashlib.sha256(shot.read_bytes()).hexdigest()[:16]}.png"
+        self.write_report({"outcome": "W1", "state": "in-review", "shown": [
+            {"label": "History view", "url": "https://example.com/previews/history", "image": str(shot)}]})
+        changed, after, result = self.event("report", "--work", "W1")
+        self.assertEqual(work(after, "W1")["results"], [{"label": "History view", "url": "https://example.com/previews/history", "image": name}])
+        self.assertEqual((self.program.folder / name).read_bytes(), shot.read_bytes())
+        tracked = subprocess.run(["git", "-C", str(self.program.folder), "show", "--name-only", "--format=", "HEAD"],
+                                 capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(sorted(tracked), sorted([name, "program.json"]))
+        self.assertIn(f"with {name} from beside it", result.stdout, "the page serves the committed copy itself")
+        self.assertEqual([path.name for path in (self.program.folder / "files").iterdir()], [name.removeprefix("files/")])
+
+    def test_a_shown_image_must_be_an_absolute_picture_path(self):
+        before = self.commits()
+        for image in ("owner-screenshot.png", "/tmp/notes.txt", "/nonexistent/shot.png"):
+            self.write_report({"outcome": "W1", "state": "in-review",
+                               "shown": [{"label": "View", "url": "https://example.com/v", "image": image}]})
+            with self.subTest(image=image):
+                result = self.run_record("report", "--work", "W1")
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("refused:", result.stderr)
+        self.assertEqual(self.commits(), before)
+        self.assertFalse((self.program.folder / "files").exists())
+
     def write_report(self, block, prose="Prose for people below the block.\n"):
         path = self.program.folder / "reports" / "W1.md"
         path.parent.mkdir(exist_ok=True)
@@ -376,16 +404,43 @@ class LandingTests(RecordCase):
 
 
 class StatusTests(RecordCase):
+    def test_the_page_shows_the_verdict_and_counts_status_prints(self):
+        self.serve(threads={"w1": {"status": "idle"}, "w2": {"status": "running"}, "w5": {"status": "idle"},
+                            "w6": {"status": "idle"}})
+        result = self.run_record("status", "--json")
+        found = json.loads(result.stdout)
+        page = (self.program.folder / "command-center.next.html").read_text()
+        self.assertIn(f'class="health card {found["verdict"]}"', page)
+        counts = {"running": len(found["working"])} | {
+            key: sum(entry["kind"] == kind for entry in found["runnable"])
+            for key, kind in (("idle", "idle owner"), ("start", "start"), ("land", "release"))}
+        self.assertEqual(counts, {"running": 1, "idle": 2, "start": 0, "land": 0})
+        for key, count in counts.items():
+            self.assertIn(f'<dd data-count="{key}">{count}</dd>', page)
+
     def test_status_records_forge_facts_and_checks_only_what_it_read(self):
         w1 = work(self.state, "W1")["layers"]
         self.serve(prs={w1[0]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": "4d1c9e2" + "0" * 33, "baseRefName": "main"},
                         w1[1]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": "feed123" + "0" * 33,
                                        "baseRefName": "export-retry-queue"}})
         changed, after, result = self.event("status")
-        self.assertEqual(changed, {"work[W1].layers[W1-L2].head", "work[W1].checkedAt"}, "rows with nothing to read keep their checked time")
+        changed = {path for path in changed if ".owner.seen." not in path}
+        self.assertEqual(changed, {"work[W1].layers[W1-L2].head"}, "a row whose thread read failed keeps its checked time")
         self.assertEqual([layer["head"] for layer in work(after, "W1")["layers"]], ["4d1c9e2", "feed123" + "0" * 33])
         self.assertIn("W1: W1-L2 head moved to feed123", result.stdout)
         self.assertTrue(self.commits()[0].startswith("status: W1: W1-L2 head moved"))
+
+    def test_status_records_each_owner_thread_as_running_idle_or_unknown(self):
+        self.serve(threads={"w1": {"status": "idle"}, "w2": {"status": "running"}, "w6": {"status": "waiting"}})
+        changed, after, _ = self.event("status")
+        seen = {row["id"]: row["owner"].get("seen") for row in after["work"] if "owner" in row}
+        at = seen["W1"]["at"]
+        self.assertEqual(seen, {"W1": {"state": "idle", "at": at}, "W2": {"state": "running", "at": at},
+                                "W5": {"state": "unknown", "at": at}, "W6": {"state": "running", "at": at},
+                                "W3": None, "W0": work(self.state, "W0")["owner"].get("seen")})
+        self.assertNotEqual(at, work(self.state, "W1")["owner"]["seen"]["at"])
+        self.assertIn("work[W2].checkedAt", changed, "a read thread checks its row")
+        self.assertNotIn("work[W5].checkedAt", changed, "a failed read leaves its checked time")
 
     def test_a_moved_head_takes_ready_work_back_to_review(self):
         self.commit(ready)
@@ -857,6 +912,7 @@ class TurnEndTests(RecordCase):
         self.assertIn("idle owner: W3: Support worker is idle with no recorded wait", result.stdout)
 
         self.event("wait", "--on", "Fixture repair", "--event", "Owner reports", "--work", "W3")
+        self.publish()  # the page shows the wait
         self.assertEqual(self.turn_end().returncode, 0, "a recorded wait covers an idle owner")
 
         self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "msg")

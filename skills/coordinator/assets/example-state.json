@@ -241,9 +241,14 @@
       "state": "in-review",
       "owner": {
         "name": "Retry owner",
+        "session": "https://example.com/threads/w1",
         "start": "top-level",
         "route": "`t3_thread_send` to the coordinator",
-        "workspace": "Worktree on `retry-export`"
+        "workspace": "Worktree on `retry-export`",
+        "seen": {
+          "state": "idle",
+          "at": "2026-11-02T16:55:00Z"
+        }
       },
       "layers": [
         {
@@ -289,8 +294,13 @@
       "state": "building",
       "owner": {
         "name": "API owner",
+        "session": "https://example.com/threads/w2",
         "start": "top-level",
-        "route": "`t3_thread_send` to the coordinator"
+        "route": "`t3_thread_send` to the coordinator",
+        "seen": {
+          "state": "running",
+          "at": "2026-11-02T16:50:00Z"
+        }
       },
       "provisional": {
         "basis": "W1-L2, the Retry owner's unmerged cancellation layer.",
@@ -325,9 +335,14 @@
       "state": "shown",
       "owner": {
         "name": "History owner",
+        "session": "https://example.com/threads/w5",
         "start": "top-level",
         "route": "`t3_thread_send` to the coordinator",
-        "resources": "History preview server on port 8105; stop with `kill` on its recorded PID."
+        "resources": "History preview server on port 8105; stop with `kill` on its recorded PID.",
+        "seen": {
+          "state": "idle",
+          "at": "2026-11-02T16:40:00Z"
+        }
       },
       "layers": [
         {
@@ -361,8 +376,13 @@
       "state": "building",
       "owner": {
         "name": "Expiry owner",
+        "session": "https://example.com/threads/w6",
         "start": "top-level",
-        "route": "`t3_thread_send` to the coordinator"
+        "route": "`t3_thread_send` to the coordinator",
+        "seen": {
+          "state": "running",
+          "at": "2026-11-02T16:52:00Z"
+        }
       },
       "provisional": {
         "basis": "W6-D1's recommended option: expired entries stay visible.",

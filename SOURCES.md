@@ -515,23 +515,27 @@ log the history. `scripts/record.py` records each event (start, report, answer,
 resolve, applied, land, wait) with its own clock: it refuses an uncommitted
 record, changes only what the event changes, validates, commits, and renders.
 Its `status` reads PRs from `gh` and owner threads from the T3 CLI, records
-forge facts, and lists what to do now. It reports one verdict (runnable,
+forge facts and each owner's observed thread state, and lists what to do now. It reports one verdict (runnable,
 working, waiting, or done) with a digest of its facts, as JSON or an exit code
 on request. Orphaned work, idle owners owing work, and a Need whose recommended
 option is marked `reversible` and halts startable work count as runnable.
 `status --turn-end` commits nothing and fails while the verdict is runnable,
 the record is dirty, or the page is behind the record. Answers stay
 `applied: false` until the coordinator runs `applied`. A report cannot record a
-merge; `status` reads merges at the forge. The renderer turns ISO times in
-prose into localized time elements. The original command center
+merge; `status` reads merges at the forge. The renderer shows every time in
+the viewer's time zone. The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
-the Inbox before Work, collapsible sections, per-row observation times,
-copyable decision prompts that name one recorded option, judgment calls ahead
-of quick picks with a batch prompt, reopenable coordinator-resolved decisions,
-and accepted tradeoffs. Each work row is one outcome, follow-up, or support
-task, counted once, with its finish line, results to open, provisional
-condition, owner, and PR layers; each decision names the outcomes it blocks and
-the phase each waits at. Below 900px it stays one column; wider, the Inbox is a
+a health strip of the `status` verdict and counts computed from the recorded
+facts, the rendered record commit, the Inbox before Work, collapsible sections,
+per-row observation times, a pick list per decision with one answer action
+whose prompt names one recorded option at its revision, each open item's age,
+judgment calls ahead of quick picks with a batch prompt, reopenable
+coordinator-resolved decisions, and accepted tradeoffs. Each work row is one
+outcome, follow-up, or support task, counted once, with a "now" line and its
+owner's observed state, its finish line, result cards with thumbnails for
+committed images, provisional condition, owner, and PR layers; landed, done,
+and scrapped rows collapse into one closed section. Each decision names the
+outcomes it blocks and the phase each waits at. Below 900px it stays one column; wider, the Inbox is a
 dual-pane view and Work a board of stage lanes. It replaces the supplied
 archive's artifact database and integrations; no archive code or prose is
 copied. Validation rejects provisional landings, PRs on a Try, stacks on
@@ -560,7 +564,8 @@ commits render normally without redeploying an unchanged page. The
 published-page marker advances only after confirmed publication, including a
 successful terminal Sites deployment; failures remain visible.
 `render_dashboard.py --page` renders the last commit beside the last published
-page, says whether it changed, and stamps the commit time that changed it; the
+page with its result images in `files/`, says whether it changed, and stamps
+the commit and time that changed it; the
 coordinator republishes on a change and on every resume and move. The page
 keeps the viewer's place in session storage; the coordinator stays the only
 writer. Local Chrome tests serve prepared committed pages and exercise full

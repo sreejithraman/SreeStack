@@ -13,6 +13,7 @@ import functools
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import re
 from pathlib import Path
 import select
 import shutil
@@ -24,7 +25,8 @@ import time
 import unittest
 
 from render_dashboard import render
-from test_render_dashboard import example, owner
+from render_dashboard import ISO_TIME, revision
+from test_render_dashboard import decision, example, owner
 
 
 DESKTOP = (1280, 800)
@@ -329,23 +331,64 @@ class PageTests(CommandCenterCase):
         page = self.open_page()
         page.click("#work-tab")
         title, shown = page.run("(time => [time.title, time.textContent])(document.querySelector('.work-description time'))")
-        self.assertEqual(title, "2026-11-02T17:00:00Z")
-        self.assertNotIn("T17:00", shown)
+        self.assertIn("2026", title)
+        for text in (title, shown):
+            self.assertNotIn("T17:00", text)
         self.assertEqual(page.run("pageErrors"), [])
 
-    def test_copy_prompt_copies_its_choice_or_offers_the_text(self):
-        page = self.open_page()
+    def test_no_utc_time_reaches_the_reader(self):
+        stamp = "2026-11-02T17:00:00Z"
+        self.publish(self.changed(lambda state: (
+            self.work(state, "W1").update(description=f"Paused at {stamp}."), state.update(next=f"Recheck at {stamp}."))))
+        page = self.open_page(PHONE, before_load="")
+        page.send("Emulation.setTimezoneOverride", timezoneId="Pacific/Honolulu")
+        page.reload()
+        shown = page.run("""[document.querySelector('main').textContent,
+            ...[...document.querySelectorAll('[title], [aria-label]')].flatMap(item => [item.title, item.getAttribute('aria-label') ?? ''])]""")
+        leaks = [text for text in shown if ISO_TIME.search(text) or "UTC" in text or re.search(r"\d{4}-\d{2}-\d{2}", text)]
+        self.assertEqual(leaks, [])
+        day = "#row-decision-" + "W6-D1".encode().hex() + " time"
+        self.assertTrue(page.run(f"document.querySelector('{day}').title").startswith("Monday, November 2, 2026"),
+                        "a bare date stays its own day west of UTC")
+        self.assertEqual(page.run("pageErrors"), [])
+
+    def test_oldest_inbox_link_opens_its_decision_from_either_tab(self):
+        page = self.open_page(DESKTOP)
+        page.click("#work-tab")
+        page.click("[data-oldest-wait] a")
+        target = "decision-" + "W6-D1".encode().hex()
+        self.assertEqual((page.selected_tab(), page.selected_decision()), ("needs-tab", target))
+        self.assertTrue(page.run(f"document.getElementById('{target}').checkVisibility()"))
+
+    def copy_answer(self, page, target):
+        page.click(f"{target} .answer-action .copy-prompt")
+        return page.run("new Promise(resolve => setTimeout(() => resolve(window.copied)))").splitlines()
+
+    def test_answer_copies_the_picked_option_at_its_revision_or_offers_the_text(self):
+        page = self.open_page(PHONE)
+        need = decision(self.state, "W5-T")
         target = "#decision-" + "W5-T".encode().hex()
+        heading = f'Decision "W5-T" (revision {revision(need)}) in "Export reliability"'
         page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
-        page.click(f"{target} .options li:last-child .copy-prompt")
-        copied = page.run("new Promise(resolve => setTimeout(() => resolve(window.copied)))").splitlines()
-        self.assertTrue(copied[0].startswith('Decision "W5-T" (revision '))
-        self.assertEqual(copied[-1], 'I choose option 3: "Scrap"')
+        self.assertEqual(page.run(f"document.querySelectorAll('{target} .copy-prompt').length"), 1, "one answer action per decision")
+        self.assertTrue(page.run(f"document.querySelector('{target} .answer-action .copy-prompt').disabled"), "no option is recommended")
+        page.click(f"{target} .pick:last-of-type input")
+        self.assertEqual(self.copy_answer(page, target), [heading, f'Question: "{need["question"]}"', 'I choose option 3: "Scrap"'])
+        page.click(f"{target} .pick:first-of-type input")
+        self.assertEqual(self.copy_answer(page, target)[::2], [heading, 'I choose option 1: "Merge"'])
         page.run("navigator.clipboard.writeText = async () => { throw new Error('denied'); }")
-        page.click(f"{target} .options li:first-child .copy-prompt")
-        manual = page.run(f"new Promise(resolve => setTimeout(() => {{ const box = document.querySelector('{target} .options li:first-child .manual-prompt'); resolve([box.hidden, box.value]); }}))")
+        page.click(f"{target} .answer-action .copy-prompt")
+        manual = page.run(f"new Promise(resolve => setTimeout(() => {{ const box = document.querySelector('{target} .manual-prompt'); resolve([box.hidden, box.value]); }}))")
         self.assertFalse(manual[0])
-        self.assertTrue(manual[1].endswith('I choose option 1: "Merge"'))
+        self.assertEqual(manual[1].splitlines()[::2], [heading, 'I choose option 1: "Merge"'])
+        self.assertEqual(page.run("pageErrors"), [])
+
+    def test_recommended_option_is_picked_and_copied_first(self):
+        page = self.open_page(PHONE)
+        need = decision(self.state, "W1-D2")
+        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
+        copied = self.copy_answer(page, "#decision-" + "W1-D2".encode().hex())
+        self.assertEqual(copied[::2], [f'Decision "W1-D2" (revision {revision(need)}) in "Export reliability"', 'I choose option 1: "Three attempts"'])
 
 
 EVIDENCE = "#toggle-evidence-" + "W1".encode().hex()
@@ -537,8 +580,8 @@ class ScrollTests(CommandCenterCase):
         self.wide_board()
         page = self.open_page(DESKTOP)
         page.click("#work-tab")
-        page.run("document.querySelector('.stage-board').scrollLeft = 300")
-        lane = ".stage-board .collapsible.landed"
+        page.run("document.querySelector('.stage-board').scrollLeft = 200")
+        lane = ".stage-board .collapsible.in-review"
         before = page.run(f"document.querySelector('{lane}').getBoundingClientRect().left")
         self.republish(page, self.changed(lambda state: state["work"].append(self.outcome("X9", "unknown", unknownReason="Forge unavailable"))))
         self.assertEqual(page.run("document.querySelectorAll('.work').length"), 11)
@@ -549,12 +592,12 @@ class ScrollTests(CommandCenterCase):
         self.wide_board()
         page = self.open_page(DESKTOP)
         page.click("#work-tab")
-        page.run("document.querySelector('.stage-board').scrollLeft = 300")
+        page.run("document.querySelector('.stage-board').scrollLeft = 200")
         page.click("#needs-tab")
         self.republish(page, self.retitled())
         self.assertIn("Retitled program", page.text())
         page.click("#work-tab")
-        self.assertEqual(page.run("document.querySelector('.stage-board').scrollLeft"), 300)
+        self.assertEqual(page.run("document.querySelector('.stage-board').scrollLeft"), 200)
 
     def test_decision_list_keeps_its_row_when_a_decision_is_added_above_it(self):
         self.state["decisions"] += [dict(copy.deepcopy(self.state["decisions"][0]), id=f"N{index}", question=f"Extra decision {index}") for index in range(20)]
@@ -581,7 +624,7 @@ class ScrollTests(CommandCenterCase):
         identity = bytes.fromhex(mover.removeprefix("work-card-")).decode()
         landed = {"state": "landed", "layers": [{"id": f"{identity}-L1", "branch": "landed", "status": "merged", "url": "https://example.test/pull/9"}]}
         self.republish(page, self.changed(lambda state: self.work(state, identity).update(landed)))
-        self.assertIn("landed", page.run(f"document.getElementById({json.dumps(mover)}).closest('.collapsible').className"))
+        self.assertIn("finished", page.run(f"document.getElementById({json.dumps(mover)}).closest('.collapsible').className"))
         self.assertAlmostEqual(page.top_of("#" + watched), before, delta=1)
 
 
