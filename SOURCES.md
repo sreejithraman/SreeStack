@@ -429,7 +429,8 @@ worktree, watches its own PR, and reports with `t3_thread_send`, while the chief
 waits on each owner's run through the host and reconciles one that ends
 without a report; where the host cannot launch sessions, a delegated owner runs
 in its own worktree and the chief watches its PR. A running Implement session is adopted, never duplicated. The
-chief reads Implement's owner report fields, accepts outcomes under
+chief reads Implement's owner report fields, opened by a JSON block the record
+script reads, accepts outcomes under
 Orchestration, and routes discoveries through an explicit disposition table.
 The chief dispatches: owners run their own review loops, helpers, and pause
 decisions. Splits and follow-ups are the chief's or owner's own calls, and
@@ -458,7 +459,17 @@ facts, `decisions` (each decision from arrival to answer or withdrawal), `work`
 (each row with its scope, sources, and owner with that owner's plumbing),
 tradeoffs, discoveries, landings, and waits. The renderer picks what the page
 shows. Owners write only their own report files. The program folder is a git
-repo; its last commit is the record and its log the history. The original command center
+repo; its last commit is the record and its log the history.
+`scripts/record.py` records each event (start, report, answer, resolve, land,
+wait) with its own clock: it refuses an uncommitted record, changes only what
+the event changes, validates, commits, and renders. Its `status` reads PRs from
+`gh` and owner threads from the T3 CLI, records forge facts, and lists what to
+do now. It reports one verdict (runnable, working, waiting, or done) with a
+digest of its facts, as JSON or an exit code on request. Orphaned work, and a
+Need whose recommended option is marked `reversible` and halts startable work,
+count as runnable. `status --turn-end` commits nothing and fails while the
+verdict is runnable or the page is behind the record. Answers
+stay `applied: false` until the chief runs `applied`. A report cannot record a merge; `status` reads merges at the forge. The renderer turns ISO times in prose into localized time elements. The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
 Needs you before Work, collapsible sections, per-row observation times, copyable
 decision prompts that name one recorded option, judgment calls ahead of quick

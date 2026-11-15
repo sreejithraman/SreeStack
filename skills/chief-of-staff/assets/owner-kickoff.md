@@ -18,6 +18,18 @@ Landing: report readiness and end your turn. Land through Merge only on that rel
 Holds and user gates: <hold, source, release condition, or none>.
 Delegation allowance: you may start the bounded helpers your workflow needs as your own subagents: implementation, verification, and review helpers, and Swarm workers that fit. <Further limits, or none>. Start no new program owners; send work that needs one to the chief.
 
-Owner report: write it to <program directory>/reports/<ID>.md. Send a partial report as soon as you hit a missing prerequisite, a human decision, or a pending PR, naming what continues and the event that resumes the rest.
+Owner report: write it to <program directory>/reports/<ID>.md. Start it with a fenced `json` block holding only the fields that apply, then write the report in prose below it. Each field replaces that part of the record; an empty list clears it:
+
+```json
+{"outcome": "<ID>", "state": "building | shown | in-review | ready",
+ "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
+ "proof": [{"assertion": "<what was checked>", "verdict": "pass | fail | blocked | untested", "url": "<evidence>"}],
+ "shown": [{"label": "<result>", "url": "<link>", "access": "<what opening it needs>"}],
+ "asks": [{"id": "<ID>-D1", "question": "<one question>", "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "recommended": true, "reversible": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],
+ "waits": [{"on": "<what>", "event": "<what ends it>"}],
+ "blocked": "<missing prerequisite and who can supply it>"}
+```
+
+Send a partial report as soon as you hit a missing prerequisite, a human decision, or a pending PR, naming what continues and the event that resumes the rest.
 Route: <top-level: send it to the chief thread <link> with t3_thread_send; you watch your PR | delegated: end your turn with it; the chief thread watches your PR>.
 Decision requests and shared blockers use the same route as they arise. In each decision request, say what reversing each option would take and cite any recorded source that settles it.

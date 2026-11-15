@@ -35,12 +35,12 @@ ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
-HISTORY = {"date", "source", "answerSource", "rationale"}  # Decision fields the page never shows.
+HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields the page never shows.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
 DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanwhile", "recommendation", "options",
-                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale")
+                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
              "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
              "blocked", "unknownReason", "checkedAt", "required", "origin")
@@ -355,6 +355,8 @@ def validate_decision(row, by_id):
             raise ValueError(f"{path}.{key} applies only to {owner} decisions")
     if status == "withdrawn":
         text(row.get("rationale"), f"{path}.rationale")
+    if "applied" in row and (row["applied"] is not False or status not in {"answered", "resolved"}):
+        raise ValueError(f"{path}.applied is false on an answer not yet passed to its owners, and absent otherwise")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
         raise ValueError(f"{path}.weight must be quick or judgment")
     strings(row.get("context", []), f"{path}.context")
@@ -373,11 +375,12 @@ def validate_decision(row, by_id):
         if status == "open" and phase == "start" and by_id[identity]["state"] != "planned":
             raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
     for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
-        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended"))
+        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended", "reversible"))
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
-        if "recommended" in option and not isinstance(option["recommended"], bool):
-            raise ValueError(f"{path}.options.recommended must be a boolean")
+        for flag in ("recommended", "reversible"):
+            if flag in option and not isinstance(option[flag], bool):
+                raise ValueError(f"{path}.options.{flag} must be a boolean")
     recommended = sum(option.get("recommended", False) for option in row.get("options", []))
     if recommended > 1:
         raise ValueError(f"{path}: only one option can be recommended")
@@ -492,6 +495,11 @@ def when(value):
     return f'<time datetime="{e(value)}">{e(value)}</time>'
 
 
+def prose(value):
+    """Escaped text whose ISO timestamps become time elements, so the page shows them in local time."""
+    return ISO_TIME.sub(lambda match: when(match[0]), e(value))
+
+
 UPDATED = re.compile(r'<time id="updated" datetime="[^"]*" data-age>[^<]*</time>')
 
 
@@ -546,9 +554,9 @@ def choice(row, option, index, state):
     content = f'<li class="{"recommended" if recommended else "choice"}"><div class="choice-body"><p class="choice-heading"><strong>{e(option["label"])}</strong>'
     if recommended:
         content += f'<span class="recommended-label">{icon("recommended")}Recommended</span>'
-    content += f'</p><p class="choice-effect">{e(option["effect"])}</p>'
+    content += f'</p><p class="choice-effect">{prose(option["effect"])}</p>'
     if recommended and row.get("recommendation"):
-        content += f'<p class="choice-rationale">{e(row["recommendation"])}</p>'
+        content += f'<p class="choice-rationale">{prose(row["recommendation"])}</p>'
     status_id = f'prompt-{hexed(row["id"])}-{index}'
     return content + f'</div>{copy_control(prompt, status_id, "Copy prompt: " + option["label"], "Copy prompt")}</li>'
 
@@ -599,26 +607,26 @@ def tradeoff_label(row):
 
 def need_card(row, state, selected=False):
     classes = "card need" + (" quick" if row["status"] == "open" and row.get("weight") == "quick" else "") + (" selected" if selected else "")
-    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{e(row["question"])}</h3>'
+    content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{prose(row["question"])}</h3>'
     if row.get("context"):
-        content += '<ul class="context">' + "".join(f"<li>{e(item)}</li>" for item in row["context"]) + "</ul>"
+        content += '<ul class="context">' + "".join(f"<li>{prose(item)}</li>" for item in row["context"]) + "</ul>"
     if row["status"] == "open" and row.get("meanwhile"):
-        content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {e(row["meanwhile"])}</p>'
+        content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {prose(row["meanwhile"])}</p>'
     if row["status"] == "answered":
-        content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{e(row["answer"])}</p></div>'
+        content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{prose(row["answer"])}</p></div>'
     elif row["status"] == "resolved":
-        content += f'<div class="answer"><p class="answer-label">Chief\'s call</p><p>{e(row["answer"])}</p><p class="answer-label">Basis</p><p>{e(row["basis"])}</p></div>'
+        content += f'<div class="answer"><p class="answer-label">Chief\'s call</p><p>{prose(row["answer"])}</p><p class="answer-label">Basis</p><p>{prose(row["basis"])}</p></div>'
         reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
         content += f'<div class="reopen">{reopen}</div>'
     elif row.get("options"):
         content += '<ul class="options">' + "".join(choice(row, option, index, state) for index, option in enumerate(row["options"])) + "</ul>"
     elif row.get("recommendation"):
-        content += f'<div class="suggested-answer"><p class="answer-label">Suggested answer</p><p>{e(row["recommendation"])}</p></div>'
+        content += f'<div class="suggested-answer"><p class="answer-label">Suggested answer</p><p>{prose(row["recommendation"])}</p></div>'
     return content + link_list(row.get("links", [])) + "</article>"
 
 
 def revisit_card(row):
-    return f'<article id="{card_id("tradeoff", row)}" class="card need"><p class="need-meta">{tradeoff_label(row)}</p><h3>{e(row["title"])}</h3><p class="context">{e(row["tradeoff"])}</p><div class="answer"><p class="answer-label">Revisit</p><p>{e(row["revisit"])}</p></div></article>'
+    return f'<article id="{card_id("tradeoff", row)}" class="card need"><p class="need-meta">{tradeoff_label(row)}</p><h3>{prose(row["title"])}</h3><p class="context">{prose(row["tradeoff"])}</p><div class="answer"><p class="answer-label">Revisit</p><p>{prose(row["revisit"])}</p></div></article>'
 
 
 def inbox_row(target, identity, title, selected=False):
@@ -733,7 +741,7 @@ def provisional_note(row):
     provisional = row["provisional"]
     return (
         f'<div class="provisional-note"><p class="note-label">{icon("provisional")}Provisional</p>'
-        f'<p><strong>Rests on</strong> {e(provisional["basis"])}</p><p><strong>Clears when</strong> {e(provisional["clears"])}</p>'
+        f'<p><strong>Rests on</strong> {prose(provisional["basis"])}</p><p><strong>Clears when</strong> {prose(provisional["clears"])}</p>'
         '<p class="note-rule">It never lands while provisional.</p></div>'
     )
 
@@ -743,7 +751,7 @@ def results_view(row):
         return ""
     items = "".join(
         f'<li>{link(result["label"], result["url"], "result-link", "result")}'
-        + (f'<span class="result-access">{e(result["access"])}</span>' if result.get("access") else "") + "</li>"
+        + (f'<span class="result-access">{prose(result["access"])}</span>' if result.get("access") else "") + "</li>"
         for result in row["results"]
     )
     return f'<div class="results"><p class="note-label">Results</p><ul>{items}</ul></div>'
@@ -777,7 +785,7 @@ def blocker_list(items, label, mark, cls):
     content = f'<div class="{cls}"><p class="blocker-label">{icon(mark)}{e(label)}</p><ul>'
     for kind, identity, text_value in items:
         prefix = f'<span class="blocker-id">{e(identity)}</span> ' if identity else ""
-        content += f'<li>{prefix}<span class="blocker-kind">{e(kind)}</span> {e(text_value)}</li>'
+        content += f'<li>{prefix}<span class="blocker-kind">{e(kind)}</span> {prose(text_value)}</li>'
     return content + "</ul></div>"
 
 
@@ -790,19 +798,19 @@ def work_card(row, program):
         tags.append("Proposed · outside committed scope")
     if tags or row.get("tickets"):
         content += '<p class="tags">' + "".join(f'<span class="tag">{e(tag)}</span>' for tag in tags) + "".join(link(t["label"], t["url"], "ticket") for t in row.get("tickets", [])) + "</p>"
-    content += f'<h4 id="{heading_id}" class="work-title">{e(row["title"])}</h4>'
+    content += f'<h4 id="{heading_id}" class="work-title">{prose(row["title"])}</h4>'
     if row.get("description"):
-        content += f'<p class="work-description">{e(row["description"])}</p>'
+        content += f'<p class="work-description">{prose(row["description"])}</p>'
     content += finish_line(row)
     if row.get("unknownReason"):
-        content += f'<p class="state-note">{icon("unknown")}{e(row["unknownReason"])}</p>'
+        content += f'<p class="state-note">{icon("unknown")}{prose(row["unknownReason"])}</p>'
     content += blocker_list([item[1:] for item in reasons if item[0]], "Blocked by", "blocked", "blocker")
     content += blocker_list([item[1:] for item in reasons if not item[0]], "Waits on", "waits", "blocker waits")
     content += results_view(row) + provisional_note(row) + layers_view(row, program)
     if row.get("origin") or row.get("evidence"):
         content += '<details class="work-context"><summary class="section-toggle" id="' + card_id("toggle-evidence", row) + '">Evidence and history</summary><div class="section-body">'
         if row.get("origin"):
-            content += f'<p><strong>Origin</strong> {e(row["origin"])}</p>'
+            content += f'<p><strong>Origin</strong> {prose(row["origin"])}</p>'
         content += link_list(row.get("evidence", []))
         content += "</div></details>"
     content += '<div class="work-footer"><div class="assignee">'
@@ -858,11 +866,11 @@ def render(state, updated=None):
 
     facts = ""
     if state.get("finishLine"):
-        facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {e(state["finishLine"])}</span></p>'
+        facts += f'<p class="fact">{icon("finish")}<span><span class="fact-label">Finish line</span> {prose(state["finishLine"])}</span></p>'
     if updated:
         facts += f'<p class="fact">{icon("updated")}<span><span class="fact-label">Updated</span> {updated_time(updated)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
-    content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{e(state["goal"])}</p><div class="facts">{facts}</div></header>'
+    content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{prose(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
@@ -873,6 +881,11 @@ def render(state, updated=None):
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
     return TEMPLATE.read_text().replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
+
+
+def layout(state):
+    """The program file's one-value-per-line text."""
+    return json.dumps(state, indent=2, ensure_ascii=False) + "\n"
 
 
 def git(state_file, *args):
@@ -924,7 +937,7 @@ def main():
             text = args.state.read_text()
             state = json.loads(text)
             render(state)
-            if text != json.dumps(state, indent=2, ensure_ascii=False) + "\n":
+            if text != layout(state):
                 path = shlex.quote(str(args.state))
                 raise ValueError(f"{args.state}: not one value per line; rewrite it with: "
                                  f"python3 -m json.tool --indent 2 --no-ensure-ascii {path} > {path}.fmt && mv {path}.fmt {path}")

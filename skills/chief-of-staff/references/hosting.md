@@ -13,18 +13,19 @@ Keep `hosting` without the fragment. Keep one canonical
 
 ## Render and publish
 
-After each commit under [write the record](program-state.md#write-the-record),
-render `HEAD` from this skill's folder:
+Each `record.py` command renders `HEAD` after its commit. It writes
+`command-center.next.html` beside the page file and prints `page: behind record
+<commit>` when that differs from `command-center.html`, the last successfully
+published page. `--page` names another page file. After a hand write, render
+from this skill's folder:
 
 ```bash
 python3 scripts/render_dashboard.py --state /absolute/path/program.json --page /absolute/path/command-center.html
 ```
 
-It writes `command-center.next.html` beside the page file and prints `changed`
-when that differs from `command-center.html`, the last successfully published
-page. On `changed`, publish the `.next` file. On every resume and chief move,
-force publication even when unchanged, using the page file in that case, so
-skill updates reach it.
+It prints `changed` in that case. When the page is behind, publish the `.next`
+file. On every resume and chief move, force publication even when unchanged,
+using the page file in that case, so skill updates reach it.
 
 Reuse the selected backend's existing target on successive updates. If
 `hosting` is absent or points to the other backend, create or use the selected

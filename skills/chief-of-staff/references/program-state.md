@@ -26,43 +26,59 @@ current chief alone writes `program.json`, after it
 ### Write the record
 
 Record each owner report, answer, direction, and decision in one write, before
-you reply or move on:
+you reply or move on. Run the event's command from this skill's folder as
+`python3 scripts/record.py <command> --state /absolute/path/program.json ...`:
 
-1. Look for an earlier uncommitted change:
+| Event | Command |
+| --- | --- |
+| An owner starts or is adopted | `start --work W1 --owner "Retry owner" --session <thread link>` |
+| An owner report arrives | `report --work W1` |
+| The user answers a Need | `answer --decision W6-D1 --option 1 --source "<the user's message>"` |
+| The user pastes a page prompt | `answer --pasted --source "<the user's message>"`, with the prompt on stdin |
+| You settle a Need under [triage](decisions.md#triage) | `resolve --decision W6-D2 --option 1 --basis "<settling source; why it is reversible>"` |
+| You release a landing | `land --work W1` |
+| A landing moves | `land --landing L2 --to submitted`, `landed`, or `withdrawn --note "<why>"` |
+| You passed an answer to the owners it affects | `applied --decision W6-D1` |
+| A wait starts or ends | `wait --on "PR 44 checks" --event "Required checks finish" --work W1`; add `--clear` to end it |
+| A heartbeat, wake, or resume | `status` |
 
-   ```bash
-   git -C /absolute/path status --porcelain -- program.json
-   ```
+Add `--next "<action>"` to set the program's `next` in the same commit. Run
+`--help` on a command for its other options.
 
-   Any output means a failed commit or an outside edit. Show the user
-   `git -C /absolute/path diff HEAD -- program.json` and settle it with them
-   before you build on it. If they keep it, check and commit it; otherwise run
-   `git -C /absolute/path checkout HEAD -- program.json`.
+Each command stamps times from its own clock, fills defaults, changes only what
+its event changes, validates, commits with a message naming the event, and
+renders. A refusal changes nothing: fix the input and run it again. When it
+refuses over an uncommitted `program.json` change, show the user the diff it
+prints and settle it with them before you build on it. If they keep it, check
+it with step 3 below and commit it; otherwise run
+`git -C /absolute/path checkout HEAD -- program.json`.
+
+For a change no command covers, such as a new work row, a correction, a reopen,
+a withdrawal, a scrap-or-rebase answer, or a [chief move](chief-move.md), edit
+by hand:
+
+1. Run `git -C /absolute/path status --porcelain -- program.json`. Settle any
+   output with the user, as above.
 2. Edit `program.json` in place, changing only what the event changed. Never
-   regenerate the whole file; that silently drops history.
-3. Check it from this skill's folder, and fix every error it reports. When only
-   the layout is wrong, run the command it prints.
+   regenerate the whole file; that silently drops history. Take each time from
+   `date -u +%Y-%m-%dT%H:%M:%SZ`, never from memory.
+3. Check it, and fix every error it reports:
 
    ```bash
    python3 scripts/render_dashboard.py --state /absolute/path/program.json --check
    ```
 
-4. Read `git -C /absolute/path diff -- program.json`. A removed or changed line
-   the event didn't call for is a mistake. Restore it and check again. Mark a
-   change to a history entry in place instead of deleting it.
-5. Commit with a message naming the event:
+4. Read `git -C /absolute/path diff -- program.json`. Restore any removed or
+   changed line the event didn't call for. Mark a change to a history entry in
+   place instead of deleting it.
+5. Commit with a message naming the event, then render under
+   [render and publish](hosting.md#render-and-publish).
 
-   ```bash
-   git -C /absolute/path commit -m "R2 report: PR 12 open" program.json
-   ```
-
-6. [Publish the command center](hosting.md), except after a
-   [chief move](chief-move.md), where the new chief publishes.
-
-A write is done when its commit lands and its page is published or the render
-confirms the published page is unchanged. Hosting-link commits follow
-[publication bookkeeping](hosting.md#render-and-publish). On a git or
-publish error, stop and report it to the user.
+A write is done when its commit lands and the published page matches the
+record: publish whenever the output says `page: behind record`, except after a
+[chief move](chief-move.md), where the new chief publishes. Hosting-link
+commits follow [publication bookkeeping](hosting.md#render-and-publish). On a
+git or publish error, stop and report it to the user.
 
 ### File format
 
@@ -106,7 +122,8 @@ type Decision = {
   context?: string[];
   meanwhile?: string; // what continues while it is open
   recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
-  options?: { label: string; effect: string; recommended?: boolean }[]; // at most one recommended
+  options?: { label: string; effect: string; recommended?: boolean;
+    reversible?: boolean }[]; // at most one recommended; reversible: undoing it costs only rework
   weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
   blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
   links?: Link[];
@@ -114,6 +131,7 @@ type Decision = {
   answerSource?: string; // required when answered: the user's message that answered it
   basis?: string; // required when resolved: what settled it and why it is reversible
   rationale?: string; // dated reasoning the page omits, such as why it reopened; when withdrawn, why and any replacement
+  applied?: false; // set by answer and resolve; cleared by applied once the affected owners have the answer
 };
 
 type Work = {
@@ -187,28 +205,70 @@ or withdrawn.
 
 ### Owner reports
 
-Read each report against Implement's [report](../../implement/SKILL.md#report)
-fields; ask no other format. Record, from each:
+Each owner starts `reports/<outcome ID>.md` with a fenced `json` block, then
+writes Implement's [report](../../implement/SKILL.md#report) in prose below it.
+The [kickoff](../assets/owner-kickoff.md) asks for it. `report` reads the block:
+
+```ts
+type ReportBlock = {
+  outcome: string; // the work ID
+  state: Work["state"]; // not landed, done, or scrapped
+  finishLine?: Work["finishLine"]; // recorded only when the row has none
+  layers?: Layer[]; // bottom first, each with its head and base
+  proof?: { assertion: string; verdict: "pass" | "fail" | "blocked" | "untested"; url?: string }[];
+  shown?: (Link & { access?: string })[]; // becomes results
+  asks?: { id: string; question: string; phase?: Phase; // phase defaults to acceptance
+    context?: string[]; meanwhile?: string; recommendation?: string;
+    options?: Decision["options"]; weight?: Decision["weight"]; links?: Link[] }[];
+  waits?: { on: string; event: string }[];
+  blocked?: string | null; // a missing prerequisite; null clears it
+};
+```
+
+Each field in the block replaces that part of the row. An absent field leaves it
+as it was, and an empty list clears it. Proof with a `url` becomes `evidence`,
+and every verdict other than `pass` goes into `acceptance`. Each new ask becomes
+an open Need dated by the command; [triage](decisions.md#triage) it. A wait the
+owner still reports keeps its first date. A report cannot mark a layer merged;
+after `report`, run `status`, which checks each layer's head, base, and merge at
+the forge.
+
+Record the prose parts by hand:
 
 | Report field | Record it under |
 | --- | --- |
-| Outcome and finish line | `finishLine` and `state` |
-| Layers | `layers`, after checking each head and base at the forge |
-| Proof | `evidence`, and every blocked or untested assertion in `acceptance` |
-| Shown | `results` with access limits; servers and stop actions in `owner.resources` |
-| Waits | `waits`, with the work each one holds |
-| Decisions | `decisions` with the phase each blocks, and `provisional` assumptions |
+| Servers and stop actions under Shown | `owner.resources` |
+| Provisional assumptions under Decisions | `provisional` |
 | Follow-ups | A work row or `discoveries`, each with its disposition |
 | Sources | `owner.handled`, so no message is answered twice |
-
-Also record task IDs an owner returns when it resumes in `owner.tasks`.
+| Task IDs an owner returns when it resumes | `owner.tasks` |
 
 ## Command center
 
 Before each write, read the relevant owner reports, user direction, tickets,
-and live forge state. Set a row's `checkedAt` when you observe its state. Keep an
-unchecked row's old time; use `unknown` with `unknownReason` when its state
-cannot be read.
+and live forge state. `status` reads each PR through `gh` and each owner's
+thread through the T3 CLI, records what they show, and sets `checkedAt` on each
+row it fully read. An unread row keeps its old time. Settle by hand each forge
+fact it reports the rules reject. Use `unknown` with `unknownReason` when a
+row's state cannot be read.
+
+`status` ends with one verdict: `runnable` when you must act now, `working`
+while an owner runs, `waiting` when everything left waits on a Need or an
+external wait, or `done`. It prints a digest of the facts behind the verdict,
+which changes only when they do. `--json` prints them as one object, and
+`--exit-code` gives each verdict its own exit code. A Need whose recommended
+option is marked `reversible` and halts startable work that is not provisional
+on it is runnable: build on that option provisionally under
+[dependencies](dependencies.md#provisional-work).
+
+`status --turn-end` commits nothing. It fails while the verdict is `runnable`.
+An open row with no running owner, recorded wait, blocker, or open Need that
+holds it is runnable. A Need holds a row
+when it halts the row's work, or when the row waits on it as a shown Try or
+ready work; a landing release alone holds nothing. It also fails while
+`program.json` has an uncommitted change or the published page is behind the
+record. Right after a [chief move](chief-move.md), leave the page to the new
+chief.
 
 A row is an outcome, a follow-up (an outcome that came from another one, with
 its own finish line), or a support task. Count an outcome once whatever its

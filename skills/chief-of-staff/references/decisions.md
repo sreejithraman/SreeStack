@@ -69,21 +69,24 @@ matches its resolved Need the same way. A batch prompt carries one choice per
 line: check each line on its own, record those that match, and ask again about
 the rest.
 
-Mark a Need `answered` only with the user's answer and, in `answerSource`, the
-message it came from. Mark it `resolved` only under [triage](#triage), citing
-the source that settled it. Then update the affected owners, dependencies, and
-landing releases. Record a scrap-or-rebase answer in the same commit, under
-[Base scrapped](dependencies.md#provisional-work). Mark a withdrawn or replaced
-Need `withdrawn`, record why and any replacement in its `rationale`, and
+Record the user's answer with `answer` and the message it came from; it marks
+the Need `answered`. With `--pasted` and the prompt on stdin, it does the
+matching above and lists each line to ask again. Record your own call under
+[triage](#triage) with `resolve`, citing the source that settled it. Both are
+[record commands](program-state.md#write-the-record). Then update the affected
+owners, dependencies, and landing releases, and run `applied`. A scrap-or-rebase answer moves its
+work in the same commit, under
+[Base scrapped](dependencies.md#provisional-work), so record it by hand. Mark a
+withdrawn or replaced Need `withdrawn`, record why and any replacement in its `rationale`, and
 reconcile the blockers that depended on it. Move any answer, `answerSource`, and
-basis into `rationale` too, as on reopen.
+basis into `rationale` too, as on reopen, and drop `applied`.
 
 ## Reopen
 
 The user can reopen any Need you resolved. Reopen it under its ID: mark it
-`open`, move its answer and basis into `rationale` with why it reopened, tell the
-affected owners, and set its `blocks` to the unlanded outcomes that depend on
-it. Withdraw any affected release under
+`open`, drop `applied`, move its answer and basis into `rationale` with why it
+reopened, tell the affected owners, and set its `blocks` to the unlanded
+outcomes that depend on it. Withdraw any affected release under
 [withdraw a release](landing.md#withdraw-a-release). Work that already landed
 gets a follow-up outcome that its `blocks` names. A reopened Need stays with the
 user.
