@@ -35,13 +35,16 @@ ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
-HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields a copied answer never depends on.
+HISTORY = {"date", "source", "answerSource", "rationale", "applied", "stalePick", "picksRead"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
 GRANT = ("date", "source", "start", "resolve", "user")
-DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanwhile", "recommendation", "options",
-                 "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied")
+DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "pictures", "meanwhile", "recommendation",
+                 "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied", "stalePick", "picksRead")
+OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible")
+PICTURE_SHAPES = {"side-by-side": (2, 3), "before-after": (2, 2), "sequence": (2, 8)}  # shape: (fewest, most) images
+STALE_PICK = ("label", "revision", "at")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
              "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
              "blocked", "unknownReason", "checkedAt", "required", "origin")
@@ -103,6 +106,14 @@ def strings(value, path):
         raise ValueError(f"{path} must be a list of strings")
     for index, item in enumerate(value):
         text(item, f"{path}[{index}]")
+    return value
+
+
+def picture(value, path):
+    """A picture committed in the program folder as files/<content name>."""
+    if not (isinstance(value, str) and IMAGE.fullmatch(value)):
+        raise ValueError(f"{path} must be files/ and its content name: the first 16 hex digits of its sha256 and one "
+                         f"of {', '.join(IMAGE_SUFFIXES)}, such as files/0123456789abcdef.png")
     return value
 
 
@@ -217,9 +228,8 @@ def validate_work(row, layers):
         url(result.get("url"), f"{path}.results[{index}].url")
         if "access" in result:
             text(result["access"], f"{path}.results[{index}].access")
-        if "image" in result and not (isinstance(result["image"], str) and IMAGE.fullmatch(result["image"])):
-            raise ValueError(f"{path}.results[{index}].image must be files/ and its content name: the first 16 hex digits "
-                             f"of its sha256 and one of {', '.join(IMAGE_SUFFIXES)}, such as files/0123456789abcdef.png")
+        if "image" in result:
+            picture(result["image"], f"{path}.results[{index}].image")
     if "required" in row and not isinstance(row["required"], bool):
         raise ValueError(f"{path}.required must be a boolean")
     if state in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
@@ -387,10 +397,21 @@ def validate_decision(row, by_id):
             raise ValueError(f"{path}: an open decision cannot block terminal work")
         if status == "open" and phase == "start" and by_id[identity]["state"] != "planned":
             raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
+    if "pictures" in row:
+        validate_pictures(row["pictures"], f"{path}.pictures")
+    if "stalePick" in row:
+        stale = fields(known_keys(obj(row["stalePick"], f"{path}.stalePick"), f"{path}.stalePick", STALE_PICK),
+                       f"{path}.stalePick", STALE_PICK)
+        timestamp(stale["at"], f"{path}.stalePick.at")
+    if "picksRead" in row and not (isinstance(row["picksRead"], list) and row["picksRead"]
+                                   and all(isinstance(read, str) and read.strip() for read in row["picksRead"])):
+        raise ValueError(f"{path}.picksRead must list the stored picks read, such as \"picks/<id> (version 1) 2026-11-02T18:00:00Z\"")
     for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
-        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended", "reversible"))
+        known_keys(option, f"{path}.options[{index}]", OPTION_KEYS)
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
+        if "image" in option:
+            picture(option["image"], f"{path}.options[{index}].image")
         for flag in ("recommended", "reversible"):
             if flag in option and not isinstance(option[flag], bool):
                 raise ValueError(f"{path}.options.{flag} must be a boolean")
@@ -402,6 +423,23 @@ def validate_decision(row, by_id):
     if row.get("weight") == "quick" and (len(row.get("options", [])) < 2 or not recommended):
         raise ValueError(f"{path}: quick needs at least two options with one recommended")
     links(row.get("links", []), f"{path}.links")
+
+
+def validate_pictures(value, path):
+    pictures = known_keys(obj(value, path), path, ("shape", "images"))
+    images = records(pictures.get("images"), f"{path}.images")
+    for index, item in enumerate(images):
+        known_keys(item, f"{path}.images[{index}]", ("image", "caption"))
+        picture(item.get("image"), f"{path}.images[{index}].image")
+        if "caption" in item:
+            text(item["caption"], f"{path}.images[{index}].caption")
+    if "shape" in pictures:
+        fewest, most = PICTURE_SHAPES[one_of(pictures["shape"], PICTURE_SHAPES, f"{path}.shape")]
+        if not fewest <= len(images) <= most:
+            raise ValueError(f"{path}: {pictures['shape']} takes {fewest} to {most} images" if fewest != most
+                             else f"{path}: {pictures['shape']} takes exactly {fewest} images")
+    elif not 1 <= len(images) <= PICTURE_SHAPES["sequence"][1]:
+        raise ValueError(f"{path} needs 1 to {PICTURE_SHAPES['sequence'][1]} images")
 
 
 def validate_landing(row, by_id):
@@ -436,7 +474,7 @@ def validate(state):
     if "landingAuthority" in state:
         fields(known_keys(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY), "landingAuthority", ENTRY)
     if "grant" in state:
-        fields(known_keys(obj(state["grant"], "grant"), "grant", (*GRANT, "heartbeat")), "grant", GRANT, ("heartbeat",))
+        fields(known_keys(obj(state["grant"], "grant"), "grant", (*GRANT, "heartbeat", "wake")), "grant", GRANT, ("heartbeat", "wake"))
 
     work = records(state.get("work"), "work")
     decisions = records(state.get("decisions"), "decisions")
@@ -650,6 +688,10 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
     runnable += [item("orphan", identity, f"({current}) {why}", detail=detail)
                  for identity, current, why, detail in orphaned(state, threads) if identity not in listed]
     for decision in state["decisions"]:
+        if decision["status"] in {"answered", "resolved"} and "stalePick" in decision:
+            runnable.append(item("reopen request", decision["id"],
+                                 f"the user picked {quoted(decision['stalePick']['label'])} after it was {decision['status']}; "
+                                 "reopen it under references/decisions.md#reopen"))
         if decision["status"] == "open":
             waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
         elif decision.get("applied") is False:
@@ -683,7 +725,8 @@ ICONS = {
     "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
     "recommended": "star", "pr": "git-pull-request", "finish": "flag", "record": "git-commit-horizontal",
     "tradeoff": "scale", "result": "external-link", "asked": "clock", "next": "arrow-right", "finished": "archive",
-    "runnable": "play", "working": "activity", "waiting": "hourglass",
+    "runnable": "play", "working": "activity", "waiting": "hourglass", "enlarge": "maximize-2", "send": "send",
+    "wake": "bell-ring", "stale": "history",
 }
 
 
@@ -778,10 +821,44 @@ def choice_prompt(row, state, index):
     return decision_prompt(row, state, f'I choose option {index + 1}: {quoted(row["options"][index]["label"])}')
 
 
+def picture_button(image, group, name, caption):
+    """A thumbnail that opens its picture larger inside the page; pictures in one group page through together."""
+    return (
+        f'<button type="button" class="picture" data-group="{e(group)}" data-caption="{e(caption)}" aria-label="{e("Enlarge " + name)}">'
+        f'<img src="{e(image)}" alt="" loading="lazy">{icon("enlarge")}</button>'
+    )
+
+
+def shape_of(pictures):
+    count = len(pictures["images"])
+    return pictures.get("shape") or ("single" if count == 1 else "side-by-side" if count <= 3 else "sequence")
+
+
+def pictures_view(row):
+    """A decision's pictures: one, a side-by-side, a before and after, or a numbered sequence strip."""
+    if "pictures" not in row:
+        return ""
+    shape, images, group = shape_of(row["pictures"]), row["pictures"]["images"], f'pictures-{hexed(row["id"])}'
+    figures = ""
+    for index, item in enumerate(images):
+        caption = item.get("caption") or (("Before", "After")[index] if shape == "before-after" else "")
+        step = f"Step {index + 1}" if shape == "sequence" else ""
+        title = ": ".join(part for part in (step, caption) if part)
+        legend = (f'<span class="step">{index + 1}</span>' if step else "") + e(caption)
+        name = title or f"picture {index + 1} for {row['id']}"
+        figures += (f'<figure>{picture_button(item["image"], group, name, title)}'
+                    + (f"<figcaption>{legend}</figcaption>" if legend else "") + "</figure>")
+    return f'<div class="pictures {shape}" role="group" aria-label="{e(PICTURE_LABELS[shape])}">{figures}</div>'
+
+
+PICTURE_LABELS = {"single": "Picture", "side-by-side": "Pictures side by side", "before-after": "Before and after",
+                  "sequence": "Sequence"}
+
+
 def pick(row, option, index, state):
     recommended = option.get("recommended", False)
     content = (
-        f'<label class="pick"><input type="radio" name="pick-{hexed(row["id"])}" autocomplete="off" '
+        f'<div class="pick"><label class="pick-choice"><input type="radio" name="pick-{hexed(row["id"])}" autocomplete="off" '
         f'value="{index + 1}" data-prompt="{e(choice_prompt(row, state, index))}" data-label="{e(option["label"])}"'
         f'{" checked" if recommended else ""}><span class="pick-body"><span class="pick-heading"><strong>{e(option["label"])}</strong>'
     )
@@ -790,20 +867,45 @@ def pick(row, option, index, state):
     content += f'</span><span class="pick-effect">{prose(option["effect"])}</span>'
     if recommended and row.get("recommendation"):
         content += f'<span class="pick-rationale">{prose(row["recommendation"])}</span>'
-    return content + "</span></label>"
+    content += "</span></label>"
+    if "image" in option:
+        content += picture_button(option["image"], f'options-{hexed(row["id"])}', f'option {index + 1}: {option["label"]}', option["label"])
+    return content + "</div>"
+
+
+def send_control(row, picked):
+    """Tap-to-answer: hidden until the page's database and the coordinator's wake link are available."""
+    status_id = f'send-{hexed(row["id"])}'
+    return (
+        f'<button type="button" class="send-answer" aria-describedby="{status_id}"{"" if picked else " disabled"} hidden>{icon("send")}Send answer</button>'
+        f'<a class="wake-link" target="_blank" rel="noopener noreferrer" hidden>{icon("wake")}Wake the coordinator</a>'
+        f'<span class="send-status" id="{status_id}" role="status"></span>'
+    )
 
 
 def picks(row, state):
-    """The options as one pick list, with one action that copies the picked option's prompt."""
+    """The options as one pick list, with one action that sends the pick or copies its prompt."""
     chosen = next((index for index, option in enumerate(row["options"]) if option.get("recommended")), None)
     prompt, label = ("", "Pick an option first") if chosen is None else (
         choice_prompt(row, state, chosen), "Copy answer: " + row["options"][chosen]["label"])
     action = copy_control(prompt, f'prompt-{hexed(row["id"])}', label, "Copy answer")
     return (
-        f'<fieldset class="picks" data-revision="{revision(row)}"><legend class="sr-only">Options for {e(row["id"])}</legend>'
+        f'<fieldset class="picks" data-decision="{e(row["id"])}" data-revision="{revision(row)}"><legend class="sr-only">Options for {e(row["id"])}</legend>'
         + "".join(pick(row, option, index, state) for index, option in enumerate(row["options"]))
-        + f'</fieldset><div class="answer-action">{action}</div>'
+        + f'</fieldset><div class="answer-action">{send_control(row, chosen is not None)}{action}</div>'
     )
+
+
+def stale_pick_note(row):
+    """A stored pick that answered an earlier version of this decision, so it was never applied."""
+    if "stalePick" not in row:
+        return ""
+    stale = row["stalePick"]
+    if row["status"] == "open":
+        message = f'You picked “{e(stale["label"])}” {when(stale["at"], "relative")}, on an earlier version of this question. It has changed since, so pick again.'
+    else:
+        message = f'You picked “{e(stale["label"])}” {when(stale["at"], "relative")}, after this was settled. The coordinator will reopen it so you can pick again.'
+    return f'<p class="stale-pick">{icon("stale")}<span>{message}</span></p>'
 
 
 def recommended_choice(row):
@@ -857,6 +959,7 @@ def need_card(row, state, selected=False):
     content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{prose(row["question"])}</h3>'
     if row.get("context"):
         content += '<ul class="context">' + "".join(f"<li>{prose(item)}</li>" for item in row["context"]) + "</ul>"
+    content += pictures_view(row) + stale_pick_note(row)
     if row["status"] == "open" and row.get("meanwhile"):
         content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {prose(row["meanwhile"])}</p>'
     if row["status"] == "answered":
@@ -1300,9 +1403,29 @@ def place(target, content):
     return True
 
 
+def pictures_in(state):
+    """Every picture the record names: result thumbnails, Inbox pictures, and option pictures, each once."""
+    names = [result["image"] for row in state["work"] for result in row.get("results", []) if "image" in result]
+    for row in state["decisions"]:
+        names += [item["image"] for item in row.get("pictures", {}).get("images", [])]
+        names += [option["image"] for option in row.get("options", []) if "image" in option]
+    return list(dict.fromkeys(names))
+
+
+def check_pictures(folder, state):
+    """Refuse a record that names a picture its folder lacks, or one whose bytes don't match its name."""
+    for path in pictures_in(state):
+        try:
+            content = (folder / path).read_bytes()
+        except OSError:
+            raise ValueError(f"{path} is missing from {folder}; copy the picture there under its content name") from None
+        if (name := content_name(content, Path(path).suffix)) != path:
+            raise ValueError(f"{path} is not its content's name; name it {name}")
+
+
 def stage_images(state_file, state, folder):
-    """Write each result image at HEAD into folder's files/, under its content name."""
-    for path in dict.fromkeys(result["image"] for row in state["work"] for result in row.get("results", []) if "image" in result):
+    """Write each picture at HEAD into folder's files/, under its content name."""
+    for path in pictures_in(state):
         blob = subprocess.run(["git", "-C", str(state_file.parent), "cat-file", "blob", f"HEAD:./{path}"], capture_output=True)
         if blob.returncode:
             raise ValueError(f"{path} is not committed in the program folder; commit it with the record")
@@ -1313,14 +1436,14 @@ def stage_images(state_file, state, folder):
 
 def page_files(page):
     """The files beside the page that it shows, as paths relative to the page."""
-    return sorted(set(re.findall(r'<img class="result-thumb" src="(files/[^"]+)"', page)))
+    return sorted(set(re.findall(r'<img [^>]*src="(files/[^"]+)"', page)))
 
 
 def stage_page(state_file, page_file):
     """Render HEAD to page_file's .next sibling; return whether it differs from page_file, ignoring the record stamp.
 
     The stamp names HEAD's commit and its time, or the staged page's when it already holds this content.
-    Result images go beside the page under files/.
+    Pictures go beside the page under files/.
     """
     staged = page_file.with_name(f"{page_file.stem}.next{page_file.suffix}")
     if state_file.resolve() in (page_file.resolve(), staged.resolve()):
@@ -1344,7 +1467,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", required=True, type=Path)
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--check", action="store_true", help="Validate the working state file; write nothing")
+    action.add_argument("--check", action="store_true",
+                        help="Validate the working state file and the pictures it names; write nothing")
     action.add_argument("--revision", metavar="DECISION_ID", help="Print a decision's revision at HEAD")
     action.add_argument("--page", type=Path, metavar="FILE",
                         help="Render HEAD to FILE's .next sibling; print changed when it differs from FILE")
@@ -1360,6 +1484,7 @@ def main():
             text = args.state.read_text()
             state = json.loads(text)
             render(state)
+            check_pictures(args.state.parent, state)
             if text != layout(state):
                 path = shlex.quote(str(args.state))
                 raise ValueError(f"{args.state}: not one value per line; rewrite it with: "

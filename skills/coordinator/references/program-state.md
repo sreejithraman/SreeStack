@@ -35,6 +35,8 @@ you reply or move on. Run the event's command from this skill's folder as
 | An owner report arrives | `report --work W1` |
 | The user answers a Need | `answer --decision W6-D1 --option 1 --source "<the user's message>"` |
 | The user pastes a page prompt | `answer --pasted --source "<the user's message>"`, with the prompt on stdin |
+| The page stored picks | `answer --stored <saved db_query output>`, under [stored picks](hosting.md#stored-picks); with an answer's flags when the user's message answers too |
+| You attach pictures to an open Need | `picture --decision W6-D1 --shape before-after --image /abs/before.png --image /abs/after.png --caption "After"`; `--option 2 --image /abs/shot.png` gives one option its picture |
 | You settle a Need under [triage](decisions.md#triage) | `resolve --decision W6-D2 --option 1 --basis "<settling source; why it is reversible>"` |
 | You release a landing | `land --work W1` |
 | A landing moves | `land --landing L2 --to submitted`, `landed`, or `withdrawn --note "<why>"` |
@@ -55,10 +57,10 @@ prints and settle it with them before you build on it. If they keep it, check
 it with step 3 below and commit it; otherwise run
 `git -C /absolute/path checkout HEAD -- program.json`.
 
-To add a picture to a result by hand, copy it into the program folder's
-`files/` under its content name: the first 16 hex digits of its sha256 (from
-`shasum -a 256`), then its lowercase extension. Commit it with the
-`program.json` change that names it.
+To add a picture by hand, copy it into the program folder's `files/` under its
+content name: the first 16 hex digits of its sha256 (from `shasum -a 256`), then
+its lowercase extension. Commit it with the `program.json` change that names it.
+The check and every command refuse a record that names a missing picture.
 
 For a change no command covers, such as a new work row, the grant, a
 correction, a reopen, a withdrawal, a scrap-or-rebase answer, or a
@@ -113,6 +115,7 @@ type Program = {
     resolve: string; // which decisions it settles itself
     user: string; // what stays with the user
     heartbeat?: string; // its interval and scheduled task ID, or why there is none
+    wake?: string; // the answer wake's scheduled task ID, or why there is none
   };
   corrections?: Entry[]; // accepted corrections
   requirements?: Entry[]; // preserved requirements
@@ -128,6 +131,7 @@ type Program = {
 };
 type Entry = { date: string; source: string; text: string };
 type Link = { label: string; url: string };
+type Picture = { image: string; caption?: string }; // image: files/<content name> in the program folder
 type Phase = "start" | "access" | "proof" | "acceptance" | "landing";
 
 type Decision = {
@@ -135,10 +139,14 @@ type Decision = {
   date: string; source: string; // when it arrived, and the report or message that raised it
   status: "open" | "answered" | "resolved" | "withdrawn"; // resolved: the coordinator settled it
   context?: string[];
+  pictures?: { shape?: "side-by-side" | "before-after" | "sequence"; images: Picture[] };
+    // 1 to 8 images; side by side takes 2 or 3, before and after exactly 2, a sequence 2 to 8.
+    // Without a shape, one image stands alone, two or three sit side by side, and more form a sequence.
   meanwhile?: string; // what continues while it is open
   recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
-  options?: { label: string; effect: string; recommended?: boolean;
-    reversible?: boolean }[]; // at most one recommended; reversible: undoing it costs only rework
+  options?: { label: string; effect: string; image?: string; recommended?: boolean;
+    reversible?: boolean }[]; // image: files/<content name>; at most one recommended;
+    // reversible: undoing it costs only rework
   weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
   blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
   links?: Link[];
@@ -147,6 +155,9 @@ type Decision = {
   basis?: string; // required when resolved: what settled it and why it is reversible
   rationale?: string; // dated reasoning the page omits, such as why it reopened; when withdrawn, why and any replacement
   applied?: false; // set by answer and resolve; cleared by applied once the affected owners have the answer
+  stalePick?: { label: string; revision: string; at: string }; // a page pick for an earlier revision, never applied;
+    // an answer clears it
+  picksRead?: string[]; // each stored pick answer --stored read for this Need, as "picks/<id> (version N) <saved time>"
 };
 
 type Work = {
@@ -237,8 +248,8 @@ type ReportBlock = {
   proof?: { assertion: string; verdict: "pass" | "fail" | "blocked" | "untested"; url?: string }[];
   shown?: (Link & { access?: string; image?: string })[]; // becomes results; image: an absolute path
   asks?: { id: string; question: string; phase?: Phase; // phase defaults to acceptance
-    context?: string[]; meanwhile?: string; recommendation?: string;
-    options?: Decision["options"]; weight?: Decision["weight"]; links?: Link[] }[];
+    context?: string[]; pictures?: Decision["pictures"]; meanwhile?: string; recommendation?: string;
+    options?: Decision["options"]; weight?: Decision["weight"]; links?: Link[] }[]; // picture paths are absolute
   waits?: { on: string; event: string }[];
   blocked?: string | null; // a missing prerequisite; null clears it
 };
@@ -247,9 +258,9 @@ type ReportBlock = {
 Each field in the block replaces that part of the row. An absent field leaves it
 as it was, and an empty list clears it. Proof with a `url` becomes `evidence`,
 and every verdict other than `pass` goes into `acceptance`. Each new ask becomes
-an open Need dated by the command; [triage](decisions.md#triage) it. A
-shown `image` is copied into the program folder's `files/`, named by its
-content, and committed with the report. A wait the
+an open Need dated by the command; [triage](decisions.md#triage) it. Each
+picture the block names, shown or in an ask, is copied into the program folder's
+`files/`, named by its content, and committed with the report. A wait the
 owner still reports keeps its first date. A report cannot mark a layer merged;
 after `report`, run `status`, which checks each layer's head, base, and merge at
 the forge.
@@ -281,6 +292,9 @@ which changes only when they do. `--json` prints them as one object, and
 option is marked `reversible` and halts startable work that is not provisional
 on it is runnable: build on that option provisionally under
 [dependencies](dependencies.md#provisional-work).
+
+A settled Need with a `stalePick` is runnable too: the user picked from a page
+older than its answer, so reopen it under [reopen](decisions.md#reopen).
 
 When the verdict is `waiting`, `status` also prints the `say:` line that ends a
 waiting turn. `status --heartbeat` runs each [heartbeat](../SKILL.md#heartbeat)
@@ -363,8 +377,8 @@ result, and artifact links.
 The scripts need Python 3 and no third-party packages. They make no tracker,
 forge, or session changes.
 
-Each copied choice or reopen request names its decision's revision, a digest of
-what the page shows for that Need. Two or more open quick picks add a batch
+Each copied choice, sent pick, or reopen request names its decision's revision,
+a digest of what the page shows for that Need, its pictures included. Two or more open quick picks add a batch
 prompt that takes every recommendation. Print a Need's revision at `HEAD` with:
 
 ```bash

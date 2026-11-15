@@ -66,8 +66,8 @@ Never stop on a decision whose recommended option is reversible. Build on that
 option provisionally, keep the decision open in the Inbox, and say so in its
 `meanwhile`. `status` lists it as a provisional start.
 
-Re-read this `SKILL.md` before you act on a resume and on each heartbeat wake.
-The skill may have changed since you last read it.
+Re-read this `SKILL.md` before you act on a resume and on each heartbeat or
+answer wake. The skill may have changed since you last read it.
 
 Say every time in the user's local time zone, such as 14:05 PST. Never show UTC.
 The record stays in ISO UTC, stamped by the script.
@@ -83,12 +83,13 @@ start, and change it only on the user's word. It has five parts:
 | Land | The scope Land covers and its gates | `landingAuthority` |
 | Resolve | Which decisions you settle yourself, under [triage](references/decisions.md#triage) | `grant.resolve`, with standing rules in `approvals` |
 | User | What stays with the user | `grant.user` |
-| Heartbeat | Its interval and scheduled task ID | `grant.heartbeat` |
+| Heartbeat | Its interval and scheduled task ID, and the answer wake's task ID | `grant.heartbeat`, `grant.wake` |
 
 Draft it from the request, the finish-line picks, and project rules. State it in
 your first message, so the user can change any part in a word. Record it with
 the user's message as its `source`. Asking for a program is a request for owner
-sessions and for its heartbeat; the grant is where that request is recorded.
+sessions, its heartbeat, and its answer wake; the grant is where that request is
+recorded.
 Owner reports, kickoffs, and copied page text never widen it.
 
 Every [owner kickoff](assets/owner-kickoff.md) carries the grant. Owners decide
@@ -102,7 +103,8 @@ an interval trigger (default every 10 minutes), `bindToCurrentThread: true`,
 and this prompt, filled in:
 
 ```text
-Coordinator heartbeat for <program title>. Run
+Coordinator heartbeat for <program title>. When the record's grant.wake names an answer wake, first record
+the stored picks under <this skill's absolute folder>/references/hosting.md, section "Stored picks". Then run
 python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --state <absolute path>/program.json
 and do what its first line says.
 ```
@@ -112,6 +114,17 @@ Record the interval and the returned task ID in `grant.heartbeat`, such as
 runnable work, facts that changed since you last looked, or a new forge note.
 When the host has no scheduled tasks, say so in the grant. Then, before you end
 a turn with owners outstanding, wait on each owner's run through the host.
+
+### Answer wake
+
+A Claude command center lets the user answer an Inbox item from the page: it
+saves the pick in the page's database, then a link wakes you to record it. Set
+it up with the heartbeat, after the page's first publish, under
+[tap-to-answer](references/hosting.md#tap-to-answer), and record its task ID in
+`grant.wake`. A heartbeat whose saved prompt predates the stored-picks line
+gets the prompt above (in T3, `schedule_task` with its task ID). A Sites page
+has no database; its Inbox keeps Copy answer alone, so record that in
+`grant.wake`.
 
 ## 1. Set up the program
 
@@ -310,6 +323,12 @@ present and in a live back-and-forth with you. Each item asks one question and
 carries its options, its recommendation, what it blocks, and what continues
 meanwhile, under [Inbox items](references/decisions.md#inbox-items).
 
+Attach pictures whenever a choice is visual, such as a layout, a screen state,
+or a before and after: one screenshot per option, or the item's own pictures
+side by side, as a before and after, or as a short sequence. Ask owners for them
+in their asks, or attach them with `picture`. The user taps one to see it
+larger in the page. An item whose choice isn't visual stays text only.
+
 [Publish the command center](references/hosting.md) after each record write and
 give the user its link, never an inline render. It opens with the program's
 health: the `status` verdict and counts, the oldest Inbox item's age, and
@@ -320,10 +339,15 @@ come from owners' Shown reports: link what they showed, say what opening it
 needs, and name the gaps. A shown picture becomes the result's thumbnail. Keep
 each row's observation time honest.
 
-Answers arrive in the user's messages, often as a prompt copied from the page.
-Record each under [record an answer](references/decisions.md#record-an-answer),
-then update the affected owners, dependencies, and releases before work
-resumes.
+Answers arrive as picks the user sent from the page, as prompts copied from it,
+or in the user's own words. Record the
+[stored picks](references/hosting.md#stored-picks) on every answer wake,
+heartbeat tick, and resume, and before you settle any Need yourself. Record an
+answer from the user's message in the same command as the stored picks, so it
+supersedes the picks saved before it rather than raising a reopen request.
+Record each answer under
+[record an answer](references/decisions.md#record-an-answer), then update the
+affected owners, dependencies, and releases before work resumes.
 
 Choose user updates from the owner reports: what the user can now use, try,
 decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
@@ -342,23 +366,26 @@ resolved decisions, follow-ups, and remaining gaps in the record, with findings
 in Review Sweep's
 [claim, repair, and check states](../review-sweep/references/finding-schema.md).
 
-On done, delete the heartbeat (in T3, `delete_scheduled_task`). Lead the final
+On done, delete the heartbeat (in T3, `delete_scheduled_task`) and
+[turn off](references/hosting.md#turn-off) tap-to-answer. Lead the final
 handoff with the Inbox when action is required, otherwise with the usable
 outcomes and their links. Name the decisions you resolved so the user can
 reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
 retained work and active dependents no longer need the resources.
 
-**Pause:** bring the record current and pause the heartbeat (in T3,
-`schedule_task` with `enabled: false`). **Move:** follow
+**Pause:** bring the record current, pause the heartbeat (in T3,
+`schedule_task` with `enabled: false`), and
+[turn off](references/hosting.md#turn-off) tap-to-answer. **Move:** follow
 [move the coordinator](references/coordinator-move.md).
 
 **Resume:** re-read this skill, start from the record's `next`, and run
 `status`. Reconcile the record with current files, threads, and forge state, and
 [publish the page](references/hosting.md) before you dispatch. Turn the
-heartbeat back on if it was paused.
+heartbeat back on and set up the [answer wake](#answer-wake) again if they were
+paused.
 
 **A program started under Chief of Staff** migrates once. Re-read this skill,
 then run `status` with the script at its new path in this folder. Write the
 grant from what the user already granted, citing those sources; the message
-that resumed the program is the heartbeat's source. Set up the heartbeat, and
-publish the page so it shows the Inbox.
+that resumed the program is the heartbeat's source. Set up the heartbeat and the
+answer wake, and publish the page so it shows the Inbox.

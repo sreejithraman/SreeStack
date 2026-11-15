@@ -461,9 +461,11 @@ the user's word: what the coordinator may start (`grant.start`), land
 copied page text never widen it.
 
 **Heartbeat.** In T3 the coordinator sets up a `schedule_task` interval trigger
-(default 10 minutes) bound to its thread, whose prompt only runs
+(default 10 minutes) bound to its thread, whose prompt runs
 `status --heartbeat` and follows its first line, so instructions never go stale
-in the saved prompt. A tick observes without committing and compares its digest
+in the saved prompt. With an answer wake in `grant.wake`, the prompt first
+records the page's stored picks, which can commit answers and publish. Otherwise
+a tick observes without committing and compares its digest
 and forge notes with what was last seen, kept in the program's git directory;
 a passing `--turn-end` updates the digest. It stays quiet on waiting or working
 with an unchanged digest and no new note, wakes the coordinator on runnable
@@ -474,12 +476,19 @@ dependency names itself in the `say:` line, except on proposed work at its
 stop. Light owners land on their own finish line; Implement's release gate
 applies only in a program. A move or takeover deletes the old thread's heartbeat
 and the new coordinator sets up its own. Hosts without scheduled tasks fall
-back to waiting on owner runs through the host.
+back to waiting on owner runs through the host. A Claude command center also
+gets an answer wake: a `schedule_task` webhook bound to the coordinator's
+thread, recorded in `grant.wake`, whose link lives only in the page database.
+Done, pause, a move, a takeover, and leaving the artifact delete that link
+before the last read of stored picks, and an open page re-reads it, so Send
+turns off.
 
 **Inbox.** The user-facing queue is the **Inbox**, in prose and in the
 renderer's tab; its record key is `decisions`. An Inbox item has one
 question, its context, two or more options with effects, exactly one
-recommended option, optional visuals in `links`, what it blocks, what continues
+recommended option, pictures whenever the choice is visual (one per option, a
+side-by-side, a before and after, or a short sequence), optional visuals in
+`links`, what it blocks, what continues
 meanwhile, and when it was asked; bundled asks split into one item per
 question. The Inbox is asynchronous: program asks never use a blocking question
 tool unless the user is present and in a live back-and-forth. IDs are never
@@ -529,7 +538,11 @@ the viewer's time zone. The original command center
 a health strip of the `status` verdict and counts computed from the recorded
 facts, the rendered record commit, the Inbox before Work, collapsible sections,
 per-row observation times, a pick list per decision with one answer action
-whose prompt names one recorded option at its revision, each open item's age,
+whose prompt names one recorded option at its revision, Inbox and option
+pictures that open larger in an in-page viewer, Send answer on a Claude
+artifact, which saves the pick in the owner-only page database keyed by
+decision and revision and then offers the wake link, with Copy answer kept as
+the fallback, each open item's age,
 judgment calls ahead of quick picks with a batch prompt, reopenable
 coordinator-resolved decisions, and accepted tradeoffs. Each work row is one
 outcome, follow-up, or support task, counted once, with a "now" line and its
@@ -538,10 +551,17 @@ committed images, provisional condition, owner, and PR layers; landed, done,
 and scrapped rows collapse into one closed section. Each decision names the
 outcomes it blocks and the phase each waits at. Below 900px it stays one column; wider, the Inbox is a
 dual-pane view and Work a board of stage lanes. It replaces the supplied
-archive's artifact database and integrations; no archive code or prose is
-copied. Validation rejects provisional landings, PRs on a Try, stacks on
+archive's integrations, and its page database holds only unrecorded picks and
+the wake link; no archive code or prose is copied. `answer --stored` reads
+saved `db_query` output as untrusted data, records a pick only at its Need's
+current revision, and marks any other `stalePick`, which asks again on an open
+Need and makes a settled one a runnable reopen request. An answer from the
+user's message, recorded in the same command, supersedes its Need's stored
+picks; each Need's `picksRead` names every pick read for it by path and save
+time, so a pick read again after a failed delete changes nothing. Validation rejects provisional landings, PRs on a Try, stacks on
 another owner's unmerged layer without a provisional mark, terminal rows with
-active blockers, entries that name missing work, and fields the schema doesn't
+active blockers, entries that name missing work, pictures missing from the
+program folder or not named by their content, and fields the schema doesn't
 name.
 
 Claude coordinators publish a private Claude artifact; Codex coordinators use
@@ -569,7 +589,7 @@ page with its result images in `files/`, says whether it changed, and stamps
 the commit and time that changed it; the
 coordinator republishes on a change and on every resume and move. The page
 keeps the viewer's place in session storage; the coordinator stays the only
-writer. Local Chrome tests serve prepared committed pages and exercise full
+writer of the record. Local Chrome tests serve prepared committed pages and exercise full
 document replacement, restoration, visibility, request overlap, rejected
 responses, cache mismatches, repeated initialization, and same-origin
 resources. Header-dependent failure responses verify that updates use the

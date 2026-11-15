@@ -23,15 +23,15 @@ import sys
 from urllib.parse import unquote, urlsplit
 
 from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, IMAGE_SUFFIXES, LAYER_KEYS, OWNER_KEYS,
-                              PENDING_LANDINGS, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS,
-                              assess, committed, content_name, effective_finish, fields, git, known_keys, layout, now,
-                              observation, open_blocks, page_files, pending_landing, place, quoted, records, revision,
-                              stage_page, unsatisfied, validate)
+                              OPTION_KEYS, PENDING_LANDINGS, PICTURE_SHAPES, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES,
+                              TERMINAL, WORK_KEYS, assess, check_pictures, committed, content_name, effective_finish,
+                              fields, git, hexed, known_keys, layout, now, observation, open_blocks, page_files,
+                              pending_landing, place, quoted, records, revision, stage_page, unsatisfied, validate)
 
 
 VERDICTS = ("pass", "fail", "blocked", "untested")
 REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "waits", "blocked")
-ASK_KEYS = ("id", "question", "context", "meanwhile", "recommendation", "options", "weight", "phase", "links")
+ASK_KEYS = ("id", "question", "context", "pictures", "meanwhile", "recommendation", "options", "weight", "phase", "links")
 ROUTES = {
     "top-level": "`t3_thread_send` to the coordinator",
     "adopted": "`t3_thread_send` to the coordinator",
@@ -40,6 +40,7 @@ ROUTES = {
 REPORT_BLOCK = re.compile(r"\A\s*```json[ \t]*\n(.*?)\n```", re.S)
 DECISION_LINE = re.compile(r'^Decision ("(?:[^"\\]|\\.)*") \(revision ([0-9a-f]+)\)(?:: (.*)| in .*)$')
 CHOICE_LINE = re.compile(r'^I choose option (\d+): ("(?:[^"\\]|\\.)*")$')
+DOCUMENT_ID = re.compile(r"[A-Za-z0-9_.~:@+-]+")  # one page-database path segment
 
 
 class Refused(Exception):
@@ -142,27 +143,44 @@ def only(item, keys, path):
     known_keys(item, f"report {path}", keys)
 
 
-def shown_images(block, files):
-    """Point each shown image at a copy in the program's files folder, named by its content.
+def adopt_picture(value, path, files):
+    """The files/ name of a copy of the picture at an absolute path; files gains its record path and content."""
+    source = Path(value) if isinstance(value, str) else Path()
+    if not source.is_absolute() or source.suffix.lower() not in IMAGE_SUFFIXES:
+        raise Refused(f"{path} must be an absolute path to a {', '.join(IMAGE_SUFFIXES)} file")
+    try:
+        content = source.read_bytes()
+    except OSError as error:
+        raise Refused(f"cannot read {source}: {error.strerror}") from None
+    name = content_name(content, source.suffix)
+    files[name] = content
+    return name
 
-    files gains each copy's record path and content, for the commit that records the report.
-    """
+
+def shown_pictures(block, files):
+    """Point each shown picture at a copy in the program's files folder, named by its content."""
     for index, item in enumerate(block.get("shown") or []):
-        if not isinstance(item, dict) or "image" not in item:
-            continue
-        source = Path(item["image"]) if isinstance(item["image"], str) else Path()
-        if not source.is_absolute() or source.suffix.lower() not in IMAGE_SUFFIXES:
-            raise Refused(f"report shown[{index}].image must be an absolute path to a {', '.join(IMAGE_SUFFIXES)} file")
-        try:
-            content = source.read_bytes()
-        except OSError as error:
-            raise Refused(f"cannot read {source}: {error.strerror}") from None
-        item["image"] = content_name(content, source.suffix)
-        files[item["image"]] = content
+        if isinstance(item, dict) and "image" in item:
+            item["image"] = adopt_picture(item["image"], f"report shown[{index}].image", files)
 
 
-def report(state, at, work, block, source):
-    """Apply an owner report block: each field it names replaces that part of the record."""
+def ask_pictures(ask, number, files):
+    """Point each picture of a new ask, its own and its options', at a copy in the program's files folder."""
+    pictures = ask.get("pictures")
+    images = pictures.get("images") if isinstance(pictures, dict) else None
+    for index, item in enumerate(images if isinstance(images, list) else []):
+        if isinstance(item, dict) and "image" in item:
+            item["image"] = adopt_picture(item["image"], f"report asks[{number}].pictures.images[{index}].image", files)
+    for index, option in enumerate(ask.get("options") if isinstance(ask.get("options"), list) else []):
+        if isinstance(option, dict) and "image" in option:
+            option["image"] = adopt_picture(option["image"], f"report asks[{number}].options[{index}].image", files)
+
+
+def report(state, at, work, block, source, files):
+    """Apply an owner report block: each field it names replaces that part of the record.
+
+    files gains each picture the report adopts: its record path and content, for the commit that records it.
+    """
     only(block, REPORT_KEYS, "block")
     row = work_row(state, work)
     if block.get("outcome") != work:
@@ -206,6 +224,7 @@ def report(state, at, work, block, source):
         else:
             row.pop("acceptance", None)
     if "shown" in block:
+        shown_pictures(block, files)
         replace_list(row, "results", objects(block["shown"], "shown"))
     if "blocked" in block:
         if block["blocked"] is None:
@@ -228,8 +247,10 @@ def report(state, at, work, block, source):
         if any(decision["id"] == ask.get("id") for decision in state["decisions"]):
             notes.append(f"decision {ask.get('id')} is already recorded; left as it is")
             continue
+        ask_pictures(ask, index, files)
         decision = {"id": ask.get("id"), "question": ask.get("question"), "date": at, "source": source, "status": "open"}
-        decision |= {key: ask[key] for key in ("context", "meanwhile", "recommendation", "options", "weight") if key in ask}
+        decision |= {key: ask[key] for key in ("context", "pictures", "meanwhile", "recommendation", "options", "weight")
+                     if key in ask}
         decision["blocks"] = [{"id": work, "phase": ask.get("phase", "acceptance")}]
         if "links" in ask:
             decision["links"] = ask["links"]
@@ -262,6 +283,7 @@ def settle(state, at, identity, answer, status, source=None, basis=None):
         earlier += f" (basis: {row.pop('basis')})." if "basis" in row else f" (source: {row.pop('answerSource')})."
         put(row, "rationale", f"{row['rationale']} {earlier}" if row.get("rationale") else earlier, DECISION_KEYS)
     row["status"] = status
+    row.pop("stalePick", None)
     put(row, "answer", answer, DECISION_KEYS)
     if status == "answered":
         put(row, "answerSource", source, DECISION_KEYS)
@@ -321,7 +343,133 @@ def answer_pasted(state, at, text, source):
         raise Refused("; ".join(notes))
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
     notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
-    return f"{', '.join(recorded)} answered", notes
+    return f"{', '.join(recorded)} answered", notes, recorded
+
+
+def stored_picks(text):
+    """Each pick document in saved db_query output: one JSON object per line with its id and data.
+
+    The wrapping tags are skipped. The summary line's count must match the documents read, so a pick lost in
+    saving is never skipped quietly. Every document is untrusted.
+    """
+    found, summaries = [], []
+    for line in text.splitlines():
+        try:
+            value = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(value, dict) and isinstance(value.get("id"), str) and isinstance(value.get("data"), dict):
+            if not (isinstance(value.get("updatedAt"), str) and value["updatedAt"] and type(value.get("version")) is int):
+                raise Refused(f"document {json.dumps(value['id'])} lacks its version and save time; save the db_query output unchanged")
+            found.append(value)
+        elif isinstance(value, dict) and type(value.get("count")) is int:
+            summaries.append(value)
+    if len(summaries) != 1:
+        raise Refused("save the db_query output unchanged, with its one summary line")
+    if summaries[0].get("nextCursor"):
+        raise Refused("db_query returned one page of several; query again with a larger limit")
+    if len(found) != summaries[0]["count"]:
+        raise Refused(f"the saved output holds {len(found)} documents but db_query counted {summaries[0]['count']}; "
+                      "save its output unchanged")
+    return found
+
+
+NOTHING_STORED = "stored picks: nothing to record"
+
+
+def answer_stored(state, at, documents, answered=()):
+    """Record each stored page pick that matches its open decision's current revision.
+
+    Each decision gets one outcome, judged against the record as it stood before this import: a pick at its
+    current revision wins over picks for earlier ones. A pick for an earlier revision is never applied: it
+    marks the decision's stalePick, which asks again on an open decision and makes a reopen request of a
+    settled one. Picks for the decisions in answered, which the user's message just answered, were saved
+    before that message was read, so it supersedes them. Each decision's picksRead names every pick read for
+    it by path, version, and save time, so reading one again after a failed cleanup changes nothing.
+    """
+    before = {row["id"]: row for row in state["decisions"]}  # each row changes only after all its picks are read
+    notes, cleanup, found, superseded, receipts = [], [], {}, set(), {}
+    for document in documents:
+        if not DOCUMENT_ID.fullmatch(document["id"]) or document["id"] in {".", ".."}:
+            notes.append(f"ignored {json.dumps(document['id'])}: not a document ID")
+            continue
+        path, data = f"picks/{document['id']}", document["data"]
+        name = f"{path} (version {document['version']})"
+        cleanup.append(f"delete: {name}")
+        identity, digest, number, label = (data.get(key) for key in ("decision", "revision", "option", "label"))
+        if not (isinstance(identity, str) and isinstance(digest, str) and type(number) is int
+                and isinstance(label, str) and label.strip() and document["id"] == f"{hexed(identity)}-{digest}"):
+            notes.append(f"ignored {path}: not a pick the page writes")
+            continue
+        row = before.get(identity)
+        if row is None or row["status"] == "withdrawn":
+            notes.append(f"ignored {path}: {identity} is {'withdrawn' if row else 'not recorded'}")
+            continue
+        receipt = f"{name} {document['updatedAt']}"
+        if receipt in row.get("picksRead", []):
+            notes.append(f"{identity} already read {path}")
+            continue
+        receipts.setdefault(identity, []).append(receipt)
+        if identity in answered:
+            superseded.add(identity)
+            continue
+        options = row.get("options", [])
+        chosen = options[number - 1]["label"] if 1 <= number <= len(options) else None
+        current = (row["status"] == "open" and revision(row) == digest
+                   and chosen is not None and quoted(chosen) == quoted(label))
+        found.setdefault(identity, []).append((name, label, digest, chosen if current else None))
+    recorded, stale = [], []
+    for identity, picks in found.items():
+        row = before[identity]
+        current = next((pick for pick in picks if pick[3] is not None), None)
+        if current:
+            settle(state, at, identity, current[3], "answered",
+                   source=f"The user's pick on the command center, stored at {current[0]}")
+            recorded.append(identity)
+            continue
+        differing = [pick for pick in sorted(picks)
+                     if row["status"] == "open" or quoted(row["answer"]) != quoted(pick[1])]
+        if not differing:
+            notes.append(f"{identity} already records {quoted(row['answer'])}")
+            continue
+        _, label, digest, _ = differing[-1]
+        put(decision_row(state, identity), "stalePick", {"label": label, "revision": digest, "at": at}, DECISION_KEYS)
+        stale.append(identity)
+        notes.append(f"stale: {identity} changed since the page showed it; the Inbox asks again" if row["status"] == "open"
+                     else f"reopen request: the user picked {quoted(label)} after {identity} was {row['status']}; "
+                          "reopen it under references/decisions.md#reopen")
+    for identity in superseded:
+        notes.append(f"superseded: the user's message replaces {identity}'s page pick")
+    for identity, read in receipts.items():
+        row = decision_row(state, identity)
+        put(row, "picksRead", row.get("picksRead", []) + read, DECISION_KEYS)
+    if recorded:
+        affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
+        notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
+    if not documents:
+        notes.append("no stored picks")
+    parts = [f"{', '.join(recorded)} answered from the page"] if recorded else []
+    parts += [f"{', '.join(stale)} stale page pick"] if stale else []
+    return "; ".join(parts) or ("stored picks read" if receipts else NOTHING_STORED), notes + cleanup
+
+
+def set_pictures(state, identity, images, option=None, shape=None):
+    """Give an open decision its pictures, or one option its picture; images are (files/ name, caption) pairs."""
+    row = decision_row(state, identity)
+    if row["status"] != "open":
+        raise Refused(f"{identity} is {row['status']}; pictures go on open decisions")
+    if option is not None:
+        if len(images) != 1 or images[0][1] or shape:
+            raise Refused("an option takes one picture, captioned by the option's label, and no shape")
+        options = row.get("options", [])
+        if not 1 <= option <= len(options):
+            raise Refused(f"{identity} has no option {option}")
+        put(options[option - 1], "image", images[0][0], OPTION_KEYS)
+        return f"{identity} picture for option {option}", []
+    pictures = ({"shape": shape} if shape else {}) | {
+        "images": [{"image": name} | ({"caption": caption} if caption else {}) for name, caption in images]}
+    put(row, "pictures", pictures, DECISION_KEYS)
+    return f"{identity} pictures: {shape or 'default shape'}, {len(images)} {'image' if len(images) == 1 else 'images'}", []
 
 
 def applied(state, identities):
@@ -690,6 +838,7 @@ class Record:
             for name, content in files.items():
                 if place(target := self.file.parent / name, content):
                     created.append(target)
+            check_pictures(self.file.parent, state)
             self.file.write_text(layout(state))
             if files:
                 staged = True
@@ -723,6 +872,20 @@ class Record:
         return True
 
 
+class PictureArgument(argparse.Action):
+    """--image adds a picture and --caption captions the picture before it, so each caption keeps its picture."""
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        images = list(getattr(namespace, self.dest) or [])
+        if option_string == "--image":
+            images.append([value, None])
+        elif not images or images[-1][1] is not None:
+            parser.error("--caption follows the --image it describes")
+        else:
+            images[-1][1] = value
+        setattr(namespace, self.dest, images)
+
+
 def arguments():
     shared = argparse.ArgumentParser(add_help=False)
     shared.add_argument("--state", required=True, type=Path, help="The program.json file")
@@ -744,12 +907,23 @@ def arguments():
     command.add_argument("--work", required=True)
 
     command = commands.add_parser("answer", parents=[shared], help="The user answered a decision")
-    command.add_argument("--source", required=True, help="The user's message that answered")
+    command.add_argument("--source", help="The user's message that answered")
     command.add_argument("--decision")
     choice = command.add_mutually_exclusive_group()
     choice.add_argument("--option", type=int, help="The chosen option's number")
     choice.add_argument("--text", help="The answer in the user's words")
-    command.add_argument("--pasted", action="store_true", help="Read a copied page prompt from stdin")
+    choice.add_argument("--pasted", action="store_true", help="Read a copied page prompt from stdin")
+    command.add_argument("--stored", type=Path, metavar="FILE",
+                         help="Read picks the page stored, from saved db_query output of its picks collection; "
+                              "with an answer from the user's message, that answer supersedes its decisions' picks")
+
+    command = commands.add_parser("picture", parents=[shared], help="Set an open decision's pictures, or one option's")
+    command.add_argument("--decision", required=True)
+    command.add_argument("--image", dest="images", action=PictureArgument, required=True,
+                         help="An absolute path to a picture; repeat it, in order, for several")
+    command.add_argument("--caption", dest="images", action=PictureArgument, help="A caption for the --image before it")
+    command.add_argument("--option", type=int, help="Give this option its one picture instead")
+    command.add_argument("--shape", choices=tuple(PICTURE_SHAPES), help="How the decision's pictures sit together")
 
     command = commands.add_parser("resolve", parents=[shared], help="The coordinator settled a decision under triage")
     command.add_argument("--decision", required=True)
@@ -794,16 +968,31 @@ def event(args, state, at, files):
         return start(state, at, args.work, args.owner, args.mode, args.session, args.route, args.workspace, args.replace)
     if args.command == "report":
         block, path = read_report(args.state, args.work)
-        shown_images(block, files)
-        return report(state, at, args.work, block, f"reports/{path.name}")
+        return report(state, at, args.work, block, f"reports/{path.name}", files)
+    if args.command == "picture":
+        images = [(adopt_picture(path, "--image", files), caption) for path, caption in args.images]
+        return set_pictures(state, args.decision, images, args.option, args.shape)
     if args.command == "answer":
+        documents = stored_picks(args.stored.read_text()) if args.stored else None
+        if documents is not None and not (args.pasted or args.option or args.text):
+            if args.source or args.decision:
+                raise Refused("answer --stored alone takes its decisions and source from the stored picks")
+            return answer_stored(state, at, documents)
+        if not args.source:
+            raise Refused("answer needs --source: the user's message that answered")
         if args.pasted:
-            return answer_pasted(state, at, sys.stdin.read(), args.source)
-        if not args.decision or not (args.option or args.text):
-            raise Refused("answer needs --decision with --option or --text, or --pasted")
-        row = decision_row(state, args.decision)
-        return settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
-                      "answered", source=args.source)
+            message, notes, answered = answer_pasted(state, at, sys.stdin.read(), args.source)
+        elif args.decision and (args.option or args.text):
+            row = decision_row(state, args.decision)
+            message, notes = settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
+                                    "answered", source=args.source)
+            answered = [args.decision]
+        else:
+            raise Refused("answer needs --decision with --option or --text, --pasted, or --stored")
+        if documents is None:
+            return message, notes
+        stored_message, stored_notes = answer_stored(state, at, documents, answered)
+        return message if stored_message == NOTHING_STORED else f"{message}; {stored_message}", notes + stored_notes
     if args.command == "resolve":
         row = decision_row(state, args.decision)
         return settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
@@ -914,10 +1103,14 @@ def main():
         if args.command == "status":
             return status(args, record)
         state = record.load()
+        before = copy.deepcopy(state)
         files = {}
         message, notes = event(args, state, now(), files)
         set_next(state, args.next)
-        record.save(state, message, files)
+        if state == before:
+            print(f"unchanged: {message}")
+        else:
+            record.save(state, message, files)
         for note in notes:
             print(f"note: {note}")
         record.render()
