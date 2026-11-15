@@ -391,12 +391,12 @@ class PreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             state = example()
-            state["work"][2]["results"][0]["image"] = "files/W5.png"
+            state["work"][2]["results"][0]["image"] = "files/0123456789abcdef.png"
             (root / "files").mkdir()
             (root / "files/0123456789abcdef.png").write_bytes(b"\x89PNG history")
             (root / "files/unused.png").write_bytes(b"\x89PNG old")
             page = root / "command-center.html"
-            page.write_text(render(state, images={"files/W5.png": "files/0123456789abcdef.png"}))
+            page.write_text(render(state))
             result = subprocess.run([sys.executable, str(PREPARE), "--page", str(page), "--output", str(root / "dist")],
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)

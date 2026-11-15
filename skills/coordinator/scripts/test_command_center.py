@@ -383,6 +383,26 @@ class PageTests(CommandCenterCase):
         self.assertEqual(manual[1].splitlines()[::2], [heading, 'I choose option 1: "Merge"'])
         self.assertEqual(page.run("pageErrors"), [])
 
+    def test_a_pick_survives_a_republish_until_its_decision_changes(self):
+        page = self.open_page(PHONE)
+        need = decision(self.state, "W1-D2")
+        target = "#decision-" + "W1-D2".encode().hex()
+        page.click(f"{target} .pick:last-of-type input")
+        self.republish(page, self.retitled())
+        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
+        self.assertEqual(self.copy_answer(page, target)[::2],
+                         [f'Decision "W1-D2" (revision {revision(need)}) in "Retitled program"', 'I choose option 2: "Five attempts"'])
+
+        def reworded(state):
+            state["title"] = "Retitled program"
+            decision(state, "W1-D2")["options"][1]["effect"] = "Reworded effect."
+        changed = self.changed(reworded)
+        self.republish(page, changed)
+        page.run("navigator.clipboard.writeText = async text => { window.copied = text; }")
+        self.assertEqual(self.copy_answer(page, target)[::2],
+                         [f'Decision "W1-D2" (revision {revision(decision(changed, "W1-D2"))}) in "Retitled program"',
+                          'I choose option 1: "Three attempts"'], "a changed decision starts at its recommendation")
+
     def test_recommended_option_is_picked_and_copied_first(self):
         page = self.open_page(PHONE)
         need = decision(self.state, "W1-D2")

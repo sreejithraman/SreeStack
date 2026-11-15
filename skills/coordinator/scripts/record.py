@@ -12,7 +12,6 @@ commits nothing and says whether the coordinator should wake.
 import argparse
 import contextlib
 import copy
-from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -22,11 +21,11 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
-from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, LAYER_KEYS, OWNER_KEYS, PENDING_LANDINGS, PROGRAM_KEYS,
-                              READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess, committed, content_name,
-                              effective_finish, fields, git, known_keys, layout, open_blocks, page_files,
-                              pending_landing, quoted, records, revision, seen_state, stage_page, unsatisfied,
-                              validate)
+from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, IMAGE_SUFFIXES, LAYER_KEYS, OWNER_KEYS,
+                              PENDING_LANDINGS, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS,
+                              assess, committed, content_name, effective_finish, fields, git, known_keys, layout, now,
+                              observation, open_blocks, page_files, pending_landing, quoted, records, revision,
+                              stage_page, unsatisfied, validate)
 
 
 VERDICTS = ("pass", "fail", "blocked", "untested")
@@ -44,11 +43,6 @@ CHOICE_LINE = re.compile(r'^I choose option (\d+): ("(?:[^"\\]|\\.)*")$')
 
 class Refused(Exception):
     """The command changed nothing; its message says why."""
-
-
-def now():
-    """The current time in UTC. Event times always come from this clock, never from the caller."""
-    return datetime.now(timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 
@@ -145,25 +139,23 @@ def only(item, keys, path):
     known_keys(item, f"report {path}", keys)
 
 
-IMAGE_TYPES = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif")
-
-
 def shown_images(block, files):
     """Point each shown image at a copy in the program's files folder, named by its content.
 
-    files gains each copy's record path and source, for the commit that records the report.
+    files gains each copy's record path and content, for the commit that records the report.
     """
     for index, item in enumerate(block.get("shown") or []):
         if not isinstance(item, dict) or "image" not in item:
             continue
         source = Path(item["image"]) if isinstance(item["image"], str) else Path()
-        if not source.is_absolute() or source.suffix.lower() not in IMAGE_TYPES:
-            raise Refused(f"report shown[{index}].image must be an absolute path to a {', '.join(IMAGE_TYPES)} file")
+        if not source.is_absolute() or source.suffix.lower() not in IMAGE_SUFFIXES:
+            raise Refused(f"report shown[{index}].image must be an absolute path to a {', '.join(IMAGE_SUFFIXES)} file")
         try:
-            item["image"] = content_name(source.read_bytes(), source.suffix)
+            content = source.read_bytes()
         except OSError as error:
             raise Refused(f"cannot read {source}: {error.strerror}") from None
-        files[item["image"]] = source
+        item["image"] = content_name(content, source.suffix)
+        files[item["image"]] = content
 
 
 def report(state, at, work, block, source):
@@ -571,7 +563,6 @@ def observe(state, at, read_pr, threads):
         if thread := threads.get(row["id"]):
             reads += 1
             failed += isinstance(thread, str)
-            put(facts["owner"], "seen", {"state": seen_state(thread), "at": at}, OWNER_KEYS)
         if reads and not failed:
             facts["checkedAt"] = at
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
@@ -589,6 +580,9 @@ def observe(state, at, read_pr, threads):
             notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
+    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
+        if row["id"] in threads and "owner" in row:
+            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
               if layer["status"] == "merged" and "url" in layer}
     for landing in state.get("landings", []):
@@ -677,25 +671,35 @@ class Record:
         return state
 
     def save(self, state, message, files=None):
-        """Commit state, with files (record path: source) copied into the program folder beside it."""
+        """Commit state with files (record path: content) written into the program folder; a failure changes nothing."""
         validate(state)
         files = files or {}
         previous = self.file.read_text()
-        added = [name for name in files if not (self.file.parent / name).exists()]
-        for name in added:
-            (self.file.parent / name).parent.mkdir(exist_ok=True)
-            shutil.copyfile(files[name], self.file.parent / name)
-        self.file.write_text(layout(state))
+        created = []
         try:
+            for name, content in files.items():
+                target = self.file.parent / name
+                if target.exists() and target.read_bytes() == content:
+                    continue
+                if not target.exists():
+                    created.append(target)
+                target.parent.mkdir(exist_ok=True)
+                partial = target.with_name(f".{target.name}.partial")
+                partial.write_bytes(content)
+                partial.replace(target)
+            self.file.write_text(layout(state))
             if files:
                 self.git("add", "--", *files)
             self.git("commit", "-q", "-m", message, "--", self.file.name, *files)
-        except (Refused, ValueError):
+        except (Refused, ValueError, OSError):
             self.file.write_text(previous)
-            if added:
-                self.git("rm", "-q", "--cached", "--ignore-unmatch", "--", *added)
-            for name in added:
-                (self.file.parent / name).unlink()
+            if files:
+                with contextlib.suppress(ValueError):
+                    self.git("reset", "-q", "--", *files)
+            for target in created:
+                target.unlink(missing_ok=True)
+            for name in files:
+                (self.file.parent / name).with_name(f".{Path(name).name}.partial").unlink(missing_ok=True)
             raise
         print(f"committed: {message}")
 

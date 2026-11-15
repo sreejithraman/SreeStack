@@ -1,9 +1,10 @@
 import copy
 from datetime import datetime, timezone
-import hashlib
+from html import unescape
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -11,7 +12,7 @@ import textwrap
 import unittest
 
 from record import observe
-from render_dashboard import assess, decision_prompt, orphans, quoted, revision, validate
+from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, work
 
 
@@ -245,7 +246,7 @@ class ReportTests(RecordCase):
     def test_a_shown_image_is_copied_into_the_program_and_committed_with_the_report(self):
         shot = self.program.folder.parent / "owner-screenshot.PNG"
         shot.write_bytes(b"\x89PNG history")
-        name = f"files/{hashlib.sha256(shot.read_bytes()).hexdigest()[:16]}.png"
+        name = content_name(shot.read_bytes(), ".PNG")
         self.write_report({"outcome": "W1", "state": "in-review", "shown": [
             {"label": "History view", "url": "https://example.com/previews/history", "image": str(shot)}]})
         changed, after, result = self.event("report", "--work", "W1")
@@ -256,6 +257,25 @@ class ReportTests(RecordCase):
         self.assertEqual(sorted(tracked), sorted([name, "program.json"]))
         self.assertIn(f"with {name} from beside it", result.stdout, "the page serves the committed copy itself")
         self.assertEqual([path.name for path in (self.program.folder / "files").iterdir()], [name.removeprefix("files/")])
+
+    def test_a_failed_report_commit_leaves_no_image_and_a_retry_records_it(self):
+        shot = self.program.folder.parent / "owner-screenshot.png"
+        shot.write_bytes(b"\x89PNG history")
+        name = content_name(shot.read_bytes(), ".png")
+        self.write_report({"outcome": "W1", "state": "in-review", "shown": [
+            {"label": "History view", "url": "https://example.com/previews/history", "image": str(shot)}]})
+        hook = self.program.folder / ".git" / "hooks" / "pre-commit"
+        hook.write_text("#!/bin/sh\nexit 1\n")
+        hook.chmod(0o755)
+        before, record = self.commits(), self.program.source.read_text()
+        self.assertEqual(self.run_record("report", "--work", "W1").returncode, 1)
+        self.assertEqual((self.commits(), self.program.source.read_text()), (before, record))
+        self.assertEqual(list((self.program.folder / "files").iterdir()), [])
+        status = subprocess.run(["git", "-C", str(self.program.folder), "status", "--porcelain"], capture_output=True, text=True).stdout
+        self.assertNotIn("files/", status)
+        hook.unlink()
+        self.event("report", "--work", "W1")
+        self.assertEqual((self.program.folder / name).read_bytes(), b"\x89PNG history")
 
     def test_a_shown_image_must_be_an_absolute_picture_path(self):
         before = self.commits()
@@ -523,6 +543,19 @@ class StatusTests(RecordCase):
         self.assertIn("W1: recorded that its readiness lapsed from the forge; settle by hand", result.stdout)
         self.assertNotIn("release: W1", result.stdout)
 
+    def test_an_owner_state_is_recorded_even_when_forge_facts_are_held_back(self):
+        self.commit(ready)
+        w1 = work(self.state, "W1")["layers"]
+        self.serve(prs={layer["url"]: {"state": "CLOSED", "headRefOid": layer["head"], "baseRefName": layer["base"]} for layer in w1},
+                   threads={"w1": {"status": "running"}, "w2": {"status": "running"}})
+        result = self.run_record("status", "--json")
+        found = json.loads(result.stdout)
+        self.assertIn("W1: recorded that its readiness lapsed", result.stderr)
+        self.assertEqual(work(self.head(), "W1")["owner"]["seen"]["state"], "running")
+        page = (self.program.folder / "command-center.next.html").read_text()
+        self.assertIn(f'<dd data-count="running">{len(found["working"])}</dd>', page)
+        self.assertIn(f'class="health card {found["verdict"]}"', page)
+
     def test_readiness_lapses_for_a_closed_draft_under_its_dependent(self):
         def drafted(state):
             ready(state)
@@ -712,6 +745,34 @@ class VerdictTests(unittest.TestCase):
             gated = program([outcome("A", "planned", **gate)], [need("A-D1", "A", "start", reversible=True)])
             with self.subTest(gate=gate):
                 self.assertNotIn("provisional start", [entry["kind"] for entry in self.verdict(gated)["runnable"]])
+
+    def now_line(self, state, identity, threads):
+        """The page's now line for a row, after status records these thread facts."""
+        for row in state["work"]:
+            if row["id"] in threads:
+                row["owner"]["seen"] = observation(threads[row["id"]], self.AT)
+        html = render(state)
+        block = re.search(r'<div class="now">(.*?)</div>', html.split(f'aria-labelledby="work-{identity.encode().hex()}"')[1])[1]
+        return " ".join(unescape(re.sub(r"<[^>]+>", " ", block)).split())
+
+    def test_the_now_line_follows_what_status_finds_before_raw_holds(self):
+        planned = program([outcome("A", "planned")], [need("A-D1", "A", "start", reversible=True)])
+        self.assertEqual(self.now_line(planned, "A", {}), "Ready to start provisionally on A-D1's recommended option.")
+        built_on = program([outcome("A", "building", provisional={"basis": "A-D1's recommended option.", "clears": "It is answered."})],
+                           [need("A-D1", "A", "proof", reversible=True)])
+        self.assertTrue(self.now_line(built_on, "A", {"A": {"status": "running"}}).startswith("Owner A is working."))
+        idle = program([outcome("A", "building")], [need("A-D1", "A", "acceptance")])
+        self.assertTrue(self.now_line(idle, "A", {"A": {"status": "idle"}}).startswith("Owner A is idle with no recorded wait."),
+                        "an idle owner who owes work outranks a Need that lets work continue")
+        held = program([outcome("A", "building")], [need("A-D1", "A", "proof")])
+        self.assertTrue(self.now_line(held, "A", {"A": {"status": "idle"}}).startswith("Held until you answer A-D1."))
+
+    def test_a_recorded_approval_shows_on_the_page_as_status_finds_it(self):
+        state = program([outcome("A", "building")])
+        thread = {"status": "running", "pendingRequestCount": 2}
+        self.assertEqual(observation(thread, self.AT), {"state": "running", "at": self.AT, "approvals": 2})
+        self.assertIn("approval", [entry["kind"] for entry in self.verdict(state, {"A": thread})["attention"]])
+        self.assertTrue(self.now_line(state, "A", {"A": thread}).startswith("Owner A waits on an approval in its thread."))
 
     def test_a_blocked_idle_owner_waits_instead_of_running(self):
         state = program([outcome("A", "building", blocked="Needs the user's App Store login")])

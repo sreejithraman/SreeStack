@@ -12,7 +12,7 @@ import sys
 import tempfile
 import unittest
 
-from render_dashboard import ISO_TIME, render, revision, url, validate
+from render_dashboard import ISO_TIME, content_name, render, revision, url, validate
 
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
@@ -294,9 +294,13 @@ RULES = [
     ("required is a boolean", lambda s: work(s, "W4").update(required="no"), r"required must be a boolean"),
     ("provisional work says what clears it", lambda s: work(s, "W2")["provisional"].pop("clears"), r"provisional\.clears"),
     ("results say how to open them", lambda s: work(s, "W5")["results"][0].update(access=""), r"results\[0\]\.access"),
-    ("a result image is a file in the program's files folder", lambda s: work(s, "W5")["results"][0].update(image="../notes.png"),
-     r"results\[0\]\.image must name"),
-    ("a result image is a picture", lambda s: work(s, "W5")["results"][0].update(image="files/page.svg"), r"results\[0\]\.image must name"),
+    ("a result image is a file in the program's files folder", lambda s: work(s, "W5")["results"][0].update(image="../0123456789abcdef.png"),
+     r"results\[0\]\.image must be files/ and its content name"),
+    ("a result image is named by its content", lambda s: work(s, "W5")["results"][0].update(image="files/W5-after.png"),
+     r"results\[0\]\.image must be files/ and its content name"),
+    ("a result image is a picture", lambda s: work(s, "W5")["results"][0].update(image="files/0123456789abcdef.svg"),
+     r"results\[0\]\.image must be files/ and its content name"),
+    ("an owner's approvals are a positive count", lambda s: work(s, "W1")["owner"]["seen"].update(approvals=0), r"owner\.seen\.approvals must be"),
     ("an owner's observed state is known", lambda s: work(s, "W1")["owner"]["seen"].update(state="busy"), r"owner\.seen\.state must be one of"),
     ("an owner's observation is timed", lambda s: work(s, "W1")["owner"]["seen"].pop("at"), r"owner\.seen\.at must be"),
     ("landing authority is a dated entry", lambda s: s["landingAuthority"].pop("source"), r"landingAuthority\.source"),
@@ -500,8 +504,8 @@ class PageTests(unittest.TestCase):
         self.assertIn('class="copy-prompt" data-prompt="" disabled', target, "nothing is picked without a recommendation")
 
     def test_results_show_a_thumbnail_or_a_link_card(self):
-        work(self.state, "W5")["results"][1]["image"] = "files/W5-after.png"
-        html = card(render(self.state, images={"files/W5-after.png": "files/0123456789abcdef.png"}), "W5")
+        work(self.state, "W5")["results"][1]["image"] = "files/0123456789abcdef.png"
+        html = card(render(self.state), "W5")
         self.assertIn('<img class="result-thumb" src="files/0123456789abcdef.png" alt="" loading="lazy">', html)
         self.assertIn('Before and after screenshots example.com', text_of(html))
         self.assertEqual(html.count('class="result-mark"'), 1, "the result without an image keeps a link card")
@@ -681,33 +685,49 @@ class CommandTests(unittest.TestCase):
     def test_page_serves_each_committed_result_image_beside_it_by_content(self):
         published = tempfile.TemporaryDirectory()
         self.addCleanup(published.cleanup)
-        pages = Path(published.name)
-        page = pages / "command-center.html"
+        page = Path(published.name) / "command-center.html"
         (self.program.folder / "files").mkdir()
-        image = self.program.folder / "files" / "W5-after.png"
-        image.write_bytes(b"\x89PNG first")
-        work(self.state, "W5")["results"][1]["image"] = "files/W5-after.png"
+
+        def commit(at, *paths):
+            self.program.git("add", *paths)
+            self.program.git("commit", "-q", "-m", "write", env={**GIT_ENV, "GIT_COMMITTER_DATE": at})
+
+        def attach(content, at):
+            name = content_name(content, ".PNG")
+            (self.program.folder / name).write_bytes(content)
+            work(self.state, "W5")["results"][1]["image"] = name
+            self.program.write(self.state)
+            commit(at, "program.json", "files")
+            return name
+
+        first = content_name(b"\x89PNG first", ".png")
+        (self.program.folder / first).write_bytes(b"\x89PNG first")
+        work(self.state, "W5")["results"][1]["image"] = first
         self.program.write(self.state, "2026-11-02T16:00:00Z")
-        result = self.program.run("--page", str(page))
-        self.assertIn("files/W5-after.png is not committed", result.stderr)
-
-        def commit_image(at):
-            self.program.git("add", "files")
-            self.program.git("commit", "-q", "-m", "image", env={**GIT_ENV, "GIT_COMMITTER_DATE": at})
-
-        commit_image("2026-11-02T17:00:00Z")
-        changed, served = self.program.run("--page", str(page)).stdout.split()[0::2][:2]
-        self.assertEqual(changed, "changed")
-        self.assertEqual((pages / served).read_bytes(), b"\x89PNG first")
-        self.assertIn(f'src="{served}"', page.with_name("command-center.next.html").read_text())
+        self.assertIn(f"{first} is not committed", self.program.run("--page", str(page)).stderr)
+        commit("2026-11-02T17:00:00Z", "files")
+        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["changed", "file:", first])
+        self.assertEqual((page.parent / first).read_bytes(), b"\x89PNG first")
+        self.assertIn(f'src="{first}"', page.with_name("command-center.next.html").read_text())
         page.with_name("command-center.next.html").replace(page)
-        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["unchanged", "file:", served])
+        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["unchanged", "file:", first])
 
-        image.write_bytes(b"\x89PNG second")
-        commit_image("2026-11-02T18:00:00Z")
-        result = self.program.run("--page", str(page)).stdout.split()
-        self.assertEqual(result[0], "changed", "a changed image changes the page")
-        self.assertNotEqual(result[2], served)
+        second = attach(b"\x89PNG second", "2026-11-02T18:00:00Z")
+        self.assertEqual(self.program.run("--page", str(page)).stdout.split(), ["changed", "file:", second],
+                         "a changed image has a new name, so the page changes")
+
+        beside = self.program.folder / "command-center.html"
+        (self.program.folder / second).write_bytes(b"\x89PNG edited after its commit")
+        self.assertIn(f"differs from the committed {second}", self.program.run("--page", str(beside)).stderr)
+        self.assertEqual((self.program.folder / second).read_bytes(), b"\x89PNG edited after its commit", "an edit is never overwritten")
+
+        misnamed = "files/0123456789abcdef.png"
+        (self.program.folder / misnamed).write_bytes(b"\x89PNG third")
+        work(self.state, "W5")["results"][1]["image"] = misnamed
+        self.program.write(self.state)
+        commit("2026-11-02T19:00:00Z", "program.json", misnamed)
+        proper = content_name(b"\x89PNG third", ".png")
+        self.assertIn(f"name it {proper}", self.program.run("--page", str(page)).stderr)
 
     def test_page_never_overwrites_the_state_file(self):
         self.program.write(self.state, "2026-11-02T17:00:00Z")

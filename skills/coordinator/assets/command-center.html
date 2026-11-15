@@ -129,7 +129,6 @@ time { font-variant-numeric: tabular-nums; }
 .answer-action .copy-prompt { justify-self: stretch; background: var(--tint); color: var(--on-tint); }
 @container (min-width: 520px) { .answer-action .copy-prompt { justify-self: start; } }
 .copy-prompt { display: inline-grid; justify-self: start; min-block-size: 44px; min-inline-size: 148px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--fill); color: var(--tint-text); font-size: 14px; font-weight: 600; cursor: pointer; }
-.recommended .copy-prompt { background: var(--tint); color: var(--on-tint); }
 .copy-prompt > span { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: opacity .15s; }
 .copy-prompt .done, .copy-prompt.copied .idle { opacity: 0; }
 .copy-prompt.copied .done { opacity: 1; }
@@ -414,25 +413,34 @@ function connectCopyButtons() {
 }
 
 // One answer action per decision copies the picked option's prompt.
+function choosePick(choice) {
+  choice.checked = true;
+  const button = choice.closest('.picks').nextElementSibling.querySelector('.copy-prompt');
+  button.dataset.prompt = choice.dataset.prompt;
+  button.disabled = false;
+  button.setAttribute('aria-label', `Copy answer: ${choice.dataset.label}`);
+}
+
 function connectPicks() {
   for (const picks of document.querySelectorAll('.picks')) {
-    const button = picks.nextElementSibling.querySelector('.copy-prompt');
-    const follow = choice => {
-      button.dataset.prompt = choice.dataset.prompt;
-      button.disabled = false;
-      button.setAttribute('aria-label', `Copy answer: ${choice.dataset.label}`);
-    };
-    picks.addEventListener('change', event => follow(event.target));
-    const restored = picks.querySelector('input:checked');
-    if (restored) follow(restored);
+    picks.addEventListener('change', event => choosePick(event.target));
+  }
+}
+
+// A pick is kept with its decision's revision, so a changed decision starts over at its recommendation.
+const pickKey = choice => `${choice.closest('.picks').dataset.revision}:${choice.value}`;
+function restorePicks(saved) {
+  for (const [name, key] of Object.entries(saved ?? {})) {
+    const choice = [...document.getElementsByName(name)].find(input => pickKey(input) === key);
+    if (choice) choosePick(choice);
   }
 }
 
 function connectDecisionLinks() {
-  for (const jump of document.querySelectorAll('a[data-decision]')) {
+  for (const jump of document.querySelectorAll('.health-line a[href^="#decision-"]')) {
     jump.addEventListener('click', () => {
       showTab(tabs.find(tab => tab.id === 'needs-tab'));
-      const row = inboxRows.find(candidate => candidate.getAttribute('aria-controls') === jump.dataset.decision);
+      const row = inboxRows.find(candidate => candidate.getAttribute('aria-controls') === jump.hash.slice(1));
       if (row) showInboxRow(row);
     });
   }
@@ -514,6 +522,7 @@ function captureView() {
     tab: document.querySelector('[role="tab"][aria-selected="true"]')?.id,
     decision: document.querySelector('.inbox-row[aria-selected="true"]')?.getAttribute('aria-controls'),
     sections: Object.fromEntries([...document.querySelectorAll('summary[id]')].map(summary => [summary.id, summary.parentElement.open])),
+    picks: Object.fromEntries([...document.querySelectorAll('.picks input:checked')].map(choice => [choice.name, pickKey(choice)])),
     scroll: captureScroll(),
   };
 }
@@ -527,6 +536,7 @@ function restoreView(view) {
   if (tab) showTab(tab);
   const row = inboxRows.find(candidate => candidate.getAttribute('aria-controls') === view?.decision);
   if (row) showInboxRow(row);
+  restorePicks(view?.picks);
   restoreScroll();
 }
 

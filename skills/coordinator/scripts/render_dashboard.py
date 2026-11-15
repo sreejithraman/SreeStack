@@ -49,7 +49,8 @@ OWNER_KEYS = ("name", "session", "start", "route", "tasks", "workspace", "resour
 SEEN = ("running", "idle", "unknown")  # an owner thread as status last observed it
 LAYER_KEYS = ("id", "branch", "status", "url", "head", "base", "stackedOn")
 TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html"
-IMAGE = re.compile(r"files/[A-Za-z0-9][A-Za-z0-9._-]*\.(?:png|jpe?g|gif|webp|avif)")
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif")
+IMAGE = re.compile(r"files/[0-9a-f]{16}(?:%s)" % "|".join(re.escape(suffix) for suffix in IMAGE_SUFFIXES))
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
 
 
@@ -187,9 +188,11 @@ def validate_owner(owner, path):
     for key in ("tasks", "handled"):
         strings(owner.get(key, []), f"{path}.{key}")
     if "seen" in owner:
-        seen = known_keys(obj(owner["seen"], f"{path}.seen"), f"{path}.seen", ("state", "at"))
+        seen = known_keys(obj(owner["seen"], f"{path}.seen"), f"{path}.seen", ("state", "at", "approvals"))
         one_of(seen.get("state"), SEEN, f"{path}.seen.state")
         timestamp(seen.get("at"), f"{path}.seen.at")
+        if "approvals" in seen and not (type(seen["approvals"]) is int and seen["approvals"] > 0):
+            raise ValueError(f"{path}.seen.approvals must be a positive count")
 
 
 def validate_work(row, layers):
@@ -215,8 +218,8 @@ def validate_work(row, layers):
         if "access" in result:
             text(result["access"], f"{path}.results[{index}].access")
         if "image" in result and not (isinstance(result["image"], str) and IMAGE.fullmatch(result["image"])):
-            raise ValueError(f"{path}.results[{index}].image must name a png, jpeg, gif, webp, or avif file in the "
-                             "program's files folder, such as files/W5-after.png")
+            raise ValueError(f"{path}.results[{index}].image must be files/ and its content name: the first 16 hex digits "
+                             f"of its sha256 and one of {', '.join(IMAGE_SUFFIXES)}, such as files/0123456789abcdef.png")
     if "required" in row and not isinstance(row["required"], bool):
         raise ValueError(f"{path}.required must be a boolean")
     if state in TERMINAL and (row.get("blockedBy") or row.get("blocked")):
@@ -508,9 +511,11 @@ def live(thread):
     return isinstance(thread, dict) and thread.get("status") in LIVE_THREADS
 
 
-def seen_state(thread):
-    """What status records of an owner thread read: its facts, or the error string from a failed read."""
-    return "running" if live(thread) else "unknown" if isinstance(thread, str) else "idle"
+def observation(thread, at):
+    """What status records of an owner thread read at a time: its facts, or the error string from a failed read."""
+    state = "running" if live(thread) else "unknown" if isinstance(thread, str) else "idle"
+    approvals = thread.get("pendingRequestCount", 0) if isinstance(thread, dict) else 0
+    return {"state": state, "at": at} | ({"approvals": approvals} if approvals else {})
 
 
 def recorded_threads(state):
@@ -520,8 +525,9 @@ def recorded_threads(state):
         owner = row.get("owner", {})
         if row["state"] in TERMINAL or "session" not in owner:
             continue
-        seen = owner.get("seen", {}).get("state", "unknown")
-        threads[row["id"]] = "its thread state is unknown" if seen == "unknown" else {"status": seen}
+        seen = owner.get("seen", {"state": "unknown"})
+        threads[row["id"]] = ("its thread state is unknown" if seen["state"] == "unknown"
+                              else {"status": seen["state"], "pendingRequestCount": seen.get("approvals", 0)})
     return threads
 
 
@@ -674,7 +680,7 @@ ICONS = {
     "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
     "recommended": "star", "pr": "git-pull-request", "finish": "flag", "record": "git-commit-horizontal",
     "tradeoff": "scale", "result": "external-link", "asked": "clock", "next": "arrow-right", "finished": "archive",
-    "runnable": "play", "working": "activity",
+    "runnable": "play", "working": "activity", "waiting": "hourglass",
 }
 
 
@@ -772,7 +778,7 @@ def choice_prompt(row, state, index):
 def pick(row, option, index, state):
     recommended = option.get("recommended", False)
     content = (
-        f'<label class="pick{" recommended" if recommended else ""}"><input type="radio" name="pick-{hexed(row["id"])}" '
+        f'<label class="pick"><input type="radio" name="pick-{hexed(row["id"])}" autocomplete="off" '
         f'value="{index + 1}" data-prompt="{e(choice_prompt(row, state, index))}" data-label="{e(option["label"])}"'
         f'{" checked" if recommended else ""}><span class="pick-body"><span class="pick-heading"><strong>{e(option["label"])}</strong>'
     )
@@ -791,7 +797,7 @@ def picks(row, state):
         choice_prompt(row, state, chosen), "Copy answer: " + row["options"][chosen]["label"])
     action = copy_control(prompt, f'prompt-{hexed(row["id"])}', label, "Copy answer")
     return (
-        f'<fieldset class="picks"><legend class="sr-only">Options for {e(row["id"])}</legend>'
+        f'<fieldset class="picks" data-revision="{revision(row)}"><legend class="sr-only">Options for {e(row["id"])}</legend>'
         + "".join(pick(row, option, index, state) for index, option in enumerate(row["options"]))
         + f'</fieldset><div class="answer-action">{action}</div>'
     )
@@ -832,7 +838,7 @@ def decision_label(row):
     if not settled:
         content += f'<span class="asked">{icon("asked")}<span>Asked {when(row["date"], "relative")}</span></span>'
     if row.get("blocks"):
-        content += f'<span class="need-blocks">{"Affected" if settled else "Blocks"} {e(blocked_work(row))}</span>'
+        content += f'<span>{"Affected" if settled else "Blocks"} {e(blocked_work(row))}</span>'
     return content
 
 
@@ -985,10 +991,10 @@ def provisional_note(row):
     )
 
 
-def result_card(result, images):
+def result_card(result):
     """A result as a card: its image's thumbnail when it has one, otherwise a link mark and the host it opens."""
     if "image" in result:
-        media = f'<img class="result-thumb" src="{e(images.get(result["image"], result["image"]))}" alt="" loading="lazy">'
+        media = f'<img class="result-thumb" src="{e(result["image"])}" alt="" loading="lazy">'
     else:
         media = f'<span class="result-mark">{icon("result")}</span>'
     host = urlsplit(url(result["url"], "url")).netloc
@@ -997,10 +1003,10 @@ def result_card(result, images):
     return f'<li>{anchor(result["url"], content, "result-card" + (" has-image" if "image" in result else ""))}{access}</li>'
 
 
-def results_view(row, images):
+def results_view(row):
     if not row.get("results"):
         return ""
-    items = "".join(result_card(result, images) for result in row["results"])
+    items = "".join(result_card(result) for result in row["results"])
     return f'<div class="results"><p class="note-label">Results</p><ul>{items}</ul></div>'
 
 
@@ -1040,16 +1046,22 @@ LIVE_LABELS = {"running": "Owner running", "idle": "Owner idle", "unknown": "Own
 
 
 def now_sentence(row, state, found):
-    """One sentence on what is happening to this work, or what it waits on, from the facts status uses."""
-    kinds = {}
-    for entry in found:
-        kinds.setdefault(entry["kind"], entry)
+    """One sentence on what is happening to this work, or what it waits on, from the facts status uses.
+
+    What status finds for the row comes first: a running owner or a provisional start supersedes a
+    halting Need, and an idle owner who owes work supersedes a Need that lets work continue.
+    """
+    kinds = {entry["kind"]: entry for entry in reversed(found)}
     owner = row.get("owner", {}).get("name", "The owner")
     halting = open_blocks(state, row["id"], HALTING)
     later = [identity for identity in open_blocks(state, row["id"]) if identity not in halting]
     landing = pending_landing(state, row["id"])
     if "approval" in kinds:
         return f"{owner} waits on an approval in its thread."
+    if "running" in kinds:
+        return f"{owner} is working."
+    if "provisional start" in kinds:
+        return f"Ready to start provisionally on {', '.join(halting)}'s recommended option."
     if halting:
         return f"Held until you answer {', '.join(halting)}."
     if "dependency" in kinds:
@@ -1058,8 +1070,9 @@ def now_sentence(row, state, found):
         return f"Blocked: {row['blocked']}"
     if "wait" in kinds:
         return f"Waits on {kinds['wait']['text']}."
-    if "running" in kinds:
-        return f"{owner} is working."
+    for kind in ("idle owner", "orphan"):
+        if kind in kinds:
+            return f"{kinds[kind]['text']}."
     if later:
         return f"Waits on your answer to {', '.join(later)}."
     if "release" in kinds:
@@ -1068,11 +1081,6 @@ def now_sentence(row, state, found):
         return f"Landing {landing['id']} is {landing['state']}; {landing['lander']} lands it."
     if "start" in kinds:
         return "Ready to start."
-    if "provisional start" in kinds:
-        return "Ready to start provisionally on a reversible recommendation."
-    for kind in ("idle owner", "orphan"):
-        if kind in kinds:
-            return f"{kinds[kind]['text']}."
     if row["state"] == "unknown":
         return row.get("unknownReason", "Its state could not be read.")
     if row["state"] == "planned" and row.get("required") is False:
@@ -1092,14 +1100,14 @@ def live_view(row):
     state = seen["state"] if seen else "unknown"
     label = LIVE_LABELS[state] if seen or "session" not in owner else "Owner not observed yet"
     observed = f' · seen {when(seen["at"], "relative")}' if seen else ""
-    return f'<p class="live {state}" data-live="{state}"><span class="live-dot" aria-hidden="true"></span><span>{e(label)}{observed}</span></p>'
+    return f'<p class="live {state}"><span class="live-dot" aria-hidden="true"></span><span>{e(label)}{observed}</span></p>'
 
 
 def now_view(row, state, found):
     return f'<div class="now"><p class="now-text">{prose(now_sentence(row, state, found))}</p>{live_view(row)}</div>'
 
 
-def work_card(row, program, state, found, images):
+def work_card(row, program, state, found):
     reasons = program.blockers(row)
     heading_id = "work-" + hexed(row["id"])
     content = f'<article class="card work" id="{card_id("work-card", row)}" aria-labelledby="{heading_id}"><div class="work-top"><p class="work-id"><strong>{e(row["id"])}</strong> {e(row["repo"])}</p><p class="badges">{state_badges(row, program)}</p></div>'
@@ -1116,7 +1124,7 @@ def work_card(row, program, state, found, images):
         content += f'<p class="state-note">{icon("unknown")}{prose(row["unknownReason"])}</p>'
     content += blocker_list([item[1:] for item in reasons if item[0]], "Blocked by", "blocked", "blocker")
     content += blocker_list([item[1:] for item in reasons if not item[0]], "Waits on", "waits", "blocker waits")
-    content += results_view(row, images) + provisional_note(row) + layers_view(row, program)
+    content += results_view(row) + provisional_note(row) + layers_view(row, program)
     if row.get("origin") or row.get("evidence"):
         content += '<details class="work-context"><summary class="section-toggle" id="' + card_id("toggle-evidence", row) + '">Evidence and history</summary><div class="section-body">'
         if row.get("origin"):
@@ -1157,7 +1165,6 @@ VERDICT_NOTES = {
     "waiting": "Everything left waits on you or on an outside event.",
     "done": "Every outcome is at its finish line.",
 }
-VERDICT_MARKS = {"runnable": "runnable", "working": "working", "waiting": "waits", "done": "done"}
 TALLIES = (  # (key, label, the status findings it counts)
     ("running", "Running", lambda found: found["working"]),
     ("idle", "Idle, owing work", lambda found: [entry for entry in found["runnable"] if entry["kind"] == "idle owner"]),
@@ -1176,7 +1183,7 @@ def health_view(state, found):
         tallies += f'<div class="tally{tone}"><dt>{e(label)}</dt><dd data-count="{key}">{count}</dd></div>'
     content = (
         f'<section class="health card {verdict}" aria-labelledby="health-heading"><div class="health-top">'
-        f'<h2 id="health-heading" class="verdict">{icon(VERDICT_MARKS[verdict])}<span class="sr-only">Program </span>{verdict.title()}</h2>'
+        f'<h2 id="health-heading" class="verdict">{icon(verdict)}<span class="sr-only">Program </span>{verdict.title()}</h2>'
         f'<p class="verdict-note">{VERDICT_NOTES[verdict]}</p></div><dl class="tallies">{tallies}</dl><div class="health-lines">'
     )
     waiting = [row for row in state["decisions"] if row["status"] == "open"]
@@ -1184,30 +1191,26 @@ def health_view(state, found):
         oldest = min(waiting, key=lambda row: parse_time(row["date"]))
         target = card_id("decision", oldest)
         content += (f'<p class="health-line" data-oldest-wait>{icon("asked")}<span><span class="fact-label">Oldest Inbox item</span> '
-                    f'<a href="#{target}" data-decision="{target}">{e(oldest["id"])}</a>, asked {when(oldest["date"], "relative")}</span></p>')
+                    f'<a href="#{target}">{e(oldest["id"])}</a>, asked {when(oldest["date"], "relative")}</span></p>')
     else:
         content += f'<p class="health-line" data-oldest-wait>{icon("asked")}<span><span class="fact-label">Inbox</span> Empty</span></p>'
     content += f'<p class="health-line">{icon("next")}<span><span class="fact-label">Next</span> {prose(state["next"])}</span></p>'
     return content + "</div></section>"
 
 
-def utc_now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def now():
+    """The current time in UTC. Event times always come from this clock, never from the caller."""
+    return datetime.now(timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def render(state, stamp=None, images=None):
-    """Validate the program and render its page.
-
-    stamp is the (commit, commit time) of the record it renders; images maps each result image in the
-    record to the file the page serves.
-    """
+def render(state, stamp=None):
+    """Validate the program and render its page; stamp is the (commit, commit time) of the record it renders."""
     validate(state)
-    found = assess(state, stamp[1] if stamp else utc_now(), recorded_threads(state))
+    found = assess(state, stamp[1] if stamp else now(), recorded_threads(state))
     by_work = {}
     for group in ("runnable", "working", "waiting", "attention"):
         for entry in found[group]:
             by_work.setdefault(entry["id"], []).append(entry)
-    images = images or {}
     decisions = state["decisions"]
     open_needs = [row for row in decisions if row["status"] == "open"]
     judgment = [row for row in open_needs if row.get("weight") != "quick"]
@@ -1219,7 +1222,7 @@ def render(state, stamp=None, images=None):
     needs_html = needs_view(state, judgment, quick, resolved, answered)
 
     def cards(rows):
-        return f'<div class="section-body stage-cards">{"".join(work_card(row, program, state, by_work.get(row["id"], []), images) for row in rows)}</div>'
+        return f'<div class="section-body stage-cards">{"".join(work_card(row, program, state, by_work.get(row["id"], [])) for row in rows)}</div>'
 
     stages = ""
     for key in STAGE_ORDER:
@@ -1277,23 +1280,20 @@ def content_name(content, suffix):
 
 
 def stage_images(state_file, state, folder):
-    """Copy each result image at HEAD into folder's files/, named by its content; map record paths to served ones.
-
-    A changed image gets a new name, so the page that shows it changes too and is published again.
-    """
-    served = {}
+    """Write each result image at HEAD into folder's files/, under its content name."""
     for path in dict.fromkeys(result["image"] for row in state["work"] for result in row.get("results", []) if "image" in result):
-        try:
-            blob = git(state_file, "rev-parse", "--verify", "--quiet", f"HEAD:./{path}").strip()
-        except ValueError:
-            raise ValueError(f"{path} is not committed in the program folder; commit it with the record") from None
-        content = subprocess.run(["git", "-C", str(state_file.parent), "cat-file", "blob", blob], capture_output=True, check=True).stdout
-        served[path] = content_name(content, Path(path).suffix)
-        target = folder / served[path]
-        if not target.exists():
-            target.parent.mkdir(exist_ok=True)
-            target.write_bytes(content)
-    return served
+        blob = subprocess.run(["git", "-C", str(state_file.parent), "cat-file", "blob", f"HEAD:./{path}"], capture_output=True)
+        if blob.returncode:
+            raise ValueError(f"{path} is not committed in the program folder; commit it with the record")
+        if content_name(blob.stdout, Path(path).suffix) != path:
+            raise ValueError(f"{path} is not its content's name; name it {content_name(blob.stdout, Path(path).suffix)}")
+        target = folder / path
+        if target.exists():
+            if target.read_bytes() != blob.stdout:
+                raise ValueError(f"{target} differs from the committed {path}; restore it with git checkout")
+            continue
+        target.parent.mkdir(exist_ok=True)
+        target.write_bytes(blob.stdout)
 
 
 def page_files(page):
@@ -1310,9 +1310,9 @@ def stage_page(state_file, page_file):
     staged = page_file.with_name(f"{page_file.stem}.next{page_file.suffix}")
     if state_file.resolve() in (page_file.resolve(), staged.resolve()):
         raise ValueError(f"{page_file}: the page would overwrite the state file")
-    state = committed(state_file)
-    stamp = git(state_file, "log", "-1", "--format=%h %cI").split()
-    page = render(state, stamp, stage_images(state_file, validate(state), page_file.parent))
+    state = validate(committed(state_file))
+    stage_images(state_file, state, page_file.parent)
+    page = render(state, git(state_file, "log", "-1", "--format=%h %cI").split())
 
     def holds(path):
         return path.exists() and STAMP.sub(lambda _: STAMP.search(page)[0], path.read_text(), count=1) == page
@@ -1339,7 +1339,7 @@ def main():
             changed = stage_page(args.state, args.page)
             print("changed" if changed else "unchanged")
             shown = args.page.with_name(f"{args.page.stem}.next{args.page.suffix}") if changed else args.page
-            for name in page_files(shown.read_text()) if shown.exists() else ():
+            for name in page_files(shown.read_text()):
                 print(f"file: {name}")
         elif args.check:
             text = args.state.read_text()

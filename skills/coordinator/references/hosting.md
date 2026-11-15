@@ -28,9 +28,9 @@ file. On every resume and coordinator move, force publication even when unchange
 using the page file in that case, so skill updates reach it.
 
 The page can show only its own files: the artifact blocks remote images. So
-the renderer copies each result image from the record's `HEAD` into `files/`
-beside the page, named by its content, and lists each one the page shows: as a
-`file:` line from `render_dashboard.py`, or in `record.py`'s `page: behind`
+the renderer writes each result image from the record's `HEAD` into `files/`
+beside the page, under its content name, and lists each one the page shows: as
+a `file:` line from `render_dashboard.py`, or in `record.py`'s `page: behind`
 note. Publish each with the page, at the same `files/` path. A changed image
 gets a new name, so the page changes too.
 

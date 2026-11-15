@@ -56,7 +56,9 @@ it with step 3 below and commit it; otherwise run
 `git -C /absolute/path checkout HEAD -- program.json`.
 
 To add a picture to a result by hand, copy it into the program folder's
-`files/` and commit it with the `program.json` change that names it.
+`files/` under its content name: the first 16 hex digits of its sha256 (from
+`shasum -a 256`), then its lowercase extension. Commit it with the
+`program.json` change that names it.
 
 For a change no command covers, such as a new work row, the grant, a
 correction, a reopen, a withdrawal, a scrap-or-rebase answer, or a
@@ -162,7 +164,7 @@ type Work = {
   provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
   layers?: Layer[]; // bottom first; not on support
   results?: (Link & { access?: string; image?: string })[]; // what the owner showed, what opening it needs,
-    // and image: a picture committed in the program folder as files/<name>, shown as the result's thumbnail
+    // and image: a picture committed in the program folder as files/<content name>, shown as its thumbnail
   evidence?: Link[]; // acceptance evidence
   acceptance?: string; // blocked or untested assertions in its proof
   blockedBy?: string[]; // logical inputs not yet satisfied
@@ -178,7 +180,8 @@ type Owner = {
   tasks?: string[]; workspace?: string;
   resources?: string; // servers, ports, and databases, with their stop actions
   handled?: string[]; // follow-up messages already handled
-  seen?: { state: "running" | "idle" | "unknown"; at: string }; // set by status: its thread when last read
+  seen?: { state: "running" | "idle" | "unknown"; at: string; // set by status: its thread when last read
+    approvals?: number }; // requests waiting in its thread for the user
 };
 type Layer = {
   id: string; branch: string;
