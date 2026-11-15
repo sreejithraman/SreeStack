@@ -187,11 +187,16 @@ def report(state, at, work, block, source):
     if block["state"] in TERMINAL:
         raise Refused(f"a report cannot record {block['state']}: run status, which reads merges at the forge, "
                       "or record a scrap by hand")
-    merged = {layer["id"] for layer in row.get("layers", []) if layer["status"] == "merged"}
-    for layer in objects(block.get("layers", []), "layers"):
-        if layer.get("status") == "merged" and layer.get("id") not in merged:
-            raise Refused(f"report layer {layer.get('id')} claims merged; report it ready and run status, "
-                          "which reads merges at the forge")
+    merged = {layer["id"]: layer for layer in row.get("layers", []) if layer["status"] == "merged"}
+    if "layers" in block:
+        reported = {layer.get("id"): layer for layer in objects(block["layers"], "layers")}
+        for identity, layer in reported.items():
+            if layer.get("status") == "merged" and identity not in merged:
+                raise Refused(f"report layer {identity} claims merged; report it ready and run status, "
+                              "which reads merges at the forge")
+        for identity, layer in merged.items():
+            if reported.get(identity) != layer:
+                raise Refused(f"report layer {identity} must repeat its merged record unchanged; the forge owns it")
     notes = []
     row["state"] = block["state"]
     if block["state"] != "unknown":
@@ -502,6 +507,18 @@ def read_layers(row, read_pr, forge, notes):
     return facts, reads, failed
 
 
+def lapsed(row, facts):
+    """The recorded row, with readiness withdrawn from each layer whose observed facts no longer support it."""
+    unready = copy.deepcopy(row)
+    observed = {layer["id"]: layer for layer in facts.get("layers", [])}
+    for layer in unready.get("layers", []):
+        if layer["status"] == "ready" and observed[layer["id"]]["status"] in {"open", "draft"}:
+            layer["status"] = "open"
+    if unready["state"] == "ready" and unready["layers"] != row["layers"]:
+        unready["state"] = "in-review"
+    return unready
+
+
 def derived_state(row):
     """The state the row's layers now imply, or its current one."""
     layers = row.get("layers", [])
@@ -561,12 +578,15 @@ def observe(state, at, read_pr, threads):
             facts["checkedAt"] = at
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
         if derived != row:
-            candidates[index] = [derived, *([facts] if facts != derived else []), row]
+            options = [derived, facts, lapsed(row, facts), row]
+            candidates[index] = [option for position, option in enumerate(options)
+                                 if option is row or option not in options[position + 1:]]
     reasons = first_valid(state, candidates)
     for index, (*_, original) in candidates.items():
         row = state["work"][index]
         if index in reasons:
-            kept = "nothing" if row is original else "its forge facts"
+            kept = ("nothing" if row is original else "that its readiness lapsed" if row == lapsed(original, row)
+                    else "its forge facts")
             notes.append(f"{row['id']}: recorded {kept} from the forge; settle by hand: {reasons[index]}")
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")

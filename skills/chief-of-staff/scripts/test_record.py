@@ -286,6 +286,15 @@ class ReportTests(RecordCase):
         self.write_report({"outcome": "W1", "state": "in-review", "layers": layers})
         self.refused("report", "--work", "W1", message="report layer W1-L2 claims merged")
 
+    def test_a_report_cannot_rewrite_a_merged_layer(self):
+        self.commit(lambda s: work(s, "W1")["layers"][0].update(status="merged"))
+        layers = copy.deepcopy(work(self.state, "W1")["layers"])
+        layers[0] |= {"url": "https://example.com/exports/pull/999", "head": "fffffff"}
+        self.write_report({"outcome": "W1", "state": "in-review", "layers": layers})
+        self.refused("report", "--work", "W1", message="W1-L1 must repeat its merged record unchanged")
+        self.write_report({"outcome": "W1", "state": "in-review", "layers": layers[1:]})
+        self.refused("report", "--work", "W1", message="W1-L1 must repeat its merged record unchanged")
+
     def test_a_malformed_report_is_refused(self):
         self.refused("report", "--work", "W1", message="cannot read")
         self.write_report({"outcome": "W1", "state": "in-review"}, prose="")
@@ -430,6 +439,23 @@ class StatusTests(RecordCase):
         _, after, result = self.event("status")
         self.assertEqual(work(after, "W1")["state"], "in-review")
         self.assertNotIn("release: W1", result.stdout)
+
+    def test_readiness_lapses_even_when_the_moved_facts_need_a_hand(self):
+        def retarget(state):
+            ready(state)
+            work(state, "W4").update(state="in-review", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                                     layers=[{"id": "W4-L1", "branch": "feature-b", "status": "open",
+                                              "url": "https://example.com/exports/pull/50", "head": "abc1234", "base": "main"}])
+        self.commit(retarget)
+        w1 = work(self.state, "W1")["layers"]
+        self.serve(prs={w1[0]["url"]: {"state": "OPEN", "headRefOid": w1[0]["head"], "baseRefName": "feature-b"},
+                        w1[1]["url"]: {"state": "OPEN", "headRefOid": w1[1]["head"], "baseRefName": w1[1]["base"]},
+                        "https://example.com/exports/pull/50": {"state": "OPEN", "headRefOid": "abc1234", "baseRefName": "main"}})
+        _, after, result = self.event("status")
+        self.assertEqual((work(after, "W1")["state"], work(after, "W1")["layers"][0]["base"]), ("in-review", "main"))
+        self.assertIn("W1: recorded that its readiness lapsed from the forge; settle by hand", result.stdout)
+        self.assertNotIn("release: W1", result.stdout)
+        self.refused("land", "--work", "W1", message="W1 is not ready to land")
 
     def test_a_rejected_change_holds_back_only_its_own_row(self):
         def program(order):
