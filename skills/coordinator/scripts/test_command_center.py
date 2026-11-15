@@ -23,9 +23,10 @@ import tempfile
 import threading
 import time
 import unittest
+import zlib
 
 from render_dashboard import render
-from render_dashboard import ISO_TIME, revision
+from render_dashboard import ISO_TIME, content_name, revision
 from test_render_dashboard import decision, example, owner
 
 
@@ -55,6 +56,27 @@ window.lucide = {createIcons() {
 """
 BLOCK_STORAGE = """
 Object.defineProperty(window, 'sessionStorage', {get() { throw new DOMException('denied', 'SecurityError'); }});
+"""
+# A page database as the artifact runtime would serve it, kept in localStorage so it outlives a reload.
+FAKE_DB = """
+window.storedPicks = () => JSON.parse(localStorage.getItem('fake-db') || '{}');
+window.wakeDoc = %(wake)s;
+const writeDb = docs => localStorage.setItem('fake-db', JSON.stringify(docs));
+const fakeDoc = (path, data) => ({id: path.split('/').pop(), exists: data !== undefined, data: () => data});
+window.claude = {use: async name => name !== 'db' ? null : {
+  doc: path => ({
+    get: async () => fakeDoc(path, path === 'config/wake' ? wakeDoc ?? undefined : storedPicks()[path]),
+    set: async data => {
+      if (window.holdWrites) await new Promise(resolve => { window.releaseWrite = resolve; });
+      if (%(refuse)s) throw {code: 'invalid_argument'};
+      writeDb({...storedPicks(), [path]: data});
+    },
+  }),
+  collection: path => ({get: async () => {
+    if (window.holdReads) await new Promise(resolve => { window.releaseRead = resolve; });
+    return {docs: Object.entries(storedPicks()).filter(([key]) => key.startsWith(path + '/')).map(([key, data]) => fakeDoc(key, data))};
+  }}),
+}};
 """
 HIDE = """
 Object.defineProperty(document, 'hidden', {configurable: true, get: () => %(hidden)s});
@@ -415,6 +437,193 @@ class PageTests(CommandCenterCase):
 
 
 EVIDENCE = "#toggle-evidence-" + "W1".encode().hex()
+
+
+def tiny_png(red):
+    """A valid one-pixel PNG, so the page can load and measure it."""
+    def chunk(kind, data):
+        return len(data).to_bytes(4, "big") + kind + data + zlib.crc32(kind + data).to_bytes(4, "big")
+    header = (1).to_bytes(4, "big") * 2 + bytes([8, 2, 0, 0, 0])
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(bytes([0, red, 0, 0]))) + chunk(b"IEND", b"")
+
+
+class PictureTests(CommandCenterCase):
+    def with_pictures(self, state):
+        """W3-D1 gets a three-step sequence and W6-D1's second option a picture, all served beside the page."""
+        names = []
+        for red in (10, 20, 30, 40):
+            content = tiny_png(red)
+            names.append(content_name(content, ".png"))
+            (self.page_file.parent / "files").mkdir(exist_ok=True)
+            (self.page_file.parent / names[-1]).write_bytes(content)
+        decision(state, "W3-D1")["pictures"] = {"shape": "sequence", "images": [
+            {"image": names[0], "caption": "Open export"}, {"image": names[1], "caption": "Pick a range"}, {"image": names[2]}]}
+        decision(state, "W6-D1")["options"][1]["image"] = names[3]
+        self.publish(state)
+        return names
+
+    def viewer(self, page):
+        return page.run("""(() => { const viewer = document.querySelector('.viewer');
+            return {open: viewer.open, count: viewer.querySelector('.viewer-count').textContent,
+                    caption: viewer.querySelector('figcaption').textContent,
+                    src: viewer.querySelector('img').getAttribute('src'), nav: !viewer.querySelector('.viewer-nav').hidden}; })()""")
+
+    def test_a_picture_opens_larger_in_the_page_and_pages_through_its_group(self):
+        names = self.with_pictures(self.state)
+        page = self.open_page(PHONE)
+        target = "#decision-" + "W3-D1".encode().hex()
+        loaded = page.run(f"Promise.all([...document.querySelectorAll('{target} .picture img')].map(image => {{ image.loading = 'eager'; return image.decode().then(() => image.naturalWidth); }}))")
+        self.assertEqual(loaded, [1, 1, 1], "the page loads its own files")
+        page.click(f"{target} .picture")
+        shown = self.viewer(page)
+        self.assertEqual(shown, {"open": True, "count": "1 of 3", "caption": "Step 1: Open export", "src": names[0], "nav": True})
+        page.click(".viewer-next")
+        self.assertEqual(self.viewer(page)["caption"], "Step 2: Pick a range")
+        page.click(".viewer-previous")
+        page.click(".viewer-previous")
+        self.assertEqual(self.viewer(page)["count"], "3 of 3", "the group wraps around")
+        page.click(".viewer-close")
+        self.assertFalse(self.viewer(page)["open"])
+
+        option = "#decision-" + "W6-D1".encode().hex()
+        width = page.run(f"document.querySelector('{option} .pick:last-of-type .picture').getBoundingClientRect().width")
+        self.assertGreater(width, 200, "an option's picture keeps its width before its lazy image loads")
+        page.click(f"{option} .pick:last-of-type .picture")
+        self.assertEqual(self.viewer(page), {"open": True, "count": "", "caption": "Hide expired entries", "src": names[3], "nav": False})
+        self.assertFalse(page.run(f"document.querySelector('{option} .pick:last-of-type input').checked"),
+                         "opening an option's picture does not pick it")
+        page.run("document.querySelector('.viewer').dispatchEvent(new MouseEvent('click', {bubbles: true}))")
+        self.assertFalse(self.viewer(page)["open"], "tapping outside the picture closes it")
+        self.assertEqual(page.run("pageErrors"), [])
+
+
+class SendAnswerTests(CommandCenterCase):
+    WAKE = "https://wake.example/hooks/coordinator"
+    TARGET = "#decision-" + "W1-D2".encode().hex()
+
+    def open_with_db(self, wake=None, refuse=False, before_load=""):
+        page = self.open_page(PHONE, before_load + FAKE_DB % {"wake": json.dumps({"url": wake or self.WAKE}),
+                                                               "refuse": json.dumps(refuse)})
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        return page
+
+    def action(self, page):
+        return page.run(f"""(() => {{ const action = document.querySelector('{self.TARGET} .answer-action');
+            return {{sendable: action.classList.contains('can-send'), send: !action.querySelector('.send-answer').hidden,
+                     wake: action.querySelector('.wake-link').hidden ? null : action.querySelector('.wake-link').href,
+                     status: action.querySelector('.send-status').textContent,
+                     copy: !action.querySelector('.copy-prompt').disabled}}; }})()""")
+
+    def test_without_the_page_database_only_copy_answer_shows(self):
+        page = self.open_page(PHONE)
+        self.assertEqual(self.action(page), {"sendable": False, "send": False, "wake": None, "status": "", "copy": True})
+        page = self.open_with_db(wake="http://wake.example/plain")
+        self.assertEqual(self.action(page)["send"], False, "a wake link must be https")
+
+    def test_send_saves_the_pick_by_decision_and_revision_then_offers_the_wake_link(self):
+        page = self.open_with_db()
+        self.assertEqual(self.action(page), {"sendable": True, "send": True, "wake": None, "status": "", "copy": True})
+        page.click(f"{self.TARGET} .pick:last-of-type input")
+        page.click(f"{self.TARGET} .send-answer")
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        need = decision(self.state, "W1-D2")
+        key = f"picks/{'W1-D2'.encode().hex()}-{revision(need)}"
+        self.assertEqual(page.run("storedPicks()"), {key: {"decision": "W1-D2", "revision": revision(need), "option": 2,
+                                                          "label": "Five attempts"}})
+        sent = self.action(page)
+        self.assertEqual((sent["send"], sent["wake"], sent["copy"]), (False, self.WAKE, True))
+        self.assertIn("Saved “Five attempts”", sent["status"])
+
+        page.reload()
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        self.assertEqual(self.action(page)["wake"], self.WAKE, "a saved pick still offers the wake link after a reload")
+        self.assertTrue(page.run(f"document.querySelector('{self.TARGET} .pick:last-of-type input').checked"))
+        page.click(f"{self.TARGET} .pick:first-of-type input")
+        self.assertEqual(self.action(page)["send"], True, "a new pick needs sending again")
+        self.assertEqual(page.run("pageErrors"), [])
+
+    def test_a_pick_cannot_change_while_its_save_is_pending(self):
+        page = self.open_with_db()
+        page.run("window.holdWrites = true")
+        page.click(f"{self.TARGET} .pick:last-of-type input")
+        page.click(f"{self.TARGET} .send-answer")
+        page.click(f"{self.TARGET} .pick:first-of-type input")
+        page.click(f"{self.TARGET} .send-answer")
+        self.assertTrue(page.run(f"document.querySelector('{self.TARGET} .pick:last-of-type input').checked"),
+                        "the pick being saved stays picked")
+        page.run("window.holdWrites = false; window.releaseWrite(); new Promise(resolve => setTimeout(resolve, 50))")
+        stored = page.run("storedPicks()")
+        self.assertEqual([pick["label"] for pick in stored.values()], ["Five attempts"], "one save, of the shown pick")
+        sent = self.action(page)
+        self.assertEqual((sent["send"], sent["wake"]), (False, self.WAKE))
+        page.click(f"{self.TARGET} .pick:first-of-type input")
+        self.assertTrue(self.action(page)["send"], "after the save settles, a new pick can be sent")
+
+    def test_send_appears_only_after_saved_picks_are_shown(self):
+        need = decision(self.state, "W1-D2")
+        saved = {f"picks/{'W1-D2'.encode().hex()}-{revision(need)}": {
+            "decision": "W1-D2", "revision": revision(need), "option": 2, "label": "Five attempts"}}
+        page = self.open_with_db(before_load=f"localStorage.setItem('fake-db', {json.dumps(json.dumps(saved))}); "
+                                             "window.holdReads = true;")
+        self.assertEqual(self.action(page), {"sendable": False, "send": False, "wake": None, "status": "", "copy": True},
+                         "nothing to send while saved picks are still loading")
+        page.run("window.releaseRead(); new Promise(resolve => setTimeout(resolve, 50))")
+        restored = self.action(page)
+        self.assertEqual((restored["sendable"], restored["send"], restored["wake"]), (True, False, self.WAKE))
+        self.assertIn("Saved “Five attempts”", restored["status"])
+        self.assertTrue(page.run(f"document.querySelector('{self.TARGET} .pick:last-of-type input').checked"))
+
+    def test_send_turns_off_once_the_wake_link_is_gone_and_follows_a_new_one(self):
+        page = self.open_with_db()
+        page.run("window.wakeDoc = {url: 'https://wake.example/hooks/new'}")
+        page.click(f"{self.TARGET} .send-answer")
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        self.assertEqual(self.action(page)["wake"], "https://wake.example/hooks/new")
+
+        page.run("window.wakeDoc = null")
+        page.click(f"{self.TARGET} .pick:first-of-type input")
+        page.click(f"{self.TARGET} .send-answer")
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        self.assertEqual(self.action(page), {
+            "sendable": False, "send": False, "wake": None, "copy": True,
+            "status": "Send answer is off for now. Copy the answer and paste it to the coordinator instead."})
+        self.assertEqual(len(page.run("storedPicks()")), 1, "nothing more is saved once the wake link is gone")
+        page.click(f"{self.TARGET} .pick:last-of-type input")
+        self.assertFalse(self.action(page)["send"], "a new pick does not bring Send back")
+        self.assertEqual(page.run("pageErrors"), [])
+
+    def test_a_shown_wake_link_follows_the_database_on_return_to_the_page(self):
+        page = self.open_with_db()
+        page.click(f"{self.TARGET} .send-answer")
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        page.run("window.wakeDoc = {url: 'https://wake.example/hooks/new'}")
+        page.run(HIDE % {"hidden": "false", "state": "'visible'"} + "; new Promise(resolve => setTimeout(resolve, 50))")
+        self.assertEqual(self.action(page)["wake"], "https://wake.example/hooks/new")
+        page.run("window.wakeDoc = null")
+        page.run(HIDE % {"hidden": "false", "state": "'visible'"} + "; new Promise(resolve => setTimeout(resolve, 50))")
+        self.assertEqual(self.action(page), {"sendable": False, "send": False, "wake": None, "status": "", "copy": True})
+        self.assertEqual(page.run("pageErrors"), [])
+
+    def test_a_save_that_lands_after_send_turned_off_keeps_copy_answer(self):
+        page = self.open_with_db()
+        page.run("window.holdWrites = true")
+        page.click(f"{self.TARGET} .send-answer")
+        page.run("new Promise(resolve => (function held() { window.releaseWrite ? resolve() : setTimeout(held, 10); })())")
+        page.run("window.wakeDoc = null")
+        page.run(HIDE % {"hidden": "false", "state": "'visible'"} + "; new Promise(resolve => setTimeout(resolve, 50))")
+        page.run("window.holdWrites = false; window.releaseWrite(); new Promise(resolve => setTimeout(resolve, 50))")
+        self.assertEqual(self.action(page), {
+            "sendable": False, "send": False, "wake": None, "copy": True,
+            "status": "Send answer is off for now. Copy the answer and paste it to the coordinator instead."})
+
+    def test_a_refused_save_points_to_copy_answer(self):
+        page = self.open_with_db(refuse=True)
+        page.click(f"{self.TARGET} .send-answer")
+        page.run("new Promise(resolve => setTimeout(resolve, 50))")
+        failed = self.action(page)
+        self.assertEqual((failed["send"], failed["wake"], failed["copy"]), (True, None, True))
+        self.assertEqual(failed["status"], "Not saved. Copy the answer and paste it to the coordinator instead.")
+        self.assertEqual(page.run("storedPicks()"), {})
 
 
 class ViewTests(CommandCenterCase):

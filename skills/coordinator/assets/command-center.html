@@ -113,8 +113,11 @@ time { font-variant-numeric: tabular-nums; }
 .context li::before { content: ""; position: absolute; inset-inline-start: 2px; inset-block-start: .62em; inline-size: 5px; block-size: 5px; border-radius: 50%; background: var(--text-tertiary); }
 .context li + li { margin-block-start: 6px; }
 .picks { display: grid; gap: 8px; min-inline-size: 0; margin: 16px 0 0; padding: 0; border: 0; }
-.pick { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px 14px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.pick { border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
+.pick-choice { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px 14px; cursor: pointer; }
 .pick:has(input:checked) { background: var(--tint-soft); box-shadow: inset 0 0 0 1.5px var(--tint); }
+.pick > .picture { inline-size: calc(100% - 60px); margin: -2px 14px 14px 46px; }
+.pick > .picture img { aspect-ratio: 16 / 10; }
 .pick input { appearance: none; inline-size: 20px; block-size: 20px; margin: 1px 0 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--text-tertiary); cursor: pointer; transition: box-shadow .15s; }
 .pick input:checked { box-shadow: inset 0 0 0 6px var(--tint); }
 .pick input:focus-visible { outline-offset: 2px; border-radius: 50%; }
@@ -127,7 +130,14 @@ time { font-variant-numeric: tabular-nums; }
 .pick-rationale { margin-block-start: 4px; font-size: 14px; }
 .answer-action { display: grid; gap: 10px; margin-block-start: 12px; }
 .answer-action .copy-prompt { justify-self: stretch; background: var(--tint); color: var(--on-tint); }
-@container (min-width: 520px) { .answer-action .copy-prompt { justify-self: start; } }
+.answer-action.can-send .copy-prompt { background: var(--fill); color: var(--tint-text); }
+.send-answer, .wake-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-block-size: 44px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--tint); color: var(--on-tint); font-size: 14px; font-weight: 600; cursor: pointer; }
+.wake-link:hover { text-decoration: none; }
+.send-answer:active:enabled { transform: scale(.98); }
+.send-answer:disabled { opacity: .45; cursor: default; }
+.send-status:empty { display: none; }
+.send-status { font-size: 13px; color: var(--text-secondary); }
+@container (min-width: 520px) { .answer-action :is(.copy-prompt, .send-answer, .wake-link) { justify-self: start; } }
 .copy-prompt { display: inline-grid; justify-self: start; min-block-size: 44px; min-inline-size: 148px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--fill); color: var(--tint-text); font-size: 14px; font-weight: 600; cursor: pointer; }
 .copy-prompt > span { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: opacity .15s; }
 .copy-prompt .done, .copy-prompt.copied .idle { opacity: 0; }
@@ -145,6 +155,32 @@ time { font-variant-numeric: tabular-nums; }
 .batch li { font-size: 15px; }
 .batch li + li { margin-block-start: 4px; }
 .batch .copy-prompt { background: var(--tint); color: var(--on-tint); }
+.stale-pick { display: flex; align-items: flex-start; gap: 8px; margin-block-start: 14px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--attention) 9%, transparent); color: color-mix(in srgb, var(--attention) 85%, var(--text)); font-size: 14px; }
+.stale-pick .icon { margin-block-start: 2px; }
+
+/* Pictures: tap one to see it larger in the viewer */
+.pictures { display: grid; gap: 10px; margin-block-start: 16px; }
+.pictures figure { display: grid; align-content: start; gap: 6px; min-inline-size: 0; margin: 0; }
+.pictures figcaption { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+.pictures:is(.side-by-side, .before-after) { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.pictures.sequence { --gutter: clamp(18px, 4.5vw, 26px); grid-auto-flow: column; grid-auto-columns: minmax(124px, 38%); margin-inline: calc(-1 * var(--gutter)); padding: 0 var(--gutter) 4px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); }
+.pictures.sequence figure { scroll-snap-align: start; }
+.step { display: inline-grid; place-items: center; inline-size: 20px; block-size: 20px; border-radius: 50%; background: var(--fill); color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.picture { position: relative; display: block; inline-size: 100%; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--fill); cursor: zoom-in; }
+.picture img { display: block; inline-size: 100%; aspect-ratio: 4 / 3; object-fit: contain; }
+.single .picture img { aspect-ratio: 16 / 10; }
+.picture .icon { position: absolute; inset-block-end: 8px; inset-inline-end: 8px; inline-size: 28px; block-size: 28px; padding: 6px; border-radius: 8px; background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--text); box-shadow: 0 1px 3px #0003; }
+.picture:focus-visible { outline-offset: 2px; border-radius: 12px; }
+.viewer { inline-size: 100%; max-inline-size: none; block-size: 100%; max-block-size: none; margin: 0; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); border: 0; background: #000; color: #fff; }
+.viewer[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; }
+.viewer::backdrop { background: #000; }
+.viewer-bar, .viewer-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.viewer-nav { justify-content: center; }
+.viewer-count { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.viewer button { display: grid; place-items: center; inline-size: 44px; block-size: 44px; padding: 0; border: 0; border-radius: 50%; background: #ffffff24; color: #fff; cursor: pointer; }
+.viewer figure { display: grid; grid-template-rows: minmax(0, 1fr) auto; place-items: center; gap: 8px; min-block-size: 0; margin: 0; }
+.viewer img { max-inline-size: 100%; max-block-size: calc(100dvh - 160px); object-fit: contain; border-radius: 8px; }
+.viewer figcaption { font-size: 15px; font-weight: 600; text-align: center; }
 .links { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-block-start: 16px; font-size: 14px; }
 .links a { display: inline-block; padding-block: 6px; }
 
@@ -288,6 +324,7 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 @media (forced-colors: active) {
   .card, .pick, .result-card, .tally, .now, .empty, .section-toggle, .inbox-group, .tabs button[aria-selected="true"], .layer, .provisional-note { border: 1px solid CanvasText; }
   .pick:has(input:checked), .inbox-row[aria-selected="true"] { outline: 2px solid Highlight; }
+  .picture, .stale-pick { border: 1px solid CanvasText; }
   .pick input { appearance: auto; }
   .inbox-row-id::before { display: none; }
   .progress { display: none; }
@@ -301,6 +338,11 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 </head>
 <body>
 <main><!--CONTENT--></main>
+<dialog class="viewer" aria-label="Picture">
+<div class="viewer-bar"><span class="viewer-count"></span><button type="button" class="viewer-close" aria-label="Close picture"><i class="icon" data-lucide="x" aria-hidden="true"></i></button></div>
+<figure><img alt=""><figcaption></figcaption></figure>
+<div class="viewer-nav"><button type="button" class="viewer-previous" aria-label="Previous picture"><i class="icon" data-lucide="chevron-left" aria-hidden="true"></i></button><button type="button" class="viewer-next" aria-label="Next picture"><i class="icon" data-lucide="chevron-right" aria-hidden="true"></i></button></div>
+</dialog>
 <script id="lucide-icons" async src="https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js" integrity="sha384-xrRF3kGz5GMZeUudxpTxrrjy0NRy/+U3dHY72SdMEgy9OsrO9x8mCw6DCD8m+jjS" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const iconScript = document.getElementById('lucide-icons');
@@ -415,7 +457,11 @@ function connectCopyButtons() {
 // One answer action per decision copies the picked option's prompt.
 function choosePick(choice) {
   choice.checked = true;
-  const button = choice.closest('.picks').nextElementSibling.querySelector('.copy-prompt');
+  const action = choice.closest('.picks').nextElementSibling;
+  const send = action.querySelector('.send-answer');
+  send.disabled = false;
+  if (send.hidden && pageDb) showSendable(action);
+  const button = action.querySelector('.copy-prompt');
   button.dataset.prompt = choice.dataset.prompt;
   button.disabled = false;
   button.setAttribute('aria-label', `Copy answer: ${choice.dataset.label}`);
@@ -439,6 +485,153 @@ function restorePicks(saved) {
   }
 }
 
+// Tap-to-answer. The page saves the pick in its own database, which only the artifact's owner can read or
+// write; the coordinator records it when the wake link, from that database, wakes it. Without either, the
+// page keeps Copy answer alone.
+let pageDb = null;
+const pickPath = picks => `picks/${picks.querySelector('input').name.slice('pick-'.length)}-${picks.dataset.revision}`;
+
+function showSendable(action) {
+  action.querySelector('.send-answer').hidden = false;
+  action.querySelector('.wake-link').hidden = true;
+  action.querySelector('.send-status').textContent = '';
+}
+
+function showSent(action, label) {
+  action.querySelector('.send-answer').hidden = true;
+  action.querySelector('.wake-link').hidden = false;
+  action.querySelector('.send-status').textContent = `Saved “${label}”. Wake the coordinator to record it now, or it records it at its next heartbeat.`;
+}
+
+// The wake link lives only in the page database; its removal turns Send off.
+async function wakeUrl(db) {
+  const wake = await db.doc('config/wake').get();
+  const url = wake.exists ? wake.data()?.url : null;
+  return typeof url === 'string' && url.startsWith('https://') ? url : null;
+}
+
+// A shown Wake link follows config/wake when the user returns to the page and after each tap; the tap
+// itself cannot wait on a check, because a phone opens a new tab only straight from the tap.
+async function refreshWake() {
+  if (!pageDb) return;
+  try {
+    const url = await wakeUrl(pageDb);
+    if (!url) return stopSending();
+    for (const link of document.querySelectorAll('.wake-link')) link.href = url;
+  } catch {
+    // The next tap or return checks again.
+  }
+}
+
+function stopSending() {
+  pageDb = null;
+  for (const action of document.querySelectorAll('.answer-action')) {
+    action.classList.remove('can-send');
+    action.querySelector('.send-answer').hidden = true;
+    action.querySelector('.wake-link').hidden = true;
+    action.querySelector('.send-status').textContent = '';
+  }
+}
+
+async function sendPick(button) {
+  const action = button.closest('.answer-action');
+  const picks = action.previousElementSibling;
+  const choice = picks.querySelector('input:checked');
+  const status = action.querySelector('.send-status');
+  button.disabled = true;
+  picks.disabled = true; // The pick being saved stays the one shown until its save settles.
+  status.textContent = 'Saving…';
+  try {
+    const url = await wakeUrl(pageDb);
+    if (!url) {
+      stopSending();
+      status.textContent = 'Send answer is off for now. Copy the answer and paste it to the coordinator instead.';
+      return;
+    }
+    for (const link of document.querySelectorAll('.wake-link')) link.href = url;
+    await pageDb.doc(pickPath(picks)).set({
+      decision: picks.dataset.decision, revision: picks.dataset.revision,
+      option: Number(choice.value), label: choice.dataset.label,
+    });
+    if (pageDb) showSent(action, choice.dataset.label);
+    else status.textContent = 'Send answer is off for now. Copy the answer and paste it to the coordinator instead.';
+  } catch {
+    status.textContent = 'Not saved. Copy the answer and paste it to the coordinator instead.';
+  } finally {
+    button.disabled = false;
+    picks.disabled = false;
+  }
+}
+
+async function connectAnswers() {
+  if (typeof window.claude?.use !== 'function' || !document.querySelector('.send-answer')) return;
+  let db, url, saved = [];
+  try {
+    db = await window.claude.use('db');
+    url = db && await wakeUrl(db);
+    if (!url) return;
+  } catch {
+    return;
+  }
+  try {
+    saved = (await db.collection('picks').get()).docs;
+  } catch {
+    // Unread saved picks still reach the coordinator; the page only shows them as unsent.
+  }
+  // Send appears only once saved picks are shown, so restoring one never overtakes a pick being sent.
+  pageDb = db;
+  for (const action of document.querySelectorAll('.answer-action')) {
+    action.classList.add('can-send');
+    action.querySelector('.wake-link').href = url;
+    action.querySelector('.send-answer').addEventListener('click', event => sendPick(event.currentTarget));
+    action.querySelector('.wake-link').addEventListener('click', refreshWake);
+    showSendable(action);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshWake(); });
+  for (const doc of saved) {
+    const picks = [...document.querySelectorAll('.picks')].find(candidate => pickPath(candidate) === `picks/${doc.id}`);
+    const choice = picks && [...picks.querySelectorAll('input')].find(input => input.value === String(doc.data()?.option));
+    if (choice) {
+      choosePick(choice);
+      showSent(picks.nextElementSibling, choice.dataset.label);
+    }
+  }
+}
+
+// Each picture opens larger in the page's viewer; pictures that share a group page through together.
+let viewerGroup = [];
+let viewerIndex = 0;
+function showPicture(index) {
+  const viewer = document.querySelector('.viewer');
+  viewerIndex = (index + viewerGroup.length) % viewerGroup.length;
+  const picture = viewerGroup[viewerIndex];
+  const image = viewer.querySelector('img');
+  image.src = picture.querySelector('img').getAttribute('src');
+  image.alt = picture.dataset.caption;
+  viewer.querySelector('figcaption').textContent = picture.dataset.caption;
+  viewer.querySelector('.viewer-count').textContent = viewerGroup.length > 1 ? `${viewerIndex + 1} of ${viewerGroup.length}` : '';
+  viewer.querySelector('.viewer-nav').hidden = viewerGroup.length < 2;
+}
+
+function connectPictures() {
+  const viewer = document.querySelector('.viewer');
+  for (const picture of document.querySelectorAll('.picture')) {
+    picture.addEventListener('click', () => {
+      viewerGroup = [...document.querySelectorAll('.picture')].filter(candidate => candidate.dataset.group === picture.dataset.group);
+      showPicture(viewerGroup.indexOf(picture));
+      viewer.showModal();
+    });
+  }
+  viewer.querySelector('.viewer-close').addEventListener('click', () => viewer.close());
+  viewer.querySelector('.viewer-previous').addEventListener('click', () => showPicture(viewerIndex - 1));
+  viewer.querySelector('.viewer-next').addEventListener('click', () => showPicture(viewerIndex + 1));
+  viewer.addEventListener('click', event => { if (event.target === viewer) viewer.close(); });
+  viewer.addEventListener('keydown', event => {
+    const step = {ArrowLeft: -1, ArrowRight: 1}[event.key];
+    if (step && viewerGroup.length > 1) showPicture(viewerIndex + step);
+  });
+}
+
 function connectDecisionLinks() {
   for (const jump of document.querySelectorAll('.health-line a[href^="#decision-"]')) {
     jump.addEventListener('click', () => {
@@ -457,6 +650,8 @@ function connectContent() {
   connectSelection(inboxRows, selectInboxRow, 'ArrowUp', 'ArrowDown');
   connectCopyButtons();
   connectPicks();
+  connectPictures();
+  connectAnswers();
   connectDecisionLinks();
   describeTimes();
   renderIcons();

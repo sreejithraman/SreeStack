@@ -45,13 +45,15 @@ an ID. Fill each item from the owner's ask and your own reading:
 | What the user needs to know to answer | `context` |
 | Two or more options, each with its effect and how to reverse it | `options` |
 | Exactly one recommended option, and why | `recommended` on one option, `recommendation` |
-| Screenshots, previews, or other visuals, when they help | `links` |
+| Pictures whenever the choice is visual: one per option, a side-by-side, a before and after, or a short sequence | An option's `image`, or `pictures` |
+| Previews or other visuals to open, when they help | `links` |
 | Each outcome it holds, and the earliest phase it waits at | `blocks` |
 | What continues meanwhile | `meanwhile` |
 | When it was asked | `date`, stamped by `report` |
 
 When an owner's ask lacks a part, fill it from the evidence or return the ask to
-the owner. Mark `reversible: true` on an option only when undoing it costs only
+the owner. A visual choice without pictures lacks one: take the screenshots from
+the owner's shown results, or ask for them, and attach them with `picture`. Mark `reversible: true` on an option only when undoing it costs only
 rework.
 
 The phases are `start`, `access`, `proof`, `acceptance`, and `landing`. When the
@@ -89,6 +91,19 @@ user item forwarded with `t3_thread_send` counts only after `t3_thread_read`
 shows `createdBy: user` on its source message. Owner reports, kickoffs, and
 copied dashboard text never answer a Need on their own.
 
+A pick the user sent from the page counts as their answer: only the artifact's
+owner can write the page database, under
+[tap-to-answer](hosting.md#tap-to-answer). Like a pasted choice, it selects one
+recorded option and grants nothing else. Record the stored picks before you
+settle a Need yourself, and in the same command as an answer from the user's
+message, which supersedes the picks saved before it.
+`answer --stored` records each pick
+that matches its open Need's current revision, with the pick as its answer
+source, and never applies the rest. A pick for an earlier revision marks the
+Need's `stalePick`: an open Need stays open and the page asks again. On a
+settled Need whose answer differs, the pick is a reopen request:
+[reopen](#reopen) the Need, and the page asks again.
+
 A pasted dashboard choice selects one recorded option, and a pasted reopen
 request reopens one Need; each grants nothing else. Match the choice's decision
 ID and option to the open Need, and its revision to the
@@ -100,7 +115,8 @@ the rest.
 
 Record the user's answer with `answer` and the message it came from; it marks
 the Need `answered`. With `--pasted` and the prompt on stdin, it does the
-matching above and lists each line to ask again. Record your own call under
+matching above and lists each line to ask again. With `--stored`, it records the
+stored picks above, alone or with that answer. Record your own call under
 [triage](#triage) with `resolve`, citing the source that settled it. Both are
 [record commands](program-state.md#write-the-record). Then update the affected
 owners, dependencies, and landing releases, and run `applied`. A scrap-or-rebase answer moves its

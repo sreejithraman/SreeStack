@@ -25,12 +25,12 @@ Owner report: write it to <program directory>/reports/<ID>.md. Start it with a f
 {"outcome": "<ID>", "state": "building | shown | in-review | ready",
  "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
  "proof": [{"assertion": "<what was checked>", "verdict": "pass | fail | blocked | untested", "url": "<evidence>"}],
- "shown": [{"label": "<result>", "url": "<link>", "access": "<what opening it needs>"}],
- "asks": [{"id": "<ID>-D1", "question": "<one question>", "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "recommended": true, "reversible": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],
+ "shown": [{"label": "<result>", "url": "<link>", "access": "<what opening it needs>", "image": "<absolute path to a screenshot>"}],
+ "asks": [{"id": "<ID>-D1", "question": "<one question>", "pictures": {"shape": "side-by-side | before-after | sequence", "images": [{"image": "<absolute path>", "caption": "<caption>"}]}, "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "image": "<absolute path>", "recommended": true, "reversible": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],
  "waits": [{"on": "<what>", "event": "<what ends it>"}],
  "blocked": "<missing prerequisite and who can supply it>"}
 ```
 
 Send a partial report as soon as you hit a missing prerequisite, a human decision, or a pending PR, naming what continues and the event that resumes the rest.
 Route: <top-level: send it to the coordinator thread <link> with t3_thread_send; you watch your PR | delegated: end your turn with it; the coordinator thread watches your PR>.
-Decision requests and shared blockers use the same route as they arise. Give each decision request one question, two or more options with their effects, and one recommended option. Say what reversing each option would take, mark `reversible: true` only when undoing it costs only rework, and cite any recorded source that settles it.
+Decision requests and shared blockers use the same route as they arise. Give each decision request one question, two or more options with their effects, and one recommended option. Say what reversing each option would take, mark `reversible: true` only when undoing it costs only rework, and cite any recorded source that settles it. When the choice is visual, such as a layout, a screen state, or a before and after, attach screenshots: one per option, or the decision's own pictures.

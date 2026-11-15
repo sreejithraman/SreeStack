@@ -15,7 +15,9 @@ counts under [record an answer](decisions.md#record-an-answer).
 
 ## Move
 
-Only the coordinator moves the program to a new thread. In one
+Only the coordinator moves the program to a new thread. First it
+[turns off](hosting.md#turn-off) tap-to-answer, recording the last stored picks
+while it still holds the record. Then in one
 [record write](program-state.md#write-the-record) it names the new coordinator in
 `chief` and each live owner's new return route in its `owner.route`, which is
 `t3_thread_send` to that coordinator even for an owner that used to end its turn.
@@ -26,7 +28,9 @@ tells the new thread with `t3_thread_send`. Owners keep running.
 
 If the coordinator's thread cannot act, offer the user a takeover instead of
 forwarding; this is the one exception to the check above. With approval, delete
-the old thread's heartbeat, whose task ID is in `grant.heartbeat`. Then repeat
+the old thread's heartbeat and [turn off](hosting.md#turn-off) its answer wake,
+whose task IDs are in `grant.heartbeat` and `grant.wake`, leaving the stored
+picks for the resume below. Then repeat
 until the old thread is idle or gone (`thread_not_found`) and `chief` at `HEAD`
 names this thread: [write](program-state.md#write-the-record) this thread as
 coordinator with the new return routes, without publishing, interrupt the old
@@ -38,8 +42,10 @@ call fails another way, stop and tell the user the takeover is incomplete.
 The new coordinator takes over the program folder as it stands, keeping its single
 record and git history. It [publishes the page](hosting.md) with its session's
 backend, reusing that backend's target or recording the new URL after success.
-It sets up its own [heartbeat](../SKILL.md#heartbeat), bound to its thread, and
-records the new task ID in `grant.heartbeat`; the grant is otherwise unchanged.
+It sets up its own [heartbeat](../SKILL.md#heartbeat) and
+[answer wake](hosting.md#tap-to-answer), bound to its thread, and records the
+new task IDs in `grant.heartbeat` and `grant.wake`; the grant is otherwise
+unchanged.
 The move or takeover completes after successful publication and any link write.
 It reconciles state as on resume, sends owners their route, watches any
 delegated owner's pending PRs, and asks any remaining old thread to unwatch.
