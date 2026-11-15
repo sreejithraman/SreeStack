@@ -25,7 +25,7 @@ Owner report: write it to <program directory>/reports/<ID>.md. Start it with a f
  "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
  "proof": [{"assertion": "<what was checked>", "verdict": "pass | fail | blocked | untested", "url": "<evidence>"}],
  "shown": [{"label": "<result>", "url": "<link>", "access": "<what opening it needs>"}],
- "asks": [{"id": "<ID>-D1", "question": "<one question>", "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "recommended": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],
+ "asks": [{"id": "<ID>-D1", "question": "<one question>", "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "recommended": true, "reversible": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],
  "waits": [{"on": "<what>", "event": "<what ends it>"}],
  "blocked": "<missing prerequisite and who can supply it>"}
 ```

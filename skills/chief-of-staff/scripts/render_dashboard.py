@@ -375,11 +375,12 @@ def validate_decision(row, by_id):
         if status == "open" and phase == "start" and by_id[identity]["state"] != "planned":
             raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
     for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
-        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended"))
+        known_keys(option, f"{path}.options[{index}]", ("label", "effect", "recommended", "reversible"))
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
-        if "recommended" in option and not isinstance(option["recommended"], bool):
-            raise ValueError(f"{path}.options.recommended must be a boolean")
+        for flag in ("recommended", "reversible"):
+            if flag in option and not isinstance(option[flag], bool):
+                raise ValueError(f"{path}.options.{flag} must be a boolean")
     recommended = sum(option.get("recommended", False) for option in row.get("options", []))
     if recommended > 1:
         raise ValueError(f"{path}: only one option can be recommended")

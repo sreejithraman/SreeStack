@@ -468,6 +468,20 @@ class StatusTests(RecordCase):
         self.assertIn("W1: recorded that its readiness lapsed from the forge; settle by hand", result.stdout)
         self.assertNotIn("release: W1", result.stdout)
 
+    def test_readiness_lapses_for_a_closed_draft_under_its_dependent(self):
+        def drafted(state):
+            ready(state)
+            row = work(state, "W1")
+            row["finishLine"] = "pr-draft"
+            for layer in row["layers"]:
+                layer["status"] = "draft"
+        self.commit(drafted)
+        w1 = work(self.state, "W1")["layers"]
+        self.serve(prs={layer["url"]: {"state": "CLOSED", "headRefOid": layer["head"], "baseRefName": layer["base"]} for layer in w1})
+        _, after, result = self.event("status")
+        self.assertEqual(work(after, "W1")["state"], "in-review")
+        self.assertIn("W1: recorded that its readiness lapsed", result.stdout)
+
     def test_a_rejected_change_holds_back_only_its_own_row(self):
         def program(order):
             state = example()
@@ -563,11 +577,12 @@ def outcome(identity, state, finish="land", **fields):
     return row | fields
 
 
-def need(identity, blocks, phase, quick=False, **fields):
+def need(identity, blocks, phase, reversible=None, **fields):
     row = {"id": identity, "question": f"Question {identity}?", "date": "2026-11-15T10:00:00Z", "source": "msg",
            "status": "open", "blocks": [{"id": blocks, "phase": phase}]}
-    if quick:
-        row |= {"weight": "quick", "options": [{"label": "Yes", "effect": "Reversible", "recommended": True},
+    if reversible is not None:
+        row |= {"weight": "quick", "options": [{"label": "Yes", "effect": "Bounded", "recommended": True}
+                                               | ({"reversible": True} if reversible else {}),
                                                {"label": "No", "effect": "Other"}]}
     return row | fields
 
@@ -611,23 +626,40 @@ class VerdictTests(unittest.TestCase):
                          [("need", "A-D1", "4h00m"), ("wait", "B", "30m")])
 
     def test_done_when_every_outcome_is_terminal_or_at_its_stop(self):
-        state = program([outcome("A", "landed"), outcome("B", "ready", finish="pr-review"),
-                         outcome("C", "shown", finish="try")])
+        state = program([outcome("A", "landed"), outcome("B", "ready", finish="pr-review"), outcome("P", "planned", required=False)])
         self.assertEqual(self.verdict(state)["verdict"], "done")
         with_choice = program([outcome("A", "landed"), outcome("C", "shown", finish="try")], [need("C-T", "C", "landing")])
         self.assertEqual(self.verdict(with_choice)["verdict"], "waiting", "a shown Try's open choice wins over done")
+        no_choice = self.verdict(program([outcome("A", "landed"), outcome("C", "shown", finish="try")]))
+        self.assertEqual((no_choice["verdict"], [entry["kind"] for entry in no_choice["runnable"]]), ("runnable", ["orphan"]),
+                         "a shown Try needs its choice recorded")
+        program_wait = program([outcome("A", "landed")], waits=[{"date": "2026-11-15T12:00:00Z", "on": "Release CI", "event": "Green"}])
+        self.assertEqual(self.verdict(program_wait)["verdict"], "waiting", "waiting wins over done")
 
     def test_a_reversible_halting_need_is_runnable_until_work_builds_on_it(self):
-        state = program([outcome("A", "building")], [need("A-D1", "A", "proof", quick=True)])
+        state = program([outcome("A", "building")], [need("A-D1", "A", "proof", reversible=True)])
         result = self.verdict(state, {"A": {"status": "running"}})
         self.assertEqual(result["verdict"], "runnable")
         self.assertEqual([(entry["kind"], entry["id"]) for entry in result["runnable"]], [("provisional start", "A")])
-        judgment = program([outcome("A", "building")], [need("A-D1", "A", "proof")])
-        self.assertEqual(self.verdict(judgment, {"A": {"status": "running"}})["verdict"], "working",
-                         "a judgment call is not marked reversible")
-        provisional = program([outcome("A", "building", provisional={"basis": "A-D1's recommended option.", "clears": "A-D1 is answered."})],
-                              [need("A-D1", "A", "acceptance", quick=True)])
-        self.assertEqual(self.verdict(provisional, {"A": {"status": "running"}})["runnable"], [])
+        unmarked = program([outcome("A", "building")], [need("A-D1", "A", "proof", reversible=False)])
+        self.assertEqual(self.verdict(unmarked, {"A": {"status": "running"}})["verdict"], "working",
+                         "a quick pick is not reversible unless its recommended option says so")
+        def built_on(basis):
+            return program([outcome("A", "building", provisional={"basis": basis, "clears": "It is answered."})],
+                           [need("A-D1", "A", "proof", reversible=True)])
+        self.assertEqual(self.verdict(built_on("A-D1's recommended option."), {"A": {"status": "running"}})["runnable"], [])
+        self.assertEqual([entry["id"] for entry in self.verdict(built_on("A-D10's recommended option."),
+                                                                {"A": {"status": "running"}})["runnable"]], ["A"],
+                         "A-D10 is not A-D1")
+        for gate in ({"required": False}, {"blocked": "Needs a login"}):
+            gated = program([outcome("A", "planned", **gate)], [need("A-D1", "A", "start", reversible=True)])
+            with self.subTest(gate=gate):
+                self.assertNotIn("provisional start", [entry["kind"] for entry in self.verdict(gated)["runnable"]])
+
+    def test_a_blocked_idle_owner_waits_instead_of_running(self):
+        state = program([outcome("A", "building", blocked="Needs the user's App Store login")])
+        result = self.verdict(state, {"A": {"status": "idle"}})
+        self.assertEqual((result["verdict"], [entry["kind"] for entry in result["waiting"]]), ("waiting", ["blocked"]))
 
     def test_the_digest_follows_facts_not_the_clock(self):
         state = program([outcome("A", "building")], [need("A-D1", "A", "proof")])
@@ -637,6 +669,13 @@ class VerdictTests(unittest.TestCase):
         self.assertNotEqual(first["waiting"][0]["age"], later["waiting"][0]["age"])
         state["decisions"].append(need("A-D2", "A", "access"))
         self.assertNotEqual(self.verdict(state)["digest"], first["digest"])
+        review = program([outcome("B", "in-review")], waits=[{"date": "2026-11-15T13:00:00Z", "on": "CI", "event": "Green", "work": "B"}])
+        before = self.verdict(review)["digest"]
+        review["work"][0]["layers"][0]["status"] = "closed"
+        self.assertNotEqual(self.verdict(review)["digest"], before, "a forge change under a wait changes the digest")
+        unread = program([outcome("C", "building")])
+        self.assertEqual(self.verdict(unread, {"C": "could not read its thread: timeout"})["digest"],
+                         self.verdict(unread, {"C": "could not read its thread: refused"})["digest"])
 
 
 class VerdictCommandTests(RecordCase):
@@ -695,7 +734,7 @@ class TurnEndTests(RecordCase):
         self.serve(threads=live | {"thread:W3": {"status": "idle", "updatedAt": "2026-11-02T16:00:00Z"}})
         result = self.turn_end()
         self.assertEqual(result.returncode, 1)
-        self.assertIn("orphaned: W3 (building): owner idle", result.stdout)
+        self.assertIn("idle owner: W3: Support worker is idle with no recorded wait", result.stdout)
 
         self.event("wait", "--on", "Fixture repair", "--event", "Owner reports", "--work", "W3")
         self.assertEqual(self.turn_end().returncode, 0, "a recorded wait covers an idle owner")
@@ -730,7 +769,7 @@ class TurnEndTests(RecordCase):
         self.assertNotIn("W6 (building): owner idle", orphans(state, threads), "a halting Need covers it")
 
     def test_turn_end_fails_while_the_verdict_is_runnable(self):
-        self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof", quick=True)]), "2026-11-15T13:00:00Z")
+        self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof", reversible=True)]), "2026-11-15T13:00:00Z")
         self.serve(threads={"thread:A": {"status": "running"}})
         self.turn_end()
         self.publish()
@@ -742,7 +781,7 @@ class TurnEndTests(RecordCase):
     def test_turn_end_fails_while_the_record_has_an_uncommitted_change(self):
         self.state["next"] = "Hand edit in progress"
         self.program.write(self.state)
-        self.assertIn("program.json has an uncommitted change", self.turn_end().stdout)
+        self.assertIn("uncommitted: program.json has a change", self.turn_end().stdout)
 
     def test_orphans_name_each_uncovered_row(self):
         state = example()

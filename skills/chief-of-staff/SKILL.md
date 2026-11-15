@@ -185,7 +185,7 @@ it under Orchestration's
 or record the outcome blocked with what is missing. For a delegated owner, this
 thread is the watching parent under PR's [wait](../pr/references/watch.md#wait).
 Keep watching pending PRs while you ask the user something. Before you end a
-turn, run `status --turn-end` and act on every line it prints.
+turn, run `status --turn-end` and act on each runnable line it prints.
 
 Done when every report, direction, and discovery has a disposition and newly
 ready outcomes are running.

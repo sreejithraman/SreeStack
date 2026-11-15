@@ -523,10 +523,11 @@ def lapsed(row, facts):
     unready = copy.deepcopy(row)
     observed = {layer["id"]: layer for layer in facts.get("layers", [])}
     allowed = READY_LAYERS.get(effective_finish(row), (set(),))[0]
-    for layer in unready.get("layers", []):
-        if layer["status"] == "ready" and observed[layer["id"]]["status"] not in allowed:
+    unsupported = [layer for layer in unready.get("layers", []) if observed[layer["id"]]["status"] not in allowed]
+    for layer in unsupported:
+        if layer["status"] == "ready":
             layer["status"] = "open"
-    if unready["state"] == "ready" and unready["layers"] != row["layers"]:
+    if unready["state"] == "ready" and unsupported:
         unready["state"] = "in-review"
     return unready
 
@@ -578,7 +579,7 @@ def first_valid(state, candidates):
 
 def observe(state, at, read_pr, threads):
     """Apply forge facts to open work and pending landings; return notes on what changed or needs a hand."""
-    notes, forge, candidates = [], {}, {}
+    notes, forge, candidates, kept = [], {}, {}, {}
     for index, row in enumerate(state["work"]):
         if row["state"] in TERMINAL:
             continue
@@ -590,16 +591,17 @@ def observe(state, at, read_pr, threads):
             facts["checkedAt"] = at
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
         if derived != row:
-            options = [derived, facts, lapsed(row, facts), row]
-            candidates[index] = [option for position, option in enumerate(options)
-                                 if option is row or option not in options[position + 1:]]
+            labels = ((derived, None), (facts, "its forge facts"), (lapsed(row, facts), "that its readiness lapsed"),
+                      (row, "nothing"))
+            unique = [(option, label) for position, (option, label) in enumerate(labels)
+                      if option is row or option not in [other for other, _ in labels[position + 1:]]]
+            candidates[index] = [option for option, _ in unique]
+            kept[index] = {id(option): label for option, label in unique}
     reasons = first_valid(state, candidates)
     for index, (*_, original) in candidates.items():
         row = state["work"][index]
         if index in reasons:
-            kept = ("nothing" if row is original else "that its readiness lapsed" if row == lapsed(original, row)
-                    else "its forge facts")
-            notes.append(f"{row['id']}: recorded {kept} from the forge; settle by hand: {reasons[index]}")
+            notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
@@ -623,6 +625,10 @@ def observe(state, at, read_pr, threads):
 
 def orphans(state, threads):
     """Open work with no live owner, recorded wait, holding Need, or blocker."""
+    return [f"{identity} ({current}): {why}" for identity, current, why in orphaned(state, threads)]
+
+
+def orphaned(state, threads):
     waits = {row.get("work") for row in state.get("waits", [])}
     found = []
     for row in state["work"]:
@@ -641,29 +647,36 @@ def orphans(state, threads):
                else "owner has no session to read" if "owner" in row else "no owner")
         if landing:
             why += f" with landing {landing['id']} {landing['state']}"
-        found.append(f"{row['id']} ({row['state']}): {why}")
+        found.append((row["id"], row["state"], why))
     return found
 
 
 VERDICT_EXIT = {"done": 0, "waiting": 3, "working": 4, "runnable": 5}
 
 
-def item(kind, identity, text, since=None):
-    return {"kind": kind, "id": identity, "text": text} | ({"since": since} if since else {})
+def item(kind, identity, text, since=None, detail=None):
+    """One status line; since and detail stay out of the digest."""
+    return ({"kind": kind, "id": identity, "text": text} | ({"since": since} if since else {})
+            | ({"detail": detail} if detail else {}))
+
+
+def names(text, identity):
+    return re.search(rf"(?<![\w-]){re.escape(identity)}(?![\w-])", text) is not None
 
 
 def reversible_halts(state):
-    """Open quick Needs whose recommended option halts work that is not yet built on it provisionally."""
+    """Open Needs whose recommended option is reversible and halts startable work not yet built on it."""
     found = []
     for decision in state["decisions"]:
-        if (decision["status"] != "open" or decision.get("weight") != "quick"
-                or not any(option.get("recommended") for option in decision.get("options", []))):
+        if decision["status"] != "open" or not any(
+                option.get("recommended") and option.get("reversible") for option in decision.get("options", [])):
             continue
         for entry in decision.get("blocks", []):
             row = work_row(state, entry["id"])
             provisional = row.get("provisional", {})
-            on_it = decision["id"] in f"{provisional.get('basis', '')} {provisional.get('clears', '')}"
-            if entry["phase"] in HALTING and row["state"] not in TERMINAL and not on_it:
+            on_it = names(f"{provisional.get('basis', '')} {provisional.get('clears', '')}", decision["id"])
+            startable = (row.get("required") is not False and not unsatisfied(state, row) and not row.get("blocked"))
+            if entry["phase"] in HALTING and row["state"] not in TERMINAL and startable and not on_it:
                 found.append(item("provisional start", row["id"],
                                   f"build on {decision['id']}'s recommended option provisionally; it halts {entry['phase']}"))
     return found
@@ -694,33 +707,43 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
                 and not unsatisfied(state, row) and not row.get("blocked") and not pending_landing(state, identity)):
             runnable.append(item("release", identity, row["title"]))
         owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
-        if owes and not live(thread) and identity not in waits and not waits_on_need(state, row):
+        covered = identity in waits or waits_on_need(state, row) or unsatisfied(state, row) or row.get("blocked")
+        if owes and not live(thread) and not covered:
             if isinstance(thread, dict):
                 runnable.append(item("idle owner", identity, f"{row['owner']['name']} is {thread['status']} with no recorded wait",
                                      thread.get("updatedAt")))
+            elif thread:
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']}'s thread could not be read", detail=thread))
             else:
-                runnable.append(item("idle owner", identity, f"{row['owner']['name']} {thread or 'has no session to read'}"))
+                runnable.append(item("idle owner", identity, f"{row['owner']['name']} has no session to read"))
         if isinstance(thread, dict) and thread.get("pendingRequestCount"):
             attention.append(item("approval", identity, f"{row['owner']['name']} waits on an approval in its thread"))
         if row.get("blocked"):
-            waiting.append(item("blocked", identity, row["blocked"], row["checkedAt"]))
+            waiting.append(item("blocked", identity, row["blocked"]))
         if (parse_time(at) - parse_time(row["checkedAt"])).total_seconds() > stale_hours * 3600:
             attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
     runnable += reversible_halts(state)
+    listed = {entry["id"] for entry in runnable}
+    runnable += [item("orphan", identity, f"({current}) {why}") for identity, current, why in orphaned(state, threads)
+                 if identity not in listed]
     for decision in state["decisions"]:
         if decision["status"] == "open":
             waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
         elif decision.get("applied") is False:
             affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
             runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
+    open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
     for wait in state.get("waits", []):
-        waiting.append(item("wait", wait.get("work", "program"), f"{wait['on']} until {wait['event']}", wait["date"]))
-    blocking = {entry["id"] for decision in state["decisions"] if decision["status"] == "open" for entry in decision.get("blocks", [])}
-    done = all(at_stop(row) for row in state["work"]) and not blocking
+        if wait.get("work", "program") in open_rows | {"program"}:
+            waiting.append(item("wait", wait.get("work", "program"), f"{wait['on']} until {wait['event']}", wait["date"]))
+    done = all(at_stop(row) for row in state["work"]) and not waiting
     verdict = "runnable" if runnable else "working" if working else "done" if done else "waiting"
-    facts = [{key: value for key, value in entry.items() if key != "since"}
+    rows = [[row["id"], row["state"], [[layer["id"], layer["status"], layer.get("head"), layer.get("base")]
+                                       for layer in row.get("layers", [])]]
+            for row in state["work"] if row["id"] in open_rows]
+    facts = [{key: value for key, value in entry.items() if key not in {"since", "detail"}}
              for entry in (*runnable, *working, *waiting, *(entry for entry in attention if entry["kind"] != "stale"))]
-    digest = hashlib.sha256(json.dumps([verdict, facts], sort_keys=True).encode()).hexdigest()[:12]
+    digest = hashlib.sha256(json.dumps([verdict, facts, rows], sort_keys=True).encode()).hexdigest()[:12]
     for entry in (*runnable, *working, *waiting, *attention):
         if "since" in entry:
             entry["age"] = age(entry["since"], at)
@@ -903,16 +926,14 @@ def check_status(args, record, read_pr, read_thread):
         state = validate(committed(record.file))
         threads = read_owners(state, read_thread)
         result = assess(state, at, threads, args.stale_hours)
-        found = orphans(state, threads)
-        if record.dirty():
-            found.append(f"{record.file.name} has an uncommitted change; settle it before the turn ends")
         show(result)
-        for line in found:
-            print(f"orphaned: {line}")
-        result |= {"orphans": found, "notes": [], "page": "current" if record.render() else "behind"}
-        result["passes"] = result["page"] == "current" and not found and result["verdict"] != "runnable"
+        dirty = bool(record.dirty())
+        if dirty:
+            print(f"uncommitted: {record.file.name} has a change; settle it before the turn ends")
+        result |= {"uncommitted": dirty, "notes": [], "page": "current" if record.render() else "behind"}
+        result["passes"] = result["page"] == "current" and not dirty and result["verdict"] != "runnable"
         if not result["passes"]:
-            print("Before ending the turn, act on each runnable and orphaned line, and publish the page.")
+            print("Before ending the turn, act on each runnable line, and publish the page.")
         return result
     state = record.load()
     before = copy.deepcopy(state)

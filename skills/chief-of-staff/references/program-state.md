@@ -122,7 +122,8 @@ type Decision = {
   context?: string[];
   meanwhile?: string; // what continues while it is open
   recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
-  options?: { label: string; effect: string; recommended?: boolean }[]; // at most one recommended
+  options?: { label: string; effect: string; recommended?: boolean;
+    reversible?: boolean }[]; // at most one recommended; reversible: undoing it costs only rework
   weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
   blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
   links?: Link[];
@@ -255,13 +256,14 @@ row's state cannot be read.
 while an owner runs, `waiting` when everything left waits on a Need or an
 external wait, or `done`. It prints a digest of the facts behind the verdict,
 which changes only when they do. `--json` prints them as one object, and
-`--exit-code` gives each verdict its own exit code. A quick Need whose
-recommended option halts work that is not provisional on it is runnable: build
-on that option provisionally under [dependencies](dependencies.md#provisional-work).
+`--exit-code` gives each verdict its own exit code. A Need whose recommended
+option is marked `reversible` and halts startable work that is not provisional
+on it is runnable: build on that option provisionally under
+[dependencies](dependencies.md#provisional-work).
 
-`status --turn-end` commits nothing. It fails while the verdict is `runnable`,
-or while an open row has no running owner, recorded wait, blocker, or open Need
-that holds it. A Need holds a row
+`status --turn-end` commits nothing. It fails while the verdict is `runnable`.
+An open row with no running owner, recorded wait, blocker, or open Need that
+holds it is runnable. A Need holds a row
 when it halts the row's work, or when the row waits on it as a shown Try or
 ready work; a landing release alone holds nothing. It also fails while
 `program.json` has an uncommitted change or the published page is behind the
