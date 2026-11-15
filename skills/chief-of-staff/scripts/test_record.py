@@ -9,7 +9,8 @@ import tempfile
 import textwrap
 import unittest
 
-from record import orphans, revision
+from record import observe, orphans, revision
+from render_dashboard import decision_prompt, quoted, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, work
 
 
@@ -188,6 +189,13 @@ class EventTests(RecordCase):
         self.assertEqual(decision(after, "W6-D1")["answer"], need["options"][1]["label"])
         self.assertEqual(changed, {"decisions[W6-D1].status", "decisions[W6-D1].answer", "decisions[W6-D1].answerSource"})
 
+    def test_a_page_prompt_round_trips_a_label_the_page_reflows(self):
+        self.commit(lambda s: decision(s, "W6-D1")["options"][1].update(label="Keep  links\nvisible"))
+        need = decision(self.state, "W6-D1")
+        prompt = decision_prompt(need, self.state, f'I choose option 2: {quoted(need["options"][1]["label"])}')
+        _, after, _ = self.event("answer", "--pasted", "--source", "msg", stdin=prompt)
+        self.assertEqual(decision(after, "W6-D1")["answer"], "Keep  links\nvisible", "the recorded option, not the pasted text")
+
     def test_a_pasted_batch_records_the_lines_that_match_and_asks_again_about_the_rest(self):
         quick = [row for row in self.state["decisions"] if row["status"] == "open" and row.get("options")][:2]
         self.assertEqual(len(quick), 2)
@@ -265,7 +273,8 @@ class ReportTests(RecordCase):
         for block, message in (({"outcome": "W2", "state": "building"}, "names outcome 'W2'"),
                                ({"outcome": "W1", "state": "blocked"}, "report state must be one of"),
                                ({"outcome": "W1", "state": "in-review", "proof": [{"assertion": "x", "verdict": "ok"}]}, "verdict"),
-                               ({"outcome": "W1", "state": "landed"}, "landed needs")):
+                               ({"outcome": "W1", "state": "landed"}, "landed needs"),
+                               ({"outcome": "W1", "state": "in-review", "waits": [{"on": "CI"}]}, "waits[0].event must be")):
             self.write_report(block)
             with self.subTest(message=message):
                 self.refused("report", "--work", "W1", message=message)
@@ -302,6 +311,37 @@ class LandingTests(RecordCase):
         self.assertEqual((work(after, "W1")["state"], after["landings"][-1]["state"]), ("landed", "landed"))
 
 
+    def test_release_refuses_a_layer_stacked_on_unreleased_work(self):
+        def stacked(state):
+            ready(state)
+            work(state, "W1")["layers"][1]["status"] = "open"
+            work(state, "W1")["state"] = "in-review"
+            row = work(state, "W4")
+            row.update(state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                       layers=[{"id": "W4-L1", "branch": "progress", "status": "ready", "url": "https://example.com/exports/pull/50",
+                                "head": "abc1234", "base": "export-retry-cancel", "stackedOn": "W1-L2"}])
+        self.commit(stacked)
+        self.refused("land", "--work", "W4", "--target", "main", message="W4-L1 stacks on unmerged W1-L2 (W1)")
+
+    def test_a_landing_whose_prs_merge_in_separate_runs_lands(self):
+        def two(state):
+            ready(state)
+            row = work(state, "W4")
+            row.update(state="ready", finishLine="land", owner={"name": "Progress owner", "start": "top-level", "route": "r"},
+                       layers=[{"id": "W4-L1", "branch": "progress", "status": "ready", "url": "https://example.com/exports/pull/50",
+                                "head": "abc1234", "base": "main"}])
+        self.commit(two)
+        self.event("land", "--work", "W1", "--work", "W4", "--lander", "Chief")
+        w1 = {layer["url"]: layer for layer in work(self.state, "W1")["layers"]}
+        merged = {url: {"state": "MERGED", "headRefOid": layer["head"], "baseRefName": layer["base"]} for url, layer in w1.items()}
+        self.serve(prs=merged | {"https://example.com/exports/pull/50": {"state": "OPEN", "headRefOid": "abc1234", "baseRefName": "main"}})
+        _, after, _ = self.event("status")
+        self.assertEqual((work(after, "W1")["state"], after["landings"][-1]["state"]), ("landed", "released"))
+        self.serve(prs={"https://example.com/exports/pull/50": {"state": "MERGED", "headRefOid": "abc1234", "baseRefName": "main"}})
+        _, after, _ = self.event("status")
+        self.assertEqual((work(after, "W4")["state"], after["landings"][-1]["state"]), ("landed", "landed"))
+
+
 class StatusTests(RecordCase):
     def test_status_records_forge_facts_and_checks_only_what_it_read(self):
         w1 = work(self.state, "W1")["layers"]
@@ -323,6 +363,39 @@ class StatusTests(RecordCase):
         self.assertEqual(work(after, "W1")["state"], "in-review")
         self.assertEqual([layer["status"] for layer in work(after, "W1")["layers"]], ["ready", "open"])
         self.assertIn("W1: ready -> in-review", result.stdout)
+
+    def test_a_retargeted_base_takes_ready_work_back_to_review_and_flags_its_release(self):
+        self.commit(ready)
+        self.event("land", "--work", "W1")
+        w1 = work(self.state, "W1")["layers"]
+        self.serve(prs={w1[0]["url"]: {"state": "OPEN", "headRefOid": w1[0]["head"], "baseRefName": "release"},
+                        w1[1]["url"]: {"state": "OPEN", "headRefOid": w1[1]["head"], "baseRefName": w1[1]["base"]}})
+        _, after, result = self.event("status")
+        self.assertEqual((work(after, "W1")["state"], work(after, "W1")["layers"][0]["base"]), ("in-review", "release"))
+        self.assertIn("W1-L1 base moved to release", result.stdout)
+        self.assertIn("L2: a released head or base moved; withdraw the release", result.stdout)
+
+    def test_related_forge_facts_apply_whatever_the_row_order(self):
+        def stack(order):
+            state = example()
+            parent = {"id": "P", "title": "Parent", "repo": "example/exports", "kind": "outcome", "finishLine": "land",
+                      "state": "in-review", "owner": {"name": "Stack owner", "start": "top-level", "route": "r"},
+                      "layers": [{"id": "P-L1", "branch": "parent", "status": "open", "url": "https://example.com/pull/1",
+                                  "head": "aaaaaaa", "base": "main"}], "checkedAt": "2026-11-02T17:00:00Z"}
+            child = copy.deepcopy(parent) | {"id": "C", "title": "Child"}
+            child["layers"] = [{"id": "C-L1", "branch": "child", "status": "open", "url": "https://example.com/pull/2",
+                                "head": "bbbbbbb", "base": "parent", "stackedOn": "P-L1"}]
+            state["work"] += [parent, child] if order == "PC" else [child, parent]
+            return validate(state)
+        forge = {"https://example.com/pull/1": {"state": "CLOSED", "headRefOid": "aaaaaaa", "baseRefName": "main"},
+                 "https://example.com/pull/2": {"state": "MERGED", "headRefOid": "bbbbbbb", "baseRefName": "parent"}}
+        results = []
+        for order in ("PC", "CP"):
+            state = stack(order)
+            observe(state, "2026-11-15T17:00:00Z", lambda url: forge.get(url) or {"state": "OPEN"}, {})
+            results.append({row["id"]: (row["state"], row["layers"][0]["status"]) for row in state["work"] if row["id"] in "PC"})
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(results[0], {"P": ("in-review", "closed"), "C": ("landed", "merged")})
 
     def test_merged_layers_land_the_outcome_and_its_release(self):
         self.commit(ready)
@@ -376,7 +449,7 @@ class TurnEndTests(RecordCase):
     def turn_end(self):
         before = self.commits()
         result = self.run_record("status", "--turn-end")
-        self.assertEqual(self.commits(), before, "the turn-end check writes nothing")
+        self.assertEqual(self.commits(), before, "the turn-end check commits nothing")
         return result
 
     def publish(self):
@@ -413,6 +486,23 @@ class TurnEndTests(RecordCase):
         self.assertIn("page: behind record", result.stdout)
         self.publish()
         self.assertEqual(self.turn_end().returncode, 0)
+
+    def test_a_released_landing_with_an_idle_owner_is_orphaned(self):
+        state = example()
+        ready(state)
+        state["waits"].append({"date": "2026-11-02", "on": "Fixture", "event": "Repaired", "work": "W3"})
+        state["landings"].append({"id": "L2", "date": "2026-11-02", "chief": "c", "lander": "Retry owner", "target": "main",
+                                  "work": ["W1"], "prs": [{"url": "https://example.com/exports/pull/42", "head": "4d1c9e2", "base": "main"}],
+                                  "state": "released"})
+        work(state, "W1")["owner"]["session"] = SESSION.format("w1")
+        threads = {"W2": {"status": "running"}, "W1": {"status": "idle"}}
+        self.assertEqual(orphans(state, threads), ["W1 (ready): owner idle with landing L2 released"])
+        self.assertEqual(orphans(state, threads | {"W1": {"status": "running"}}), [])
+
+    def test_turn_end_fails_while_the_record_has_an_uncommitted_change(self):
+        self.state["next"] = "Hand edit in progress"
+        self.program.write(self.state)
+        self.assertIn("program.json has an uncommitted change", self.turn_end().stdout)
 
     def test_orphans_name_each_uncovered_row(self):
         state = example()

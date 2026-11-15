@@ -880,6 +880,11 @@ def render(state, updated=None):
     return TEMPLATE.read_text().replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)
 
 
+def layout(state):
+    """The program file's one-value-per-line text."""
+    return json.dumps(state, indent=2, ensure_ascii=False) + "\n"
+
+
 def git(state_file, *args):
     result = subprocess.run(["git", "-C", str(state_file.parent), *args], capture_output=True, encoding="utf-8")
     if result.returncode:
@@ -929,7 +934,7 @@ def main():
             text = args.state.read_text()
             state = json.loads(text)
             render(state)
-            if text != json.dumps(state, indent=2, ensure_ascii=False) + "\n":
+            if text != layout(state):
                 path = shlex.quote(str(args.state))
                 raise ValueError(f"{args.state}: not one value per line; rewrite it with: "
                                  f"python3 -m json.tool --indent 2 --no-ensure-ascii {path} > {path}.fmt && mv {path}.fmt {path}")

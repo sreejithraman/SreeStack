@@ -74,9 +74,9 @@ the Need `answered`. With `--pasted` and the prompt on stdin, it does the
 matching above and lists each line to ask again. Record your own call under
 [triage](#triage) with `resolve`, citing the source that settled it. Both are
 [record commands](program-state.md#write-the-record). Then update the affected
-owners, dependencies, and landing releases. Record a scrap-or-rebase answer in
-the same commit, under
-[Base scrapped](dependencies.md#provisional-work). Mark a withdrawn or replaced
+owners, dependencies, and landing releases. A scrap-or-rebase answer moves its
+work in the same commit, under
+[Base scrapped](dependencies.md#provisional-work), so record it by hand. Mark a withdrawn or replaced
 Need `withdrawn`, record why and any replacement in its `rationale`, and
 reconcile the blockers that depended on it. Move any answer, `answerSource`, and
 basis into `rationale` too, as on reopen.

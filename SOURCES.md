@@ -464,7 +464,7 @@ repo; its last commit is the record and its log the history.
 wait) with its own clock: it refuses an uncommitted record, changes only what
 the event changes, validates, commits, and renders. Its `status` reads PRs from
 `gh` and owner threads from the T3 CLI, records forge facts, and lists what to
-do now; `status --turn-end` writes nothing and fails while open work has no
+do now; `status --turn-end` commits nothing and fails while open work has no
 running owner, wait, Need, blocker, or pending landing, or the page is behind
 the record. The renderer turns ISO times in prose into localized time elements. The original command center
 (`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with

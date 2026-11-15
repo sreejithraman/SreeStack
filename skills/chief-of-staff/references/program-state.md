@@ -48,11 +48,13 @@ Each command stamps times from its own clock, fills defaults, changes only what
 its event changes, validates, commits with a message naming the event, and
 renders. A refusal changes nothing: fix the input and run it again. When it
 refuses over an uncommitted `program.json` change, show the user the diff it
-prints and settle it with them before you build on it: commit it if they keep
-it, otherwise run `git -C /absolute/path checkout HEAD -- program.json`.
+prints and settle it with them before you build on it. If they keep it, check
+it with step 3 below and commit it; otherwise run
+`git -C /absolute/path checkout HEAD -- program.json`.
 
 For a change no command covers, such as a new work row, a correction, a reopen,
-a withdrawal, or a [chief move](chief-move.md), edit by hand:
+a withdrawal, a scrap-or-rebase answer, or a [chief move](chief-move.md), edit
+by hand:
 
 1. Run `git -C /absolute/path status --porcelain -- program.json`. Settle any
    output with the user, as above.
@@ -246,7 +248,7 @@ row it fully read. An unread row keeps its old time. Settle by hand each forge
 fact it reports the rules reject. Use `unknown` with `unknownReason` when a
 row's state cannot be read.
 
-`status --turn-end` writes nothing. It fails while an open row has no running
+`status --turn-end` commits nothing. It fails while an open row has no running
 owner, recorded wait, open Need, blocker, or pending landing, or while the
 published page is behind the record.
 

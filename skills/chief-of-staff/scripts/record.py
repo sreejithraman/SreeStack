@@ -4,7 +4,7 @@
 Each event command refuses an uncommitted program.json change, stamps the time
 from this machine's clock, changes only what its event changes, validates,
 commits, and renders. `status` reads PRs through `gh` and owner threads through
-the T3 CLI; with --turn-end it writes nothing and fails while work is orphaned
+the T3 CLI; with --turn-end it commits nothing and fails while work is orphaned
 or the page is behind the record.
 """
 
@@ -21,7 +21,8 @@ import sys
 from urllib.parse import unquote, urlsplit
 
 from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, LAYER_KEYS, PROGRAM_KEYS, READY_LAYERS, STATES,
-                              TERMINAL, WORK_KEYS, effective_finish, revision, stage_page, validate)
+                              TERMINAL, WORK_KEYS, committed, effective_finish, fields, git, known_keys, layout,
+                              quoted, records, revision, stage_page, validate)
 
 
 SATISFIED = {"landed", "done"}
@@ -59,10 +60,6 @@ def age(since, at):
     days, minutes = divmod(minutes, 1440)
     hours, minutes = divmod(minutes, 60)
     return f"{days}d{hours}h" if days else f"{hours}h{minutes:02d}m" if hours else f"{minutes}m"
-
-
-def dump(state):
-    return json.dumps(state, indent=2, ensure_ascii=False) + "\n"
 
 
 def put(row, key, value, order):
@@ -164,15 +161,11 @@ def read_report(state_file, work):
 
 
 def objects(value, path):
-    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
-        raise Refused(f"report {path} must be a list of objects")
-    return value
+    return records(value, f"report {path}")
 
 
 def only(item, keys, path):
-    unknown = [key for key in item if key not in keys]
-    if unknown:
-        raise Refused(f"report {path}.{unknown[0]} is not a known field")
+    known_keys(item, f"report {path}", keys)
 
 
 def report(state, at, work, block, source):
@@ -193,9 +186,7 @@ def report(state, at, work, block, source):
         elif block["finishLine"] != row["finishLine"]:
             notes.append(f"the owner reports finish line {block['finishLine']}; the record keeps {row['finishLine']}")
     if "layers" in block:
-        for index, layer in enumerate(objects(block["layers"], "layers")):
-            only(layer, LAYER_KEYS, f"layers[{index}]")
-        replace_list(row, "layers", block["layers"])
+        replace_list(row, "layers", objects(block["layers"], "layers"))
     if "proof" in block:
         proof = objects(block["proof"], "proof")
         for index, item in enumerate(proof):
@@ -209,9 +200,7 @@ def report(state, at, work, block, source):
         else:
             row.pop("acceptance", None)
     if "shown" in block:
-        for index, item in enumerate(objects(block["shown"], "shown")):
-            only(item, ("label", "url", "access"), f"shown[{index}]")
-        replace_list(row, "results", block["shown"])
+        replace_list(row, "results", objects(block["shown"], "shown"))
     if "blocked" in block:
         if block["blocked"] is None:
             row.pop("blocked", None)
@@ -220,7 +209,7 @@ def report(state, at, work, block, source):
     if "waits" in block:
         reported = objects(block["waits"], "waits")
         for index, item in enumerate(reported):
-            only(item, ("on", "event"), f"waits[{index}]")
+            fields(known_keys(item, f"report waits[{index}]", ("on", "event")), f"report waits[{index}]", ("on", "event"))
         kept = {(wait["on"], wait["event"]) for wait in reported}
         waits = [wait for wait in state.get("waits", []) if wait.get("work") != work or (wait["on"], wait["event"]) in kept]
         have = {(wait["on"], wait["event"]) for wait in waits if wait.get("work") == work}
@@ -315,10 +304,10 @@ def answer_pasted(state, at, text, source):
         row = next((row for row in state["decisions"] if row["id"] == identity), None)
         options = row.get("options", []) if row else []
         if (row is None or row["status"] != "open" or revision(row) != digest
-                or not 1 <= number <= len(options) or options[number - 1]["label"] != label):
+                or not 1 <= number <= len(options) or quoted(options[number - 1]["label"]) != quoted(label)):
             stale.append(identity)
             continue
-        settle(state, at, identity, label, "answered", source=source)
+        settle(state, at, identity, options[number - 1]["label"], "answered", source=source)
         recorded.append(identity)
     notes = [f"ask again: {identity} changed or closed since the page showed it" for identity in stale]
     if not recorded:
@@ -358,6 +347,12 @@ def release(state, at, works, lander=None, target=None, keep=None, note=None):
         if pending_landing(state, row["id"]):
             raise Refused(f"{row['id']} already has pending landing {pending_landing(state, row['id'])['id']}")
     layers = [layer for row in rows for layer in row["layers"] if layer["status"] != "merged"]
+    owners_of = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
+    unmerged = {layer["id"] for layer in layers}
+    for layer in layers:
+        below = owners_of.get(layer.get("stackedOn"))
+        if below and below[0]["status"] != "merged" and below[0]["id"] not in unmerged:
+            raise Refused(f"{layer['id']} stacks on unmerged {below[0]['id']} ({below[1]['id']}); release them together")
     for layer in layers:
         if not layer.get("head") or not layer.get("base"):
             raise Refused(f"layer {layer['id']} has no recorded head and base; run status first")
@@ -365,7 +360,6 @@ def release(state, at, works, lander=None, target=None, keep=None, note=None):
     lander = lander or (owners.pop() if len(owners) == 1 else None)
     if not lander:
         raise Refused("the set spans owners; name its one --lander")
-    unmerged = {layer["id"] for layer in layers}
     bottoms = {layer["base"] for layer in layers if layer.get("stackedOn") not in unmerged}
     target = target or (bottoms.pop() if len(bottoms) == 1 else None)
     if not target:
@@ -462,71 +456,117 @@ def live(thread):
     return isinstance(thread, dict) and thread.get("status") in LIVE_THREADS
 
 
+def read_layers(row, read_pr, forge, notes):
+    """Apply forge facts to a copy of the row's layers; return it and whether every read succeeded."""
+    facts, reads, failed = copy.deepcopy(row), 0, 0
+    for layer in facts.get("layers", []):
+        if "url" not in layer or layer["status"] == "merged":
+            continue
+        reads += 1
+        try:
+            pr = forge[layer["url"]] = read_pr(layer["url"])
+        except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+            failed += 1
+            notes.append(f"{row['id']}: could not read {layer['url']}: {error}")
+            continue
+        moved = False
+        for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
+            recorded = layer.get(key, "")
+            if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
+                put(layer, key, value, LAYER_KEYS)
+                if recorded:
+                    moved = True
+                    notes.append(f"{row['id']}: {layer['id']} {key} moved to {value[:7] if key == 'head' else value}")
+        status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
+        status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
+        if status != layer["status"]:
+            if status == "closed":
+                notes.append(f"{row['id']}: {layer['id']} closed without merge")
+            layer["status"] = status
+    return facts, reads, failed
+
+
+def derived_state(row):
+    """The state the row's layers now imply, or its current one."""
+    layers = row.get("layers", [])
+    if layers and all(layer["status"] == "merged" for layer in layers) and effective_finish(row) == "land":
+        return "landed"
+    if row["state"] == "ready" and any(layer["status"] not in READY_LAYERS[effective_finish(row)][0] for layer in layers):
+        return "in-review"
+    return row["state"]
+
+
+def first_valid(state, candidates):
+    """Use each row's first candidate the whole program accepts; return why each row fell back."""
+    levels, reasons = {index: 0 for index in candidates}, {}
+
+    def attempt():
+        for index, level in levels.items():
+            state["work"][index] = candidates[index][level]
+        try:
+            validate(state)
+            return None
+        except ValueError as error:
+            return error
+
+    problem = attempt()
+    while problem:
+        movable = [index for index, level in levels.items() if level < len(candidates[index]) - 1]
+        if not movable:
+            raise problem
+        named = [index for index in movable if f"work[{state['work'][index]['id']}]" in str(problem)]
+        order = named + [index for index in movable if index not in named]
+        for index in order:
+            levels[index] += 1
+            if not attempt():
+                reasons[index] = problem
+                return reasons
+            levels[index] -= 1
+        levels[order[0]] += 1
+        reasons[order[0]] = problem
+        problem = attempt()
+    return reasons
+
+
 def observe(state, at, read_pr, threads):
     """Apply forge facts to open work and pending landings; return notes on what changed or needs a hand."""
-    notes, forge = [], {}
+    notes, forge, candidates = [], {}, {}
     for index, row in enumerate(state["work"]):
         if row["state"] in TERMINAL:
             continue
-        before = copy.deepcopy(row)
-        reads = failed = 0
-        for layer in row.get("layers", []):
-            if "url" not in layer or layer["status"] == "merged":
-                continue
-            reads += 1
-            try:
-                pr = forge[layer["url"]] = read_pr(layer["url"])
-            except (OSError, ValueError, subprocess.TimeoutExpired) as error:
-                failed += 1
-                notes.append(f"{row['id']}: could not read {layer['url']}: {error}")
-                continue
-            head, recorded = pr.get("headRefOid", ""), layer.get("head", "")
-            moved = bool(head) and not (recorded and head.startswith(recorded))
-            if moved:
-                put(layer, "head", head, LAYER_KEYS)
-                if recorded:
-                    notes.append(f"{row['id']}: {layer['id']} head moved to {head[:7]}")
-            if pr.get("baseRefName") and pr["baseRefName"] != layer.get("base"):
-                put(layer, "base", pr["baseRefName"], LAYER_KEYS)
-            status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
-            status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
-            if status != layer["status"]:
-                if status == "closed":
-                    notes.append(f"{row['id']}: {layer['id']} closed without merge")
-                layer["status"] = status
+        facts, reads, failed = read_layers(row, read_pr, forge, notes)
         if thread := threads.get(row["id"]):
             reads += 1
             failed += isinstance(thread, str)
         if reads and not failed:
-            row["checkedAt"] = at
-        facts = copy.deepcopy(row)
-        layers = row.get("layers", [])
-        if layers and all(layer["status"] == "merged" for layer in layers) and effective_finish(row) == "land":
-            row["state"] = "landed"
-        elif row["state"] == "ready" and any(layer["status"] not in READY_LAYERS[effective_finish(row)][0] for layer in layers):
-            row["state"] = "in-review"
-        problem = None
-        for attempt in (row, facts, before):
-            state["work"][index] = attempt
-            try:
-                validate(state)
-                break
-            except ValueError as error:
-                problem = error
-        if state["work"][index] is not row:
-            kept = "its forge facts" if state["work"][index] is facts else "nothing"
-            notes.append(f"{row['id']}: recorded {kept} from the forge; settle by hand: {problem}")
-        elif row["state"] != before["state"]:
-            notes.append(f"{row['id']}: {before['state']} -> {row['state']}")
+            facts["checkedAt"] = at
+        derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
+        if derived != row:
+            candidates[index] = [derived, *([facts] if facts != derived else []), row]
+    reasons = first_valid(state, candidates)
+    for index, (*_, original) in candidates.items():
+        row = state["work"][index]
+        if index in reasons:
+            kept = "nothing" if row is original else "its forge facts"
+            notes.append(f"{row['id']}: recorded {kept} from the forge; settle by hand: {reasons[index]}")
+        elif row["state"] != original["state"]:
+            notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
+    merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
+              if layer["status"] == "merged" and "url" in layer}
     for landing in state.get("landings", []):
         if landing["state"] not in PENDING_LANDINGS:
             continue
-        prs = [forge.get(pr["url"]) for pr in landing["prs"]]
-        if all(pr and pr.get("state") == "MERGED" for pr in prs):
+        if all(entry["url"] in merged or forge.get(entry["url"], {}).get("state") == "MERGED" for entry in landing["prs"]):
             landing["state"] = "landed"
             notes.append(f"{landing['id']}: landed")
-        elif any(pr and not pr.get("headRefOid", "").startswith(entry["head"]) for pr, entry in zip(prs, landing["prs"])):
-            notes.append(f"{landing['id']}: a released head moved; withdraw the release before telling {landing['lander']}")
+            continue
+        for entry in landing["prs"]:
+            pr = forge.get(entry["url"])
+            if pr and pr.get("state") != "MERGED" and (
+                    not pr.get("headRefOid", "").startswith(entry["head"])
+                    or (not re.fullmatch(r"[0-9a-f]{7,40}", entry["base"]) and pr.get("baseRefName") != entry["base"])):
+                notes.append(f"{landing['id']}: a released head or base moved; withdraw the release before telling {landing['lander']}")
+                break
     return notes
 
 
@@ -540,12 +580,16 @@ def orphans(state, threads):
         if row["state"] in TERMINAL or proposed or at_pr_state:
             continue
         if (live(threads.get(row["id"])) or row["id"] in waits or open_blocks(state, row["id"])
-                or unsatisfied(state, row) or row.get("blocked") or pending_landing(state, row["id"])):
+                or unsatisfied(state, row) or row.get("blocked")):
             continue
         thread = threads.get(row["id"])
-        why = ("not started" if row["state"] == "planned" else "ready with no landing release" if row["state"] == "ready"
+        landing = pending_landing(state, row["id"])
+        why = ("not started" if row["state"] == "planned"
+               else "ready with no landing release" if row["state"] == "ready" and not landing
                else thread if isinstance(thread, str) else f"owner {thread['status']}" if thread
                else "owner has no session to read" if "owner" in row else "no owner")
+        if landing:
+            why += f" with landing {landing['id']} {landing['state']}"
         found.append(f"{row['id']} ({row['state']}): {why}")
     return found
 
@@ -568,7 +612,8 @@ def todo(state, at, threads, stale_hours=STALE_HOURS):
         thread = threads.get(identity)
         if isinstance(thread, dict) and thread.get("pendingRequestCount"):
             groups["approvals"].append(f"{identity}: {row['owner']['name']} waits on an approval in its thread")
-        if current in {"building", "in-review"} and not live(thread) and identity not in waits and not held:
+        owes = current in {"building", "in-review"} or (current == "ready" and pending_landing(state, identity))
+        if owes and not live(thread) and identity not in waits and not held:
             if isinstance(thread, dict):
                 idle = f" for {age(thread['updatedAt'], at)}" if thread.get("updatedAt") else ""
                 why = f"{thread['status']}{idle} with no recorded wait"
@@ -597,27 +642,28 @@ class Record:
         self.page = (page or self.file.with_name("command-center.html")).absolute()
 
     def git(self, *args):
-        result = subprocess.run(["git", "-C", str(self.file.parent), *args], capture_output=True, text=True)
-        if result.returncode:
-            raise Refused(result.stderr.strip() or f"git {args[0]} exited with status {result.returncode}")
-        return result.stdout
+        return git(self.file, *args)
+
+    def dirty(self):
+        return self.git("status", "--porcelain", "--", self.file.name).strip()
 
     def load(self):
         """The committed program. An uncommitted change stops the command with its diff."""
         self.git("ls-files", "--error-unmatch", "--", self.file.name)
-        if self.git("status", "--porcelain", "--", self.file.name).strip():
-            raise Refused(f"{self.file} has an uncommitted change. Settle it with the user first: keep and commit it, "
-                          f"or run git -C {self.file.parent} checkout HEAD -- {self.file.name}\n"
+        if self.dirty():
+            raise Refused(f"{self.file} has an uncommitted change. Settle it with the user first: to keep it, check it "
+                          f"with render_dashboard.py --check and commit it; otherwise run "
+                          f"git -C {self.file.parent} checkout HEAD -- {self.file.name}\n"
                           + self.git("diff", "HEAD", "--", self.file.name))
         text = self.file.read_text()
         state = validate(json.loads(text))
-        if text != dump(state):
+        if text != layout(state):
             raise Refused(f"{self.file} is not one value per line; run render_dashboard.py --check for the fix")
         return state
 
     def save(self, state, message):
         validate(state)
-        self.file.write_text(dump(state))
+        self.file.write_text(layout(state))
         self.git("commit", "-q", "-m", message, "--", self.file.name)
         print(f"committed: {message}")
 
@@ -684,7 +730,7 @@ def arguments():
 
     command = commands.add_parser("status", parents=[shared], help="Read PRs and owner threads; list what to do now")
     command.add_argument("--turn-end", action="store_true",
-                         help="Write nothing; fail while open work is orphaned or the page is behind")
+                         help="Commit nothing; fail while open work is orphaned or the page is behind")
     command.add_argument("--stale-hours", type=float, default=STALE_HOURS)
     return parser
 
@@ -721,8 +767,10 @@ def event(args, state, at):
 def status(args, record, read_pr=gh_pr, read_thread=t3_thread):
     at = now()
     if args.turn_end:
-        state = validate(json.loads(record.git("show", f"HEAD:./{record.file.name}")))
+        state = validate(committed(record.file))
         found = orphans(state, read_owners(state, read_thread))
+        if record.dirty():
+            found.append(f"{record.file.name} has an uncommitted change; settle it before the turn ends")
         for line in found:
             print(f"orphaned: {line}")
         current = record.render()
