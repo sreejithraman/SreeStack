@@ -884,7 +884,7 @@ def arguments():
 
     command = commands.add_parser("status", parents=[shared], help="Read PRs and owner threads; list what to do now")
     command.add_argument("--turn-end", action="store_true",
-                         help="Commit nothing; fail while open work is orphaned or the page is behind")
+                         help="Commit nothing; fail while the verdict is runnable, the record is dirty, or the page is behind")
     command.add_argument("--stale-hours", type=float, default=STALE_HOURS)
     command.add_argument("--json", action="store_true", help="Print one JSON object on stdout; other output goes to stderr")
     command.add_argument("--exit-code", action="store_true",
