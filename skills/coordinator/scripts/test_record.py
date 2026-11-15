@@ -729,7 +729,7 @@ class VerdictCommandTests(RecordCase):
         self.serve(threads={"thread:A": {"status": "idle"}})
         tick, output = self.heartbeat()
         self.assertEqual(tick, "wake", "an owner that went idle while owing work")
-        self.assertIn("Re-read the coordinator's SKILL.md", output)
+        self.assertRegex(output, r"Re-read \S+/coordinator/SKILL\.md, run status")
         self.assertEqual(self.heartbeat()[0], "wake", "runnable work wakes every tick")
 
     def test_a_passing_turn_end_is_the_baseline_a_heartbeat_compares(self):
@@ -744,7 +744,56 @@ class VerdictCommandTests(RecordCase):
         self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}})
         tick, output = self.heartbeat()
         self.assertEqual(tick, "done")
-        self.assertIn("Delete this heartbeat's scheduled task", output)
+        self.assertIn("Delete the scheduled task in the record's grant.heartbeat", output)
+
+    def test_a_live_owner_moving_between_running_and_waiting_keeps_the_heartbeat_quiet(self):
+        self.program.write(program([outcome("A", "building")]), "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}})
+        self.heartbeat()
+        self.serve(threads={"thread:A": {"status": "waiting"}})
+        self.assertEqual(self.heartbeat()[0], "quiet", "waiting on its own helpers is still working")
+
+    def test_a_base_closing_under_provisional_work_wakes_the_coordinator_once(self):
+        base = outcome("A", "in-review")
+        built = outcome("B", "building", provisional={"basis": "A's layer A-L1", "clears": "A lands", "on": ["A"]},
+                        layers=[{"id": "B-L1", "branch": "b-B", "status": "open", "url": "https://example.com/app/pull/B",
+                                 "head": "bbbbbbb", "base": "b-A", "stackedOn": "A-L1"}])
+        self.program.write(program([base, built], waits=[{"date": "2026-11-15T13:00:00Z", "on": "CI", "event": "Green",
+                                                          "work": "A"}]), "2026-11-15T13:00:00Z")
+        threads = {"thread:A": {"status": "running"}, "thread:B": {"status": "running"}}
+        pr = {"state": "OPEN", "headRefOid": "aaaaaaa", "baseRefName": "main"}
+        self.serve(prs={"https://example.com/app/pull/A": pr,
+                        "https://example.com/app/pull/B": pr | {"headRefOid": "bbbbbbb", "baseRefName": "b-A"}},
+                   threads=threads)
+        self.heartbeat()
+        self.assertEqual(self.heartbeat()[0], "quiet")
+        self.serve(prs={"https://example.com/app/pull/A": pr | {"state": "CLOSED"},
+                        "https://example.com/app/pull/B": pr | {"headRefOid": "bbbbbbb", "baseRefName": "b-A"}},
+                   threads=threads)
+        tick, output = self.heartbeat()
+        self.assertEqual(tick, "wake", "the record rejects the closed base, so only the note shows it")
+        self.assertIn("settle by hand", output)
+        self.assertEqual(self.heartbeat()[0], "quiet", "a note already seen does not wake again")
+
+    def test_a_last_merge_the_heartbeat_finds_wakes_the_coordinator_to_record_it(self):
+        row = outcome("A", "ready")
+        state = program([row])
+        state["landings"] = [{"id": "L1", "date": "2026-11-15T13:00:00Z", "chief": "c", "lander": "Owner A", "target": "main",
+                              "work": ["A"], "prs": [{"url": "https://example.com/app/pull/A", "head": "aaaaaaa", "base": "main"}],
+                              "state": "submitted"}]
+        self.program.write(state, "2026-11-15T13:00:00Z")
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                   threads={"thread:A": {"status": "running"}})
+        tick, output = self.heartbeat()
+        self.assertEqual(tick, "wake", "done waits until the record shows it")
+        self.assertIn("note: L1: landed", output)
+
+    def test_a_dependency_alone_still_names_what_the_program_waits_on(self):
+        self.program.write(program([outcome("A", "ready", finish="pr-review"), outcome("B", "planned", blockedBy=["A"])]),
+                           "2026-11-15T13:00:00Z")
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "OPEN", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                   threads={"thread:A": {"status": "idle"}})
+        self.assertIn("say: Waiting on B: needs A. Nothing is runnable.", self.run_record("status").stdout)
 
     def test_applied_clears_an_answer_once_its_owners_have_it(self):
         self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "msg")

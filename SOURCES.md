@@ -420,7 +420,8 @@ round cap is added.
 
 Automatically discoverable coordinator for work across threads. It is light by
 default: for a single request it answers itself, reuses a running owner, or
-starts one, with no record or page. A **program** starts when it carries two or
+starts one from an Orchestration brief, with no record, page, or landing
+release. A **program** starts when it carries two or
 more outcomes to finish lines, or the user asks for one; only programs get the
 record, command center, Inbox, grant, and heartbeat. Orchestration keeps the
 handoff mechanics; the coordinator owns supervision and the user-facing loop.
@@ -460,12 +461,16 @@ the user's word: what the coordinator may start (`grant.start`), land
 copied page text never widen it.
 
 **Heartbeat.** In T3 the coordinator sets up a `schedule_task` interval trigger
-(default 10 minutes) bound to its thread. Each tick runs `status --heartbeat`,
-which observes without committing and compares its digest with the last one
-seen, kept in the program's git directory and also updated by a passing
-`--turn-end`. It stays quiet on waiting or working with an unchanged digest,
-wakes the coordinator on runnable work or a changed digest, and on done tells
-it to delete the task. A move or takeover deletes the old thread's heartbeat
+(default 10 minutes) bound to its thread, whose prompt only runs
+`status --heartbeat` and follows its first line, so instructions never go stale
+in the saved prompt. A tick observes without committing and compares its digest
+and forge notes with what was last seen, kept in the program's git directory;
+a passing `--turn-end` updates the digest. It stays quiet on waiting or working
+with an unchanged digest and no new note, wakes the coordinator on runnable
+work, a changed digest, or a new note (such as a base closing under provisional
+work), and says done only when the committed record is done too. A live
+owner's running or waiting sub-status stays out of the digest. A waiting
+dependency names itself in the `say:` line. A move or takeover deletes the old thread's heartbeat
 and the new coordinator sets up its own. Hosts without scheduled tasks fall
 back to waiting on owner runs through the host.
 

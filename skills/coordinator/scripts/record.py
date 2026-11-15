@@ -715,7 +715,7 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             continue
         thread = threads.get(identity)
         if live(thread):
-            working.append(item("running", identity, f"{row['owner']['name']} is {thread['status']}"))
+            working.append(item("running", identity, f"{row['owner']['name']} is working", detail=thread["status"]))
         if (current == "planned" and row.get("required") is not False and not unsatisfied(state, row)
                 and not row.get("blocked") and not open_blocks(state, identity, HALTING)):
             runnable.append(item("start", identity, row["title"]))
@@ -736,6 +736,8 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
             attention.append(item("approval", identity, f"{row['owner']['name']} waits on an approval in its thread"))
         if row.get("blocked"):
             waiting.append(item("blocked", identity, row["blocked"]))
+        if needs := unsatisfied(state, row):
+            waiting.append(item("dependency", identity, f"needs {', '.join(needs)}"))
         if (parse_time(at) - parse_time(row["checkedAt"])).total_seconds() > stale_hours * 3600:
             attention.append(item("stale", identity, "not observed recently", row["checkedAt"]))
     runnable += reversible_halts(state)
@@ -771,7 +773,7 @@ def waiting_line(assessment):
     """The one line a waiting coordinator ends its turn with."""
     parts = [(f"Inbox {entry['id']}" if entry["kind"] == "need" else f"{entry['id']}: {entry['text']}")
              + (f" ({entry['age']})" if "age" in entry else "") for entry in assessment["waiting"]]
-    return f"Waiting on {'; '.join(parts)}. Nothing is runnable."
+    return f"Waiting on {'; '.join(parts) or 'owners at their stops'}. Nothing is runnable."
 
 
 def show(assessment):
@@ -799,16 +801,21 @@ class Record:
     def dirty(self):
         return self.git("status", "--porcelain", "--", self.file.name).strip()
 
-    def seen(self, digest=None):
-        """The digest the coordinator last saw; with digest, remember it instead.
+    def seen_file(self):
+        """What the coordinator last saw. It lives in the git directory, so it never shows as a record change."""
+        return Path(self.git("rev-parse", "--absolute-git-dir").strip()) / "coordinator-seen.json"
 
-        It lives in the program's git directory, so it never shows as a record change.
-        """
-        path = Path(self.git("rev-parse", "--absolute-git-dir").strip()) / "coordinator-digest"
-        if digest:
-            path.write_text(digest + "\n")
-            return digest
-        return path.read_text().strip() if path.exists() else None
+    def seen(self):
+        """The digest and forge notes the coordinator last saw."""
+        try:
+            return json.loads(self.seen_file().read_text())
+        except (OSError, ValueError):
+            return {"digest": None, "notes": []}
+
+    def remember(self, digest, notes=None):
+        """Record what was seen; notes default to those already seen, since only a heartbeat observes them."""
+        seen = {"digest": digest, "notes": sorted(self.seen()["notes"] if notes is None else notes)}
+        self.seen_file().write_text(json.dumps(seen) + "\n")
 
     def load(self):
         """The committed program. An uncommitted change stops the command with its diff."""
@@ -909,11 +916,10 @@ def arguments():
     mode.add_argument("--turn-end", action="store_true",
                       help="Commit nothing; fail while the verdict is runnable, the record is dirty, or the page is behind")
     mode.add_argument("--heartbeat", action="store_true",
-                      help="Commit nothing; print heartbeat: quiet, wake, or done against the digest last seen")
+                      help="Commit nothing; print heartbeat: quiet, wake, or done against what was last seen")
+    mode.add_argument("--exit-code", action="store_true", help="Exit 0 done, 3 waiting, 4 working, 5 runnable")
     command.add_argument("--stale-hours", type=float, default=STALE_HOURS)
     command.add_argument("--json", action="store_true", help="Print one JSON object on stdout; other output goes to stderr")
-    command.add_argument("--exit-code", action="store_true",
-                         help="Exit 0 done, 3 waiting, 4 working, 5 runnable (not with --turn-end or --heartbeat)")
     return parser
 
 
@@ -956,7 +962,7 @@ def status(args, record, read_pr=gh_pr, read_thread=t3_thread):
         print(json.dumps(result, ensure_ascii=False))
     if args.turn_end:
         return 0 if result["passes"] else 1
-    return VERDICT_EXIT[result["verdict"]] if args.exit_code and not args.heartbeat else 0
+    return VERDICT_EXIT[result["verdict"]] if args.exit_code else 0
 
 
 def check_status(args, record, read_pr, read_thread):
@@ -974,7 +980,7 @@ def check_status(args, record, read_pr, read_thread):
         result |= {"uncommitted": dirty, "notes": [], "page": "current" if record.render() else "behind"}
         result["passes"] = result["page"] == "current" and not dirty and result["verdict"] != "runnable"
         if result["passes"]:
-            record.seen(result["digest"])
+            record.remember(result["digest"])
         else:
             print("Before ending the turn, act on each runnable line, and publish the page.")
         return result
@@ -994,27 +1000,37 @@ def check_status(args, record, read_pr, read_thread):
 
 
 def heartbeat(args, record, read_pr, read_thread, at):
-    """One heartbeat tick: observe without committing, and compare the digest with the last one seen.
+    """One heartbeat tick: observe without committing, and compare with what the coordinator last saw.
 
-    The woken coordinator records what this observed by running status.
+    It wakes on runnable work, a changed digest, or a forge note not seen before, such as a base
+    closing under provisional work, which leaves the digest alone. It says done only when the
+    committed record is done too, so the woken coordinator records the last merges first.
     """
-    state = validate(committed(record.file))
-    threads = read_owners(state, read_thread)
-    observe(state, at, read_pr, threads)
+    committed_state = validate(committed(record.file))
+    threads = read_owners(committed_state, read_thread)
+    state = copy.deepcopy(committed_state)
+    notes = sorted({re.sub(r"(could not read \S+): .*", r"\1", note) for note in observe(state, at, read_pr, threads)})
     result = assess(state, at, threads, args.stale_hours)
-    unchanged = record.seen() == result["digest"]
-    record.seen(result["digest"])
-    if result["verdict"] == "done":
+    seen = record.seen()
+    fresh = [note for note in notes if note not in seen["notes"]]
+    record.remember(result["digest"], notes)
+    skill = Path(__file__).resolve().parents[1] / "SKILL.md"
+    done = (result["verdict"] == "done" and not fresh
+            and assess(committed_state, at, threads, args.stale_hours)["verdict"] == "done")
+    if done:
         tick = "done"
-        print("heartbeat: done. Delete this heartbeat's scheduled task, then hand off and clean up.")
-    elif result["verdict"] in QUIET and unchanged:
+        print("heartbeat: done. Delete the scheduled task in the record's grant.heartbeat, then finish the program "
+              f"under {skill}.")
+    elif fresh or result["verdict"] not in QUIET or seen["digest"] != result["digest"]:
+        tick = "wake"
+        print(f"heartbeat: wake. Re-read {skill}, run status, and act on what it lists.")
+        for note in fresh:
+            print(f"note: {note}")
+        show(result)
+    else:
         tick = "quiet"
         print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). End the turn without a message.")
-    else:
-        tick = "wake"
-        print("heartbeat: wake. Re-read the coordinator's SKILL.md, run status, and act on what it lists.")
-        show(result)
-    return result | {"heartbeat": tick}
+    return result | {"heartbeat": tick, "notes": fresh}
 
 
 def main():

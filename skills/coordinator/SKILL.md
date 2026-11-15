@@ -23,10 +23,14 @@ For a request that spans threads, take the lightest route that settles it:
   from the threads and forge.
 - **Reuse an owner** already carrying related work: send it the request (in
   T3, `t3_thread_send`).
-- **Start one** for new work, under [start owners](#2-start-owners).
+- **Start one** for new work: an Implement owner launched as in
+  [start owners](#2-start-owners), with an Orchestration
+  [brief](../orchestration/SKILL.md#assign) in place of the program kickoff. The
+  brief carries the request, finish line, holds, workspace, proof, and return
+  route. The owner lands on its own finish line, with no landing release.
 
-This needs no record, page, Inbox, or heartbeat. Ask the user in chat, and keep
-going on what doesn't depend on the answer.
+This needs no record, page, Inbox, grant, or heartbeat. Ask the user in chat,
+and keep going on what doesn't depend on the answer.
 
 **Start a program** when you carry two or more outcomes to finish lines, or the
 user asks for one. The rest of this skill applies to programs. A program has one
@@ -97,16 +101,14 @@ an interval trigger (default every 10 minutes), `bindToCurrentThread: true`,
 and this prompt, filled in:
 
 ```text
-Coordinator heartbeat for <program title>. From <this skill's absolute folder>, run
-python3 scripts/record.py status --heartbeat --state <absolute path>/program.json
-On "heartbeat: quiet", end the turn with no message.
-On "heartbeat: wake", re-read <this skill's absolute folder>/SKILL.md, then act on the program.
-On "heartbeat: done", delete the scheduled task in the record's grant.heartbeat, then finish the program.
+Coordinator heartbeat for <program title>. Run
+python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --state <absolute path>/program.json
+and do what its first line says.
 ```
 
 Record the returned task ID in `grant.heartbeat`. A tick wakes you only on
-runnable work or facts that changed since the last tick or passing
-`--turn-end`. When the host has no scheduled tasks, say so in the grant. Then, before you end
+runnable work, facts that changed since you last looked, or a new forge note.
+When the host has no scheduled tasks, say so in the grant. Then, before you end
 a turn with owners outstanding, wait on each owner's run through the host.
 
 ## 1. Set up the program
