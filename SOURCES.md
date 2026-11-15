@@ -520,7 +520,8 @@ working, waiting, or done) with a digest of its facts, as JSON or an exit code
 on request. Orphaned work, idle owners owing work, and a Need whose recommended
 option is marked `reversible` and halts startable work count as runnable.
 `status --turn-end` commits nothing and fails while the verdict is runnable,
-the record is dirty, or the page is behind the record. Answers stay
+the record is dirty, an owner's live thread state differs from the record, or
+the page is behind the record. Answers stay
 `applied: false` until the coordinator runs `applied`. A report cannot record a
 merge; `status` reads merges at the forge. The renderer shows every time in
 the viewer's time zone. The original command center
