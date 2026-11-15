@@ -75,6 +75,16 @@ device ID, host, device set and lease identity through build, install and test.
 Prefer reusable devices within the configured capacity. SimLock handles device
 creation and resetting.
 
+Check the iOS lease's reported mode. A `slim` device turns off background
+services an app run rarely needs: it has no push notifications, StoreKit
+testing, universal links, Spotlight, App Clips or device management, and the
+Photos, Contacts and Calendar pickers may misbehave. When the work under test
+needs one of these, request `--mode full`, or keep only the needed categories
+running with `--except <categories>` (`deviceExcept` through agent-device).
+On a slim device, rerun a misbehaving feature on a full one before calling it
+an app bug. See
+[slim lease exceptions](https://github.com/callstackincubator/simlock/blob/d30c24d8596dc27ce2f7bf4361199db1968f8a34/docs/internal/adr/0066-a-slim-lease-may-keep-named-categories-running.md).
+
 For iOS work through agent-device, prepare its XCTest helper after acquiring
 the lease and before app commands. Discover the installed driver's
 `help prepare`; where supported, run `prepare ios-runner --platform ios` through
@@ -97,7 +107,7 @@ shared Simulator, CoreSimulator and adb services running.
 
 Keep one run receipt beside the project's existing run evidence. Record the
 project/worktree and task/run owner, chosen interface/session, lease ID and
-deadline, host and exact device ID, runtime/model/device set, installed bundle IDs
+deadline, host and exact device ID, runtime/model/device set, lease mode and kept categories, installed bundle IDs
 and build revisions or hashes, spawned process identities, and exact temporary
 output paths. Update it as effects happen, including failed installs and partial
 setup. This is evidence for recovery, not a second device ownership registry.
