@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coordinator"
+  short_description: "Coordinate threads and carry outcomes through Implement owners"
+  default_prompt: "Use $coordinator to carry these outcomes to their finish lines through Implement owners."

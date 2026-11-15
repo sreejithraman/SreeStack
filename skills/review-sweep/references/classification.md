@@ -31,7 +31,7 @@ or style preference alone does not establish a blocker.
 `Defer`, `Acknowledge`, and `Won't do` need a reason.
 
 `Defer` names its durable home, with the finding's origin and evidence: an issue, a snip, or the
-Follow-ups in Implement's [owner report](../../implement/SKILL.md#report), which a chief records. A user decision needed before this work can finish is a stop.
+Follow-ups in Implement's [owner report](../../implement/SKILL.md#report), which a coordinator records. A user decision needed before this work can finish is a stop.
 
 For example, two reports of the same reachable data-loss bug produce one
 Must-fix issue and one repair, with both reports retained. A repeat after a
@@ -57,7 +57,7 @@ fix settled and reversible?
 When an issue fits both columns, the stop wins. The parent settles a stop itself only when it is
 an implementation-design choice that keeps the requested behavior and every user gate, and reports
 every other stop to its caller. A stop that also touches what the user asked for, tried, or kept,
-or that needs a decision [reserved for the user](../../chief-of-staff/references/decisions.md#triage),
+or that needs a decision [reserved for the user](../../coordinator/references/decisions.md#triage),
 is the user's to settle, even if you disagree.
 
 Rerun a proven infrastructure or flaky failure once, and record the result. If it fails again,

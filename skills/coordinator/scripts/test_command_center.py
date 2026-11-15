@@ -391,7 +391,7 @@ class ViewTests(CommandCenterCase):
     def test_last_decisions_removed_leaves_a_working_empty_state(self):
         page = self.open_page()
         self.republish(page, self.changed(lambda state: state.update(decisions=[], revisits=[])))
-        self.assertIn("Nothing needs you", page.text())
+        self.assertIn("Your Inbox is empty", page.text())
         self.assertIsNone(page.selected_decision())
         page.click("#work-tab")
         self.assertEqual(page.visible_panels(), ["work-panel"])

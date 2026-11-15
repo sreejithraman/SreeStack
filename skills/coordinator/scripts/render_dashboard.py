@@ -36,9 +36,10 @@ START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
 HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields the page never shows.
-PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "corrections",
+PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
+GRANT = ("date", "source", "start", "resolve", "user")
 DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "meanwhile", "recommendation", "options",
                  "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
@@ -422,6 +423,8 @@ def validate(state):
     strings(request.get("sources", []), "request.sources")
     if "landingAuthority" in state:
         fields(known_keys(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY), "landingAuthority", ENTRY)
+    if "grant" in state:
+        fields(known_keys(obj(state["grant"], "grant"), "grant", (*GRANT, "heartbeat")), "grant", GRANT, ("heartbeat",))
 
     work = records(state.get("work"), "work")
     decisions = records(state.get("decisions"), "decisions")
@@ -645,7 +648,7 @@ def inbox_group(heading_id, title, tone, rows):
 
 def needs_view(state, judgment, quick, resolved, answered):
     """Decision cards in reading order, with the list that shows one card at a time in the dual-pane inbox."""
-    empty = '<p class="empty">Nothing needs you right now.</p>'
+    empty = '<p class="empty">Your Inbox is empty.</p>'
     revisits = state.get("revisits", [])
     open_needs = judgment + quick
     if not (open_needs or resolved or revisits or answered):
@@ -870,14 +873,14 @@ def render(state, updated=None):
     if updated:
         facts += f'<p class="fact">{icon("updated")}<span><span class="fact-label">Updated</span> {updated_time(updated)}</span></p>'
     demo = '<span class="demo" title="Fictional work, not live project status.">Illustrative example</span>' if state.get("demo") else ""
-    content = f'<header class="masthead"><p class="eyebrow"><span>Chief of Staff</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{prose(state["goal"])}</p><div class="facts">{facts}</div></header>'
+    content = f'<header class="masthead"><p class="eyebrow"><span>Coordinator</span>{demo}</p><h1>{e(state["title"])}</h1><p class="goal">{prose(state["goal"])}</p><div class="facts">{facts}</div></header>'
     needs_badge = f'<span class="count-pill{" attention" if open_needs else ""}">{len(open_needs)}</span>'
     content += (
         '<nav class="navigation" aria-label="Program views"><div class="tabs" role="tablist" aria-label="Command center">'
-        f'<button id="needs-tab" role="tab" aria-selected="true" aria-controls="needs-panel" tabindex="0">Needs you {needs_badge}</button>'
+        f'<button id="needs-tab" role="tab" aria-selected="true" aria-controls="needs-panel" tabindex="0">Inbox {needs_badge}</button>'
         f'<button id="work-tab" role="tab" aria-selected="false" aria-controls="work-panel" tabindex="-1">Work <span class="count-pill">{len(state["work"])}</span></button>'
         "</div></nav>"
-        f'<section id="needs-panel" role="tabpanel" aria-labelledby="needs-tab" tabindex="0"><h2 class="sr-only">Needs you</h2>{needs_html}</section>'
+        f'<section id="needs-panel" role="tabpanel" aria-labelledby="needs-tab" tabindex="0"><h2 class="sr-only">Inbox</h2>{needs_html}</section>'
         f'<section id="work-panel" role="tabpanel" aria-labelledby="work-tab" tabindex="0" hidden><h2 class="sr-only">Work</h2>{work_html}</section>'
     )
     return TEMPLATE.read_text().replace("<!--TITLE-->", e(state["title"])).replace("<!--CONTENT-->", content)

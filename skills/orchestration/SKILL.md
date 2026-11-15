@@ -73,6 +73,11 @@ fits. When a run fails or its status is unclear, use
   or user limits lower this.
 - **Tracking:** keep each task's request key and ID, so recovery starts no duplicate writer.
 
+**Notice idle children.** A child that stopped while it still owes work, with no report,
+pending-PR partial, or recorded wait, is not done. Read its thread, then resume it or
+[recover](references/reuse-and-recovery.md#recover-work) it. Under a Coordinator program,
+`status` lists these.
+
 ## Return
 
 A child returns its artifact and revision, the evidence it observed, coverage gaps, blockers,
@@ -90,8 +95,10 @@ only on evidence of repeated failure.
 progress report: an ID, the exact question and its source, the affected work, options with any
 recommendation, and what continues meanwhile.
 
-A parent forwards the question, meaning intact, through the host's user-input route. The request
-stays open until the person answers or withdraws it, or the parent settles it under a workflow
+A parent forwards the question, meaning intact, to the person. When a
+[Coordinator](../coordinator/SKILL.md) Inbox exists, the request goes there and the work that
+doesn't depend on it continues. Otherwise use the host's user-input route. The request stays
+open until the person answers or withdraws it, or the parent settles it under a workflow
 that authorizes that. Silence, progress, and recommendations settle nothing.
 
 ## Accept
@@ -113,4 +120,5 @@ the specified method.
 Finish when every required result is accepted and integrated, or you report the exact gap.
 Return each slice's disposition, artifacts, checks, open decision requests, and blockers.
 
-Start goals and recurring work only when explicitly requested.
+Start goals and recurring work only when explicitly requested. A Coordinator's grant records
+that request for its heartbeat.

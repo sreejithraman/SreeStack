@@ -40,9 +40,9 @@ form one reviewable change. Several layers alone are no reason to promote.
 
 When the work is several outcomes that need coordinating, promote it. A session
 caller gets the proposed outcomes back. A user caller gets an offer of
-[Chief of Staff](../chief-of-staff/SKILL.md):
+[Coordinator](../coordinator/SKILL.md):
 
-- **The request itself is several outcomes:** offer Chief of Staff and wait for
+- **The request itself is several outcomes:** offer Coordinator and wait for
   the answer. Start none of them.
 - **The work grew from one requested outcome:** keep building that outcome while
   the offer waits. Start none of the new ones.
@@ -162,8 +162,8 @@ reported as a gap, and the user can open what you showed.
   [Review Fix Loop](../review-fix-loop/SKILL.md) here only when the request asks
   for review. Show the result. When the caller is the user, ask through the
   host's question tool: merge, changes, or scrap. Otherwise return the Try
-  result and that choice through the caller's recorded route; a chief's
-  acceptance and release stay the landing gate. `/merge` in this thread means
+  result and that choice through the caller's recorded route; in a coordinator's
+  program, its acceptance and release stay the landing gate. `/merge` in this thread means
   keep: go to Merge, which runs review, opens the PR, and lands it. Changes go
   back to stage 3. Scrap goes to [Repo Cleanup](../repo-cleanup/SKILL.md).
 - **PR:** PR runs review, publishes, and watches to the requested state.
@@ -179,11 +179,12 @@ request on this outcome's scope blocks landing. Coordinate stack changes that
 affect other layers with the caller and [gh-stack](../gh-stack/SKILL.md). Repairs go to the slice's owner
 under Orchestration's [who does the work](../orchestration/SKILL.md#who-does-the-work).
 
-**Under a chief,** you still run your own review loop and decide its pauses.
-Stop at readiness and return it for acceptance. Land only on the chief's
-recorded release, as the kickoff describes: you land your own PR or stack, and
-the chief lands sets that span several owners. The record names exactly one
-lander.
+**In a coordinator's program,** your kickoff names its record. You still run
+your own review loop and decide its pauses. Decide reversible method choices
+yourself and list them in your report; send up only scope, irreversible, and
+taste calls. Stop at readiness and return it for acceptance. Land only on the coordinator's recorded release, as the
+kickoff describes: you land your own PR or stack, and the coordinator lands sets
+that span several owners. The record names exactly one lander.
 
 **While a PR is pending,** follow PR's [wait](../pr/references/watch.md#wait).
 A top-level owner watches its own PR. A delegated owner returns a pending report
@@ -191,9 +192,9 @@ and lets its parent watch; it doesn't claim completion.
 
 ## Keep scope and decisions
 
-**Scope only shrinks.** You or a chief may split, defer, or make a follow-up of
+**Scope only shrinks.** You or a coordinator may split, defer, or make a follow-up of
 work without asking. Nobody grows a PR's scope or asks the user to: not you, a
-chief, or a review pass. Fix defects and real-use edge cases in the requested
+coordinator, or a review pass. Fix defects and real-use edge cases in the requested
 change in place, including bugs in its own earlier repairs; an edge case that
 can't happen in real use needs no fix. The requested change is the code that
 delivers the request, not code added for a new guarantee or under the exception
@@ -207,7 +208,7 @@ Land or Try finish line:
 
 | Work is | Goes to |
 | --- | --- |
-| Part of a chief's program | A report to the chief, which picks where it runs: a later PR from this session, another owner, or later |
+| Part of a coordinator's program | A report to the coordinator, which picks where it runs: a later PR from this session, another owner, or later |
 | Related, and helped by this session's context | A follow-up PR from this session |
 | Independent | A separate session, offered to the user or returned to the caller |
 | Useful but unrelated | [Snip Snap](../snip-snap/SKILL.md) |
@@ -249,7 +250,7 @@ matter. A Land report ends at what landed.
 ## Pause, transfer, or adoption
 
 When the user asks to pause or transfer, write the state through
-[Handoff](../handoff/SKILL.md). When a chief adopts this session, keep running:
+[Handoff](../handoff/SKILL.md). When a coordinator adopts this session, keep running:
 take the report path and route it gives, and send your current state there.
 A replacement owner reconciles the files and branches, live writers, helpers and
 watchers, evidence, decisions and holds, any armed landing, and the caller route

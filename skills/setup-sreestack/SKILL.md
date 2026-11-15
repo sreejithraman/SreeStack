@@ -63,7 +63,7 @@ Keep the shared workflows with their owners: `tdd` for test-driven changes,
 `gh-stack` for stack management. `merge` owns requested landing and cleanup.
 `orchestration` owns shared delegation mechanics, `swarm` supplies bounded
 parallel work, `implement` carries one outcome to its finish line, and
-`chief-of-staff` coordinates several outcomes and their dependencies.
+`coordinator` coordinates several outcomes and their dependencies.
 Record only the routes available in the target host and
 needed by the project, using current local names.
 

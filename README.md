@@ -189,7 +189,7 @@ instructions rather than maintaining another API manual.
 | Design a consequential change and guide its implementation | `architect`, using `codebase-design`, `arena`, and experiments |
 | Prevent recurring code mistakes | `correct`, using shared design principles and historical proof |
 | Carry one outcome to its finish line | [implement](skills/implement/SKILL.md), using the relevant platform/domain methods |
-| Carry several outcomes to their finish lines | [chief-of-staff](skills/chief-of-staff/SKILL.md), with one Implement owner per outcome |
+| Coordinate threads, or carry several outcomes to their finish lines | [coordinator](skills/coordinator/SKILL.md), with one Implement owner per outcome |
 | Diagnose or improve website search discoverability | [seo](skills/seo/SKILL.md), including deployed crawl verification |
 | Run bounded parallel work | [swarm](skills/swarm/SKILL.md), returning results to its caller |
 | Delegate and accept results | `orchestration` supplies shared mechanics; `research` owns cited investigations |
@@ -248,7 +248,7 @@ one record, a draft outside the repo unless an existing spec or task record
 fits, and uses Grilling for your decisions, Prototype and Show Me when seeing an
 option would decide it, and To Spec when the idea holds several outcomes. It
 ends with a settled brief or spec, or a dropped idea and the reason. If you
-already asked to build, it hands the record to Implement or Chief of Staff;
+already asked to build, it hands the record to Implement or Coordinator;
 otherwise it offers that step. It publishes to a tracker only when you ask.
 
 [Implement](skills/implement/SKILL.md) carries one outcome, as one PR or a
@@ -263,40 +263,47 @@ continues toward 200 ms. Scope only shrinks: work outside the requested change,
 including review findings labeled security or correctness, becomes a follow-up
 with its own finish line, or a snip when unrelated.
 
-[Chief of Staff](skills/chief-of-staff/SKILL.md) carries several outcomes to
-their finish lines. Its input is any set of work: a spec, a list in chat, saved
-snips, follow-ups, or existing PRs. It splits the work into outcomes, starts or
-adopts one Implement owner per outcome, starts only ready work, and keeps
-blocked work moving on provisional bases or recommended options that can be
-undone. Owners run their own review loops; the chief reads their reports,
-watches pending PRs, and routes discoveries and shared blockers. It settles
-reversible decisions that a recorded source or your standing approval already
-answers, and you can reopen any of them; the rest come
-to you, with judgment calls ahead of quick picks. Each outcome has its own
-**Land**, **Try**, or PR finish line: an owner lands its accepted outcome once
-the chief releases it, the chief lands only sets that span owners, and each
-**Try** waits for your merge, changes, or scrap choice. Its command center shows
-Needs you first and Work second, rendered from the program record's last
-commit: each outcome with its finish line, results to open, layers, provisional
-state, and what each decision blocks. Answers go back through chat. Existing
-trackers stay authoritative. Claude chiefs publish a private Claude artifact;
-Codex chiefs publish a private ChatGPT Site when the Sites plugin is available.
-The chief reuses its backend target and republishes after each commit that
-changes the page, and on resume or chief move. A backend change updates the
-current page link after successful publication. Open Sites check for updates
-every 20 seconds while visible and when you return, then replace the page with
-validated new content. Failed checks leave the page available. On reload,
-the page restores your tab, open sections, selected decision, and scroll
-position; local browser tests cover this. In Claude's web viewer, an open page
-moved to a newly published version without a reload, kept its selected tab, and
-loaded its icons. The iPhone app is unchecked.
+[Coordinator](skills/coordinator/SKILL.md) routes work across threads and keeps
+it moving. For a single request it stays light: it answers itself, reuses a
+running owner, or starts one. When it carries two or more outcomes, it runs a
+program: one Implement owner per outcome, a program record in its own git
+repository, and a private command center whose **Inbox** holds what only you
+can decide. Its input is any set of work: a spec, a list in chat, saved snips,
+follow-ups, or existing PRs.
+
+At the start it states a **grant**: what it may start, land, and settle itself,
+and what stays with you. You set it once and change it with a word. Owners run
+their own review loops and decide reversible method choices themselves; only
+scope, irreversible, and taste calls come up. The coordinator settles reversible
+decisions that a recorded source or your standing approval answers, and you can
+reopen any of them. It builds on a reversible recommended option instead of
+stopping. Each Inbox item asks one question, with two or more options, one
+recommendation, what it blocks, and what continues meanwhile. Copy an answer
+from the page into chat; nothing blocks while you decide.
+
+It never ends a turn while work could run. In T3 a heartbeat checks the program
+every 10 minutes. It stays quiet while nothing changed, wakes the coordinator
+when an owner goes idle or work becomes runnable, and removes itself when the
+program is done. A waiting coordinator says in one line what it waits on and
+how long, in your time zone, and then stays quiet.
+
+Each outcome has its own **Land**, **Try**, or PR finish line: an owner lands
+its accepted outcome once the coordinator releases it, the coordinator lands
+only sets that span owners, and each **Try** waits for your merge, changes, or
+scrap choice. The command center shows the Inbox first and Work second,
+rendered from the record's last commit. Existing trackers stay authoritative.
+Claude coordinators publish a private Claude artifact; Codex coordinators
+publish a private ChatGPT Site when the Sites plugin is available. Open Sites
+check for updates every 20 seconds while visible and when you return. On
+reload, the page restores your tab, open sections, selected decision, and
+scroll position. The iPhone app is unchecked.
 
 [Swarm](skills/swarm/SKILL.md) is a bounded tool any session can use. For example,
 “Swarm these three possible causes and return evidence” partitions the question
 and returns one consolidated result with coverage gaps. It supports coverage,
 races, and mixed assignments without taking over its caller's PR or program.
 
-Implement and Swarm work on their own; Chief of Staff uses them as tools.
+Implement and Swarm work on their own; Coordinator uses them as tools.
 [Orchestration](skills/orchestration/SKILL.md) supplies the shared mechanics they
 all use: model selection, briefs, decision requests, holds, and acceptance.
 
@@ -668,11 +675,11 @@ Thank you to the authors and contributors who shared the skills this collection
 uses and adapts:
 
 - [DeepSeek Harness Team](https://github.com/deepseek-ai/dsh-superagent-prototype) — coordination, attention, handoff, and visual-comparison ideas; instructions are independently written.
-- [Lucide Icons and Contributors](https://github.com/lucide-icons/lucide), with Feather-derived work by Cole Bemis — chief-of-staff dashboard icons.
+- [Lucide Icons and Contributors](https://github.com/lucide-icons/lucide), with Feather-derived work by Cole Bemis — coordinator command center icons.
 - [Suraj Sharma](https://x.com/suraj_sharma14/status/2116062550416871512) and [Rakesh Patel](https://x.com/rakeshpatelco/status/2116065801279291422) — website SEO coverage and deployed crawl verification ideas; instructions are independently written.
 - [David Collado / Koubou](https://github.com/bitomule/Koubou) — App Store screenshot design workflow and supporting references.
 - [Benji Taylor / Stageshow](https://github.com/benjitaylor/skills) — product UI illustrations, animated demos, and the bundled React kit and examples.
-- [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including implementation, chief-of-staff coordination, and the Standards and Spec review rules.
+- [Matt Pocock](https://github.com/mattpocock/skills) — engineering and productivity skills, including implementation, multi-outcome coordination, and the Standards and Spec review rules.
 - [Nico Bailon / skill-diet](https://github.com/nicobailon/skill-diet) — skill revision, tool-guidance auditing, call-format, and evaluation methods, including comparison rules, adapted into `writing-for-agents`.
 - John Ousterhout — deep-module and design-it-twice concepts used in Codebase Design.
 - David Khourshid — state-machine modeling and UI-independent logic informing Engineering Principles; no upstream prose or code copied.
@@ -687,7 +694,7 @@ uses and adapts:
 - [Cursor](https://github.com/cursor/plugins) — the Thermo Nuclear Code Quality Review.
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
-- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `chief-of-staff`, `swarm`, and `orchestration`.
+- [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `coordinator`, `swarm`, and `orchestration`.
 - [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.

@@ -7,6 +7,7 @@ model the user picked, and no running agent is replaced because its model differ
 
 | Purpose | Provider | Model | Effort | Availability fallback | Review pool |
 | --- | --- | --- | --- | --- | --- |
+| Coordinator | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
 | UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
 | Simple implementation and fixes | Codex | GPT-6.1 Sol | Medium | — | — |
 | Standard implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
@@ -39,6 +40,7 @@ use a task-specific choice, then the first matching row.
 
 | Job | Row |
 | --- | --- |
+| Running a [Coordinator](../../coordinator/SKILL.md) or its program | Coordinator |
 | Source review, including of UI | Its named review row |
 | Research-only source reading, comparison, synthesis, or retrieval, including of UI | General research, or the YouTube or X row |
 | [Dedicated UI operation](#operate-a-ui), including verifying an interactive workflow | Routine, Demanding, or Complex UI operation |

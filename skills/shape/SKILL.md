@@ -16,7 +16,7 @@ the user drops the idea and the record says why.
 You own the conversation, the record, which capability to use next, and the
 stop. Each linked skill owns its own procedure and returns to you. Shaping builds
 nothing for production: [Implement](../implement/SKILL.md) or
-[Chief of Staff](../chief-of-staff/SKILL.md) does that after you stop.
+[Coordinator](../coordinator/SKILL.md) does that after you stop.
 Invoking Shape with an idea asks you to shape it, not build it; only an explicit
 ask to build or implement is a build request.
 
@@ -98,7 +98,7 @@ line when it starts.
 
 For one outcome, reconcile the brief with Reframe. For several, turn the same
 record into one spec with [To Spec](../to-spec/SKILL.md). Splitting the spec into
-tasks stays with the chief.
+tasks stays with the coordinator.
 
 Mark the record Settled without a separate approval. Showing the settled
 record with the offer or handoff in stage 5 is the user's chance to correct it;
@@ -115,7 +115,7 @@ open choice that would change one other than a recorded Try question.
 
 Show the record with Show Me; with no record, restate the request as a brief in
 the thread. When the user already asked to build, hand that record or brief to
-Implement for one outcome or to Chief of Staff for a spec, without asking again.
+Implement for one outcome or to Coordinator for a spec, without asking again.
 Otherwise offer that step. Publish to a tracker only when the user asks.
 
 After a handoff, the execution owner carries the conversation, including a Try

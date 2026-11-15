@@ -34,7 +34,7 @@ def decision(state, identity):
 
 
 def owner(name):
-    return {"name": name, "start": "top-level", "route": "`t3_thread_send` to the chief"}
+    return {"name": name, "start": "top-level", "route": "`t3_thread_send` to the coordinator"}
 
 
 class Program:
@@ -178,6 +178,8 @@ RULES = [
     ("the program has only known fields", lambda s: s.update(record={}), r"^record is not a known field"),
     ("each object has only known fields", lambda s: work(s, "W1")["owner"].update(report="reports/W1.md"), r"^work\[W1\]\.owner\.report is not a known field"),
     ("the request has its text", lambda s: s["request"].pop("text"), r"request\.text"),
+    ("the grant says what stays with the user", lambda s: s["grant"].pop("user"), r"^grant\.user must be a nonempty string"),
+    ("the grant has only its own fields", lambda s: s["grant"].update(land="All"), r"^grant\.land is not a known field"),
     ("hosting is a link", lambda s: s.update(hosting="javascript:alert(1)"), r"hosting must be an http"),
     ("demo is a boolean", lambda s: s.update(demo="yes"), r"demo must be a boolean"),
     ("work IDs are unique", lambda s: s["work"].append(copy.deepcopy(s["work"][0])), r"work contains duplicate IDs"),
@@ -236,8 +238,8 @@ RULES = [
     ("an answer is recorded", lambda s: decision(s, "W6-D1").update(status="answered"), r"W6-D1\]\.answer must be"),
     ("an answer names its message", lambda s: decision(s, "W0-D1").pop("answerSource"), r"W0-D1\]\.answerSource must be"),
     ("only an answer has an answer source", lambda s: decision(s, "W6-D1").update(answerSource="x"), r"answerSource applies only to answered"),
-    ("a chief's call has its basis", lambda s: decision(s, "W6-D1").update(status="resolved", answer="Keep"), r"\.basis must be"),
-    ("only a chief's call has a basis", lambda s: decision(s, "W0-D1").update(basis="x"), r"basis applies only to resolved"),
+    ("a coordinator's call has its basis", lambda s: decision(s, "W6-D1").update(status="resolved", answer="Keep"), r"\.basis must be"),
+    ("only a coordinator's call has a basis", lambda s: decision(s, "W0-D1").update(basis="x"), r"basis applies only to resolved"),
     ("a withdrawal says why", lambda s: decision(s, "W2-D1").pop("rationale"), r"W2-D1\]\.rationale must be"),
     ("weights are known", lambda s: decision(s, "W6-D1").update(weight="urgent"), r"weight must be quick or judgment"),
     ("blocked work exists", lambda s: decision(s, "W6-D1")["blocks"].append({"id": "W9", "phase": "landing"}), r"blocks references missing work W9"),
@@ -393,7 +395,7 @@ class PageTests(unittest.TestCase):
         self.assertNotIn("Updated", text_of(render(self.state)))
         page = text_of(render(self.state, "2026-11-03T09:30:00Z"))
         self.assertIn("Updated 2026-11-03T09:30:00Z", page)
-        self.assertLess(page.index("Updated"), page.index("Needs you"))
+        self.assertLess(page.index("Updated"), page.index("Inbox"))
 
     def test_halting_phases_block_work_and_later_phases_let_it_continue(self):
         html = render(self.state)
