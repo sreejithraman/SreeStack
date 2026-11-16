@@ -481,8 +481,10 @@ failed read, or a row gone stale), and says done only when the committed record 
 owner's running or waiting sub-status stays out of the digest. A waiting
 dependency names itself in the `say:` line, except on proposed work at its
 stop. Light owners land on their own finish line; Implement's release gate
-applies only in a program. A move or takeover deletes the old thread's heartbeat
-and the new coordinator sets up its own. Hosts without scheduled tasks fall
+applies only in a program. Resume re-enables an existing paused heartbeat or
+recreates a deleted/missing one with its new task ID recorded and enabled/next
+run verified. A move or takeover deletes the old thread's heartbeat and the
+new coordinator sets up its own. Hosts without scheduled tasks fall
 back to waiting on owner runs through the host. A Claude command center also
 gets an answer wake: a `schedule_task` webhook bound to the coordinator's
 thread, recorded in `grant.wake`, whose link lives only in the page database.

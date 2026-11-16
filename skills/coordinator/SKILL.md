@@ -410,8 +410,10 @@ are complete, settle it through the host (in T3, `t3_thread_organize` with
 **Resume:** re-read this skill, start from the record's `next`, and run
 `status`. Reconcile the record with current files, threads, and forge state, and
 [publish the page](references/hosting.md) before you dispatch. Turn the
-heartbeat back on and set up the [answer wake](#answer-wake) again if they were
-paused.
+existing paused heartbeat back on. If it was deleted or is confirmed missing,
+create one under [Heartbeat](#heartbeat) and record its new task ID in
+`grant.heartbeat`. Verify `enabled` and `nextRunAt` before leaving active work
+waiting. Restore the [answer wake](#answer-wake) under its setup procedure.
 
 **A program started under Chief of Staff** migrates once. Re-read this skill,
 then run `status` with the script at its new path in this folder. Write the
