@@ -114,7 +114,7 @@ type Program = {
     start: string; // which owners and support tasks it may start
     resolve: string; // which decisions it settles itself
     user: string; // what stays with the user
-    heartbeat?: string; // its interval and scheduled task ID, or why there is none
+    heartbeat?: string; // its timing policy and scheduled task ID, or why there is none
     wake?: string; // the answer wake's scheduled task ID, or why there is none
   };
   corrections?: Entry[]; // accepted corrections

@@ -20,12 +20,15 @@ repair rule below. If you can't launch a subagent, say so and ask.
 **As a child,** do your own work, whatever your model. Delegate further only when your task says
 to.
 
-**Review fixes and other repairs go to the slice's owner first,** even after its turn finished.
-A slice's owner is the agent that wrote it. In T3, `t3_thread_send` to the owner's thread. T3's
+**Review fixes and in-scope follow-up go to the original owner first,** even after its turn
+finished or its thread was settled. A slice's owner is the agent that wrote it unless an
+explicit handoff or closure changes that responsibility. Check the
+[current responsibility](#communicate) before resuming it. In T3, use `t3_thread_send`. T3's
 "Fix small review findings yourself; start no delegate for them" bars a new delegate. Resuming the
 owner starts none, so the owner still goes first.
 
-**No owner left** means its thread is gone or can't be resumed. A finished run is not that. If
+**No owner left** means an explicit closure left no successor, or its owner thread is gone or
+can't be resumed. A finished run is not that. If
 its state is unknown, use [recovery](references/reuse-and-recovery.md#recover-work). With no
 owner left, that same T3 rule applies: fix a small review finding yourself, and launch any other
 repair from the model table. Before a repair overlaps the owner's files, reconcile under
@@ -51,17 +54,33 @@ Give each child a self-contained brief:
 
 Assignment is done when every required slice has an owner, usable inputs, and a completion check.
 
-**In-scope follow-up:** send it to the existing owner, whatever its model. **Scope change:** return
+**In-scope follow-up:** reuse its owner under [Who does the work](#who-does-the-work), whatever its model. **Scope change:** return
 it to the caller with its source and reason.
 
 **Human hold:** record its source, scope, and release condition. It survives retries, transfers,
 and restarts, and only that person lifts it.
+
+## Communicate
+
+Communicate with the current owner of an outstanding responsibility. Past participation alone
+is no reason to wake a thread. Before sending, establish what responsibility the recipient still
+owns, what action the message enables or requires, and whether shared state already suffices.
+Read the current task record and recent direction rather than relying on a saved recipient list.
+If shared state suffices, use it. If ownership is unclear, record the routing gap and resolve it
+before dispatching overlapping work or assuming permission to use a shared resource.
+
+A finished turn or settled thread alone does not end ownership. Honor explicit handoffs and
+closures, and preserve [owner reuse](#who-does-the-work) for repairs and in-scope follow-up.
+When finishing work, close completed responsibilities or hand off outstanding ones. Leave their
+disposition and any successor in the shared task record or handoff so later senders can find it.
 
 ## Dispatch
 
 Follow live host rules. Use a new task unless [reuse](references/reuse-and-recovery.md#reuse-an-agent)
 fits. When a run fails or its status is unclear, use
 [recovery](references/reuse-and-recovery.md#recover-work).
+When the table's model is unavailable, apply its
+[standing fallback authorization](references/reuse-and-recovery.md#availability-fallback).
 
 - **Target:** each child must support the chosen model and options. Use a generic role when
   custom ranks would override them. T3's `role` is not a model preset.
@@ -82,6 +101,9 @@ pending-PR partial, or recorded wait, is not done. Read its thread, then resume 
 
 A child returns its artifact and revision, the evidence it observed, coverage gaps, blockers,
 and open decision requests.
+For a Coordinator return route, follow
+[Check the coordinator](../coordinator/references/coordinator-move.md#check-the-coordinator)
+before sending to a saved thread.
 
 **When you are stuck, ask up.** Finish what doesn't depend on the answer, then end your turn
 with the question and a partial report. If it blocks other work, raise it at once, through a
@@ -114,8 +136,8 @@ the specified method.
 3. Leave review to [pr](../pr/SKILL.md). Run [review-fix-loop](../review-fix-loop/SKILL.md)
    here only when the request asks for a review.
 4. An accepted result is not a delivered one. A queued handoff with no host receipt is unknown.
-   To recover a failed handoff, recheck the request, holds, and revision. Then resend only what
-   is missing, to the same recipient.
+   To recover a failed handoff, recheck the request, holds, revision, and
+   [current responsibility](#communicate). Resend only what is missing to that owner.
 
 Finish when every required result is accepted and integrated, or you report the exact gap.
 Return each slice's disposition, artifacts, checks, open decision requests, and blockers.
