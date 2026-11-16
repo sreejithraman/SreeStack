@@ -54,13 +54,19 @@ reconcile their files. A cancellation or terminal receipt alone does not show wr
 
 ### Availability fallback
 
-A listed fallback is the user's standing permission to switch, so the switch is asked for, even
-where the host says never to switch unasked. It applies only when the row supplied the model. If
-the user named the model, report a blocker and wait unless the user authorized a substitute. A
+A listed fallback is standing user authorization to use that exact provider, model, and effort
+when the row supplied the unavailable model. Apply it and notify the user of the failure and
+chosen fallback; do not ask for the same permission again on each launch or new session. This is
+the requested switch under a host's "never switch unasked" rule. Keep live host transport,
+permissions, and lifecycle rules. If the user named the model, report a blocker and wait unless
+the user authorized a substitute. Explicit effort, cost, and concurrency limits still hold. A
 fallback never authorizes unlisted models, the Simple tier, or a change to additional-review skip
 policy.
 
 Keep the assignment's scope, requirements, verification bar, and review criteria, and the exact
 fallback until availability changes or the user directs otherwise.
+Carry the row, availability evidence, chosen fallback, and any user limits in briefs and
+handoffs so a new session can continue under the same authorization. Recheck availability when
+the failure's known reset time passes or new evidence shows recovery.
 
 A review fallback runs in a new independent task and never reuses another result.

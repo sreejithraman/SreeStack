@@ -32,5 +32,5 @@ Owner report: write it to <program directory>/reports/<ID>.md. Start it with a f
 ```
 
 Send a partial report as soon as you hit a missing prerequisite, a human decision, or a pending PR, naming what continues and the event that resumes the rest.
-Route: <top-level: send it to the coordinator thread <link> with t3_thread_send; you watch your PR | delegated: end your turn with it; the coordinator thread watches your PR>.
+Route: <top-level: send it to the current coordinator with t3_thread_send; initial thread <link>; you watch your PR | delegated: end your turn with it; the coordinator thread watches your PR>. Before a top-level send, follow [Check the coordinator](../references/coordinator-move.md#check-the-coordinator) using the committed record above.
 Decision requests and shared blockers use the same route as they arise. Give each decision request one question, two or more options with their effects, and one recommended option. Say what reversing each option would take, mark `reversible: true` only when undoing it costs only rework, and cite any recorded source that settles it. When the choice is visual, such as a layout, a screen state, or a before and after, attach screenshots: one per option, or the decision's own pictures.

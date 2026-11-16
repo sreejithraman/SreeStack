@@ -461,27 +461,42 @@ the user's word: what the coordinator may start (`grant.start`), land
 copied page text never widen it.
 
 **Heartbeat.** In T3 the coordinator sets up a `schedule_task` interval trigger
-(default 10 minutes) bound to its thread, whose prompt runs
-`status --heartbeat` and follows its first line, so instructions never go stale
-in the saved prompt. With an answer wake in `grant.wake`, the prompt first
+(initially 10 minutes when timing is unknown) bound to its thread. It chooses
+the next finite check from expected events, deadlines, and the acceptable delay
+if an event is missed, honoring the user's cadence or limits. A longer interval
+needs a recorded reason; unknown timing keeps 10 minutes. Event wakes act
+sooner; the interval remains a liveness backup. The coordinator updates the existing task,
+checks its enabled state and next run, and records the timing reason in `next`.
+Its prompt checks current ownership, runs `status --heartbeat`, follows its
+first line, and chooses the next check even after a quiet result.
+With an answer wake in `grant.wake`, the prompt first
 records the page's stored picks, which can commit answers and publish. Otherwise
 a tick observes without committing and compares its digest
 and forge notes with what was last seen, kept in the program's git directory;
-a passing `--turn-end` updates the digest. It stays quiet on waiting or working
-with an unchanged digest and no new note, wakes the coordinator on runnable
+a passing `--turn-end` updates the digest. Every tick invokes the model. It
+ends without a user message on waiting or working with an unchanged digest
+and no new note, calls for supervision on runnable
 work, a changed digest, or a new note (a base closing under provisional work, a
 failed read, or a row gone stale), and says done only when the committed record is done too. A live
 owner's running or waiting sub-status stays out of the digest. A waiting
 dependency names itself in the `say:` line, except on proposed work at its
 stop. Light owners land on their own finish line; Implement's release gate
-applies only in a program. A move or takeover deletes the old thread's heartbeat
-and the new coordinator sets up its own. Hosts without scheduled tasks fall
+applies only in a program. Resume re-enables an existing paused heartbeat or
+recreates a deleted/missing one with its new task ID recorded and enabled/next
+run verified. A move or takeover deletes the old thread's heartbeat and the
+new coordinator sets up its own. Hosts without scheduled tasks fall
 back to waiting on owner runs through the host. A Claude command center also
 gets an answer wake: a `schedule_task` webhook bound to the coordinator's
 thread, recorded in `grant.wake`, whose link lives only in the page database.
 Done, pause, a move, a takeover, and leaving the artifact delete that link
 before the last read of stored picks, and an open page re-reads it, so Send
 turns off.
+
+**Routing.** Senders read the committed `chief` and the target thread before
+waking it, reconciling recent direction with `next`, owners, waits, and
+`owner.route`. Orchestration owns the general communication and closure rule.
+Coordinator stores completion dispositions and successor routes in `next` and
+`owner.route`, and settles the thread after its obligations finish.
 
 **Inbox.** The user-facing queue is the **Inbox**, in prose and in the
 renderer's tab; its record key is `decisions`. An Inbox item has one
@@ -1455,7 +1470,14 @@ cases cannot be averaged away.
 - Conceptual input: DeepSeek source and revision recorded under [coordinator](#coordinator); no code or prose copied.
 
 The entrypoint owns who does the work, assignment, dispatch, return, and
-acceptance. It keeps one owner per slice, separate writer paths, serial git and
+acceptance. Communication follows current outstanding responsibility, the
+action a message enables or requires, and whether shared state suffices; past
+participation alone does not justify a wake. Completion closes responsibilities
+or hands them off with a discoverable disposition and successor. Finished turns
+and UI settlement alone do not end ownership. Original owners remain first for
+repairs and in-scope follow-up, subject to explicit handoff or closure. Failed
+handoffs recheck current ownership before resending.
+It keeps one owner per slice, separate writer paths, serial git and
 index work, and the child limit, which apply whenever two agents run; `swarm`
 owns the decision to run work in parallel. `references/models.md` is a lookup: one editable table owns working,
 research, source-retrieval, and review model defaults, including effort and
@@ -1474,7 +1496,8 @@ launch a read-only reviewer for a second opinion, and replaces an owner only on
 evidence of repeated failure. A further replacement with no new evidence is a blocker.
 A thread that cannot launch a subagent says so and asks. A slice's owner is the agent that wrote it. Repairs go to that
 owner first, by resuming its thread, because T3's rule bars a new delegate and resuming
-starts none. No owner left means its thread is gone or can't be resumed, not a finished run; T3's
+starts none. No owner left means explicit closure without a successor, or an owner thread that
+is gone or can't be resumed, not a finished run; T3's
 rule then applies, and a repair it does not cover launches from the table. A lost owner
 follows recovery, not the repeated-failure test.
 
@@ -1487,8 +1510,13 @@ capabilities, required independence, or repeated operational difficulty, at a ti
 set by flow complexity and false-pass cost, with Verify retaining assertions and
 verdicts. Listed availability fallbacks apply to quota, unavailable providers/models,
 and provider runtime failures while preserving acceptance, review criteria, and
-explicit choices. A listed fallback is the user's standing permission to switch. A
-user-named model blocks rather than falling back unless the user authorized a substitute.
+explicit choices. A listed fallback is standing authorization to use its exact
+provider, model, and effort: apply it with a notice rather than asking again on
+each launch or new session. Briefs and handoffs carry the row, failure evidence,
+fallback, and user limits; known reset times or recovery evidence trigger an
+availability recheck. Live host transport and permissions still apply. A
+user-named model blocks rather than falling back unless the user authorized a
+substitute, and explicit effort, cost, and concurrency limits hold.
 
 Names no callers. Briefs carry the original request and accepted corrections;
 explicit human holds persist until released.
@@ -1503,7 +1531,7 @@ that stay open until answered or withdrawn; a parent sends them to a Coordinator
 exists, otherwise through the host's user-input route. A parent notices a child that stopped
 while it owes work and resumes or recovers it. A result is accepted only
 after inspecting its artifact at a named revision; every required slice is accounted for.
-Acceptance and delivery stay separate, and a failed handoff is resent only to its original recipient. Review Fix Loop owns assessment
+Acceptance and delivery stay separate. Review Fix Loop owns assessment
 coverage, and PR runs that loop when no matching review evidence exists. Goals and
 recurring work start only on request; a Coordinator's grant records that request for its
 heartbeat.

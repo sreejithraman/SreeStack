@@ -83,7 +83,7 @@ start, and change it only on the user's word. It has five parts:
 | Land | The scope Land covers and its gates | `landingAuthority` |
 | Resolve | Which decisions you settle yourself, under [triage](references/decisions.md#triage) | `grant.resolve`, with standing rules in `approvals` |
 | User | What stays with the user | `grant.user` |
-| Heartbeat | Its interval and scheduled task ID, and the answer wake's task ID | `grant.heartbeat`, `grant.wake` |
+| Heartbeat | Its timing policy and scheduled task ID, and the answer wake's task ID | `grant.heartbeat`, `grant.wake` |
 
 Draft it from the request, the finish-line picks, and project rules. State it in
 your first message, so the user can change any part in a word. Record it with
@@ -98,20 +98,43 @@ and taste calls come up to you.
 
 ### Heartbeat
 
-Set up the heartbeat when the program starts. In T3, call `schedule_task` with
-an interval trigger (default every 10 minutes), `bindToCurrentThread: true`,
-and this prompt, filled in:
+Set up one heartbeat when the program starts. The coordinator chooses its next
+check within the grant. Set a finite latest check from owner reports, the next
+expected event, deadlines, and how long a missed event can leave work waiting.
+Lengthen unchanged external waits only
+with a recorded reason; keep 10 minutes when you cannot justify another
+interval. A user-specified cadence or limit wins. Messages, PR watches, and
+the answer wake handle events sooner; keep the heartbeat as a backup while
+the program is active.
+
+In T3, use `schedule_task` with an interval trigger,
+`bindToCurrentThread: true`, and this prompt, filled in:
 
 ```text
-Coordinator heartbeat for <program title>. When the record's grant.wake names an answer wake, first record
+Coordinator heartbeat for <program title>. Re-read <this skill's absolute folder>/SKILL.md and check the current coordinator before acting.
+When the record's grant.wake names an answer wake, first record
 the stored picks under <this skill's absolute folder>/references/hosting.md, section "Stored picks". Then run
 python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --state <absolute path>/program.json
-and do what its first line says.
+and do what its first line says. Before ending an active program's turn, choose the next heartbeat under the skill's Heartbeat section, including after a quiet result.
 ```
 
-Record the interval and the returned task ID in `grant.heartbeat`, such as
-`Every 10 minutes, scheduled task <ID>`. A tick wakes you only on
-runnable work, facts that changed since you last looked, or a new forge note.
+Record the timing policy and returned task ID in `grant.heartbeat`. Before
+ending a working or waiting turn, choose the next interval. Keep the next
+action in `next`, alongside the interval, timing reason, and event that could
+wake you sooner. Update the existing task by `scheduledTaskId` when its
+interval changes, using
+`schedule: {type: "interval", everyMs: <milliseconds>}`. Verify the returned
+`enabled` and `nextRunAt`; report a failed or policy-blocked schedule instead
+of claiming liveness. Keep the current interval when the same wait still
+justifies it, without rewriting an unchanged timing decision. When resuming
+an older 10-minute schedule, update that task and its prompt rather than
+creating another.
+
+Every scheduled tick invokes the model. `status --heartbeat` decides whether
+further supervision is needed: a quiet result means no user message, not that
+the model never ran. Timing choices use the existing heartbeat authorization;
+they do not widen the grant.
+
 When the host has no scheduled tasks, say so in the grant. Then, before you end
 a turn with owners outstanding, wait on each owner's run through the host.
 
@@ -276,7 +299,8 @@ After each accepted result, landing, answer, or dependency change, start what
 became ready; `status` lists it.
 
 A top-level owner watches its own PR and sends its reports, decision requests,
-and blockers to this thread with `t3_thread_send`. For a delegated owner, this
+and blockers through the [current coordinator check](references/coordinator-move.md#check-the-coordinator).
+For a delegated owner, this
 thread is the watching parent under PR's [wait](../pr/references/watch.md#wait);
 keep watching while Inbox items are open.
 The user can enter an owner's session directly; reconcile their new direction
@@ -372,6 +396,11 @@ handoff with the Inbox when action is required, otherwise with the usable
 outcomes and their links. Name the decisions you resolved so the user can
 reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
 retained work and active dependents no longer need the resources.
+Apply Orchestration's [completion rule](../orchestration/SKILL.md#communicate):
+leave the responsibility dispositions and any successor routes in `next`, with
+each retained owner's route in `owner.route`. Once this thread's obligations
+are complete, settle it through the host (in T3, `t3_thread_organize` with
+`action: "settle"`).
 
 **Pause:** bring the record current, pause the heartbeat (in T3,
 `schedule_task` with `enabled: false`), and
@@ -381,8 +410,10 @@ retained work and active dependents no longer need the resources.
 **Resume:** re-read this skill, start from the record's `next`, and run
 `status`. Reconcile the record with current files, threads, and forge state, and
 [publish the page](references/hosting.md) before you dispatch. Turn the
-heartbeat back on and set up the [answer wake](#answer-wake) again if they were
-paused.
+existing paused heartbeat back on. If it was deleted or is confirmed missing,
+create one under [Heartbeat](#heartbeat) and record its new task ID in
+`grant.heartbeat`. Verify `enabled` and `nextRunAt` before leaving active work
+waiting. Restore the [answer wake](#answer-wake) under its setup procedure.
 
 **A program started under Chief of Staff** migrates once. Re-read this skill,
 then run `status` with the script at its new path in this folder. Write the

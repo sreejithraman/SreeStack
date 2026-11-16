@@ -7,11 +7,18 @@ from acting on stale state or writing over the record.
 
 Before acting on a request, direction, event, report, or pasted answer, and
 before each record write, read `chief` from
-`git -C /absolute/path show HEAD:program.json`. A thread that is not the coordinator
-reads the coordinator's thread, forwards the item with `t3_thread_send`, linking the
-user's message for requests, directions, and answers, and stops. It unwatches
-its PRs when the coordinator asks. A user item that arrives through `t3_thread_send`
-counts under [record an answer](decisions.md#record-an-answer).
+`git -C /absolute/path show HEAD:program.json`. Before sending, read that
+thread with `t3_thread_read` and reconcile recent direction with `next`, live
+owners, waits, and each relevant `owner.route`. Apply Orchestration's
+[communication rule](../../orchestration/SKILL.md#communicate) to those facts.
+
+A thread that is not the coordinator forwards an actionable item to the
+current coordinator with `t3_thread_send`, linking the user's source for
+requests, directions, and answers, then stops. It unwatches its PRs when the
+coordinator asks. An unavailable coordinator follows [take over](#take-over);
+a new user request for a closed or paused program follows
+[resume](../SKILL.md#6-finish-pause-or-resume). A user item that arrives through
+`t3_thread_send` counts under [record an answer](decisions.md#record-an-answer).
 
 ## Move
 
