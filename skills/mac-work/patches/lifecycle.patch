@@ -22,15 +22,36 @@
      return cursor.lastrowid
  
  
-@@ -186,13 +190,14 @@
+@@ -170,9 +174,17 @@
+ 
+ # --- Database Functions ---
+ @contextmanager
+-def get_db(db_path: Path):
++def get_db(db_path: Path, *, bootstrap=False):
+     """Get database connection with WAL mode for better concurrency."""
+-    conn = sqlite3.connect(db_path, timeout=60.0)
++    conn = sqlite3.connect(db_path if bootstrap else db_path.resolve().as_uri() + '?mode=rw',
++                           timeout=60.0, uri=not bootstrap)
++    conn.row_factory = sqlite3.Row
++    try:
++        if not bootstrap:
++            lifecycle.validate_state(conn)
++    except BaseException:
++        conn.close()
++        raise
+     conn.execute("PRAGMA journal_mode=WAL")
+     conn.execute("PRAGMA busy_timeout=60000")
+     conn.row_factory = sqlite3.Row
+@@ -186,13 +198,14 @@
          conn.close()
  
  
 -def init_db(paths: QueuePaths):
-+def _init_db(paths: QueuePaths):
++def _init_db(paths: QueuePaths, capacities, contract):
      """Initialize DB with queue table."""
      paths.data_dir.mkdir(parents=True, exist_ok=True)
-     with get_db(paths.db_path) as conn:
+-    with get_db(paths.db_path) as conn:
++    with get_db(paths.db_path, bootstrap=True) as conn:
          conn.execute(QUEUE_SCHEMA)
          conn.execute(TASK_RESULTS_SCHEMA)
          conn.execute(QUEUE_INDEX)
@@ -38,15 +59,37 @@
          # Run migrations for existing databases
          for migration in [
              QUEUE_MIGRATION_SERVER_ID,
-@@ -504,21 +509,16 @@
+@@ -208,6 +221,8 @@
+             except sqlite3.OperationalError as exc:
+                 if "duplicate column name" not in str(exc).lower():
+                     raise
++
++        lifecycle.configure(conn, capacities, contract, initialize=True)
+ 
+ 
+ def collect_task_origin(working_directory: str, agent_name: str | None = None) -> TaskOrigin:
+@@ -488,6 +503,7 @@
+             (datetime.now().isoformat(), owner_pid, task_id),
+         )
+         if cursor.rowcount > 0:
++            lifecycle.admitted(conn, task_id)
+             conn.commit()
+             return True, 0
+ 
+@@ -504,21 +520,22 @@
              conn.execute("PRAGMA busy_timeout=" + str(int(previous_busy_timeout)))
  
  
-+def init_db(paths: QueuePaths):
++def init_db(paths: QueuePaths, capacities, contract):
++    """Explicit fresh bootstrap; an existing database must already be compatible."""
 +    paths.data_dir.mkdir(parents=True, exist_ok=True)
 +    with open(paths.data_dir / 'initialize.lock', 'a') as lock:
 +        fcntl.flock(lock, fcntl.LOCK_EX)
-+        _init_db(paths)
++        if paths.db_path.exists():
++            with get_db(paths.db_path) as conn:
++                lifecycle.configure(conn, capacities, contract)
++        else:
++            _init_db(paths, capacities, contract)
 +
 +
  def ensure_db(paths: QueuePaths):
@@ -64,12 +107,13 @@
 -                except OSError:
 -                    pass
 -        init_db(paths)
-+    # Busy, missing and corrupt databases never authorize destructive recovery.
-+    init_db(paths)
++    """Validate active state without creating schema or replacing damaged bytes."""
++    with get_db(paths.db_path):
++        pass
  
  
  # --- Process Management ---
-@@ -583,21 +583,6 @@
+@@ -583,21 +600,6 @@
      except Exception:
          # If we can't check, assume valid (conservative - avoid false orphan cleanup)
          return True
@@ -91,7 +135,7 @@
  
  
  # --- Logging ---
-@@ -636,101 +621,10 @@
+@@ -636,101 +638,10 @@
  
  
  # --- Queue Cleanup ---
@@ -202,7 +246,7 @@
 +    return lifecycle.close_task(conn, task_id)
 --- /dev/null
 +++ b/queue_lifecycle.py
-@@ -0,0 +1,277 @@
+@@ -0,0 +1,360 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# Copyright 2026 SreeStack contributors.
 +"""Local lifecycle repair; admission and FIFO remain in queue_core.
@@ -273,13 +317,39 @@
 +    conn.execute('CREATE TABLE IF NOT EXISTS admission_policy (singleton INTEGER PRIMARY KEY CHECK(singleton=1), policy_json TEXT NOT NULL)')
 +
 +
-+def configure(conn, capacities, contract):
++def validate_state(conn):
++    required = {
++        'queue': {'id', 'queue_name', 'status', 'pid', 'server_id', 'child_pid', 'command',
++                  'working_directory', 'worktree_root', 'repo_name', 'git_branch',
++                  'agent_name', 'created_at', 'updated_at', 'lifecycle_json'},
++        'task_results': {'task_id', 'result_json', 'completed_at'},
++        'task_operations': {'operation_id', 'request_json', 'request_sha256', 'task_id',
++                            'configuration_sha256', 'worker_json'},
++        'admission_policy': {'singleton', 'policy_json'},
++    }
++    for table, columns in required.items():
++        existing = {row[1] for row in conn.execute('PRAGMA table_info(' + table + ')')}
++        if not columns <= existing:
++            raise ValueError('Shared admission schema missing/incompatible: ' + table + '; restore state, never reinitialize')
++    rows = conn.execute('SELECT singleton, policy_json FROM admission_policy').fetchall()
++    if len(rows) != 1 or rows[0][0] != 1:
++        raise ValueError('Shared admission policy missing/incompatible; restore state')
++    policy = json.loads(rows[0][1])
++    if (policy.get('schema') != 1 or not policy.get('capacities')
++            or policy.get('ownership_contract') not in {'uncontained', 'process-group'}):
++        raise ValueError('Shared admission policy missing/incompatible; restore state')
++
++
++def configure(conn, capacities, contract, *, initialize=False):
 +    if contract not in {'uncontained', 'process-group'}:
 +        raise ValueError('Unknown ownership contract')
 +    if not capacities:
 +        raise ValueError('An explicit root --queue-capacity is required')
 +    policy = json.dumps({'schema': 1, 'capacities': capacities, 'ownership_contract': contract}, sort_keys=True)
-+    conn.execute('INSERT OR IGNORE INTO admission_policy VALUES (1, ?)', (policy,))
++    if initialize:
++        conn.execute('INSERT INTO admission_policy VALUES (1, ?)', (policy,))
++    else:
++        validate_state(conn)
 +    existing = conn.execute('SELECT policy_json FROM admission_policy WHERE singleton=1').fetchone()[0]
 +    if policy != existing:
 +        raise ValueError('Shared admission configuration mismatch; use the original capacities and ownership contract')
@@ -314,47 +384,104 @@
 +    conn.commit()
 +
 +
-+def recorded_child(conn, task_id, pid):
++def admitted(conn, task_id):
++    """Called only within upstream's successful waiting-to-running transaction."""
 +    row = conn.execute('SELECT lifecycle_json FROM queue WHERE id=?', (task_id,)).fetchone()
 +    metadata = json.loads(row[0])
++    now = time.time()
++    if metadata.get('queue_deadline') is not None and now >= metadata['queue_deadline']:
++        raise TimeoutError('Queue wait deadline expired before admission')
++    metadata.update(state='admitted', admitted_at=now,
++                    execution_deadline=now + metadata['execution_seconds'])
++    conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(metadata), task_id))
++
++
++def launch_metadata(conn, task_id, generation=None):
++    row = conn.execute('SELECT * FROM queue WHERE id=?', (task_id,)).fetchone()
++    if row is None:
++        raise RuntimeError('Command no longer active before gated launch')
++    metadata = json.loads(row['lifecycle_json'])
++    if metadata.get('result') or row['status'] != 'running':
++        raise RuntimeError('Command cancelled before gated launch')
++    if (generation is not None and metadata['generation'] != generation
++            or row['pid'] != os.getpid()
++            or metadata['owner'] != process_identity(os.getpid())
++            or metadata['boot'] != boot_identity()):
++        raise RuntimeError('Command launch owner/generation mismatch')
++    if time.time() >= metadata['execution_deadline']:
++        raise TimeoutError('Execution deadline expired before gated launch')
++    return metadata
++
++
++def recorded_child(conn, task_id, pid, generation):
 +    identity = process_identity(pid)
 +    if identity is None or identity['pgid'] != pid:
 +        raise RuntimeError('Cannot establish launched process group identity')
-+    metadata.update(state='executing', child=identity, execution_deadline=time.time() + metadata['execution_seconds'])
-+    conn.execute('UPDATE queue SET child_pid=?, lifecycle_json=? WHERE id=?',
-+                 (pid, json.dumps(metadata), task_id))
-+    conn.commit()
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        metadata = launch_metadata(conn, task_id, generation)
++        metadata.update(state='executing', child=identity, launched_at=time.time())
++        conn.execute('UPDATE queue SET child_pid=?, lifecycle_json=? WHERE id=?',
++                     (pid, json.dumps(metadata), task_id))
++        conn.commit()
++    except BaseException:
++        conn.rollback()
++        raise
++
++
++def release_gate(conn, task_id, generation, write_fd):
++    # Identity is durable before the gate opens; cancellation serializes here too.
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        launch_metadata(conn, task_id, generation)
++        os.write(write_fd, b'1')
++        conn.commit()
++    except BaseException:
++        conn.rollback()
++        raise
 +
 +
 +def gate_arguments(command, read_fd):
-+    return [sys.executable, __file__, '--gate', str(read_fd), command]
++    return [sys.executable, '-I', __file__, '--gate', str(read_fd), command]
 +
 +
 +def launch(conn, task_id, command, **kwargs):
++    generation = launch_metadata(conn, task_id)['generation']
 +    read_fd, write_fd = os.pipe()
++    child = None
++    opened = False
 +    try:
 +        child = subprocess.Popen(gate_arguments(command, read_fd), pass_fds=(read_fd,),
 +                                 start_new_session=True, **kwargs)
-+        recorded_child(conn, task_id, child.pid)
-+        os.write(write_fd, b'1')
++        recorded_child(conn, task_id, child.pid, generation)
++        release_gate(conn, task_id, generation, write_fd)
++        opened = True
 +        return child
 +    finally:
 +        os.close(read_fd)
 +        os.close(write_fd)
++        if child is not None and not opened:
++            child.wait(timeout=5)
 +
 +
 +async def launch_async(conn, task_id, command, **kwargs):
 +    import asyncio
++    generation = launch_metadata(conn, task_id)['generation']
 +    read_fd, write_fd = os.pipe()
++    child = None
++    opened = False
 +    try:
 +        child = await asyncio.create_subprocess_exec(*gate_arguments(command, read_fd),
 +                    pass_fds=(read_fd,), start_new_session=True, **kwargs)
-+        recorded_child(conn, task_id, child.pid)
-+        os.write(write_fd, b'1')
++        recorded_child(conn, task_id, child.pid, generation)
++        release_gate(conn, task_id, generation, write_fd)
++        opened = True
 +        return child
 +    finally:
 +        os.close(read_fd)
 +        os.close(write_fd)
++        if child is not None and not opened:
++            await asyncio.wait_for(child.wait(), timeout=5)
 +
 +
 +def receipt(conn, row, metadata, result, pending):
@@ -685,7 +812,7 @@
 -    task_origin = collect_task_origin(working_dir)
 -
 -    # Ensure database exists and is valid (recover if corrupted)
-     ensure_db(paths)
+-    ensure_db(paths)
 -
 -    # Get database connection
 -    with get_db(paths.db_path) as conn:
@@ -693,6 +820,7 @@
 -        init_db(paths)
 -
 -    # Open connection for the duration of the run
++    init_db(paths, capacities, args.ownership_contract)
      conn = sqlite3.connect(paths.db_path, timeout=60.0)
 -    conn.execute("PRAGMA journal_mode=WAL")
 -    conn.execute("PRAGMA busy_timeout=60000")
@@ -790,7 +918,7 @@
 -        # Wait for process (Ctrl+C will trigger cleanup_handler)
 -        try:
 -            proc.wait(timeout=timeout if timeout else None)
-+            proc.wait(timeout=args.timeout)
++            proc.wait(timeout=max(0, lifecycle.read_task(conn, task_id)['lifecycle']['execution_deadline'] - time.time()))
 +            result = {'status': 'success' if proc.returncode == 0 else 'failed',
 +                      'exit_code': proc.returncode, 'duration_seconds': time.time() - start}
 +            value = lifecycle.close_task(conn, task_id, result, True, 'normal_completion')
@@ -986,6 +1114,15 @@
  )
  
  # --- Configuration ---
+@@ -157,7 +160,7 @@
+ 
+ def init_db():
+     """Initialize database using configured paths."""
+-    _init_db(PATHS)
++    _init_db(PATHS, QUEUE_CAPACITIES, _args.ownership_contract)
+ 
+ 
+ def ensure_db():
 @@ -184,74 +187,9 @@
      return ctx.client_id if ctx and ctx.client_id else None
  
@@ -1206,9 +1343,14 @@
  
      with open(output_file, "w") as formatted, open(raw_output_file, "w") as raw:
          formatted.write(f"COMMAND: {command}\n")
-@@ -773,7 +668,9 @@
+@@ -771,9 +666,13 @@
+         execution = asyncio.gather(stdout_task, stderr_task, process_task)
+ 
          try:
-             await asyncio.wait_for(asyncio.shield(execution), timeout=timeout_seconds)
+-            await asyncio.wait_for(asyncio.shield(execution), timeout=timeout_seconds)
++            with get_db() as conn:
++                deadline = lifecycle.read_task(conn, task_id)['lifecycle']['execution_deadline']
++            await asyncio.wait_for(asyncio.shield(execution), timeout=max(0, deadline - time.time()))
          except asyncio.TimeoutError:
 -            await _terminate_process(proc)
 +            with get_db() as conn:
@@ -1217,7 +1359,7 @@
              await asyncio.gather(execution, return_exceptions=True)
              duration = time.time() - start
              formatted.write("\n--- SUMMARY ---\n")
-@@ -802,7 +699,9 @@
+@@ -802,7 +701,9 @@
                  "tail": tail_text,
              }
          except asyncio.CancelledError:
@@ -1228,7 +1370,7 @@
              await asyncio.gather(execution, return_exceptions=True)
              duration = time.time() - start
              formatted.write("\n--- SUMMARY ---\n")
-@@ -810,7 +709,9 @@
+@@ -810,7 +711,9 @@
              formatted.write(f"DURATION: {duration:.1f}s\n")
              raise
          except Exception:
@@ -1239,7 +1381,7 @@
              await asyncio.gather(execution, return_exceptions=True)
              raise
  
-@@ -977,6 +878,7 @@
+@@ -977,6 +880,7 @@
      env_vars: str = "",
      agent_name: str = "",
      wait_seconds: int = MAX_TOOL_WAIT_SECONDS,
@@ -1247,7 +1389,7 @@
  ):
      """
      Execute a command through the task queue for sequential processing.
-@@ -1032,6 +934,8 @@
+@@ -1032,6 +936,8 @@
          return "ERROR: Command cannot be empty"
      if not os.path.exists(working_directory):
          return f"ERROR: Working directory does not exist: {working_directory}"
@@ -1256,7 +1398,7 @@
      if timeout_seconds < 1:
          return "ERROR: timeout_seconds must be at least 1"
      if wait_error := _validate_wait_seconds(wait_seconds):
-@@ -1052,6 +956,8 @@
+@@ -1052,6 +958,8 @@
      caller_name = agent_name.strip() or _current_client_id()
      task_origin = collect_task_origin(working_directory, caller_name)
      task_id = await register_task(queue_name, command, task_origin)
@@ -1265,7 +1407,7 @@
      _start_background_task(
          task_id,
          queue_name,
-@@ -1110,50 +1016,16 @@
+@@ -1110,50 +1018,16 @@
      if task_id < 1:
          return "ERROR: task_id must be a positive integer"
  
@@ -1326,11 +1468,16 @@
  
  
  @mcp.tool()
-@@ -1177,6 +1049,9 @@
+@@ -1172,11 +1046,13 @@
+ 
+ 
+ # Initialize database on module load
+-init_db()
+ 
  
  def main():
      """Entry point for uvx/CLI."""
-+    ensure_db()
++    init_db()
 +    with get_db() as conn:
 +        lifecycle.configure(conn, QUEUE_CAPACITIES, _args.ownership_contract)
      mcp.run()
@@ -1342,7 +1489,7 @@
  [project]
  name = "agent-task-queue"
 -version = "0.4.1"
-+version = "0.4.1+macwork.1"
++version = "0.4.1+macwork.3"
  description = "MCP server for sequential task execution via FIFO queue"
  readme = "README.md"
  requires-python = ">=3.10"

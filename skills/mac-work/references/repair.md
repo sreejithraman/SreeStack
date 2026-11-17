@@ -13,7 +13,8 @@ FIFO checks authoritative. A quarantined task retains its upstream `running`
 row, so the existing capacity calculation includes it.
 
 - A shared initialization lock serializes schema setup. Missing, busy or corrupt
-  databases never trigger deletion of queue/WAL files. Corruption fails closed.
+  databases never trigger deletion of queue/WAL files. Fresh bootstrap is explicit;
+  active opens validate existing schema and policy before mutation. Corruption fails closed.
 - A private launch pipe gates command execution until boot identity, PID birth,
   group identity, generation and execution deadline are committed. Owner death
   before that receipt leaves an unresolved row rather than replaying the command.
@@ -26,7 +27,9 @@ row, so the existing capacity calculation includes it.
   or recovery-pending task; they do not submit. CLI `clear` is disabled.
 - The first configured capacities and ownership contract live in SQLite. Every
   submitting entrypoint must match them. Tasks retain the configuration digest.
-  Queue deadlines and execution deadlines have separate starts and limits.
+  Queue time stops at the atomic admission transition. Its persisted admission
+  clock starts the execution budget, including preflight; gated launch refuses an
+  expired budget. Child registration and gate release serialize with cancellation.
 
 | Lifecycle observation | Capacity and result |
 | --- | --- |

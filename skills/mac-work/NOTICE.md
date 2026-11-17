@@ -7,10 +7,12 @@ Matt McKenna and Block. No upstream NOTICE file exists in that archive.
 
 SreeStack's local patch changes `queue_core.py`, `tq.py`, `task_queue.py` and
 `pyproject.toml`, and adds `queue_lifecycle.py`. It serializes nondestructive
-initialization, records launch identities, consolidates lifecycle closure and
+initialization, atomically records admission clocks, serializes cancellation with
+gated launch, isolates gate imports, validates existing state, records launch
+identities, consolidates lifecycle closure and
 receipts, persists configuration, and retains unresolved admission rows. Modified
 Python files carry a change notice. The added lifecycle module carries its own
-Apache-2.0 SPDX/copyright notice. The built version is `0.4.1+macwork.1`.
+Apache-2.0 SPDX/copyright notice. The built version is `0.4.1+macwork.3`.
 
 The patch retains the upstream SQLite/FIFO admission implementation. It does not
 establish arbitrary detached-descendant containment or a production-ready shared

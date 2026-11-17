@@ -1,17 +1,17 @@
 {
   "schema": 1,
   "python": "3.12.12",
-  "package_version": "0.4.1+macwork.1",
+  "package_version": "0.4.1+macwork.3",
   "source": {
     "url": "https://github.com/block/agent-task-queue/archive/48d16da41f57801bbf9462ed2df923713978b6ae.tar.gz",
     "sha256": "a98a79bc53e77a483fc90e2cc209ffc5d22eb8d741b15cbf7d197d6ac8da2808",
     "commit": "48d16da41f57801bbf9462ed2df923713978b6ae"
   },
   "inputs": {
-    "patches/lifecycle.patch": "cb673e0d2bcfe018f618e67ef88397110fc44d9ddf1e256abf5a96404f614a33",
+    "patches/lifecycle.patch": "a5b2863865bb771ed7b778dc6fd1ab0b54d61c1909db57554022f7c343ca5b73",
     "scripts/runtime.lock": "d74d538e2445710fd928ba1d3bb1626c7265245b03b08796a2ae9a81c01d85ec",
     "scripts/build.lock": "16a713850884792a40c549788da805f88f9730d8061d381ac41ccdfdbb521b0a",
-    "NOTICE.md": "ab4226948706ca8be61d4a7ad6efab1a3275e7942f462daa9d15c9612de2c4e6",
+    "NOTICE.md": "21867948dded202f9c8dbbb92575c70196fba04c29e2c647644c7add6e6b96c0",
     "licenses/agent-task-queue.txt": "bd54eb880333876cf6ae350fd0837b2d1641ad57b531b73033743601c5771d9a"
   },
   "source_modules": {
@@ -21,11 +21,11 @@
     "pyproject.toml": "df927124152b7b75d8e073031d1db07d4a98ffb181e566d785e2ae218593dbad"
   },
   "repaired_modules": {
-    "queue_core.py": "6b6c930449c046feea93c03e43b0ad2cf9de6e771d184fbca3be6c676eee2ec2",
-    "queue_lifecycle.py": "d8460190073f3cb03f176798f89ae9be8049151c22bda23e4ccbdbdc372b3e6e",
-    "tq.py": "20b504d692db86d4c71f770a15a2bd1f25df046b7684254f570191742007ad3b",
-    "task_queue.py": "cf4b8da51801a235011ab34f3b7140d13dc936d30566f85e301b17f5e57255be",
-    "pyproject.toml": "37b5531a958da85ede6cf7e4b533cea3e2f25a1c5b6fbf46d1780636db8e6021"
+    "queue_core.py": "1600e47a3864ba1e41a8c97289b3200fa9213001db4f5d9bcb6d8d62e1d9c603",
+    "queue_lifecycle.py": "168b44fca9961a8513d224579bd3153c819b4576b4421384e6bc0450bb36609d",
+    "tq.py": "bf252ff2a7e2e2400f7f9d9e1a14bae1a8fc7e71189b016480606e4fad3a5ba2",
+    "task_queue.py": "d0b7f14daa89a8ca1812beb2cba0c3ee63ba8c8b0ba2094f8a32d52868796cab",
+    "pyproject.toml": "b844044a11bb88932c2d9385812eedcc931a8f6076ca9c836502b1c01909f74b"
   },
   "source_date_epoch": "1700000000"
 }
