@@ -217,13 +217,12 @@ def worker_case(root, output, name):
     import runner
     operation = name + '-' + output.parent.name
     marker = output / 'command-marker'
-    spec = runner.request(operation, 'failure-regression',
-        ['/usr/bin/touch', str(marker)], str(Path.cwd()), 10, 5)
-    if name == 'sqlite-queue-deadline':
-        spec['queue_seconds'] = 1
+    argv = ['/usr/bin/touch', str(marker)]
+    queue_seconds = 1 if name == 'sqlite-queue-deadline' else 10
+    execution_seconds = 5
     if name in {'remaining-budget', 'expired-preflight', 'preflight-failure'}:
-        spec['execution_seconds'] = 1 if name == 'expired-preflight' else 15
-        spec['argv'] = ['/bin/sh', '-c', 'touch "$1"; sleep 14', 'fixture', str(marker)]
+        execution_seconds = 1 if name == 'expired-preflight' else 15
+        argv = ['/bin/sh', '-c', 'touch "$1"; sleep 14', 'fixture', str(marker)]
     original = subprocess.Popen
     children = []
 
@@ -238,7 +237,8 @@ def worker_case(root, output, name):
 
     subprocess.Popen = inject
     try:
-        accepted = runner.submit(config, spec)
+        accepted = runner.submit(config, operation, 'failure-regression', argv, str(Path.cwd()),
+                                 queue_seconds, execution_seconds)
     finally:
         subprocess.Popen = original
     assert len(children) == 1, 'expected one owned worker'
@@ -264,7 +264,7 @@ def worker_case(root, output, name):
     if name in {'remaining-budget', 'expired-preflight', 'preflight-failure'}:
         preflight = value['events'][0]['during_preflight']
         assert preflight['started_at'] == preflight['lifecycle']['admitted_at']
-        assert preflight['deadlines']['execution'] == preflight['started_at'] + spec['execution_seconds']
+        assert preflight['deadlines']['execution'] == preflight['started_at'] + execution_seconds
         assert value['published']['started_at'] == preflight['started_at']
         assert observed['duration_seconds'] >= .8, 'preflight missing from execution duration'
     return {'status': observed['status'], 'capacity_held': observed['capacity_held'],

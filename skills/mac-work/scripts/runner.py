@@ -90,10 +90,10 @@ def status(config, operation_id):
             return snapshot(conn, config, operation_id)
 
 
-def submit(config, spec):
-    import queue_lifecycle as lifecycle
+def submit(config, operation_id, owner, argv, worktree, queue_seconds, execution_seconds):
     with activation_lock(Path(config['root'])):
         require_active(config)
+        spec = request(operation_id, owner, argv, worktree, queue_seconds, execution_seconds)
         import queue_lifecycle as lifecycle
         with database(config) as conn:
             task, created = lifecycle.reserve_operation(conn, spec['operation_id'], spec, config['_sha256'])

@@ -43,9 +43,8 @@ def serve(config):
         Same ID/input returns its original task/result; changed input conflicts.
         Read status rather than resubmitting. No queue/capacity overrides exist.
         """
-        spec = await asyncio.to_thread(runner.request, operation_id, owner, argv, worktree,
-                                       queue_seconds, execution_seconds)
-        return await asyncio.to_thread(runner.submit, config, spec)
+        return await asyncio.to_thread(runner.submit, config, operation_id, owner, argv,
+                                       worktree, queue_seconds, execution_seconds)
 
     @server.tool()
     async def command_status(operation_id: str):
@@ -119,8 +118,8 @@ def main():
         raise ValueError('Observation wait must be 0..30 seconds; it is separate from task deadlines')
     if args.command == 'run':
         argv = args.argv[1:] if args.argv[:1] == ['--'] else args.argv
-        value = runner.submit(config, runner.request(args.id, args.owner, argv, args.worktree,
-                                                     args.queue_seconds, args.execution_seconds))
+        value = runner.submit(config, args.id, args.owner, argv, args.worktree,
+                              args.queue_seconds, args.execution_seconds)
     elif args.command == 'cancel':
         value = runner.cancel(config, args.id)
     else:
