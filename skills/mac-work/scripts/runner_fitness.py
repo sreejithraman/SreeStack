@@ -275,6 +275,16 @@ def check(p, case):
             assert 'Bundle file set mismatch' in error
             refused.append('unlisted-source')
         finally:unexpected.unlink()
+        wait_for(p.root_unlocked)
+        database=p.root/'state/queue.db';saved=database.with_name('queue.proof-backup')
+        assert not database.with_name('queue.db-wal').exists()
+        spec=p.operation('drift-missing-state')
+        database.rename(saved)
+        try:
+            error=p.invoke(p.argv(spec),expected=2)
+            assert 'Shared admission database missing' in error and not database.exists()
+            refused.append('missing-state')
+        finally:saved.rename(database)
         valid=p.operation('after-drift');p.run(valid);assert p.terminal(valid['operation_id'])['status']=='success'
         return {'refused':refused,'restored_operation':'success'}
     if case == 'maintenance':

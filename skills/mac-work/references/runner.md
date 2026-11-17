@@ -36,7 +36,9 @@ config by digest. Config fixes root `heavy=1` and `ownership_contract=process-gr
 It binds the runtime interpreter, candidate source/patch/dependency pins, and
 bundled runner code. CLI/MCP clients cannot select another queue or cap. Runtime,
 source, patch, code, config or policy drift refuses execution; there is no direct
-shell fallback. Version directories are never overwritten by the installer.
+shell fallback. A missing database in an active root refuses requests/activation;
+restore state instead of silently starting an empty queue and losing operation IDs.
+Version directories are never overwritten by the installer.
 
 ## Stable operations and receipts
 

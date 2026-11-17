@@ -49,6 +49,8 @@ def database(config):
     from queue_core import QueuePaths, ensure_db, get_db
     import queue_lifecycle as lifecycle
     queue = QueuePaths.from_data_dir(Path(config['state']))
+    if not queue.db_path.is_file():
+        raise ValueError('Shared admission database missing; restore state, never resubmit into an empty queue')
     ensure_db(queue)
     with get_db(queue.db_path) as conn:
         lifecycle.configure(conn, POLICY['capacities'], POLICY['ownership_contract'])

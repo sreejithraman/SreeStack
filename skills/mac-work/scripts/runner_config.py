@@ -107,6 +107,8 @@ def require_active(config):
 def idle(root):
     database = root / 'state/queue.db'
     if not database.exists():
+        if (root / 'current.json').exists():
+            raise ValueError('Shared admission database missing; restore state, never reinitialize an active root')
         return
     with sqlite3.connect(database) as conn:
         row = conn.execute('SELECT COUNT(*) FROM queue').fetchone()

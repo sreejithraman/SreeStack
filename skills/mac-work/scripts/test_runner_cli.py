@@ -103,6 +103,14 @@ class RunnerCLI(unittest.TestCase):
             self.assertEqual(result.returncode,2)
             self.assertIn('Activation refused',result.stderr)
 
+    def test_missing_active_state_refuses_reinitialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve();(root/'current.json').write_text('{}')
+            result=subprocess.run([sys.executable,str(CLI),'activate','--root',str(root),'--release','missing'],capture_output=True,text=True)
+            self.assertEqual(result.returncode,2)
+            self.assertIn('Shared admission database missing',result.stderr)
+            self.assertFalse((root/'state/queue.db').exists())
+
     def test_release_cannot_escape_the_version_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             result=subprocess.run([sys.executable,str(CLI),'activate','--root',directory,'--release','../other'],capture_output=True,text=True)
