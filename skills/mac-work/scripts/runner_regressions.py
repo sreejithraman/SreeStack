@@ -222,8 +222,8 @@ def worker_case(root, output, name):
     if name == 'sqlite-queue-deadline':
         spec['queue_seconds'] = 1
     if name in {'remaining-budget', 'expired-preflight', 'preflight-failure'}:
-        spec['execution_seconds'] = 1 if name == 'expired-preflight' else 2
-        spec['argv'] = ['/bin/sh', '-c', 'touch "$1"; sleep 1.4', 'fixture', str(marker)]
+        spec['execution_seconds'] = 1 if name == 'expired-preflight' else 15
+        spec['argv'] = ['/bin/sh', '-c', 'touch "$1"; sleep 14', 'fixture', str(marker)]
     original = subprocess.Popen
     children = []
 
