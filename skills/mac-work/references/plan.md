@@ -310,3 +310,48 @@ increases remain outstanding; parent now owns supported-pilot SreeStack review/m
 Heavy1/global4/iOS4/Android1 stay unchanged. The earlier 12-build matched
 measurement and real cancellation proof remain valid for identical functional
 runner code. No runtime rebuild or install activation accompanies this record update.
+
+## Supported-pilot review repairs (2026-11-17)
+
+The frozen first review inspected `fa44b34981539b95b24855e4747c46c55a44a1ff`.
+Its MWR-001 through MWR-006 must-fix findings and MWR-007 were assigned to this
+implementation owner. These are author repairs, not independent reassessment.
+Parent owns fresh Primary/Thermo repair assessments, Adversarial first discovery,
+final real-workload integration, publication and merge. The user's supported-pilot
+review/merge authorization remains active; global activation, broader toolchains,
+old holds, capacity increases and external Block/SimLock publication remain deferred.
+
+| Issue | Implemented contract | Focused proof |
+| --- | --- | --- |
+| MWR-001 | Upstream's successful admission transaction stores admission time/deadline. Preflight consumes that budget; expired launch refuses; process wait uses the remainder. Reports stop queue time at admission. | Admission-clock observation; partial/expired/failed preflight; real CLI handoff preflight timeout; report timing freeze. |
+| MWR-002 | Registration and gate release serialize with cancellation and validate current owner/generation/state. Committed cancellation wins. | Two SQLite clients plus real gated child; public cancel before/after registration; no command marker. |
+| MWR-003 | Trusted bootstrap/controller/worker/gate Python uses isolated imports. Requested command environment survives. | CLI/MCP caller Python override sentinels and environment output; gate startup sentinel. |
+| MWR-004 | Explicit serialized fresh bootstrap is separate from schema/policy validation on active opens. Missing/truncated state refuses without recreation/replay. | Empty/missing-table/missing-policy public refusal, damaged-byte preservation and one marker; valid idle reopen; WAL preservation guard. |
+| MWR-005 | Only recognized SQLite busy/locked errors retry through existing cancellation/queue-deadline checks. FIFO remains upstream-owned. | Actual held write transaction; cancellation/queue expiry while contended; non-lock error fails closed. |
+| MWR-006 | Successful launch is recorded after return; live owner can close a proven prelaunch abort. Registered children still use verified group closure. | Launch exception before registration, cancellation at registration, exception after registration. |
+| MWR-007 | Handled SIGTERM/SIGINT cannot interrupt bounded final closure/receipt publication. Hard-crash rules remain. | Signals injected during final close; durable terminal receipt and released capacity. |
+
+MWR-008 remains acknowledged idempotent raw-CLI cleanup; no separate refactor.
+MWR-009's proposed dead-owner/no-child automatic release is rejected: unknown
+spawn windows remain quarantined. A permanent guard retains that capacity. The
+original arbitrary-detach counterexample is still unsupported and is not relabelled.
+
+The dependency remains Block commit `48d16da41f57801bbf9462ed2df923713978b6ae`;
+maintained build version is `0.4.1+macwork.3`. Candidate source/patch/dependency
+hashes are authoritative in [candidate.json](../candidate.json). New source adds no
+scheduler, containment daemon, device hook, pressure policy or capacity change.
+Fresh private installations are required for this bootstrap revision: the old
+parent-owned launchers/proofs remain untouched, and their bootstrap hash prevents
+in-place replacement. Compatible idle installs/upgrades/rollback remain explicit.
+Historical real-build/device evidence above belongs to its recorded old runtime;
+parent must integrate the repaired runtime before carrying those claims forward.
+
+Repair proof and exact final stack/build identities are retained under this owner's
+private Git `verify-proof/review-repairs-20261117/`. It contains original red results,
+focused green worker/state results, fresh combined runner/handoff/diagnostic and
+repaired-upstream gate logs, independent build receipts/wheels, repository checks,
+retained-file reconciliation and the owner report. A test-only bytecode change
+caused by Python isolated mode ignoring the environment's bytecode flag was saved
+alongside the original, then the verified retained original was restored. Isolated
+launcher/worker invocations now pass `-B` explicitly. No parent-owned Try state,
+proof, host profile, device, old hold or shared installation is part of these tests.

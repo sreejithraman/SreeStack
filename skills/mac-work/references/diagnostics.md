@@ -17,8 +17,11 @@ and producer identity remain in the dependent request. Logs/argv are not embedde
 in the summary; their linked files remain verbatim, not automatic secret redaction.
 
 Queue wait ends at admission (or queued closure). Execution wall time starts at
-admission and includes verified group closure, which can outlast root-program
-duration. Pending times end at observation. Job reads perform normal status
+the persisted admission clock, includes preflight and verified group closure,
+and can outlast root-program duration. `program_duration_seconds` retains the
+worker-reported receipt duration; repaired workers include preflight in it. Old
+receipts retain their original timestamps/durations rather than inventing an
+admission clock. Pending times end at observation. Job reads perform normal status
 reconciliation, which may terminate verified expired/orphaned work and resolve
 permits under existing closure rules. Pressure sampling never changes admission
 policy or submits/cancels work. The JSON `observation_only` flag describes pressure

@@ -53,6 +53,8 @@ def main():
         active=by_id[holder['operation_id']]
         waiting=by_id[queued['operation_id']]
         assert active['status']=='running' and active['execution_seconds']>0 and active['capacity_held']
+        assert active['started_at'] == active['lifecycle']['admitted_at']
+        assert active['deadlines']['execution'] == active['started_at'] + holder['execution_seconds']
         assert waiting['status']=='queued' and waiting['execution_seconds'] is None and waiting['queue_wait_seconds']>0
         sample=value['pressure']
         assert sample['freshness']=='fresh' and value['policy']['capacities']=={'heavy':1}
@@ -70,7 +72,11 @@ def main():
         p.terminal(holder['operation_id'])
         done=report('--id',holder['operation_id'],'--id',queued['operation_id'])
         assert all(j['status']=='cancelled' and not j['capacity_held'] for j in done['jobs'])
-        return {'running_and_queue_separate':True,'rss_bytes':group['rss_sum_bytes'],'lease_signal':sample['lease_signal']['status'],'mcp_same_tasks':True}
+        closed = next(job for job in done['jobs'] if job['operation_id'] == holder['operation_id'])
+        assert closed['started_at'] == active['started_at']
+        assert closed['queue_wait_seconds'] == active['queue_wait_seconds']
+        assert closed['execution_seconds'] >= active['execution_seconds']
+        return {'running_and_queue_separate':True,'rss_bytes':group['rss_sum_bytes'],'lease_signal':sample['lease_signal']['status'],'mcp_same_tasks':True,'queue_wait_frozen_at_admission':True}
     def stale_missing():
         old=json.loads((args.output/'live-report.json').read_text())
         old['pressure']['sampled_at']-=120
