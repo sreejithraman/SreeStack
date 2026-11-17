@@ -10,11 +10,14 @@ async def main():
     from fastmcp import Client
     from fastmcp.client.transports import StdioTransport
 
-    runtime, state = map(Path, sys.argv[1:])
+    runtime, state = map(Path, sys.argv[1:3])
+    contract = sys.argv[3:4]
     transport = StdioTransport(
         command=str(runtime / 'bin/agent-task-queue'),
-        args=['--data-dir', str(state), '--queue-capacity', 'heavy=1'],
-        env={'TASK_QUEUE_POLL_WAITING': '.05', 'PYTHONUNBUFFERED': '1'},
+        args=['--data-dir', str(state), '--queue-capacity', 'heavy=1']
+             + (['--ownership-contract', contract[0]] if contract else []),
+        env={'TASK_QUEUE_POLL_WAITING': '.05', 'PYTHONUNBUFFERED': '1',
+             'FASTMCP_CHECK_FOR_UPDATES': 'off'},
         keep_alive=False,
     )
     async with Client(transport) as client:

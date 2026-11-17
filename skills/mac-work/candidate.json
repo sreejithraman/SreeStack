@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "python": "3.12.12",
+  "package_version": "0.4.1+macwork.1",
+  "source": {
+    "url": "https://github.com/block/agent-task-queue/archive/48d16da41f57801bbf9462ed2df923713978b6ae.tar.gz",
+    "sha256": "a98a79bc53e77a483fc90e2cc209ffc5d22eb8d741b15cbf7d197d6ac8da2808",
+    "commit": "48d16da41f57801bbf9462ed2df923713978b6ae"
+  },
+  "inputs": {
+    "patches/lifecycle.patch": "cb673e0d2bcfe018f618e67ef88397110fc44d9ddf1e256abf5a96404f614a33",
+    "scripts/runtime.lock": "d74d538e2445710fd928ba1d3bb1626c7265245b03b08796a2ae9a81c01d85ec",
+    "scripts/build.lock": "16a713850884792a40c549788da805f88f9730d8061d381ac41ccdfdbb521b0a",
+    "NOTICE.md": "ab4226948706ca8be61d4a7ad6efab1a3275e7942f462daa9d15c9612de2c4e6",
+    "licenses/agent-task-queue.txt": "bd54eb880333876cf6ae350fd0837b2d1641ad57b531b73033743601c5771d9a"
+  },
+  "source_modules": {
+    "queue_core.py": "bf23264e5cacca81a16ad48b596c0810d90a3c18e94fd44bca3af0af20e8b8d3",
+    "tq.py": "946022175b64d1c7bdbdd735461192c5528dcce52c011561530966ee3bbf3d9d",
+    "task_queue.py": "b2c7a62182ae0c7e34596515778797b9391de444675ad420ed4fb315a4efba5d",
+    "pyproject.toml": "df927124152b7b75d8e073031d1db07d4a98ffb181e566d785e2ae218593dbad"
+  },
+  "repaired_modules": {
+    "queue_core.py": "6b6c930449c046feea93c03e43b0ad2cf9de6e771d184fbca3be6c676eee2ec2",
+    "queue_lifecycle.py": "d8460190073f3cb03f176798f89ae9be8049151c22bda23e4ccbdbdc372b3e6e",
+    "tq.py": "20b504d692db86d4c71f770a15a2bd1f25df046b7684254f570191742007ad3b",
+    "task_queue.py": "cf4b8da51801a235011ab34f3b7140d13dc936d30566f85e301b17f5e57255be",
+    "pyproject.toml": "37b5531a958da85ede6cf7e4b533cea3e2f25a1c5b6fbf46d1780636db8e6021"
+  },
+  "source_date_epoch": "1700000000"
+}
