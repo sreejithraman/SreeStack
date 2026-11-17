@@ -1,6 +1,7 @@
 # Models
 
-Look up what to launch here. The table is not a rule about who may work. A thread keeps the
+Use [Dispatch](../SKILL.md#dispatch) to select an available authorized model for an initial
+launch or recovery; look up its row here. The table is not a rule about who may work. A thread keeps the
 model the user picked, and no running agent is replaced because its model differs from a row.
 
 ## Model defaults
@@ -28,15 +29,11 @@ model the user picked, and no running agent is replaced because its model differ
 The primary-review row also sets the model for cross-judges, single-reviewer audits, and second
 opinions.
 
-Resolve names and effort through `orchestrator_capabilities` to exact available IDs and options.
-A caller or project choice settles multiple matches; otherwise report the ambiguity. Gemini's
-effort can be encoded in its model ID; Gemini 4 Hydrogen High uses `gemini-4-hydrogen-high`.
-When a row's model is unavailable, use [availability fallback](reuse-and-recovery.md#availability-fallback).
+Gemini's effort can be encoded in its model ID; Gemini 4 Hydrogen High uses `gemini-4-hydrogen-high`.
 
 ## Choose a model
 
-Explicit user choices and effort limits come first and hold through project requirements. Then
-use a task-specific choice, then the first matching row.
+Look up the job's row below, then apply [Dispatch](../SKILL.md#dispatch).
 
 | Job | Row |
 | --- | --- |

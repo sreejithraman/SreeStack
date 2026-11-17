@@ -1484,8 +1484,12 @@ research, source-retrieval, and review model defaults, including effort and
 additional review pools, with row choice, raising a row, and UI operation.
 It also holds the Coordinator row. Gemini retrieval and additional review use
 Antigravity’s Hydrogen High selection without a Gemini fallback.
-`references/reuse-and-recovery.md` owns reuse, review passes, owner replacement,
-recovery, and availability fallbacks. Live host instructions own APIs, transport,
+Dispatch owns one model-selection rule for initial launch and availability
+recovery, using the table's preferred/fallback/effort data. The model reference
+routes selection back to Dispatch. `references/reuse-and-recovery.md` owns
+reuse, review passes, owner replacement, partial-work preservation, writer
+reconciliation, and bounded retries; availability evidence returns to Dispatch.
+Live host instructions own APIs, transport,
 task lifecycle, permissions, and workspace binding. Local policy owns concurrency
 and bounded recovery, subject to caller-specific failure policy.
 
@@ -1509,15 +1513,16 @@ its Codex fallback is GPT-6 Astra at X-High. The existing agent handles routine 
 operation; a dedicated operator is reserved for substantial work, specialized
 capabilities, required independence, or repeated operational difficulty, at a tier
 set by flow complexity and false-pass cost, with Verify retaining assertions and
-verdicts. Listed availability fallbacks apply to quota, unavailable providers/models,
-and provider runtime failures while preserving acceptance, review criteria, and
-explicit choices. A listed fallback is standing authorization to use its exact
-provider, model, and effort: apply it with a notice rather than asking again on
-each launch or new session. Briefs and handoffs carry the row, failure evidence,
-fallback, and user limits; known reset times or recovery evidence trigger an
-availability recheck. Live host transport and permissions still apply. A
-user-named model blocks rather than falling back unless the user authorized a
-substitute, and explicit effort, cost, and concurrency limits hold.
+verdicts. Dispatch honors explicit pins and effort/cost/concurrency limits,
+uses the available preference, or applies the exact listed fallback with a
+notice under the user's standing authorization in Dispatch. Known outages apply before the first
+launch as well as after failure. It asks for a model choice only when none is
+available and authorized. Unlisted choices, Simple downgrades, and changes to
+additional-review skips stay unauthorized. Briefs and handoffs carry row,
+outage/reset evidence, model/effort, and user limits; reset or recovery evidence
+triggers an availability recheck for new work. A review fallback stays a new
+independent task. Authentication and permission denials remain recovery stops;
+host transport, permissions, lifecycle, and owner reuse still govern dispatch.
 
 Names no callers. Briefs carry the original request and accepted corrections;
 explicit human holds persist until released.

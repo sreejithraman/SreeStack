@@ -12,8 +12,8 @@ it. The caller owns the outcome.
 ## Who does the work
 
 **In a top-level thread,** give every project-file edit, however small, to a background subagent
-and stay free. In T3 that means `delegate_task`. Pick its model by its job from
-[the model table](references/models.md#choose-a-model), and keep your own. Keep reading, planning,
+and stay free. In T3 that means `delegate_task`. Select its model under
+[Dispatch](#dispatch), and keep your own. Keep reading, planning,
 answering, and coordinating yourself. Edit yourself only when told to do it yourself, or under the
 repair rule below. If you can't launch a subagent, say so and ask.
 
@@ -76,14 +76,35 @@ disposition and any successor in the shared task record or handoff so later send
 
 ## Dispatch
 
-Follow live host rules. Use a new task unless [reuse](references/reuse-and-recovery.md#reuse-an-agent)
-fits. When a run fails or its status is unclear, use
-[recovery](references/reuse-and-recovery.md#recover-work).
-When the table's model is unavailable, apply its
-[standing fallback authorization](references/reuse-and-recovery.md#availability-fallback).
+Select a model here for both an initial launch and availability recovery:
+
+1. Honor explicit user choices and effort, cost, and concurrency limits first. A named model
+   permits no substitute unless the user authorized one. Otherwise use the task-specific choice
+   or [matching job row](references/models.md#choose-a-model).
+2. Resolve the row's preferred provider, model, and effort through live host capabilities.
+   Use current availability evidence, including outages carried from an earlier session. Choose
+   the preference when available. On quota or an unavailable model/provider, choose the row's
+   listed fallback with its exact provider, model, and effort. Listed availability fallbacks are
+   authorized standing choices: launch the available fallback and notify the user without another
+   permission question. This also selects the fallback before an initial launch during a known outage.
+3. Ask for a model choice only when no available authorized choice remains. An absent or
+   unavailable fallback, an unresolved model-ID ambiguity, or a user limit can leave no choice.
+   Keep the scope, verification bar, and review criteria. Availability never authorizes an
+   unlisted choice, a downgrade to Simple, or a change to additional-review skip policy.
+
+Carry the selected row, outage/reset evidence, chosen model and effort, and user limits in briefs
+and handoffs. Recheck availability when the known reset time passes or recovery evidence arrives;
+use the available preference for new work without replacing a running owner. A review fallback
+starts a new independent task and never reuses another result.
+
+Follow live host transport, permissions, and lifecycle rules. For authentication or permission
+failures, partial work, uncertain runs, and bounded retries, use
+[recovery](references/reuse-and-recovery.md#recover-work) before any replacement launch. Use a
+new task unless [reuse](references/reuse-and-recovery.md#reuse-an-agent) fits.
 
 - **Target:** each child must support the chosen model and options. Use a generic role when
-  custom ranks would override them. T3's `role` is not a model preset.
+  custom ranks would override them. T3's `role` is not a model preset. A caller or project choice
+  settles multiple model-ID matches; otherwise report the ambiguity.
 - **Slash command:** through `delegate_task`, set `role: general` and start `task` with the
   command. Other roles put text before it.
 - **Separate checkout:** confirm its starting revision and supply uncommitted inputs
