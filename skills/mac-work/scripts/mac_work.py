@@ -21,6 +21,10 @@ import runner_config as configuration
 def emit(value, as_json):
     if as_json:
         print(json.dumps(value, sort_keys=True))
+    elif 'manifest_path' in value:
+        print(f"build: {value['producer']['operation_id']}\nmanifest: {value['manifest_path']}")
+        for artifact in value['artifacts']:
+            print(f"artifact: {artifact['path']}")
     elif 'operation_id' in value:
         print(f"{value['operation_id']}: {value['status']} (capacity held: {value.get('capacity_held', False)})")
         print(f"receipt: {value['receipt_path']}\nlog: {value['log_path']}")
@@ -33,18 +37,29 @@ def serve(config):
     import asyncio
     from fastmcp import FastMCP
     import runner
+    # This entrypoint loads after startup validation. Its operations validate each call.
+    import handoff
     server = FastMCP('Mac Work')
 
     @server.tool()
     async def run_command(operation_id: str, owner: str, argv: list[str], worktree: str,
-                          queue_seconds: int = 1200, execution_seconds: int = 1200):
+                          queue_seconds: int = 1200, execution_seconds: int = 1200,
+                          handoff_id: str | None = None):
         """Submit once by stable ID. Commands must keep all heavy work foreground.
 
         Same ID/input returns its original task/result; changed input conflicts.
         Read status rather than resubmitting. No queue/capacity overrides exist.
         """
         return await asyncio.to_thread(runner.submit, config, operation_id, owner, argv,
-                                       worktree, queue_seconds, execution_seconds)
+                                       worktree, queue_seconds, execution_seconds, handoff_id)
+
+    @server.tool()
+    async def build_handoff(operation_id: str, artifacts: list[str]):
+        """Seal artifacts after successful build closure, before device acquisition.
+
+        No device is acquired. Consumers pass handoff_id to run_command.
+        """
+        return await asyncio.to_thread(handoff.seal, config, operation_id, artifacts)
 
     @server.tool()
     async def command_status(operation_id: str):
@@ -81,7 +96,13 @@ def main():
     run.add_argument('--execution-seconds', type=int, default=1200)
     run.add_argument('--wait-seconds', type=int, default=0, help='bounded observation only; expiration does not cancel')
     run.add_argument('--json', action='store_true')
+    run.add_argument('--handoff', help='sealed producer operation ID; verify exact artifacts before launch')
     run.add_argument('argv', nargs=argparse.REMAINDER)
+    handoff = commands.add_parser('handoff', help='seal successful closed build artifacts; never acquires a device')
+    handoff.add_argument('--id', required=True, help='producer build operation ID')
+    handoff.add_argument('--artifact', action='append', required=True,
+                         help='absolute file/directory; repeat for each artifact (10000 entries / 2 GiB / 30s total)')
+    handoff.add_argument('--json', action='store_true')
     for operation in ('status', 'cancel'):
         command = commands.add_parser(operation)
         command.add_argument('--id', required=True)
@@ -110,6 +131,10 @@ def main():
         serve(config)
         return 0
     import runner
+    if args.command == 'handoff':
+        import handoff
+        emit(handoff.seal(config, args.id, args.artifact), args.json)
+        return 0
     if args.command == '_worker':
         runner.worker(config, args.id)
         return 0
@@ -119,7 +144,7 @@ def main():
     if args.command == 'run':
         argv = args.argv[1:] if args.argv[:1] == ['--'] else args.argv
         value = runner.submit(config, args.id, args.owner, argv, args.worktree,
-                              args.queue_seconds, args.execution_seconds)
+                              args.queue_seconds, args.execution_seconds, args.handoff)
     elif args.command == 'cancel':
         value = runner.cancel(config, args.id)
     else:

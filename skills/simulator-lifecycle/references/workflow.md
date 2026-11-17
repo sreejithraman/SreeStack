@@ -1,7 +1,7 @@
 # Run and handoff conventions
 
 Use SimLock for disposable agent devices across projects. SimLock owns allocation,
-leases, wiping and reuse; project runners own build processes and host output.
+leases and device retirement/recovery; project runners own build processes and host output.
 Keep user inspection devices and valuable app data outside the disposable pool.
 
 ## Choose the route before acquiring
@@ -16,6 +16,10 @@ prerequisite. Environment setup and adoption checks use
 [setup and rollout](setup.md).
 
 For T3 acquisition and interaction, follow [T3 device routing](t3.md).
+Prepare device-independent artifacts first through
+[Mac Work handoffs](../../mac-work/references/handoffs.md). Acquire only after
+the build receipt reports success, exit code 0 and verified closure. The command
+queue does not automatically admit T3 device boots; SimLock retains that boundary.
 Project test suites may use their supported SimLock route independently of
 interactive panel support. A panel or metadata failure blocks only work that
 depends on it; authorized independent build/test paths may continue under the
@@ -72,8 +76,12 @@ Check a tool's capabilities before you rely on it.
 
 Use a compatible model/runtime from the catalog and keep the exact granted
 device ID, host, device set and lease identity through build, install and test.
-Prefer reusable devices within the configured capacity. SimLock handles device
-creation and resetting.
+Reuse this run's active lease for its device-dependent checks. SimLock 0.7 retires
+released virtual devices and supplies new copies from seeds or named baselines;
+do not expect the next lease to preserve that device ID or run data. See
+[installed source/baseline semantics](setup.md#establish-the-worker).
+
+### iOS mode
 
 Check the iOS lease's reported mode. A `slim` device turns off background
 services an app run rarely needs. When the work under test needs one, request
@@ -94,6 +102,17 @@ On a slim device, rerun a misbehaving feature on a full one before calling it
 an app bug. See
 [slim categories](https://github.com/MobAI-App/simslim/blob/ab8ce9f01951c1b13fed92bedea7919d8942f841/profiles.go) and
 [slim lease exceptions](https://github.com/callstackincubator/simlock/blob/d30c24d8596dc27ce2f7bf4361199db1968f8a34/docs/internal/adr/0066-a-slim-lease-may-keep-named-categories-running.md).
+
+### Android mode
+
+Keep this Mac pilot's configured slim default and record the grant's actual mode.
+Android slim applies lower guest RAM and a verified guest policy, including
+animation changes. Use an explicit full lease for fidelity checks; full/slim use
+separate sources and a baseline must match its saved mode. Android has no iOS
+`except` categories. Guest RAM is not host memory overhead. See the pinned
+[Android policy](https://github.com/callstackincubator/simlock/blob/392e0ac5a8d1168d19fb3d4447b908e05652d1e5/docs/internal/adr/0078-android-slim-is-a-native-source-and-guest-policy.md).
+
+### Run identity and helper
 
 For iOS work through agent-device, prepare its XCTest helper after acquiring
 the lease and before app commands. Discover the installed driver's
@@ -163,10 +182,12 @@ does not establish that an intermittent failure was fixed.
 
 On success, failure or cancellation, stop and await the run's device consumers
 before releasing its lease through the acquiring interface. Preserve other
-sessions and services. Export required evidence before release: SimLock wipes
-apps, files and settings. Release acknowledgement ends the lease; it does not
-prove the background wipe finished. Check status/events for reuse readiness,
-quarantine or cleanup failure before declaring teardown complete.
+sessions and services. Export required evidence before release: virtual devices
+and their run data are retired/deleted; physical devices follow their purge
+policy. Release acknowledgement ends the lease; it does not prove asynchronous
+deletion/purge finished. Check status/events for completion, quarantine or cleanup
+failure before declaring teardown complete. New virtual leases copy a source;
+they do not reuse the released profile.
 
 Remove only the runner's disposable host outputs after its writers have exited
 and current path ownership and retention still match. Use
@@ -185,7 +206,7 @@ outside the pool, or export a supported durable artifact before release. Record
 what is kept, why, for whom, its location, who maintains any live lease, and a
 review date, outside disposable output. A retention note cannot suspend SimLock's expiry or wipe policy.
 
-SimLock intentionally wipes disposable devices after release or expiry; it is
+SimLock intentionally disposes of virtual run data after release or expiry; it is
 not a guarantee that arbitrary external consumers have stopped. Work requiring
 preservation after a missed renewal belongs outside that pool.
 See [lease lifecycle](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/using-devices/lease-lifecycle.mdx).

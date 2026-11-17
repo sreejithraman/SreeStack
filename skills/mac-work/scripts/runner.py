@@ -90,12 +90,15 @@ def status(config, operation_id):
             return snapshot(conn, config, operation_id)
 
 
-def submit(config, operation_id, owner, argv, worktree, queue_seconds, execution_seconds):
+def submit(config, operation_id, owner, argv, worktree, queue_seconds, execution_seconds, handoff_id=None):
     with activation_lock(Path(config['root'])):
         require_active(config)
         spec = request(operation_id, owner, argv, worktree, queue_seconds, execution_seconds)
         import queue_lifecycle as lifecycle
         with database(config) as conn:
+            if handoff_id is not None:
+                import handoff
+                spec = handoff.bind(config, spec, snapshot(conn, config, handoff_id))
             task, created = lifecycle.reserve_operation(conn, spec['operation_id'], spec, config['_sha256'])
         if created:
             receipt, output = paths(config, spec['operation_id'])
@@ -210,6 +213,9 @@ def worker(config, operation_id):
                 current_revision = subprocess.check_output(['git', '-C', spec['worktree'], 'rev-parse', 'HEAD'], text=True).strip()
                 if current_revision != spec['revision']:
                     raise ValueError('Worktree revision changed while queued')
+                if 'handoff' in spec:
+                    import handoff
+                    handoff.verify(config, spec)
                 with database(config) as conn:
                     if lifecycle.read_task(conn, task)['status'] == 'recovery-pending':
                         result = {'status': 'cancelled', 'duration_seconds': 0}

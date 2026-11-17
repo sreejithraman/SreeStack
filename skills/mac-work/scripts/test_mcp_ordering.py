@@ -37,7 +37,7 @@ class MCPOrdering(unittest.TestCase):
         original_import = builtins.__import__
 
         def observe_import(name, *args, **kwargs):
-            if name in {'queue_core', 'queue_lifecycle', 'handoff', 'diagnostics'}:
+            if name in {'queue_core', 'queue_lifecycle', 'handoff', 'diagnostics', 'runner'}:
                 events.append(f'import {name}')
                 if name.startswith('queue_'):
                     return SimpleNamespace()
@@ -70,3 +70,12 @@ class MCPOrdering(unittest.TestCase):
 
     def test_cancel_refuses_before_queue_import(self):
         self.assert_refused_before_work('cancel_command', operation_id='test')
+
+    def test_handoff_submission_refuses_before_binding(self):
+        self.assert_refused_before_work('run_command', operation_id='test', owner='fixture',
+                                        worktree='/unused-worktree', argv=['/usr/bin/true'],
+                                        handoff_id='producer')
+
+    def test_build_handoff_refuses_before_receipt_or_artifact_access(self):
+        self.assert_refused_before_work('build_handoff', operation_id='producer',
+                                        artifacts=['/unused-artifact'])

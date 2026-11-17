@@ -36,6 +36,9 @@ shell, report the check as not run and continue under the host's own controls.
 
 Before acquiring, read [run and handoff conventions](references/workflow.md) for
 host routing, run evidence, teardown and retention. Use
+[Mac Work handoffs](../mac-work/references/handoffs.md) to finish eligible
+device-independent builds before acquisition; command admission does not cover
+automatic T3 device boots. Use
 [project runner integration](references/project-runners.md) when changing normal
 test commands, and [setup and rollout](references/setup.md) for authorized adoption.
 
