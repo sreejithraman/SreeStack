@@ -46,7 +46,8 @@ MAC_WORK_ROOT/bin/mac-work run --id CHECK_ID --owner THREAD \
   ./existing-project-runner --artifact /absolute/build/App.app
 ```
 
-The runner rechecks manifest/artifact hashes after admission, before spawning the
+The runner rechecks manifest/artifact hashes after admission, within the same
+[execution budget](runner.md#stable-operations-and-receipts), before spawning the
 command. Drift fails before that command can acquire. The manifest digest joins
 the immutable request in the same upstream operation row. Late identical
 submission returns its result even after outputs are removed, without executing

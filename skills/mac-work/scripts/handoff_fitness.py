@@ -3,6 +3,9 @@
 import argparse
 import hashlib
 import json
+import os
+import shlex
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -99,6 +102,51 @@ def main():
         assert done['status']=='error' and 'artifact drift' in done['error']
         assert not any(e['event']=='acquired' for e in events(root))
         return {'queued_cancel':'cancelled','artifact_drift':'error','acquisitions':0}
+    def preflight_timeout():
+        root = outputs / 'preflight-timeout'
+        build = job('preflight-build', 'build', root)
+        pilot.run(build)
+        assert pilot.terminal(build['operation_id'])['status'] == 'success'
+        seal(build, root)
+        check = job('expired-preflight-check', 'checks', root)
+        check['execution_seconds'] = 1
+        observed = root / 'preflight.json'
+        shim = root / 'git-shim'
+        shim.mkdir()
+        real_git = shutil.which('git')
+        probe = shim / 'git_probe.py'
+        probe.write_text("""import json, os, sqlite3, sys, time
+from pathlib import Path
+with sqlite3.connect(sys.argv[1]) as conn:
+    row = conn.execute('SELECT q.status,q.lifecycle_json FROM queue q JOIN task_operations o ON o.task_id=q.id WHERE o.operation_id=?', (sys.argv[2],)).fetchone()
+if row and row[0] == 'running':
+    Path(sys.argv[3]).write_text(json.dumps({'observed_at':time.time(),'lifecycle':json.loads(row[1])}))
+    time.sleep(1.2)
+os.execv(sys.argv[4], [sys.argv[4], *sys.argv[5:]])
+""")
+        wrapper = shim / 'git'
+        wrapper.write_text('#!/bin/sh\nexec ' + shlex.join([pilot.python, '-I', '-B', str(probe),
+            str(pilot.root / 'state/queue.db'), check['operation_id'], str(observed), real_git]) + ' "$@"\n')
+        wrapper.chmod(0o700)
+        argv = pilot.argv(check)
+        at = argv.index('--')
+        argv[at:at] = ['--handoff', build['operation_id']]
+        submitted = subprocess.run(argv, env={**os.environ, 'PATH': str(shim) + os.pathsep + os.environ['PATH']},
+                                   text=True, capture_output=True, timeout=30)
+        pilot.transcript.append({'argv': argv, 'exit': submitted.returncode,
+                                 'stdout': submitted.stdout, 'stderr': submitted.stderr})
+        assert submitted.returncode == 0, submitted.stderr
+        preflight = wait_for(lambda: json.loads(observed.read_text()) if observed.exists() else None)
+        done = wait_for(lambda: (value if (value := pilot.status(check['operation_id']))['status'] == 'timeout'
+                                  and not value['capacity_held'] else None), 10)
+        assert done['started_at'] == preflight['lifecycle']['admitted_at']
+        assert done['deadlines']['execution'] == done['started_at'] + 1
+        assert not any(event['event'] == 'acquired' for event in events(root))
+        assert foreign.read_text() == 'foreign owner: leave untouched'
+        return {'status': done['status'], 'capacity_held': done['capacity_held'],
+                'acquisitions': 0, 'started_at': done['started_at'],
+                'preflight_observed_at': preflight['observed_at'], 'task_id': done['task_id']}
+
     def cleanup_failures():
         results=[]
         for failure in ('release','cleanup','command'):
@@ -133,7 +181,7 @@ def main():
         assert not (root/(check['operation_id']+'.fixture-lease')).exists()
         return {'status':done['status'],'release':result['release']}
     try:
-        for case,body in (('exact-handoff-late-no-replay',success),('failure-before-acquisition',failed_build),('queued-cancel-and-artifact-drift',cancellation_and_drift),('command-and-teardown-failures',cleanup_failures),('running-cancellation',running_cancel)):
+        for case,body in (('exact-handoff-late-no-replay',success),('failure-before-acquisition',failed_build),('queued-cancel-and-artifact-drift',cancellation_and_drift),('command-and-teardown-failures',cleanup_failures),('running-cancellation',running_cancel),('admitted-preflight-timeout',preflight_timeout)):
             record(case,body)
     finally:
         pilot.close()
