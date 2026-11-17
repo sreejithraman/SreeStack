@@ -102,8 +102,8 @@ def main():
         emit(configuration.activate(args.root.resolve(), args.release), args.json)
         return 0
     config = configuration.load(args.config)
-    if args.command == '_worker':
-        config = configuration.validate_config(args.configuration, args.sha256)
+    if args.command == '_worker' and (args.configuration != Path(config['_path']) or args.sha256 != config['_sha256']):
+        raise ValueError('Worker configuration differs from active release')
     installed = Path(config['_path']).parent / 'bundle/scripts/mac_work.py'
     if Path(sys.prefix) != Path(config['runtime']) or Path(__file__).resolve() != installed:
         os.execv(str(Path(config['root']) / 'bin/mac-work'), [str(Path(config['root']) / 'bin/mac-work'), *sys.argv[1:]])

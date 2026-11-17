@@ -16,6 +16,7 @@ import tempfile
 import time
 
 from fitness import read_message, wait_for
+from runtime_drift_fitness import private_replace, remove_owned
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -211,7 +212,8 @@ def check(p, case):
         assert result['status']==again['status']=='success' and result['task_id']==again['task_id']
         return {'status':result['status'],'stable_task_id':again['task_id']}
     if case == 'queued-worker-death':
-        holder=p.operation('queued-death-holder',3)
+        holder=p.operation('queued-death-holder',30)
+        holder['execution_seconds']=60
         p.run(holder)
         wait_for(lambda:p.event(holder['operation_id'],'start'))
         spec=p.operation('queued-worker-death')
@@ -220,6 +222,7 @@ def check(p, case):
         os.kill(initial['worker']['pid'],signal.SIGKILL)
         result=p.terminal(spec['operation_id'])
         again=p.run(spec)
+        p.cancel(holder['operation_id'])
         p.terminal(holder['operation_id'])
         assert result['status']==again['status']=='cancelled' and not p.event(spec['operation_id'],'start')
         return {'status':result['status'],'started':False,'stable_task_id':again['task_id']}
@@ -251,7 +254,8 @@ def check(p, case):
         assert secret not in Path(result['receipt_path']).read_text() and secret not in Path(result['log_path']).read_text()
         return {'literal_argv_preserved':True,'secret_environment_not_dumped':True,'queue_environment_override_ignored':True}
     if case == 'deadlines':
-        first=p.operation('holder',3)
+        first=p.operation('holder',30)
+        first['execution_seconds']=60
         p.run(first)
         wait_for(lambda:p.event(first['operation_id'],'start'))
         waiting=p.operation('wait-success',.1)
@@ -261,6 +265,7 @@ def check(p, case):
         p.run(waiting)
         p.run(expired)
         a=p.terminal(expired['operation_id'])
+        p.cancel(first['operation_id'])
         b=p.terminal(waiting['operation_id'])
         timeout=p.operation('execution-timeout',5)
         timeout['execution_seconds']=1
@@ -311,7 +316,7 @@ def check(p, case):
         config=json.loads(configuration.read_text())
         version=configuration.parent
         import importlib.util
-        module_probe=subprocess.check_output([str(Path(config['runtime'])/'bin/python'),'-I','-c',"import importlib.util;print(importlib.util.find_spec('queue_core').origin)"],text=True).strip()
+        module_probe=subprocess.check_output([str(Path(config['runtime'])/'bin/python'),'-I','-B','-c',"import importlib.util;print(importlib.util.find_spec('queue_core').origin)"],text=True).strip()
         checks=[('config',configuration,lambda b:b+b' '),
                 ('patch',version/'bundle/patches/lifecycle.patch',lambda b:b+b'\n'),
                 ('source-pin',version/'bundle/candidate.json',lambda b:b+b' '),
@@ -321,22 +326,22 @@ def check(p, case):
             original=path.read_bytes()
             spec=p.operation('drift-'+label)
             try:
-                path.write_bytes(alter(original))
+                private_replace(path, alter(original))
                 error=p.invoke(p.argv(spec),expected=2)
                 assert 'mismatch' in error.lower(),error
                 assert not p.event(spec['operation_id'],'start')
                 refused.append(label)
             finally:
-                path.write_bytes(original)
+                private_replace(path, original)
         unexpected=version/'bundle/scripts/unlisted_source.py'
         spec=p.operation('drift-unlisted')
         try:
-            unexpected.write_text('# unexpected code in a sealed version\n')
+            private_replace(unexpected, b'# unexpected code in a sealed version\n')
             error=p.invoke(p.argv(spec),expected=2)
             assert 'Bundle file set mismatch' in error
             refused.append('unlisted-source')
         finally:
-            unexpected.unlink()
+            remove_owned(unexpected)
         wait_for(p.root_unlocked)
         database=p.root/'state/queue.db'
         saved=database.with_name('queue.proof-backup')

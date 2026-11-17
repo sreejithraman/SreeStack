@@ -1,4 +1,4 @@
-#!/usr/bin/env -S python3 -I -B
+#!/usr/bin/env -S /usr/bin/python3 -I -B -S
 """Stable, root-bound launcher for immutable mac-work releases."""
 
 import hashlib
@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import stat
 
 
 def digest(path):
@@ -41,16 +42,23 @@ def main():
         raise ValueError('Bundle manifest hash mismatch')
     bundle = config_path.parent / 'bundle'
     expected_files = json.loads(manifest.read_text())
-    actual_files = {str(p.relative_to(bundle)) for p in bundle.rglob('*')
-                    if p.is_file() and '__pycache__' not in p.parts}
-    if actual_files != set(expected_files):
-        raise ValueError('Bundle file set mismatch')
-    for name, expected in expected_files.items():
-        if digest(bundle / name) != expected:
-            raise ValueError(f'Bundle hash mismatch: {name}')
-    python = config_path.parent / 'build/runtime/bin/python'
-    if digest(python.resolve()) != config['python_sha256']:
-        raise ValueError('Runtime interpreter hash mismatch')
+    helper = bundle / 'scripts/runtime_inventory.py'
+    info = helper.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+        raise ValueError('Runtime inventory helper must be a private regular file')
+    source = helper.read_bytes()
+    if hashlib.sha256(source).hexdigest() != expected_files['scripts/runtime_inventory.py']:
+        raise ValueError('Runtime inventory helper hash mismatch')
+    namespace = {'__file__': str(helper), '__name__': 'trusted_runtime_inventory'}
+    exec(compile(source, str(helper), 'exec'), namespace)
+    namespace['verify_bundle'](bundle, expected_files)
+    build = config_path.parent / 'build'
+    record = namespace['verify'](build, config['build_receipt_sha256'])
+    if record['candidate_sha256'] != digest(bundle / 'candidate.json'):
+        raise ValueError('Runtime candidate/configuration hash mismatch')
+    python = build / 'runtime/bin/python'
+    if Path(config['runtime']) != build / 'runtime' or digest(python) != config['python_sha256']:
+        raise ValueError('Runtime interpreter path/hash mismatch')
     os.execv(str(python), [str(python), '-I', '-B', str(bundle / 'scripts/mac_work.py'),
                          '--config', str(pointer), *sys.argv[1:]])
 

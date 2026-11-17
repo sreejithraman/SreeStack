@@ -44,6 +44,31 @@ controller, worker and gate Python imports are isolated from caller overrides;
 requested commands retain their environment. Active opens validate existing schema
 and policy before mutation; empty/truncated state is not fresh bootstrap.
 
+## Verified runtime boundary
+
+Use the bound `bin/mac-work` for normal calls. It starts the fixed macOS
+`/usr/bin/python3` (3.9+) through `/usr/bin/env -S`, with `-I -B -S`, and uses only
+that trusted host standard library to verify the bundle and complete installed
+runtime inventory before candidate Python runs. Caller PATH cannot select the
+bootstrap interpreter. Host OS/system Python, the reviewed initial source/build
+recipe and uv are trusted prerequisites; this is not a compromised-host defense.
+
+The private version contains copied CPython and venv trees. Its config binds the
+build receipt, which binds every code file, directory, mode and symlink. Dependency
+bodies, startup files, extra distributions and bytecode are covered. Escaping
+links, shared hardlinks and special files refuse. Code directories are read-only
+so normal Python imports cannot add caches; requested command environments are
+preserved. Active/prelaunch checks reuse the same verifier without running a
+candidate probe. Full byte verification has I/O cost; set queue/execution budgets
+for the qualified workload, including verification, and measure before capacity
+changes. Restoring an exact task-owned byte/mode snapshot is recovery; it is not a
+force-clear for permits.
+
+This manifest/bootstrap protocol requires a fresh task-private root. Older
+parent-owned roots remain unchanged. Within this protocol, idle version upgrades
+and rollback keep the shared operation database and receipts. Do not relocate a
+version or edit its inventories/configuration to accommodate drift.
+
 ## Stable operations and receipts
 
 `run` requires a caller operation ID, owner, exact argv and absolute Git worktree

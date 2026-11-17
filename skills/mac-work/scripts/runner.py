@@ -94,15 +94,14 @@ def submit(config, spec):
     import queue_lifecycle as lifecycle
     with activation_lock(Path(config['root'])):
         require_active(config)
-        validate_config(Path(config['_path']), config['_sha256'])
+        import queue_lifecycle as lifecycle
         with database(config) as conn:
             task, created = lifecycle.reserve_operation(conn, spec['operation_id'], spec, config['_sha256'])
         if created:
             receipt, output = paths(config, spec['operation_id'])
             descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
             try:
-                child = subprocess.Popen([str(Path(config['runtime']) / 'bin/python'), '-I', '-B',
-                    str(Path(config['_path']).parent / 'bundle/scripts/mac_work.py'),
+                child = subprocess.Popen([str(Path(config['root']) / 'bin/mac-work'),
                     '--config', str(Path(config['root']) / 'current.json'), '_worker',
                     '--configuration', config['_path'], '--sha256', config['_sha256'],
                     '--id', spec['operation_id']], stdin=subprocess.DEVNULL,
@@ -135,9 +134,9 @@ def submit(config, spec):
 
 
 def cancel(config, operation_id):
-    import queue_lifecycle as lifecycle
     with activation_lock(Path(config['root'])):
         require_active(config)
+        import queue_lifecycle as lifecycle
         with database(config) as conn:
             operation = conn.execute('SELECT * FROM task_operations WHERE operation_id=?', (operation_id,)).fetchone()
             if operation is None:
@@ -157,9 +156,10 @@ def wait(config, operation_id, seconds):
 
 
 def worker(config, operation_id):
-    from queue_core import attempt_task_start
-    import queue_lifecycle as lifecycle
     with activation_lock(Path(config['root'])):
+        require_active(config)
+        from queue_core import attempt_task_start
+        import queue_lifecycle as lifecycle
         with database(config) as conn:
             operation = lifecycle.claim_operation(conn, operation_id, config['_sha256'])
         if operation is None:

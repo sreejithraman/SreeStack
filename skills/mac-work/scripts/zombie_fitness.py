@@ -101,6 +101,11 @@ async def exercise(root, output):
                            'native_zombie_observed': bool((observations.get('observed_owner') or {}).get('zombie'))}
             finally:
                 # Exact operation cleanup is separate from the recovery verdict.
+                if worker is not None:
+                    identity = lifecycle.process_identity(worker['pid'])
+                    if identity and identity['birth'] == worker['birth'] and not identity['zombie']:
+                        os.kill(worker['pid'], signal.SIGKILL)
+                        observations['fixture_stopped_live_worker'] = True
                 cleanup = subprocess.run([str(cli), 'cancel', '--id', operation, '--json'],
                                          capture_output=True, text=True, timeout=20)
                 observations['cleanup'] = {'exit': cleanup.returncode, 'stdout': cleanup.stdout, 'stderr': cleanup.stderr}

@@ -13,6 +13,8 @@ import subprocess
 import sys
 import tempfile
 
+import runtime_inventory
+
 BUNDLE = Path(__file__).resolve().parent.parent
 DEFAULT_ROOT = Path.home() / 'Library/Application Support/mac-work'
 POLICY = {'capacities': {'heavy': 1}, 'ownership_contract': 'process-group', 'schema': 1}
@@ -65,21 +67,11 @@ def validate_config(path, expected_sha=None):
         raise ValueError('Bundle manifest hash mismatch')
     expected_files = json.loads(manifest.read_text())
     bundle = version / 'bundle'
-    actual_files = {str(p.relative_to(bundle)) for p in bundle.rglob('*')
-                    if p.is_file() and '__pycache__' not in p.parts}
-    if actual_files != set(expected_files):
-        raise ValueError('Bundle file set mismatch')
-    for name, expected in expected_files.items():
-        if digest(version / 'bundle' / name) != expected:
-            raise ValueError(f'Bundle hash mismatch: {name}')
+    runtime_inventory.verify_bundle(bundle, expected_files)
+    from build_runtime import verify_runtime
+    verify_runtime(Path(value['runtime']), value['build_receipt_sha256'])
     if digest(Path(value['runtime']) / 'bin/python') != value['python_sha256']:
         raise ValueError('Runtime interpreter hash mismatch')
-    verifier = version / 'bundle/scripts/build_runtime.py'
-    result = subprocess.run([str(Path(value['runtime']) / 'bin/python'), '-I', '-B', str(verifier),
-                             'verify', '--runtime', value['runtime']],
-                            capture_output=True, text=True, timeout=15)
-    if result.returncode:
-        raise ValueError(result.stderr.strip() or 'Runtime verification failed')
     value['_path'] = str(path)
     value['_sha256'] = digest(path)
     return value
@@ -100,8 +92,7 @@ def require_active(config):
     pointer = json.loads((Path(config['root']) / 'current.json').read_text())
     if pointer.get('configuration') != config['_path'] or pointer.get('sha256') != config['_sha256']:
         raise ValueError('Active release changed; restart this MCP consumer')
-    if digest(Path(config['_path'])) != config['_sha256']:
-        raise ValueError('Configuration hash mismatch')
+    validate_config(Path(config['_path']), config['_sha256'])
 
 
 def idle(root):
@@ -171,6 +162,7 @@ def install(root, release, archive=None):
         version.mkdir(mode=0o700, parents=True, exist_ok=False)
     bundle = version / 'bundle'
     shutil.copytree(BUNDLE, bundle, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    runtime_inventory.seal_bundle(bundle)
     hashes = {str(p.relative_to(bundle)): digest(p) for p in bundle.rglob('*') if p.is_file()}
     write_json(version / 'bundle-manifest.json', hashes)
     subprocess.run([sys.executable, '-I', '-B', str(bundle / 'scripts/build_runtime.py'), 'build',
@@ -180,6 +172,7 @@ def install(root, release, archive=None):
               'runtime': str(version / 'build/runtime'), 'policy': POLICY,
               'bundle_sha256': digest(version / 'bundle-manifest.json'),
               'launcher_sha256': digest(bundle / 'scripts/runner_bootstrap.py'),
-              'python_sha256': digest(version / 'build/runtime/bin/python')}
+              'python_sha256': digest(version / 'build/runtime/bin/python'),
+              'build_receipt_sha256': digest(version / 'build/build-receipt.json')}
     write_json(version / 'config.json', config)
     return activate(root, release)
