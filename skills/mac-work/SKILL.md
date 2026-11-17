@@ -1,36 +1,38 @@
 ---
 name: mac-work
-description: Use when routing heavy commands on a shared Mac or qualifying its admission queue.
+description: Use when routing foreground build/test commands on a shared Mac or qualifying its admission queue.
 ---
 
 # Mac Work
 
-Route heavy commands through one host-wide admission owner. Start with the
-command, owner, worktree, revision and separate queue/execution deadlines.
-Leave a stable task receipt and a result the caller can open in T3. Done means
-the command and its owned active work have stopped before capacity is released.
+Run foreground heavy commands through the canonical shared `mac-work` route.
+Start with a stable operation ID, owner, argv and absolute Git worktree. Leave a
+receipt and log the caller can open in T3. Done means the owned group stopped
+before upstream capacity was released, or unresolved capacity remains inspectable.
 
-**Production admission remains blocked.** A maintained dependency patch repairs
-initialization and process-group closure. It does not prove arbitrary detached
-descendants absent. The conservative default retains capacity even after apparent
-foreground success; the narrower group contract is experimental. No canonical
-production launcher or shared host installation is provided. Preserve live holds.
+The user-approved pilot supports commands that wait for all heavy work in their
+launched process group. Use foreground options or verified project wrappers.
+Background/shared daemons and escaping groups/sessions are unsupported; this is
+not OS containment. Keep existing holds with their owners until parent integration.
 
-For the original candidate, use [private setup](references/setup.md),
-`scripts/fitness.py --help` and the [original findings](references/fitness.md).
-For the repaired candidate, use [lifecycle qualification](references/lifecycle.md)
-and `scripts/build_runtime.py --help`. The pinned recipe verifies source, patch,
-dependencies and installed modules before tests invoke the queue. Build only
-in new task-private directories. Keep the [license/change notice](NOTICE.md).
+Use the one installed root's `bin/mac-work` across providers/projects. For setup,
+CLI/MCP contracts and maintenance, read [foreground runner](references/runner.md).
+Routine calls are `run --id ... --owner ... --worktree ... --queue-seconds ...
+--execution-seconds ... -- COMMAND...`, `status --id ...`, and `cancel --id ...`.
+`--json` exposes task/operation IDs, closure state, receipt and log paths. An
+observation wait does not cancel a task. Status never submits. Same ID/input is
+idempotent; changed inputs conflict. Do not replace this route with raw queue flags.
 
-Read the [implemented repair and ownership boundary](references/repair.md)
-before changing admission. Distinguish automatic group cleanup from safe-but-blocked
-quarantine. Keep the original detached-descendant assertion and its counterexample;
-a quarantine pass cannot establish automatic availability. An original gate's
-exit 0 covers only its selected assertions; a partial selection qualifies nothing.
+On `recovery-pending`, inspect the receipt/log and read status after verified group
+closure. Capacity stays held while ownership is uncertain. Never force-clear or
+switch policy to release it. Output is verbatim, not secret redaction; avoid secret
+argv/output. Runtime/config/hash drift fails closed instead of running unqueued.
 
-The parent owns integration and release in the [spec and tasks](references/plan.md).
-Settle an enforceable, usable workload contract before exposing the canonical CLI
-or starting handoffs. SimLock retains device lifecycle ownership. T3's exact bound
-driver retains UI ownership; its admission hook remains pending. Keep device
-limits and slim/full choices unchanged until their later proof passes.
+The parent owns handoffs, device work, pressure diagnostics and release in the
+[spec/tasks](references/plan.md). SimLock retains lifecycle ownership and T3's
+exact bound driver retains UI ownership; their admission integration is pending.
+Device limits and slim/full choices stay unchanged until that proof passes.
+
+When changing the dependency, use the [lifecycle recipe](references/lifecycle.md),
+[implemented ownership seam](references/repair.md), [original qualification](references/setup.md)
+and [counterexamples](references/fitness.md). Preserve the [license/change notice](NOTICE.md).

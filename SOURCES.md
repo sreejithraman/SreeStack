@@ -1651,16 +1651,17 @@ the applicable guidance rather than treating p3-stack as an API specification.
 
 ## mac-work
 
-Local skill for shared-Mac heavy-command admission. The lifecycle patch adapts
-Block agent-task-queue at `48d16da41f57801bbf9462ed2df923713978b6ae`
+Local skill for shared-Mac foreground build/test admission. The maintained patch
+adapts Block agent-task-queue at `48d16da41f57801bbf9462ed2df923713978b6ae`
 (package 0.4.1, Apache-2.0), preserving SQLite/FIFO admission. Local differences:
 serialized explicit initialization, fail-closed active schema/policy validation,
 recorded-deadline/zombie-owner reconciliation and complete sealed runtime inventory,
-atomic admission clocks, cancellation-serialized gated birth/group/boot identity capture,
-one durable closure/quarantine and receipt path, immutable shared policy, bounded
-queue deadlines and exact artifact verification. The experimental process-group
-contract excludes escaped descendants; the default uncontained contract retains
-capacity until closure is verifiable. Production activation remains blocked.
-Source/patch/dependency digests live in `skills/mac-work/candidate.json`.
-Modified files, license and attribution are in `skills/mac-work/NOTICE.md`.
-Invocation remains model-discoverable; no host skill activation occurs here.
+atomic admission clocks, cancellation-serialized gated birth/group/boot identities,
+one durable closure/quarantine path, atomic operation/task associations and worker
+claims in the existing database, fixed shared policy, separate queue/execution
+limits, and exact source/patch/runtime/config verification. The user authorized
+the foreground process-group pilot; detached/shared-daemon workloads are outside
+scope. Canonical CLI/MCP and immutable task-owned install/activation/rollback are
+local code. No live host activation or hold migration occurs in this slice.
+Digests live in `skills/mac-work/candidate.json`; license and modifications are in
+`skills/mac-work/NOTICE.md`. Invocation remains model-discoverable.
