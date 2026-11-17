@@ -86,14 +86,18 @@ def main():
         pilot.run(build)
         pilot.terminal(build['operation_id'])
         seal(build,root)
-        holder=pilot.operation('holder',10)
+        holder=pilot.operation('holder',60)
+        holder['execution_seconds']=90
+        check_queue_seconds=120
         pilot.run(holder)
         wait_for(lambda:pilot.event(holder['operation_id'],'start'))
         check=job('queued-check','checks',root)
+        check['queue_seconds']=check_queue_seconds
         run_after(check,build)
         pilot.cancel(check['operation_id'])
         assert pilot.terminal(check['operation_id'])['status']=='cancelled'
         drift=job('drift-check','checks',root)
+        drift['queue_seconds']=check_queue_seconds
         run_after(drift,build)
         (root/'artifact.bin').write_text('drifted after queueing')
         pilot.cancel(holder['operation_id'])
