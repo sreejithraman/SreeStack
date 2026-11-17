@@ -1509,7 +1509,7 @@ follows recovery, not the repeated-failure test.
 Row choice distinguishes source review and research, dedicated UI operation, UI
 building, document writing and revision, then Simple, Standard, or Hardest
 implementation. Hardest is rare and requires evidence that Standard is insufficient;
-its Codex fallback is GPT-6 Astra at X-High. The existing agent handles routine UI
+its Codex fallback is GPT-6.2 Astra at X-High. The existing agent handles routine UI
 operation; a dedicated operator is reserved for substantial work, specialized
 capabilities, required independence, or repeated operational difficulty, at a tier
 set by flow complexity and false-pass cost, with Verify retaining assertions and
