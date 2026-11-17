@@ -34,13 +34,16 @@ def main():
     def report(*flags):
         return p.invoke([p.cli,'report',*flags,'--json'])
     def live():
-        holder=p.operation('report-running',10)
+        holder=p.operation('report-running',60)
+        holder['execution_seconds']=90
         p.run(holder)
         wait_for(lambda:p.event(holder['operation_id'],'start'))
         queued=p.operation('report-queued',.1)
+        queued['queue_seconds']=120
         p.run(queued)
         time.sleep(.2)
         cancelled=p.operation('report-already-cancelled')
+        cancelled['queue_seconds']=120
         p.run(cancelled)
         p.cancel(cancelled['operation_id'])
         ordered=report('--limit','2')

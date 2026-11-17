@@ -355,3 +355,44 @@ caused by Python isolated mode ignoring the environment's bytecode flag was save
 alongside the original, then the verified retained original was restored. Isolated
 launcher/worker invocations now pass `-B` explicitly. No parent-owned Try state,
 proof, host profile, device, old hold or shared installation is part of these tests.
+
+## Second repair batch: deadline, dead owner and runtime inventory
+
+Pass2 independently confirmed the original MWR-001..007 mechanisms repaired.
+The required premise checkpoint rejects a competing cleanup-age execution policy
+and version-only dependency integrity. MWR-010 restores recorded-deadline
+reconciliation, with age only for legacy no-deadline rows; cancellation/orphan
+intent and exact-group quarantine remain. MWR-011 treats a matching zombie as dead
+ownership, without freeing unknown no-child spawn windows. MWR-012 binds a complete
+private CPython/venv inventory to the build receipt/config and checks it from the
+fixed trusted host bootstrap before any installed candidate startup; active and
+prelaunch checks reuse that owner. Code is copied, then sealed read-only; tests
+replace private inodes atomically rather than editing uv hardlinks.
+
+The maintained dependency version is `0.4.1+macwork.4`; wheel pins remain in
+[candidate.json](../candidate.json). The fresh bootstrap/manifest protocol requires
+a fresh task-owned root. All older parent-owned roots/proofs remain unchanged,
+including the 69-operation final-pilot. Parent's repaired-0.3 real Node/JS-pnpm
+build/cancel/file-handoff supplement stays historical; parent owns new real-workload
+integration after 0.4's synthetic gates. No device/app-build requalification follows.
+
+Focused tests distinguish long unexpired, short expired and legacy deadlines and
+retain cancellation/dead-owner guards. Native MCP proof uses an idle persistent
+parent, a SIGKILLed owned worker and independent clients for active/empty groups;
+a bounded paused-parent variant records `ps` kernel state separately from libproc
+visibility. On this host `ps` can show Z while libproc returns no identity, so that
+native recovery already passes old code. The matching-`zombie=true` discriminator
+is the retained old/new memory test, not a falsely claimed native regression.
+Runtime drift proof retains actual old acceptance/sentinel execution and new
+pre-start refusal for dependency bodies, startup/import files, distributions,
+bytecode, link/type/mode changes and caller PATH selecting candidate Python.
+
+Proof, exact heads/config/inventory/wheel identities, all attempts and raw verdicts
+are under this owner's private Git `verify-proof/review-repairs-pass2-20261117/`.
+Complete hashing adds verification cost; fixture holders explicitly retain their
+queue phase until cancellation rather than relying on a three-second command.
+No assertion or deadline authority is relaxed. Parent now runs one fresh SolHigh
+Primary repair/integrated assessment with stale Thermo/Adversarial criteria, then
+owns publication/merge. Global activation, broader toolchains, old holds,
+automatic T3 boot admission, external publication and capacity increases remain
+deferred. Heavy1/global4/iOS4/Android1 and the foreground boundary are unchanged.

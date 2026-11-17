@@ -125,7 +125,7 @@ def observe(root, runtime, verifier, output, case):
         if case == 'bootstrap-python-path':
             env['PATH'] = str(runtime / 'bin') + os.pathsep + env['PATH']
         mcp = None
-        if case != 'fifo':
+        if case != 'fifo' or verified.returncode == 2:
             mcp = subprocess.run([str(root / 'bin/mac-work'), 'mcp'], stdin=subprocess.DEVNULL,
                                  capture_output=True, text=True, timeout=25, env=env)
         result = {'case': case, 'verifier_exit': verified.returncode,
