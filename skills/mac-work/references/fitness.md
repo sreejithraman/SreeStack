@@ -1,4 +1,8 @@
-# Upstream fitness findings
+# Original upstream fitness findings
+
+This records the unpatched baseline. The [local lifecycle repair](lifecycle.md)
+adds separate group-closure and quarantine proof without clearing these original
+counterexamples or establishing universal automatic availability.
 
 Candidate: Block agent-task-queue commit
 `48d16da41f57801bbf9462ed2df923713978b6ae`, package 0.4.1.

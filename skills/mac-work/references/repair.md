@@ -1,83 +1,115 @@
-# Admission repair proposal
+# Experimental lifecycle repair
 
-Status: proposed, not implemented or accepted. The current pin cannot safely
-unlock the handoff layer. Keep the existing manual coordination and holds while
-this gate is blocked. Do not fall back to unqueued execution silently.
+The maintained [patch](../patches/lifecycle.patch) and hash-checked build recipe
+are implemented. Production admission remains blocked: macOS has no established
+seam here that proves arbitrary detached descendants absent. No canonical
+heavy-command launcher or host activation is provided. The parent must settle
+a usable workload boundary before the handoff layer starts.
 
-## Repair upstream ownership, then wrap it
+## Implemented behavior
 
-A wrapper supplying matching flags cannot repair upstream's premature releases.
-Patch the pinned upstream lifecycle in a separately authorized source change,
-or use a future upstream revision that passes the same probes. Keep upstream's
-SQLite admission transaction and FIFO policy as the only scheduler.
+The patched dependency keeps upstream's SQLite transaction, root capacity and
+FIFO checks authoritative. A quarantined task retains its upstream `running`
+row, so the existing capacity calculation includes it.
 
-1. **Make first use nondestructive.** Serialize database initialization across
-   processes. Distinguish busy/locked from corruption; fail closed on uncertainty.
-   `ensure_db` currently unlinks the database and WAL after any OperationalError,
-   including concurrent first-use failures. Never erase live admission state
-   to make initialization succeed.
-2. **Keep uncertain permits.** Record owner boot identity and PID birth identity,
-   task generation, child/group identity and configuration digest before work
-   can escape supervision. Owner death with no child PID is an uncertain spawn,
-   not permission to release. Preserve the row and mark recovery pending. Count
-   terminating/quarantined rows against the same upstream capacity until closure
-   is proved; never replay a command automatically after a crash.
-3. **Close the whole owned lifetime before releasing.** Normal exit, cancellation,
-   timeout, stale cleanup and server-replacement cleanup must all use one upstream
-   close operation. Signal the group, escalate after bounded grace, and observe
-   its disappearance before releasing. Preserve a terminal receipt separately
-   from the admission row. A stale timer may initiate termination; it cannot by
-   itself grant the next command capacity.
-4. **Handle escaping descendants explicitly.** A process-group check cannot prove
-   that a `setsid` descendant stopped. The detached probe demonstrates that limit.
-   Automatic recovery needs a verified ownership/containment seam that survives
-   daemonization and owner death. A PID scan after reparenting is insufficient.
-   Until that exists, uncertain ownership must quarantine the permit. A fail-closed
-   fallback can require a host reboot (verified changed boot identity) before
-   reclaiming it; that preserves safety at the cost of availability. Do not claim
-   arbitrary descendant safety from a foreground-only convention.
-5. **Persist reconciliation.** Late reads after a crash must return the original
-   interrupted/recovery-pending receipt, never unknown followed by resubmission.
-   Resolve the row and receipt atomically enough that cancel/completion/restart
-   races cannot release twice or lose the result.
+- A shared initialization lock serializes schema setup. Missing, busy or corrupt
+  databases never trigger deletion of queue/WAL files. Fresh bootstrap is explicit;
+  active opens validate existing schema and policy before mutation. Corruption fails closed.
+- A private launch pipe gates command execution until boot identity, PID birth,
+  group identity, generation and execution deadline are committed. Owner death
+  before that receipt leaves an unresolved row rather than replaying the command.
+- CLI/MCP completion, cancellation, timeout and orphan/server-replacement cleanup
+  use one lifecycle close operation. It records the intended result before effects,
+  verifies group identity before signals, and persists a recovery-pending receipt
+  when closure remains uncertain. A missing root or stale timer cannot release
+  capacity by itself. Unknown identity prevents signalling.
+- Receipts survive queue-row deletion. Late reads return the original terminal
+  or recovery-pending task; they do not submit. CLI `clear` is disabled.
+- The first configured capacities and ownership contract live in SQLite. Every
+  submitting entrypoint must match them. Tasks retain the configuration digest.
+  Queue time stops at the atomic admission transition. Its persisted admission
+  clock starts the execution budget, including preflight; gated launch refuses an
+  expired budget. Child registration and gate release serialize with cancellation.
 
-The bounded first repair is initialization plus ordinary process-group closure
-and durable quarantine for all unresolved deaths. It does not solve transparent
-detached-process recovery. Decide that availability tradeoff with the parent
-before building an adapter; do not grow a second scheduler to hide the gap.
+| Lifecycle observation | Capacity and result |
+| --- | --- |
+| Waiting task cancelled or queue deadline expires | Cancel/error receipt; no command starts. |
+| Admitted work has a verified closed group under the limited group contract | Terminal receipt; row released. |
+| Ownership or closure uncertain | `recovery-pending`, `capacity_held=true`; row remains running. |
+| Later read verifies that the limited group has no active members | Resolve its retained intended result and release. |
+| Persisted boot identity differs from the real current boot | Old work cannot survive; resolve without signalling reused PIDs. |
 
-The concrete source paths are `queue_core.ensure_db`, `cleanup_queue`,
-`kill_process_tree`, `tq.cmd_run`/its cleanup handler, and the MCP execution,
-termination, cancellation and release paths. The
-[pinned source](https://github.com/block/agent-task-queue/tree/48d16da41f57801bbf9462ed2df923713978b6ae)
-owns them. No upstream implementation was copied into this repository.
+The boot identity comes from `kern.bootsessionuuid`. PID birth and group metadata
+come from the local SDK's `proc_pidinfo`/`proc_bsdinfo`; group enumeration uses
+`ps`. These establish the stated group boundary, not arbitrary descendant lineage.
 
-## Proposed operational contract after qualification
+## Two distinct experimental contracts
 
-These are inputs for the next admission attempt, not shipped executable APIs.
-They unlock no dependent implementation until a repaired candidate passes.
+`uncontained` is the default. An empty group does not prove that no descendant
+escaped it. Admitted commands therefore retain capacity, even after ordinary
+foreground success. A changed real boot can establish closure. There is no force
+clear, boot-identity override, automatic reboot or approval shortcut.
 
-- One host config lives outside projects/providers; all clients resolve the same
-  absolute runtime and SQLite state path. It records schema version, source pin,
-  runtime/lock digest, configuration digest and one heavy root with capacity 1.
-  Unknown schema, version or digest fails closed. Entry points cannot override
-  capacity, create a second heavy root, or fall back to PATH/default `/tmp` state.
-- A single CLI offers `run`, `status` and `cancel`. `run` requires an operation ID,
-  owner, absolute worktree and command argv, plus separate queue-wait and execution
-  limits. It snapshots revision and worktree dirtiness. Retrying an ID returns its
-  original receipt or rejects differing input; status never submits.
-- Receipts retain operation/upstream task IDs, owner/worktree/revision, argv,
-  configured limits, queued/start/terminal timestamps, exit/result and lifecycle
-  closure/recovery state. Queue deadline begins on submission; execution deadline
-  begins on admission. A timed-out wait requests explicit cancellation of that
-  task and waits for confirmed closure before reporting released capacity.
-- Write private receipt/output files without recording secret environment values.
-  Retention, output exposure and T3 presentation belong to diagnostics integration.
-- Install into immutable version directories. Activate config/runtime together
-  only after drain and successful qualification. Upgrade/rollback refuses unresolved
-  permits. Keep the previous runtime/config until all receipts are reconciled.
+`process-group` is a deliberately narrower qualification contract. It can finish
+ordinary foreground jobs and close verified members of their original group.
+A reaped root with unverified remaining members quarantines until the group is
+observably empty. A descendant that changes group/session is outside this
+contract. The original detached-descendant safety test still fails when this
+mode is judged against the universal requirement; it has not been weakened.
+Persisted policy prevents changing an existing uncontained queue to this mode.
 
-T3 device_open exposes no established external admission hook. Task 2 must settle
-its supported bounded-session or native integration seam separately. Admission
-never takes device lifecycle ownership away from SimLock or UI driving away from
-T3's exact bound driver.
+The Mac probe registered `NOTE_TRACK` and received `Operation not supported`.
+Without that flag, the root fork notification did not identify or follow the
+`setsid` child. After root exit, that child survived with parent PID 1. The local SDK and
+[Apple's header](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/event.h)
+say NOTE_TRACK/NOTE_TRACKERR/NOTE_CHILD have been unsupported since 10.5.
+An environment marker, inherited descriptor or PID scan is not an absence proof
+when an arbitrary daemon may clear/close it and reparent.
+
+This is the unresolved contradiction: universal descendant safety requires
+quarantine, while routine automatic completion requires a narrower enforceable
+workload or containment contract. Do not present a permanently quarantining
+launcher as the requested usable route. The patch advances independent repairs;
+it does not settle that boundary.
+
+## Actual private CLI and receipt surface
+
+These are repaired upstream qualification APIs, not the proposed canonical host CLI:
+
+```sh
+"$runtime/bin/tq" --data-dir "$state" --queue-capacity heavy=1 \
+  --ownership-contract process-group run -q heavy/client \
+  --queue-timeout 5 -t 5 /usr/bin/true
+"$runtime/bin/tq" --data-dir "$state" status 1 --json
+"$runtime/bin/tq" --data-dir "$state" cancel 1 --json
+"$runtime/bin/tq" --data-dir "$state" list --json
+```
+
+Use new task-private state only. Obtain the task ID from the run output or list;
+the example ID is valid only in a fresh fixture. Every submitting CLI/MCP process
+must use the same `--queue-capacity` and `--ownership-contract`. The MCP server
+accepts those same startup flags. Its `run_task` additionally accepts
+`queue_timeout_seconds`; `timeout_seconds` covers execution. Existing
+`task_status` and `cancel_task` return the durable result.
+
+A receipt includes task ID/command, worktree/directory, agent label, creation time,
+configuration digest, revision when Git provides it, generation, owner and child
+birth/group/boot identities, independent deadline limits, intended result and
+`capacity_held`. Recovery-pending is not terminal availability. CLI exit 125
+marks normal completion with retained capacity; a timeout/signal exit alone is
+not proof that capacity was released. Read the receipt. No environment values
+are dumped into receipts.
+
+## Still proposed
+
+The canonical host config/runtime/state location, idempotent operation-ID
+submission, provider adapters, managed activation/upgrade/rollback and T3 result
+presentation remain unimplemented. T3 device_open still has no established
+external admission hook. See the [task record](plan.md). The source/patch/build
+contract is fixed in [candidate.json](../candidate.json); the operational boundary
+is not accepted. Reproduce the [qualification](lifecycle.md) before changing it.
+
+Reconciliation uses the recorded execution deadline when present. Only compatible
+legacy rows without that deadline use the cleanup-age fallback. A matching zombie
+birth is dead ownership; existing exact-group cleanup/quarantine still decides
+release. Unknown unrecorded spawn windows remain held.

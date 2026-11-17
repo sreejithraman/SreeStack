@@ -554,7 +554,9 @@ host setup below to activate those routes.
 [Mac Work](skills/mac-work/SKILL.md) qualifies shared heavy-command admission
 through independent lightweight CLI and MCP clients. The pinned
 [Block agent-task-queue](https://github.com/block/agent-task-queue) candidate
-currently fails crash/descendant safety; no shared host route is activated.
+has a [maintained lifecycle repair](skills/mac-work/references/lifecycle.md).
+It repairs ordinary group closure and retains unresolved permits. Arbitrary
+detached-descendant containment remains unproved, so no shared host route is activated.
 The [task plan](skills/mac-work/references/plan.md),
 [private setup](skills/mac-work/references/setup.md) and
 [repair proposal](skills/mac-work/references/repair.md) keep the remaining work explicit.

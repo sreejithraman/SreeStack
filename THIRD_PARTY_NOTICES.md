@@ -7,6 +7,7 @@ material keeps the terms listed below; the root license does not replace them.
 
 | Source | Bundled material | Notice |
 | --- | --- | --- |
+| Block / Matt McKenna | mac-work dependency lifecycle patch | [Apache-2.0](skills/mac-work/licenses/agent-task-queue.txt); [modifications](skills/mac-work/NOTICE.md) |
 | David Collado / Koubou | koubou screenshot design workflow and references | [MIT](licenses/bitomule-koubou.txt) |
 | Benji Taylor / Stageshow | stageshow skill, React kit, examples, playground, and scripts | [MIT](licenses/benjitaylor-stageshow.txt); [asset notices and terms](skills/stageshow/NOTICE.md) |
 | OpenClaw Foundation | 1password CLI authentication and secret-handling adaptation | [MIT](licenses/openclaw.txt) |

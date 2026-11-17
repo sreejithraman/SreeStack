@@ -1,0 +1,1514 @@
+--- a/queue_core.py
++++ b/queue_core.py
+@@ -1,3 +1,4 @@
++# Modified by SreeStack: local lifecycle repair; see bundled modification notice.
+ """
+ Queue Core - Shared infrastructure for agent-task-queue.
+ 
+@@ -7,6 +8,8 @@
+ """
+ 
+ import json
++import fcntl
++import queue_lifecycle as lifecycle
+ import os
+ import signal
+ import shlex
+@@ -102,6 +105,7 @@
+             task_origin.agent_name if task_origin else None,
+         ),
+     )
++    lifecycle.new_task(conn, cursor.lastrowid, pid)
+     return cursor.lastrowid
+ 
+ 
+@@ -170,9 +174,17 @@
+ 
+ # --- Database Functions ---
+ @contextmanager
+-def get_db(db_path: Path):
++def get_db(db_path: Path, *, bootstrap=False):
+     """Get database connection with WAL mode for better concurrency."""
+-    conn = sqlite3.connect(db_path, timeout=60.0)
++    conn = sqlite3.connect(db_path if bootstrap else db_path.resolve().as_uri() + '?mode=rw',
++                           timeout=60.0, uri=not bootstrap)
++    conn.row_factory = sqlite3.Row
++    try:
++        if not bootstrap:
++            lifecycle.validate_state(conn)
++    except BaseException:
++        conn.close()
++        raise
+     conn.execute("PRAGMA journal_mode=WAL")
+     conn.execute("PRAGMA busy_timeout=60000")
+     conn.row_factory = sqlite3.Row
+@@ -186,13 +198,14 @@
+         conn.close()
+ 
+ 
+-def init_db(paths: QueuePaths):
++def _init_db(paths: QueuePaths, capacities, contract):
+     """Initialize DB with queue table."""
+     paths.data_dir.mkdir(parents=True, exist_ok=True)
+-    with get_db(paths.db_path) as conn:
++    with get_db(paths.db_path, bootstrap=True) as conn:
+         conn.execute(QUEUE_SCHEMA)
+         conn.execute(TASK_RESULTS_SCHEMA)
+         conn.execute(QUEUE_INDEX)
++        lifecycle.schema(conn)
+         # Run migrations for existing databases
+         for migration in [
+             QUEUE_MIGRATION_SERVER_ID,
+@@ -208,6 +221,8 @@
+             except sqlite3.OperationalError as exc:
+                 if "duplicate column name" not in str(exc).lower():
+                     raise
++
++        lifecycle.configure(conn, capacities, contract, initialize=True)
+ 
+ 
+ def collect_task_origin(working_directory: str, agent_name: str | None = None) -> TaskOrigin:
+@@ -488,6 +503,7 @@
+             (datetime.now().isoformat(), owner_pid, task_id),
+         )
+         if cursor.rowcount > 0:
++            lifecycle.admitted(conn, task_id)
+             conn.commit()
+             return True, 0
+ 
+@@ -504,21 +520,22 @@
+             conn.execute("PRAGMA busy_timeout=" + str(int(previous_busy_timeout)))
+ 
+ 
++def init_db(paths: QueuePaths, capacities, contract):
++    """Explicit fresh bootstrap; an existing database must already be compatible."""
++    paths.data_dir.mkdir(parents=True, exist_ok=True)
++    with open(paths.data_dir / 'initialize.lock', 'a') as lock:
++        fcntl.flock(lock, fcntl.LOCK_EX)
++        if paths.db_path.exists():
++            with get_db(paths.db_path) as conn:
++                lifecycle.configure(conn, capacities, contract)
++        else:
++            _init_db(paths, capacities, contract)
++
++
+ def ensure_db(paths: QueuePaths):
+-    """Ensure database exists and is valid. Recreates if corrupted."""
+-    try:
+-        with get_db(paths.db_path) as conn:
+-            conn.execute("SELECT 1 FROM queue LIMIT 1")
+-    except sqlite3.OperationalError:
+-        # Database missing or corrupted - clean up and reinitialize
+-        for suffix in ["", "-wal", "-shm"]:
+-            path = Path(str(paths.db_path) + suffix)
+-            if path.exists():
+-                try:
+-                    path.unlink()
+-                except OSError:
+-                    pass
+-        init_db(paths)
++    """Validate active state without creating schema or replacing damaged bytes."""
++    with get_db(paths.db_path):
++        pass
+ 
+ 
+ # --- Process Management ---
+@@ -583,21 +600,6 @@
+     except Exception:
+         # If we can't check, assume valid (conservative - avoid false orphan cleanup)
+         return True
+-
+-
+-def kill_process_tree(pid: int):
+-    """Kill a process and all its children via process group."""
+-    if not pid or not is_process_alive(pid):
+-        return
+-    try:
+-        # Kill the entire process group (works because we use start_new_session=True)
+-        os.killpg(pid, signal.SIGTERM)
+-    except OSError:
+-        # Fallback: try killing just the process if process group kill fails
+-        try:
+-            os.kill(pid, signal.SIGTERM)
+-        except OSError:
+-            pass
+ 
+ 
+ # --- Logging ---
+@@ -636,101 +638,10 @@
+ 
+ 
+ # --- Queue Cleanup ---
+-def cleanup_queue(
+-    conn,
+-    queue_name: str,
+-    metrics_path: Path,
+-    max_lock_age_minutes: int = DEFAULT_MAX_LOCK_AGE_MINUTES,
+-    log_fn=None,
+-):
+-    """
+-    Clean up dead/stale locks and orphaned waiting tasks.
+-
+-    Args:
+-        conn: SQLite connection (must have row_factory=sqlite3.Row)
+-        queue_name: Name of the queue to clean
+-        metrics_path: Path to metrics log file
+-        max_lock_age_minutes: Timeout for stale locks
+-        log_fn: Optional function for logging (signature: log_fn(message))
+-    """
+-
+-    def log(msg):
+-        if log_fn:
+-            log_fn(msg)
+-        else:
+-            print(log_fmt(msg))
+-
+-    # Check for dead parents (running tasks)
+-    runners = conn.execute(
+-        "SELECT id, pid, child_pid FROM queue WHERE queue_name = ? AND status = 'running'",
+-        (queue_name,),
+-    ).fetchall()
+-
+-    for runner in runners:
+-        if not is_task_queue_process(runner["pid"]):
+-            child = runner["child_pid"]
+-            if child and is_process_alive(child):
+-                log(
+-                    f"WARNING: Parent PID {runner['pid']} died. Killing orphan child PID {child}..."
+-                )
+-                kill_process_tree(child)
+-
+-            conn.execute("DELETE FROM queue WHERE id = ?", (runner["id"],))
+-            log_metric(
+-                metrics_path,
+-                "zombie_cleared",
+-                task_id=runner["id"],
+-                queue_name=queue_name,
+-                dead_pid=runner["pid"],
+-                reason="parent_died",
+-            )
+-            log(f"WARNING: Cleared zombie lock (ID: {runner['id']}).")
+-
+-    # Check for orphaned waiting tasks (parent process died before acquiring lock)
+-    waiters = conn.execute(
+-        "SELECT id, pid FROM queue WHERE queue_name = ? AND status = 'waiting'",
+-        (queue_name,),
+-    ).fetchall()
+-
+-    for waiter in waiters:
+-        if not is_task_queue_process(waiter["pid"]):
+-            conn.execute("DELETE FROM queue WHERE id = ?", (waiter["id"],))
+-            log_metric(
+-                metrics_path,
+-                "orphan_cleared",
+-                task_id=waiter["id"],
+-                queue_name=queue_name,
+-                dead_pid=waiter["pid"],
+-                reason="waiting_parent_died",
+-            )
+-            log(f"WARNING: Cleared orphaned waiting task (ID: {waiter['id']}).")
+-
+-    # Check for timeouts (stale locks)
+-    cutoff = (datetime.now() - timedelta(minutes=max_lock_age_minutes)).isoformat()
+-    stale = conn.execute(
+-        "SELECT id, child_pid FROM queue WHERE queue_name = ? AND status = 'running' AND updated_at < ?",
+-        (queue_name, cutoff),
+-    ).fetchall()
+-
+-    for task in stale:
+-        if task["child_pid"]:
+-            kill_process_tree(task["child_pid"])
+-        conn.execute("DELETE FROM queue WHERE id = ?", (task["id"],))
+-        log_metric(
+-            metrics_path,
+-            "zombie_cleared",
+-            task_id=task["id"],
+-            queue_name=queue_name,
+-            reason="timeout",
+-            timeout_minutes=max_lock_age_minutes,
+-        )
+-        log(f"WARNING: Cleared stale lock (ID: {task['id']}) active > {max_lock_age_minutes}m")
+-
+-
+-def release_lock(conn, task_id: int):
+-    """Release a queue lock by deleting the task entry."""
+-    try:
+-        conn.execute("DELETE FROM queue WHERE id = ?", (task_id,))
+-        conn.commit()
+-    except sqlite3.OperationalError:
+-        pass
++def cleanup_queue(conn, queue_name, metrics_path, max_lock_age_minutes=DEFAULT_MAX_LOCK_AGE_MINUTES,
++                  log_fn=None, server_id=None):
++    lifecycle.reconcile(conn, queue_name, max_lock_age_minutes, server_id)
++
++
++def release_lock(conn, task_id):
++    return lifecycle.close_task(conn, task_id)
+--- /dev/null
++++ b/queue_lifecycle.py
+@@ -0,0 +1,373 @@
++# SPDX-License-Identifier: Apache-2.0
++# Copyright 2026 SreeStack contributors.
++"""Local lifecycle repair; admission and FIFO remain in queue_core.
++
++The process-group contract covers only members of the launched session group.
++Uncontained commands retain capacity until a changed boot proves closure.
++"""
++
++import ctypes
++import errno
++import hashlib
++import json
++import os
++import signal
++import subprocess
++import sys
++import time
++import uuid
++
++
++class BSDInfo(ctypes.Structure):
++    _fields_ = [(name, ctypes.c_uint32) for name in (
++        'flags', 'status', 'xstatus', 'pid', 'ppid', 'uid', 'gid', 'ruid',
++        'rgid', 'svuid', 'svgid', 'reserved')]
++    _fields_ += [('comm', ctypes.c_char * 16), ('name', ctypes.c_char * 32)]
++    _fields_ += [(name, ctypes.c_uint32) for name in ('nfiles', 'pgid', 'jobc', 'tdev', 'tpgid')]
++    _fields_ += [('nice', ctypes.c_int32), ('seconds', ctypes.c_uint64), ('microseconds', ctypes.c_uint64)]
++
++
++def boot_identity():
++    if sys.platform != 'darwin':
++        raise RuntimeError('This local lifecycle repair is qualified only for macOS')
++    value = subprocess.check_output(['/usr/sbin/sysctl', '-n', 'kern.bootsessionuuid'],
++                                    text=True, timeout=5).strip()
++    return str(uuid.UUID(value))
++
++
++def process_identity(pid):
++    library = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
++    data = BSDInfo()
++    ctypes.set_errno(0)
++    count = library.proc_pidinfo(int(pid), 3, 0, ctypes.byref(data), ctypes.sizeof(data))
++    if count != ctypes.sizeof(data):
++        if ctypes.get_errno() == errno.ESRCH:
++            return None
++        raise RuntimeError(f'Cannot establish birth identity for PID {pid}')
++    return {'pid': data.pid, 'pgid': data.pgid, 'birth': [data.seconds, data.microseconds],
++            'zombie': data.status == 5}
++
++
++def group_members(group):
++    result = subprocess.run(['/bin/ps', '-axo', 'pid=,pgid='], capture_output=True,
++                            text=True, check=True, timeout=5)
++    members = []
++    for line in result.stdout.splitlines():
++        pid, pgid = map(int, line.split())
++        if pgid == group:
++            item = process_identity(pid)
++            if item is not None and item['pgid'] == group and not item['zombie']:
++                members.append(item)
++    return members
++
++
++def schema(conn):
++    columns = {row[1] for row in conn.execute('PRAGMA table_info(queue)')}
++    if 'lifecycle_json' not in columns:
++        conn.execute('ALTER TABLE queue ADD COLUMN lifecycle_json TEXT')
++    conn.execute('''CREATE TABLE IF NOT EXISTS task_operations (
++        operation_id TEXT PRIMARY KEY, request_json TEXT NOT NULL, request_sha256 TEXT NOT NULL,
++        task_id INTEGER UNIQUE NOT NULL, configuration_sha256 TEXT NOT NULL, worker_json TEXT)''')
++    conn.execute('CREATE TABLE IF NOT EXISTS admission_policy (singleton INTEGER PRIMARY KEY CHECK(singleton=1), policy_json TEXT NOT NULL)')
++
++
++def validate_state(conn):
++    required = {
++        'queue': {'id', 'queue_name', 'status', 'pid', 'server_id', 'child_pid', 'command',
++                  'working_directory', 'worktree_root', 'repo_name', 'git_branch',
++                  'agent_name', 'created_at', 'updated_at', 'lifecycle_json'},
++        'task_results': {'task_id', 'result_json', 'completed_at'},
++        'task_operations': {'operation_id', 'request_json', 'request_sha256', 'task_id',
++                            'configuration_sha256', 'worker_json'},
++        'admission_policy': {'singleton', 'policy_json'},
++    }
++    for table, columns in required.items():
++        existing = {row[1] for row in conn.execute('PRAGMA table_info(' + table + ')')}
++        if not columns <= existing:
++            raise ValueError('Shared admission schema missing/incompatible: ' + table + '; restore state, never reinitialize')
++    rows = conn.execute('SELECT singleton, policy_json FROM admission_policy').fetchall()
++    if len(rows) != 1 or rows[0][0] != 1:
++        raise ValueError('Shared admission policy missing/incompatible; restore state')
++    policy = json.loads(rows[0][1])
++    if (policy.get('schema') != 1 or not policy.get('capacities')
++            or policy.get('ownership_contract') not in {'uncontained', 'process-group'}):
++        raise ValueError('Shared admission policy missing/incompatible; restore state')
++
++
++def configure(conn, capacities, contract, *, initialize=False):
++    if contract not in {'uncontained', 'process-group'}:
++        raise ValueError('Unknown ownership contract')
++    if not capacities:
++        raise ValueError('An explicit root --queue-capacity is required')
++    policy = json.dumps({'schema': 1, 'capacities': capacities, 'ownership_contract': contract}, sort_keys=True)
++    if initialize:
++        conn.execute('INSERT INTO admission_policy VALUES (1, ?)', (policy,))
++    else:
++        validate_state(conn)
++    existing = conn.execute('SELECT policy_json FROM admission_policy WHERE singleton=1').fetchone()[0]
++    if policy != existing:
++        raise ValueError('Shared admission configuration mismatch; use the original capacities and ownership contract')
++    conn.commit()
++
++
++def new_task(conn, task_id, owner_pid):
++    policy = conn.execute('SELECT policy_json FROM admission_policy WHERE singleton=1').fetchone()
++    if policy is None:
++        raise RuntimeError('Admission policy is missing; configure before submitting')
++    row = conn.execute('SELECT queue_name FROM queue WHERE id=?', (task_id,)).fetchone()
++    value = json.loads(policy[0])
++    if not any(row['queue_name'] == root or row['queue_name'].startswith(root + '/') for root in value['capacities']):
++        raise ValueError('Queue is outside the configured admission roots')
++    metadata = {'schema': 1, 'generation': str(uuid.uuid4()), 'boot': boot_identity(),
++                'owner': process_identity(owner_pid), 'state': 'waiting',
++                'ownership_contract': value['ownership_contract'],
++                'config_sha256': hashlib.sha256(policy[0].encode()).hexdigest()}
++    conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(metadata), task_id))
++
++
++def limits(conn, task_id, execution_seconds, queue_seconds):
++    row = conn.execute('SELECT lifecycle_json, working_directory FROM queue WHERE id=?', (task_id,)).fetchone()
++    meta = json.loads(row['lifecycle_json'])
++    meta.update(execution_seconds=execution_seconds, queue_seconds=queue_seconds,
++                queue_deadline=time.time() + queue_seconds if queue_seconds is not None else None)
++    if row['working_directory']:
++        revision = subprocess.run(['git', '-C', row['working_directory'], 'rev-parse', 'HEAD'],
++                                  text=True, capture_output=True, timeout=5)
++        meta['revision'] = revision.stdout.strip() if revision.returncode == 0 else None
++    conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(meta), task_id))
++    conn.commit()
++
++
++def admitted(conn, task_id):
++    """Called only within upstream's successful waiting-to-running transaction."""
++    row = conn.execute('SELECT lifecycle_json FROM queue WHERE id=?', (task_id,)).fetchone()
++    metadata = json.loads(row[0])
++    if metadata.get('result') or metadata.get('state') != 'waiting':
++        raise RuntimeError('Task no longer waiting for admission')
++    now = time.time()
++    if metadata.get('queue_deadline') is not None and now >= metadata['queue_deadline']:
++        raise TimeoutError('Queue wait deadline expired before admission')
++    metadata.update(state='admitted', admitted_at=now,
++                    execution_deadline=now + metadata['execution_seconds'])
++    conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(metadata), task_id))
++
++
++def launch_metadata(conn, task_id, generation=None, *, state='admitted'):
++    row = conn.execute('SELECT * FROM queue WHERE id=?', (task_id,)).fetchone()
++    if row is None:
++        raise RuntimeError('Command no longer active before gated launch')
++    metadata = json.loads(row['lifecycle_json'])
++    if metadata.get('result') or row['status'] != 'running':
++        raise RuntimeError('Command cancelled before gated launch')
++    if metadata.get('state') != state:
++        raise RuntimeError('Command launch lifecycle state mismatch')
++    if (generation is not None and metadata['generation'] != generation
++            or row['pid'] != os.getpid()
++            or metadata['owner'] != process_identity(os.getpid())
++            or metadata['boot'] != boot_identity()):
++        raise RuntimeError('Command launch owner/generation mismatch')
++    if time.time() >= metadata['execution_deadline']:
++        raise TimeoutError('Execution deadline expired before gated launch')
++    return metadata
++
++
++def recorded_child(conn, task_id, pid, generation):
++    identity = process_identity(pid)
++    if identity is None or identity['pgid'] != pid:
++        raise RuntimeError('Cannot establish launched process group identity')
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        metadata = launch_metadata(conn, task_id, generation)
++        metadata.update(state='executing', child=identity, launched_at=time.time())
++        conn.execute('UPDATE queue SET child_pid=?, lifecycle_json=? WHERE id=?',
++                     (pid, json.dumps(metadata), task_id))
++        conn.commit()
++    except BaseException:
++        conn.rollback()
++        raise
++
++
++def release_gate(conn, task_id, generation, write_fd):
++    # Identity is durable before the gate opens; cancellation serializes here too.
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        launch_metadata(conn, task_id, generation, state='executing')
++        os.write(write_fd, b'1')
++        conn.commit()
++    except BaseException:
++        conn.rollback()
++        raise
++
++
++def gate_arguments(command, read_fd):
++    return [sys.executable, '-I', '-B', __file__, '--gate', str(read_fd), command]
++
++
++def launch(conn, task_id, command, **kwargs):
++    generation = launch_metadata(conn, task_id)['generation']
++    read_fd, write_fd = os.pipe()
++    child = None
++    opened = False
++    try:
++        child = subprocess.Popen(gate_arguments(command, read_fd), pass_fds=(read_fd,),
++                                 start_new_session=True, **kwargs)
++        recorded_child(conn, task_id, child.pid, generation)
++        release_gate(conn, task_id, generation, write_fd)
++        opened = True
++        return child
++    finally:
++        os.close(read_fd)
++        os.close(write_fd)
++        if child is not None and not opened:
++            child.wait(timeout=5)
++
++
++async def launch_async(conn, task_id, command, **kwargs):
++    import asyncio
++    generation = launch_metadata(conn, task_id)['generation']
++    read_fd, write_fd = os.pipe()
++    child = None
++    opened = False
++    try:
++        child = await asyncio.create_subprocess_exec(*gate_arguments(command, read_fd),
++                    pass_fds=(read_fd,), start_new_session=True, **kwargs)
++        recorded_child(conn, task_id, child.pid, generation)
++        release_gate(conn, task_id, generation, write_fd)
++        opened = True
++        return child
++    finally:
++        os.close(read_fd)
++        os.close(write_fd)
++        if child is not None and not opened:
++            await asyncio.wait_for(child.wait(), timeout=5)
++
++
++def receipt(conn, row, metadata, result, pending):
++    value = {'task_id': row['id'], 'command': row['command'], 'queue_name': row['queue_name'],
++             'working_directory': row['working_directory'], 'worktree_root': row['worktree_root'],
++             'agent_name': row['agent_name'], 'created_at': row['created_at'], 'output_file': None, 'tail': None, 'exit_code': None, **result,
++             'lifecycle': metadata, 'capacity_held': pending}
++    if pending:
++        value['intended_status'] = result['status']
++        value['status'] = 'recovery-pending'
++        value['reason'] = metadata['reason']
++    else:
++        value['closed_at'] = time.time()
++    conn.execute('INSERT INTO task_results(task_id,result_json) VALUES (?,?) ON CONFLICT(task_id) DO UPDATE SET result_json=excluded.result_json',
++                 (row['id'], json.dumps(value)))
++    return value
++
++
++def close_task(conn, task_id, result=None, terminate=False, reason='closure_requested'):
++    """One durable closure route; an uncertain row always remains running."""
++    if conn.in_transaction:
++        conn.commit()
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        row = conn.execute('SELECT * FROM queue WHERE id=?', (task_id,)).fetchone()
++        if row is None:
++            stored = conn.execute('SELECT result_json FROM task_results WHERE task_id=?', (task_id,)).fetchone()
++            conn.commit()
++            return json.loads(stored[0]) if stored else None
++        metadata = json.loads(row['lifecycle_json']) if row['lifecycle_json'] else {}
++        target = metadata.get('result') or result or {'status': 'cancelled' if row['status'] == 'waiting' else 'interrupted', 'duration_seconds': 0.0}
++        metadata.update(result=target, reason=reason, state='closing')
++        receipt(conn, row, metadata, target, True)
++        conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(metadata), task_id))
++        conn.commit()
++        conn.execute('BEGIN IMMEDIATE')
++        row = conn.execute('SELECT * FROM queue WHERE id=?', (task_id,)).fetchone()
++        if row is None:
++            conn.commit()
++            return read_task(conn, task_id)
++        metadata = json.loads(row['lifecycle_json'])
++        target = metadata['result']
++        closed = row['status'] == 'waiting'
++        if metadata.get('boot') and metadata['boot'] != boot_identity():
++            closed = True
++            metadata['reason'] = 'previous_boot_closed'
++        elif row['status'] != 'waiting' and metadata.get('child'):
++            try:
++                child = metadata['child']
++                members = group_members(child['pgid'])
++                anchor = process_identity(child['pid'])
++                anchor_valid = anchor is not None and anchor['birth'] == child['birth'] and anchor['pgid'] == child['pgid']
++                if terminate and members:
++                    # A live birth-verified anchor proves which existing group may be signalled.
++                    known = {m['pid']: m['birth'] for m in members} if anchor_valid else {}
++                    for sig, grace in ((signal.SIGTERM, .25), (signal.SIGKILL, .5)):
++                        if not members:
++                            break
++                        if not any(m['pid'] in known and m['birth'] == known[m['pid']] for m in members):
++                            break
++                        os.killpg(child['pgid'], sig)
++                        end = time.monotonic() + grace
++                        while time.monotonic() < end:
++                            members = group_members(child['pgid'])
++                            if not members:
++                                break
++                            time.sleep(.025)
++                closed = not members and metadata.get('ownership_contract') == 'process-group'
++                if not closed:
++                    metadata['reason'] = 'uncontained_descendants_unprovable' if metadata.get('ownership_contract') != 'process-group' else 'group_closure_unproved'
++            except (OSError, RuntimeError, subprocess.SubprocessError):
++                closed = False
++                metadata['reason'] = 'identity_or_group_observation_unavailable'
++        if closed:
++            metadata['state'] = 'closed'
++            value = receipt(conn, row, metadata, target, False)
++            conn.execute('DELETE FROM queue WHERE id=?', (task_id,))
++        else:
++            metadata['state'] = 'recovery-pending'
++            conn.execute("UPDATE queue SET status='running', lifecycle_json=? WHERE id=?", (json.dumps(metadata), task_id))
++            value = receipt(conn, row, metadata, target, True)
++        conn.commit()
++        return value
++    except Exception:
++        conn.rollback()
++        raise
++
++
++def read_task(conn, task_id):
++    result = conn.execute('SELECT result_json FROM task_results WHERE task_id=?', (task_id,)).fetchone()
++    if result:
++        return json.loads(result[0])
++    row = conn.execute('SELECT * FROM queue WHERE id=?', (task_id,)).fetchone()
++    if row is None:
++        return {'task_id': task_id, 'status': 'unknown'}
++    metadata = json.loads(row['lifecycle_json']) if row['lifecycle_json'] else {}
++    return {'task_id': task_id, 'status': 'queued' if row['status'] == 'waiting' else 'running',
++            'command': row['command'], 'lifecycle': metadata, 'capacity_held': row['status'] == 'running'}
++
++
++def reconcile(conn, queue_name, max_age_minutes, server_id=None):
++    rows = conn.execute('SELECT * FROM queue WHERE queue_name=?', (queue_name,)).fetchall()
++    for row in rows:
++        meta = json.loads(row['lifecycle_json']) if row['lifecycle_json'] else {}
++        try:
++            owner = process_identity(row['pid']) if row['pid'] else None
++            same_owner = owner is not None and not owner['zombie'] and meta.get('owner', {}).get('birth') == owner['birth']
++            old_instance = row['pid'] == os.getpid() and server_id and row['server_id'] != server_id
++            pending = meta.get('state') in {'closing', 'recovery-pending'}
++            from datetime import datetime
++            deadline = meta.get('execution_deadline')
++            expired = deadline is not None and time.time() >= deadline
++            # Age is only a compatibility fallback for legacy rows without a deadline.
++            legacy_stale = deadline is None and (datetime.now() - datetime.fromisoformat(row['updated_at'])).total_seconds() > max_age_minutes * 60
++            stale = row['status'] == 'running' and (expired or legacy_stale)
++            if meta.get('boot') != boot_identity() or not same_owner or old_instance or pending or stale:
++                result = {'status': 'timeout', 'timeout_seconds': meta['execution_seconds'],
++                          'duration_seconds': meta['execution_seconds']} if expired and same_owner else None
++                close_task(conn, row['id'], result=result, terminate=True, reason='reconciliation')
++        except (OSError, RuntimeError):
++            # Identity lookup failure cannot authorize signalling or capacity release.
++            close_task(conn, row['id'], terminate=False, reason='identity_unavailable')
++
++
++if __name__ == '__main__':
++    fd = int(sys.argv[2])
++    allowed = os.read(fd, 1) == b'1'
++    os.close(fd)
++    if allowed:
++        os.execl('/bin/sh', 'sh', '-c', sys.argv[3])
++    sys.exit(125)
+--- a/tq.py
++++ b/tq.py
+@@ -1,3 +1,4 @@
++# Modified by SreeStack: local lifecycle repair; see bundled modification notice.
+ #!/usr/bin/env python3
+ """
+ tq - Agent Task Queue CLI
+@@ -15,6 +16,7 @@
+ import sys
+ import time
+ import uuid
++import queue_lifecycle as lifecycle
+ from datetime import datetime
+ from pathlib import Path
+ 
+@@ -31,7 +33,6 @@
+     log_metric as _log_metric,
+     release_lock,
+     is_process_alive,
+-    kill_process_tree,
+     insert_waiting_task,
+     normalize_queue_name,
+     parse_queue_capacities,
+@@ -78,6 +79,8 @@
+     conn.row_factory = sqlite3.Row
+ 
+     try:
++        for queue in conn.execute('SELECT DISTINCT queue_name FROM queue').fetchall():
++            cleanup_queue(conn, queue[0], paths)
+         rows = conn.execute(
+             "SELECT * FROM queue ORDER BY queue_name, id"
+         ).fetchall()
+@@ -90,7 +93,7 @@
+                 task = {
+                     "id": row["id"],
+                     "queue_name": row["queue_name"],
+-                    "status": row["status"],
++                    "status": (json.loads(row["lifecycle_json"] or "{}").get("state") if json.loads(row["lifecycle_json"] or "{}").get("state") == "recovery-pending" else row["status"]),
+                     "command": row["command"] if "command" in row.keys() else None,
+                     "pid": row["pid"],
+                     "child_pid": row["child_pid"],
+@@ -153,44 +156,23 @@
+ 
+ 
+ def cmd_clear(args):
+-    """Clear all tasks from the queue."""
++    raise ValueError('Bulk clearing is disabled: cancel an exact task; unresolved capacity cannot be forced free')
++
++
++def cmd_task(args):
+     paths = get_paths(args)
+-    json_output = getattr(args, "json", False)
+-
+-    if not paths.db_path.exists():
+-        if json_output:
+-            print(json.dumps({"cleared": 0, "success": True}))
++    ensure_db(paths)
++    with get_db(paths.db_path) as conn:
++        row = conn.execute('SELECT queue_name FROM queue WHERE id=?', (args.task_id,)).fetchone()
++        if row:
++            cleanup_queue(conn, row['queue_name'], paths)
++        if args.command == 'cancel':
++            value = lifecycle.close_task(conn, args.task_id,
++                {'status': 'cancelled', 'duration_seconds': 0.0}, True, 'explicit_cancel')
+         else:
+-            print("No queue database found")
+-        return
+-
+-    conn = sqlite3.connect(paths.db_path, timeout=5.0)
+-    try:
+-        # Check how many tasks exist
+-        count = conn.execute("SELECT COUNT(*) FROM queue").fetchone()[0]
+-        if count == 0:
+-            if json_output:
+-                print(json.dumps({"cleared": 0, "success": True}))
+-            else:
+-                print("Queue is already empty")
+-            return
+-
+-        # JSON mode skips confirmation (implies --force)
+-        if not json_output:
+-            response = input(f"Clear {count} task(s) from queue? [y/N] ")
+-            if response.lower() != 'y':
+-                print("Cancelled")
+-                return
+-
+-        cursor = conn.execute("DELETE FROM queue")
+-        conn.commit()
+-
+-        if json_output:
+-            print(json.dumps({"cleared": cursor.rowcount, "success": True}))
+-        else:
+-            print(f"Cleared {cursor.rowcount} task(s) from queue")
+-    finally:
+-        conn.close()
++            value = lifecycle.read_task(conn, args.task_id)
++    print(json.dumps(value))
++    return 0
+ 
+ 
+ def cmd_logs(args):
+@@ -262,43 +244,13 @@
+     _log_metric(paths.metrics_path, event, DEFAULT_MAX_METRICS_SIZE_MB, **kwargs)
+ 
+ 
+-def cleanup_queue(
+-    conn,
+-    queue_name: str,
+-    paths: QueuePaths,
+-    queue_capacities: dict[str, int] | None = None,
+-):
+-    """Clean up queue (wrapper for CLI)."""
+-    for target_queue in cleanup_targets_for_queue(conn, queue_name, queue_capacities):
+-        _cleanup_queue(conn, target_queue, paths.metrics_path, DEFAULT_MAX_LOCK_AGE_MINUTES)
+-
+-        # Additional cleanup: Tasks with our PID but DIFFERENT instance_id (from old CLI instance)
+-        # This handles the edge case where PID is reused after CLI crash
+-        my_pid = os.getpid()
+-        stale_tasks = conn.execute(
+-            "SELECT id, status, child_pid, server_id FROM queue WHERE queue_name = ? AND pid = ? AND server_id IS NOT NULL AND server_id != ?",
+-            (target_queue, my_pid, CLI_INSTANCE_ID),
+-        ).fetchall()
+-
+-        for task in stale_tasks:
+-            if task["child_pid"] and is_process_alive(task["child_pid"]):
+-                print(f"[tq] WARNING: Killing orphaned subprocess {task['child_pid']} from old CLI instance")
+-                kill_process_tree(task["child_pid"])
+-
+-            conn.execute("DELETE FROM queue WHERE id = ?", (task["id"],))
+-            log_metric(
+-                paths,
+-                "orphan_cleared",
+-                task_id=task["id"],
+-                queue_name=target_queue,
+-                status=task["status"],
+-                old_instance_id=task["server_id"],
+-                reason="stale_cli_instance",
+-            )
+-            print(f"[tq] WARNING: Cleared task from old CLI instance (ID: {task['id']}, old_instance: {task['server_id']})")
+-
+-    if conn.in_transaction:
+-        conn.commit()
++def cleanup_queue(conn, queue_name, paths, queue_capacities=None):
++    if queue_capacities is None:
++        policy = conn.execute('SELECT policy_json FROM admission_policy WHERE singleton=1').fetchone()
++        queue_capacities = json.loads(policy[0])['capacities'] if policy else {}
++    for target in cleanup_targets_for_queue(conn, queue_name, queue_capacities):
++        _cleanup_queue(conn, target, paths.metrics_path, DEFAULT_MAX_LOCK_AGE_MINUTES,
++                       server_id=CLI_INSTANCE_ID)
+ 
+ 
+ def register_task(
+@@ -340,6 +292,7 @@
+     paths: QueuePaths,
+     queue_capacities: dict[str, int],
+     task_origin: TaskOrigin | None = None,
++    queue_timeout: int = 1200,
+ ) -> None:
+     """Wait for the task's turn to run. Task must already be registered."""
+     my_pid = os.getpid()
+@@ -350,6 +303,10 @@
+     while True:
+         try:
+             cleanup_queue(conn, queue_name, paths, queue_capacities)
++            if not conn.execute('SELECT 1 FROM queue WHERE id=?', (task_id,)).fetchone():
++                raise RuntimeError('Queued task was cancelled')
++            if time.time() - queued_at >= queue_timeout:
++                raise TimeoutError('Queue wait deadline expired before execution')
+ 
+             started, pos = attempt_task_start(
+                 conn,
+@@ -391,186 +348,68 @@
+ 
+ 
+ def cmd_run(args):
+-    """Run a command through the task queue."""
+-    if not args.run_command:
+-        print("Error: No command specified", file=sys.stderr)
+-        sys.exit(1)
+-
+-    # Use shlex.join to properly quote arguments with spaces
++    if not args.run_command or args.timeout < 1 or args.queue_timeout < 1:
++        raise ValueError('A command and positive execution/queue timeouts are required')
+     command = shlex.join(args.run_command)
+     working_dir = os.path.abspath(args.dir) if args.dir else os.getcwd()
+-    try:
+-        queue_name = normalize_queue_name(args.queue)
+-        queue_capacities = get_queue_capacities(args)
+-    except ValueError as exc:
+-        print(f"Error: {exc}", file=sys.stderr)
+-        sys.exit(1)
+-
+-    timeout = args.timeout
+-
+-    if not os.path.exists(working_dir):
+-        print(f"Error: Working directory does not exist: {working_dir}", file=sys.stderr)
+-        sys.exit(1)
+-
++    queue_name = normalize_queue_name(args.queue)
++    capacities = get_queue_capacities(args)
+     paths = get_paths(args)
+-    paths.data_dir.mkdir(parents=True, exist_ok=True)
+-    task_origin = collect_task_origin(working_dir)
+-
+-    # Ensure database exists and is valid (recover if corrupted)
+-    ensure_db(paths)
+-
+-    # Get database connection
+-    with get_db(paths.db_path) as conn:
+-        # Initialize schema if needed (idempotent via IF NOT EXISTS)
+-        init_db(paths)
+-
+-    # Open connection for the duration of the run
++    init_db(paths, capacities, args.ownership_contract)
+     conn = sqlite3.connect(paths.db_path, timeout=60.0)
+-    conn.execute("PRAGMA journal_mode=WAL")
+-    conn.execute("PRAGMA busy_timeout=60000")
+     conn.row_factory = sqlite3.Row
+-
++    lifecycle.configure(conn, capacities, args.ownership_contract)
+     task_id = None
+     proc = None
+-    cleaned_up = False
+-
+-    def cleanup_handler(signum, frame):
+-        """Handle Ctrl+C - clean up and exit."""
+-        nonlocal cleaned_up
+-        if cleaned_up:
+-            return
+-        cleaned_up = True
+-
+-        print("\n[tq] Interrupted. Cleaning up...")
+-        if proc and proc.poll() is None:
+-            try:
+-                os.killpg(proc.pid, signal.SIGTERM)
+-                proc.wait(timeout=5)
+-            except Exception:
+-                try:
+-                    os.killpg(proc.pid, signal.SIGKILL)
+-                except Exception:
+-                    pass
+-        if task_id:
+-            try:
+-                release_lock(conn, task_id)
+-            except Exception:
+-                pass
++    result = None
++    start = None
++    origin = collect_task_origin(working_dir)
++
++    def interrupted(signum, frame):
++        nonlocal result
++        result = {'status': 'cancelled', 'duration_seconds': 0.0}
++        if task_id is not None:
++            lifecycle.close_task(conn, task_id, result, True, 'cli_signal')
++        raise SystemExit(130)
++
++    signal.signal(signal.SIGINT, interrupted)
++    signal.signal(signal.SIGTERM, interrupted)
++    try:
++        cleanup_queue(conn, queue_name, paths, capacities)
++        task_id = register_task(conn, queue_name, paths, command, origin)
++        lifecycle.limits(conn, task_id, args.timeout, args.queue_timeout)
++        wait_for_turn(conn, queue_name, task_id, paths, capacities, origin, args.queue_timeout)
++        start = time.time()
++        proc = lifecycle.launch(conn, task_id, command, cwd=working_dir)
+         try:
+-            conn.close()
+-        except Exception:
+-            pass
+-        sys.exit(130)
+-
+-    signal.signal(signal.SIGINT, cleanup_handler)
+-    signal.signal(signal.SIGTERM, cleanup_handler)
+-
+-    try:
+-        # Run cleanup BEFORE inserting - this clears orphaned tasks that would otherwise
+-        # block the queue forever (since cleanup only runs during polling)
+-        cleanup_queue(conn, queue_name, paths, queue_capacities)
+-
+-        # Register task first so task_id is available for cleanup if interrupted
+-        task_id = register_task(conn, queue_name, paths, command=command, task_origin=task_origin)
+-        wait_for_turn(conn, queue_name, task_id, paths, queue_capacities, task_origin=task_origin)
+-
+-        print(f"[tq] Running: {command}")
+-        print(f"[tq] Directory: {working_dir}")
+-        print("-" * 60)
+-
+-        start = time.time()
+-
+-        # Run subprocess in passthrough mode - direct terminal connection
+-        # This preserves rich output (progress bars, colors, etc.)
+-        # nosec B602: shell=True is intentional - this CLI tool executes user-provided
+-        # commands, similar to bash -c or make. Users control their own CLI arguments.
+-        # Shell features (pipes, redirects, globs) are required for build commands.
+-        proc = subprocess.Popen(
+-            command,
+-            shell=True,  # nosec B602
+-            cwd=working_dir,
+-            start_new_session=True,  # For clean process group kill
+-        )
+-
+-        # Record child PID for zombie protection
+-        conn.execute(
+-            "UPDATE queue SET child_pid = ? WHERE id = ?", (proc.pid, task_id)
+-        )
+-        conn.commit()
+-
+-        # Wait for process (Ctrl+C will trigger cleanup_handler)
+-        try:
+-            proc.wait(timeout=timeout if timeout else None)
++            proc.wait(timeout=max(0, lifecycle.read_task(conn, task_id)['lifecycle']['execution_deadline'] - time.time()))
++            result = {'status': 'success' if proc.returncode == 0 else 'failed',
++                      'exit_code': proc.returncode, 'duration_seconds': time.time() - start}
++            value = lifecycle.close_task(conn, task_id, result, True, 'normal_completion')
++            if value['capacity_held']:
++                print('[tq] ' + json.dumps(value))
++                return 125
++            return proc.returncode
+         except subprocess.TimeoutExpired:
+-            print(f"\n[tq] TIMEOUT after {timeout}s")
+-            try:
+-                os.killpg(proc.pid, signal.SIGKILL)
+-            except OSError:
+-                pass
+-            proc.wait()
+-            log_metric(
+-                paths,
+-                "task_timeout",
+-                task_id=task_id,
+-                queue_name=queue_name,
+-                pid=os.getpid(),
+-                command=command,
+-                timeout_seconds=timeout,
+-                **task_origin_kwargs(task_origin),
+-            )
+-            return 124  # Standard timeout exit code
+-
+-        duration = time.time() - start
+-        exit_code = proc.returncode
+-
+-        print("-" * 60)
+-        if exit_code == 0:
+-            print(f"[tq] SUCCESS in {duration:.1f}s")
+-        else:
+-            print(f"[tq] FAILED exit={exit_code} in {duration:.1f}s")
+-
+-        log_metric(
+-            paths,
+-            "task_completed",
+-            task_id=task_id,
+-            queue_name=queue_name,
+-            pid=os.getpid(),
+-            command=command,
+-            exit_code=exit_code,
+-            duration_seconds=round(duration, 2),
+-            **task_origin_kwargs(task_origin),
+-        )
+-
+-        return exit_code
+-
+-    except Exception as e:
+-        print(f"[tq] Error: {e}", file=sys.stderr)
+-        if task_id:
+-            log_metric(
+-                paths,
+-                "task_error",
+-                task_id=task_id,
+-                queue_name=queue_name,
+-                pid=os.getpid(),
+-                error=str(e),
+-                **task_origin_kwargs(task_origin),
+-            )
++            result = {'status': 'timeout', 'timeout_seconds': args.timeout,
++                      'duration_seconds': time.time() - start}
++            value = lifecycle.close_task(conn, task_id, result, True, 'execution_timeout')
++            print('[tq] ' + json.dumps(value))
++            proc.wait(timeout=2)
++            return 124
++    except Exception as error:
++        result = {'status': 'error', 'error': str(error), 'duration_seconds': 0.0}
++        if task_id is not None:
++            lifecycle.close_task(conn, task_id, result, True, 'cli_error')
++        print(f'[tq] Error: {error}', file=sys.stderr)
+         return 1
+-
+     finally:
+-        if not cleaned_up:
+-            if task_id:
+-                try:
+-                    release_lock(conn, task_id)
+-                except Exception:
+-                    pass
+-            try:
+-                conn.close()
+-            except Exception:
+-                pass
+-
+-
+-def main():
++        if task_id is not None:
++            lifecycle.close_task(conn, task_id, result, True, 'cli_finally')
++        conn.close()
++
++
++def _main():
+     parser = argparse.ArgumentParser(
+         prog="tq",
+         description="Agent Task Queue CLI - inspect and manage the task queue",
+@@ -590,10 +429,12 @@
+         ),
+     )
+ 
++    parser.add_argument('--ownership-contract', choices=['uncontained', 'process-group'], default='uncontained')
+     subparsers = parser.add_subparsers(dest="command", help="Commands")
+ 
+     # run
+     run_parser = subparsers.add_parser("run", help="Run a command through the queue")
++    run_parser.add_argument("--queue-timeout", type=int, default=1200, help="Queue wait deadline in seconds, separate from execution")
+     run_parser.add_argument("-q", "--queue", default="global", help="Queue name (default: global)")
+     run_parser.add_argument("-t", "--timeout", type=int, default=1200, help="Timeout in seconds (default: 1200)")
+     run_parser.add_argument("-C", "--dir", help="Working directory (default: current)")
+@@ -614,7 +455,11 @@
+ 
+     # Handle implicit run: tq ./gradlew build -> tq run ./gradlew build
+     # Pre-process argv to insert 'run' if needed
+-    known_subcommands = {"run", "list", "clear", "logs"}
++    for operation in ('status', 'cancel'):
++        operation_parser = subparsers.add_parser(operation)
++        operation_parser.add_argument('task_id', type=int)
++        operation_parser.add_argument('--json', action='store_true')
++    known_subcommands = {"run", "list", "clear", "logs", "status", "cancel"}
+     args_list = sys.argv[1:]
+ 
+     # Find the first non-option argument (skip --data-dir and its value)
+@@ -622,7 +467,7 @@
+     i = 0
+     while i < len(args_list):
+         arg = args_list[i]
+-        if arg.startswith("--data-dir") or arg.startswith("--queue-capacity"):
++        if arg.startswith("--data-dir") or arg.startswith("--queue-capacity") or arg.startswith("--ownership-contract"):
+             # Skip --data-dir=value, --queue-capacity=value, or the following value.
+             if "=" not in arg:
+                 i += 1  # Skip the next arg (value)
+@@ -641,6 +486,8 @@
+ 
+     args = parser.parse_args(args_list)
+ 
++    if args.command in {"status", "cancel"}:
++        return cmd_task(args)
+     if args.command == "run":
+         exit_code = cmd_run(args)
+         sys.exit(exit_code if exit_code else 0)
+@@ -654,5 +501,13 @@
+         parser.print_help()
+ 
+ 
++def main():
++    try:
++        return _main()
++    except (ValueError, RuntimeError, OSError) as error:
++        print(f'tq refused: {error}', file=sys.stderr)
++        return 2
++
++
+ if __name__ == "__main__":
+-    main()
++    sys.exit(main())
+--- a/task_queue.py
++++ b/task_queue.py
+@@ -1,3 +1,4 @@
++# Modified by SreeStack: local lifecycle repair; see bundled modification notice.
+ """
+ Agent Task Queue Server
+ 
+@@ -18,6 +19,7 @@
+ import time
+ import threading
+ import uuid
++import queue_lifecycle as lifecycle
+ from collections import deque
+ from datetime import datetime, timezone
+ from pathlib import Path
+@@ -40,7 +42,6 @@
+     log_metric as _log_metric,
+     log_fmt,
+     is_process_alive,
+-    kill_process_tree,
+     insert_waiting_task,
+     normalize_queue_name,
+     parse_queue_capacities,
+@@ -113,6 +114,7 @@
+             "Example: --queue-capacity=gradle=2 --queue-capacity=gradle/emu-5557=1"
+         ),
+     )
++    parser.add_argument('--ownership-contract', choices=['uncontained', 'process-group'], default='uncontained')
+     return parser.parse_args()
+ 
+ 
+@@ -134,6 +136,7 @@
+     tail_lines=50,
+     lock_timeout=120,
+     queue_capacity=[],
++    ownership_contract="uncontained",
+ )
+ 
+ # --- Configuration ---
+@@ -157,7 +160,7 @@
+ 
+ def init_db():
+     """Initialize database using configured paths."""
+-    _init_db(PATHS)
++    _init_db(PATHS, QUEUE_CAPACITIES, _args.ownership_contract)
+ 
+ 
+ def ensure_db():
+@@ -184,74 +187,9 @@
+     return ctx.client_id if ctx and ctx.client_id else None
+ 
+ 
+-def cleanup_queue(conn, queue_name: str, queue_capacities: dict[str, int] | None = None):
+-    """Clean up queue using configured paths and detect orphaned tasks."""
+-    if queue_capacities is None:
+-        queue_capacities = QUEUE_CAPACITIES
+-
+-    for target_queue in cleanup_targets_for_queue(conn, queue_name, queue_capacities):
+-        _cleanup_queue(
+-            conn,
+-            target_queue,
+-            PATHS.metrics_path,
+-            MAX_LOCK_AGE_MINUTES,
+-            log_fn=lambda msg: print(log_fmt(msg)),
+-        )
+-
+-        my_pid = os.getpid()
+-
+-        # Cleanup 1: Tasks with our PID but DIFFERENT server_id (from old server instance)
+-        # This handles the edge case where PID is reused after server restart
+-        stale_server_tasks = conn.execute(
+-            "SELECT id, status, child_pid, server_id FROM queue WHERE queue_name = ? AND pid = ? AND server_id IS NOT NULL AND server_id != ?",
+-            (target_queue, my_pid, SERVER_INSTANCE_ID),
+-        ).fetchall()
+-
+-        for task in stale_server_tasks:
+-            if task["child_pid"] and is_process_alive(task["child_pid"]):
+-                print(log_fmt(f"WARNING: Killing orphaned subprocess {task['child_pid']} from old server"))
+-                kill_process_tree(task["child_pid"])
+-
+-            conn.execute("DELETE FROM queue WHERE id = ?", (task["id"],))
+-            log_metric(
+-                "orphan_cleared",
+-                task_id=task["id"],
+-                queue_name=target_queue,
+-                status=task["status"],
+-                old_server_id=task["server_id"],
+-                reason="stale_server_instance",
+-            )
+-            print(log_fmt(f"WARNING: Cleared task from old server instance (ID: {task['id']}, old_server: {task['server_id']})"))
+-
+-        # Cleanup 2: Tasks with our PID AND server_id but not in active tracking set
+-        # This catches tasks left behind when clients disconnect without proper cleanup
+-        our_tasks = conn.execute(
+-            "SELECT id, status, child_pid FROM queue WHERE queue_name = ? AND pid = ? AND (server_id = ? OR server_id IS NULL)",
+-            (target_queue, my_pid, SERVER_INSTANCE_ID),
+-        ).fetchall()
+-
+-        with _active_task_ids_lock:
+-            active_ids = _active_task_ids.copy()
+-
+-        for orphan in our_tasks:
+-            if orphan["id"] not in active_ids:
+-                # This task belongs to us but we're not tracking it - it's orphaned
+-                if orphan["child_pid"] and is_process_alive(orphan["child_pid"]):
+-                    print(log_fmt(f"WARNING: Killing orphaned subprocess {orphan['child_pid']}"))
+-                    kill_process_tree(orphan["child_pid"])
+-
+-                conn.execute("DELETE FROM queue WHERE id = ?", (orphan["id"],))
+-                log_metric(
+-                    "orphan_cleared",
+-                    task_id=orphan["id"],
+-                    queue_name=target_queue,
+-                    status=orphan["status"],
+-                    reason="not_in_active_set",
+-                )
+-                print(log_fmt(f"WARNING: Cleared orphaned task (ID: {orphan['id']}, status: {orphan['status']})"))
+-
+-    if conn.in_transaction:
+-        conn.commit()
++def cleanup_queue(conn, queue_name, queue_capacities=None):
++    for target in cleanup_targets_for_queue(conn, queue_name, queue_capacities or QUEUE_CAPACITIES):
++        _cleanup_queue(conn, target, PATHS.metrics_path, MAX_LOCK_AGE_MINUTES, server_id=SERVER_INSTANCE_ID)
+ 
+ 
+ # --- Output File Management ---
+@@ -391,6 +329,11 @@
+                     "SELECT status FROM queue WHERE id = ?",
+                     (task_id,),
+                 ).fetchone()
++                meta_row = conn.execute('SELECT lifecycle_json FROM queue WHERE id=?', (task_id,)).fetchone()
++                if meta_row:
++                    deadline = json.loads(meta_row[0]).get('queue_deadline')
++                    if deadline is not None and time.time() >= deadline:
++                        raise TimeoutError('Queue wait deadline expired before execution')
+                 if row is None:
+                     raise TaskNoLongerActive(f"Task #{task_id} is no longer queued")
+ 
+@@ -426,7 +369,7 @@
+ 
+     try:
+         with get_db() as conn:
+-            conn.execute("DELETE FROM queue WHERE id = ?", (task_id,))
++            lifecycle.close_task(conn, task_id)
+     except sqlite3.OperationalError:
+         pass
+ 
+@@ -441,19 +384,10 @@
+     return json.loads(row["result_json"]) if row else None
+ 
+ 
+-def _store_task_result(result: dict) -> dict:
+-    """Persist a terminal result once; explicit cancellation wins completion races."""
++def _store_task_result(result):
+     ensure_db()
+     with get_db() as conn:
+-        conn.execute(
+-            "INSERT OR IGNORE INTO task_results (task_id, result_json) VALUES (?, ?)",
+-            (result["task_id"], json.dumps(result)),
+-        )
+-        row = conn.execute(
+-            "SELECT result_json FROM task_results WHERE task_id = ?",
+-            (result["task_id"],),
+-        ).fetchone()
+-    return json.loads(row["result_json"])
++        return lifecycle.close_task(conn, result['task_id'], result, True, 'mcp_completion')
+ 
+ 
+ def _read_new_output(task_id: int, output_offset: int) -> tuple[str, int, float | None]:
+@@ -525,6 +459,10 @@
+ 
+ 
+ def _task_snapshot(task_id: int, output_offset: int, include_output: bool = True) -> dict:
++    with get_db() as conn:
++        row = conn.execute('SELECT queue_name FROM queue WHERE id=?', (task_id,)).fetchone()
++        if row:
++            cleanup_queue(conn, row['queue_name'], QUEUE_CAPACITIES)
+     result = _load_task_result(task_id)
+     if result is None:
+         return _active_task_snapshot(task_id, output_offset, include_output=include_output)
+@@ -545,7 +483,9 @@
+     task_id = snapshot["task_id"]
+     output_file = snapshot.get("output_file")
+ 
+-    if status == "success":
++    if status == "recovery-pending":
++        text = f"RECOVERY PENDING task_id={task_id}: capacity remains held; {snapshot.get('reason')}"
++    elif status == "success":
+         text = (
+             f"SUCCESS task_id={task_id} exit=0 {snapshot['duration_seconds']:.1f}s "
+             f"command={snapshot['command']} output={output_file}"
+@@ -561,6 +501,8 @@
+             f"TIMEOUT task_id={task_id} killed after {snapshot['timeout_seconds']}s "
+             f"command={snapshot['command']} output={output_file}\n{snapshot['tail']}"
+         )
++    elif status == "interrupted":
++        text = f"INTERRUPTED task_id={task_id}: owned group closure established"
+     elif status == "cancelled":
+         text = (
+             f"CANCELLED task_id={task_id} after {snapshot['duration_seconds']:.1f}s "
+@@ -658,47 +600,6 @@
+     return snapshot
+ 
+ 
+-async def _terminate_process(proc: asyncio.subprocess.Process) -> None:
+-    if proc.returncode is not None:
+-        return
+-    kill_process_tree(proc.pid)
+-    try:
+-        await asyncio.wait_for(asyncio.shield(proc.wait()), timeout=5.0)
+-    except asyncio.TimeoutError:
+-        try:
+-            os.killpg(proc.pid, signal.SIGKILL)
+-        except OSError:
+-            try:
+-                os.kill(proc.pid, signal.SIGKILL)
+-            except OSError:
+-                pass
+-        await proc.wait()
+-    else:
+-        # The shell can exit before a signal-resistant descendant in its process group.
+-        try:
+-            os.killpg(proc.pid, 0)
+-            os.killpg(proc.pid, signal.SIGKILL)
+-        except OSError:
+-            pass
+-
+-
+-async def _terminate_external_process_group(pid: int) -> None:
+-    """Terminate a task owned by another MCP server, escalating after a grace period."""
+-    kill_process_tree(pid)
+-    await asyncio.sleep(1.0)
+-    try:
+-        os.killpg(pid, 0)
+-    except OSError:
+-        return
+-    try:
+-        os.killpg(pid, signal.SIGKILL)
+-    except OSError:
+-        try:
+-            os.kill(pid, signal.SIGKILL)
+-        except OSError:
+-            pass
+-
+-
+ async def _execute_command(
+     task_id: int,
+     queue_name: str,
+@@ -721,16 +622,10 @@
+ 
+     # nosec B602: shell execution is intentional. Users explicitly provide build commands and
+     # shell features such as pipes, redirects, and globs are part of the tool contract.
+-    proc = await asyncio.create_subprocess_shell(  # nosec B602
+-        command,
+-        cwd=working_directory,
+-        env=env,
+-        stdout=asyncio.subprocess.PIPE,
+-        stderr=asyncio.subprocess.PIPE,
+-        start_new_session=True,
+-    )
+     with get_db() as conn:
+-        conn.execute("UPDATE queue SET child_pid = ? WHERE id = ?", (proc.pid, task_id))
++        proc = await lifecycle.launch_async(conn, task_id, command,
++            cwd=working_directory, env=env, stdout=asyncio.subprocess.PIPE,
++            stderr=asyncio.subprocess.PIPE)
+ 
+     with open(output_file, "w") as formatted, open(raw_output_file, "w") as raw:
+         formatted.write(f"COMMAND: {command}\n")
+@@ -771,9 +666,13 @@
+         execution = asyncio.gather(stdout_task, stderr_task, process_task)
+ 
+         try:
+-            await asyncio.wait_for(asyncio.shield(execution), timeout=timeout_seconds)
++            with get_db() as conn:
++                deadline = lifecycle.read_task(conn, task_id)['lifecycle']['execution_deadline']
++            await asyncio.wait_for(asyncio.shield(execution), timeout=max(0, deadline - time.time()))
+         except asyncio.TimeoutError:
+-            await _terminate_process(proc)
++            with get_db() as conn:
++                lifecycle.close_task(conn, task_id, {'status': 'timeout', 'timeout_seconds': timeout_seconds, 'duration_seconds': time.time() - start}, True, 'execution_timeout')
++            execution.cancel()
+             await asyncio.gather(execution, return_exceptions=True)
+             duration = time.time() - start
+             formatted.write("\n--- SUMMARY ---\n")
+@@ -802,7 +701,9 @@
+                 "tail": tail_text,
+             }
+         except asyncio.CancelledError:
+-            await _terminate_process(proc)
++            with get_db() as conn:
++                lifecycle.close_task(conn, task_id, {'status': 'cancelled', 'duration_seconds': time.time() - start}, True, 'mcp_cancelled')
++            execution.cancel()
+             await asyncio.gather(execution, return_exceptions=True)
+             duration = time.time() - start
+             formatted.write("\n--- SUMMARY ---\n")
+@@ -810,7 +711,9 @@
+             formatted.write(f"DURATION: {duration:.1f}s\n")
+             raise
+         except Exception:
+-            await _terminate_process(proc)
++            with get_db() as conn:
++                lifecycle.close_task(conn, task_id, {'status': 'error', 'error': 'execution failed', 'duration_seconds': time.time() - start}, True, 'mcp_error')
++            execution.cancel()
+             await asyncio.gather(execution, return_exceptions=True)
+             raise
+ 
+@@ -977,6 +880,7 @@
+     env_vars: str = "",
+     agent_name: str = "",
+     wait_seconds: int = MAX_TOOL_WAIT_SECONDS,
++    queue_timeout_seconds: int = 1200,
+ ):
+     """
+     Execute a command through the task queue for sequential processing.
+@@ -1032,6 +936,8 @@
+         return "ERROR: Command cannot be empty"
+     if not os.path.exists(working_directory):
+         return f"ERROR: Working directory does not exist: {working_directory}"
++    if queue_timeout_seconds < 1:
++        return "ERROR: queue_timeout_seconds must be at least 1"
+     if timeout_seconds < 1:
+         return "ERROR: timeout_seconds must be at least 1"
+     if wait_error := _validate_wait_seconds(wait_seconds):
+@@ -1052,6 +958,8 @@
+     caller_name = agent_name.strip() or _current_client_id()
+     task_origin = collect_task_origin(working_directory, caller_name)
+     task_id = await register_task(queue_name, command, task_origin)
++    with get_db() as conn:
++        lifecycle.limits(conn, task_id, timeout_seconds, queue_timeout_seconds)
+     _start_background_task(
+         task_id,
+         queue_name,
+@@ -1110,50 +1018,16 @@
+     if task_id < 1:
+         return "ERROR: task_id must be a positive integer"
+ 
+-    existing_result = _load_task_result(task_id)
+-    if existing_result is not None:
+-        return _format_task_snapshot(_task_snapshot(task_id, 0))
+-
+-    snapshot = _active_task_snapshot(task_id, 0)
+-    if snapshot["status"] == "unknown":
+-        return _format_task_snapshot(snapshot)
+-
+-    result = _store_task_result({
+-        "task_id": task_id,
+-        "status": "cancelled",
+-        "duration_seconds": snapshot["elapsed_seconds"],
+-        "command": snapshot["command"],
+-        "output_file": snapshot["output_file"],
+-    })
+-    log_metric(
+-        "task_cancelled",
+-        task_id=task_id,
+-        queue_name=snapshot["queue_name"],
+-        pid=os.getpid(),
+-        command=snapshot["command"],
+-        reason="explicit_cancel",
+-    )
+-
+-    background_task = _background_tasks.get(task_id)
+-    if background_task is not None:
+-        background_task.cancel()
+-        await asyncio.gather(background_task, return_exceptions=True)
+-    else:
+-        with get_db() as conn:
+-            row = conn.execute(
+-                "SELECT child_pid FROM queue WHERE id = ?",
+-                (task_id,),
+-            ).fetchone()
+-            if row and row["child_pid"]:
+-                await _terminate_external_process_group(row["child_pid"])
+-            conn.execute("DELETE FROM queue WHERE id = ?", (task_id,))
+-
+-    return _format_task_snapshot({
+-        **result,
+-        "new_output": "",
+-        "next_output_offset": snapshot["next_output_offset"],
+-        "last_output_seconds_ago": snapshot["last_output_seconds_ago"],
+-    })
++    background = _background_tasks.get(task_id)
++    with get_db() as conn:
++        result = lifecycle.close_task(conn, task_id,
++            {'task_id': task_id, 'status': 'cancelled', 'duration_seconds': 0.0},
++            True, 'explicit_cancel')
++    if background is not None:
++        background.cancel()
++        await asyncio.gather(background, return_exceptions=True)
++    snapshot = _task_snapshot(task_id, 0)
++    return _format_task_snapshot(snapshot)
+ 
+ 
+ @mcp.tool()
+@@ -1172,11 +1046,13 @@
+ 
+ 
+ # Initialize database on module load
+-init_db()
+ 
+ 
+ def main():
+     """Entry point for uvx/CLI."""
++    init_db()
++    with get_db() as conn:
++        lifecycle.configure(conn, QUEUE_CAPACITIES, _args.ownership_contract)
+     mcp.run()
+ 
+ 
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,6 +1,6 @@
+ [project]
+ name = "agent-task-queue"
+-version = "0.4.1"
++version = "0.4.1+macwork.4"
+ description = "MCP server for sequential task execution via FIFO queue"
+ readme = "README.md"
+ requires-python = ">=3.10"
+@@ -33,4 +33,4 @@
+ 
+ [tool.hatch.build.targets.wheel]
+ packages = ["."]
+-only-include = ["task_queue.py", "tq.py", "queue_core.py"]
++only-include = ["task_queue.py", "tq.py", "queue_core.py", "queue_lifecycle.py"]
