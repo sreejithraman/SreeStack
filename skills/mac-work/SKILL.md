@@ -5,13 +5,17 @@ description: Use when routing foreground build/test commands on a shared Mac or 
 
 # Mac Work
 
-Run foreground heavy commands through the canonical shared `mac-work` route.
+Run qualified foreground heavy commands through the canonical shared `mac-work` route.
 Start with a stable operation ID, owner, argv and absolute Git worktree. Leave a
 receipt and log the caller can open in T3. Done means the owned group stopped
 before upstream capacity was released, or unresolved capacity remains inspectable.
 
 The user-approved pilot supports commands that wait for all heavy work in their
 launched process group. Use foreground options or verified project wrappers.
+Qualify the exact invocation; foreground appearance is insufficient. Swift,
+xcodebuild and native pnpm/Turbo remain unqualified. Check the
+[current eligibility evidence](references/handoffs.md#eligibility-and-proof-limits)
+before choosing a command.
 Background/shared daemons and escaping groups/sessions are unsupported; this is
 not OS containment. Keep existing holds with their owners until parent integration.
 

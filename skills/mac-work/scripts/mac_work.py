@@ -1,6 +1,7 @@
-"""Run foreground build/test commands through one shared heavy=1 queue.
+"""Run qualified foreground build/test commands through one shared heavy=1 queue.
 
 Install creates a private versioned root; it does not edit provider profiles.
+Qualify the exact invocation; foreground appearance alone is insufficient.
 Commands must wait for their heavy work. Daemons and escaping groups/sessions
 are outside this pilot contract. Output logs are verbatim, not secret redaction.
 """
