@@ -1,18 +1,19 @@
 {
   "schema": 1,
   "python": "3.12.12",
-  "package_version": "0.4.1+macwork.3",
+  "package_version": "0.4.1+macwork.4",
   "source": {
     "url": "https://github.com/block/agent-task-queue/archive/48d16da41f57801bbf9462ed2df923713978b6ae.tar.gz",
     "sha256": "a98a79bc53e77a483fc90e2cc209ffc5d22eb8d741b15cbf7d197d6ac8da2808",
     "commit": "48d16da41f57801bbf9462ed2df923713978b6ae"
   },
   "inputs": {
-    "patches/lifecycle.patch": "50006eda25973f5cd6bf290107ee1666f049c75eaf6faedebcbe32b25fe10223",
+    "patches/lifecycle.patch": "f6901d19597697dbecb6d7ed562e1470ddee8b2b50f07b239d5ba80269e08273",
     "scripts/runtime.lock": "d74d538e2445710fd928ba1d3bb1626c7265245b03b08796a2ae9a81c01d85ec",
     "scripts/build.lock": "16a713850884792a40c549788da805f88f9730d8061d381ac41ccdfdbb521b0a",
-    "NOTICE.md": "21867948dded202f9c8dbbb92575c70196fba04c29e2c647644c7add6e6b96c0",
-    "licenses/agent-task-queue.txt": "bd54eb880333876cf6ae350fd0837b2d1641ad57b531b73033743601c5771d9a"
+    "NOTICE.md": "8bb3587672f08ca4e8f6c768a3eb74eb0c5f74e0e154deb6bfc09fb02755a119",
+    "licenses/agent-task-queue.txt": "bd54eb880333876cf6ae350fd0837b2d1641ad57b531b73033743601c5771d9a",
+    "scripts/runtime_inventory.py": "bdde2d771751470b664737d86c632ad24612bc58a1fd0ac7c22010a51de16613"
   },
   "source_modules": {
     "queue_core.py": "bf23264e5cacca81a16ad48b596c0810d90a3c18e94fd44bca3af0af20e8b8d3",
@@ -22,10 +23,10 @@
   },
   "repaired_modules": {
     "queue_core.py": "1600e47a3864ba1e41a8c97289b3200fa9213001db4f5d9bcb6d8d62e1d9c603",
-    "queue_lifecycle.py": "c8d2557303e3571e2862da2ebc98bb9112bf817b76f4baf96a41b5e8670dc80c",
+    "queue_lifecycle.py": "251d2ce250a9dd423c3347702da0bba7f17b91cf1080005681b05e89fcc7440c",
     "tq.py": "bf252ff2a7e2e2400f7f9d9e1a14bae1a8fc7e71189b016480606e4fad3a5ba2",
     "task_queue.py": "d0b7f14daa89a8ca1812beb2cba0c3ee63ba8c8b0ba2094f8a32d52868796cab",
-    "pyproject.toml": "b844044a11bb88932c2d9385812eedcc931a8f6076ca9c836502b1c01909f74b"
+    "pyproject.toml": "883b625f0607367639a53f6b981d35a97f182e51befee600b5f9d1a6eb1a58fd"
   },
   "source_date_epoch": "1700000000"
 }

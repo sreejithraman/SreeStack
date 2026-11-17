@@ -67,3 +67,21 @@ open the JSON evidence. The original source archive's license and
 [modification notice](../NOTICE.md) accompany the local patch. Production
 activation, actual reboot proof, arbitrary detached cleanup and hardware work
 remain outside this local Try.
+
+## Runtime integrity prerequisite
+
+The build recipe copies its managed CPython base into the private version and
+installs dependencies with copy mode. One typed inventory covers both interpreter/
+standard-library and venv trees: regular bytes, directories, links, modes and the
+complete file set. Shared hardlinks, escaping links and special files refuse.
+Code directories are read-only so ordinary Python imports cannot create unlisted
+bytecode. Existing bytecode is hashed; no cache subtree is exempt. Verification
+uses the host standard library and never executes the candidate interpreter.
+
+The trusted build establishes this baseline from pinned source/dependency inputs
+and the selected managed Python. The installed bootstrap must bind its build
+receipt in configuration and verify it before candidate startup. The host OS,
+fixed system Python `/usr/bin/python3` (3.9+) and its standard library, `/usr/bin/env`
+with `-S`, and initial installer/uv are prerequisites. This is drift refusal on a
+cooperatively maintained filesystem, not protection against a compromised host,
+a malicious initial builder or concurrent hostile filesystem replacement.

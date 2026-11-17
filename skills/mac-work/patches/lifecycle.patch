@@ -246,7 +246,7 @@
 +    return lifecycle.close_task(conn, task_id)
 --- /dev/null
 +++ b/queue_lifecycle.py
-@@ -0,0 +1,367 @@
+@@ -0,0 +1,373 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# Copyright 2026 SreeStack contributors.
 +"""Local lifecycle repair; admission and FIFO remain in queue_core.
@@ -595,13 +595,19 @@
 +        meta = json.loads(row['lifecycle_json']) if row['lifecycle_json'] else {}
 +        try:
 +            owner = process_identity(row['pid']) if row['pid'] else None
-+            same_owner = owner is not None and meta.get('owner', {}).get('birth') == owner['birth']
++            same_owner = owner is not None and not owner['zombie'] and meta.get('owner', {}).get('birth') == owner['birth']
 +            old_instance = row['pid'] == os.getpid() and server_id and row['server_id'] != server_id
 +            pending = meta.get('state') in {'closing', 'recovery-pending'}
 +            from datetime import datetime
-+            stale = row['status'] == 'running' and (datetime.now() - datetime.fromisoformat(row['updated_at'])).total_seconds() > max_age_minutes * 60
++            deadline = meta.get('execution_deadline')
++            expired = deadline is not None and time.time() >= deadline
++            # Age is only a compatibility fallback for legacy rows without a deadline.
++            legacy_stale = deadline is None and (datetime.now() - datetime.fromisoformat(row['updated_at'])).total_seconds() > max_age_minutes * 60
++            stale = row['status'] == 'running' and (expired or legacy_stale)
 +            if meta.get('boot') != boot_identity() or not same_owner or old_instance or pending or stale:
-+                close_task(conn, row['id'], terminate=True, reason='reconciliation')
++                result = {'status': 'timeout', 'timeout_seconds': meta['execution_seconds'],
++                          'duration_seconds': meta['execution_seconds']} if expired and same_owner else None
++                close_task(conn, row['id'], result=result, terminate=True, reason='reconciliation')
 +        except (OSError, RuntimeError):
 +            # Identity lookup failure cannot authorize signalling or capacity release.
 +            close_task(conn, row['id'], terminate=False, reason='identity_unavailable')
@@ -1496,7 +1502,7 @@
  [project]
  name = "agent-task-queue"
 -version = "0.4.1"
-+version = "0.4.1+macwork.3"
++version = "0.4.1+macwork.4"
  description = "MCP server for sequential task execution via FIFO queue"
  readme = "README.md"
  requires-python = ">=3.10"

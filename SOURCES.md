@@ -1655,6 +1655,7 @@ Local skill for shared-Mac heavy-command admission. The lifecycle patch adapts
 Block agent-task-queue at `48d16da41f57801bbf9462ed2df923713978b6ae`
 (package 0.4.1, Apache-2.0), preserving SQLite/FIFO admission. Local differences:
 serialized explicit initialization, fail-closed active schema/policy validation,
+recorded-deadline/zombie-owner reconciliation and complete sealed runtime inventory,
 atomic admission clocks, cancellation-serialized gated birth/group/boot identity capture,
 one durable closure/quarantine and receipt path, immutable shared policy, bounded
 queue deadlines and exact artifact verification. The experimental process-group

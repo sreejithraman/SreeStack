@@ -108,3 +108,8 @@ presentation remain unimplemented. T3 device_open still has no established
 external admission hook. See the [task record](plan.md). The source/patch/build
 contract is fixed in [candidate.json](../candidate.json); the operational boundary
 is not accepted. Reproduce the [qualification](lifecycle.md) before changing it.
+
+Reconciliation uses the recorded execution deadline when present. Only compatible
+legacy rows without that deadline use the cleanup-age fallback. A matching zombie
+birth is dead ownership; existing exact-group cleanup/quarantine still decides
+release. Unknown unrecorded spawn windows remain held.

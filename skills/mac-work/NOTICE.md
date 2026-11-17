@@ -12,7 +12,7 @@ gated launch, isolates gate imports, validates existing state, records launch
 identities, consolidates lifecycle closure and
 receipts, persists configuration, and retains unresolved admission rows. Modified
 Python files carry a change notice. The added lifecycle module carries its own
-Apache-2.0 SPDX/copyright notice. The built version is `0.4.1+macwork.3`.
+Apache-2.0 SPDX/copyright notice. The built version is `0.4.1+macwork.4`.
 
 The patch retains the upstream SQLite/FIFO admission implementation. It does not
 establish arbitrary detached-descendant containment or a production-ready shared

@@ -20,7 +20,7 @@ class RuntimeRecipe(unittest.TestCase):
         self.bundle = self.root / 'mac-work'
         self.bundle.mkdir()
         for name in ('candidate.json', 'scripts/build_runtime.py', 'scripts/runtime.lock',
-                     'scripts/build.lock', 'patches/lifecycle.patch', 'NOTICE.md', 'licenses/agent-task-queue.txt'):
+                     'scripts/build.lock', 'scripts/runtime_inventory.py', 'patches/lifecycle.patch', 'NOTICE.md', 'licenses/agent-task-queue.txt'):
             path = self.bundle / name
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(BUNDLE / name, path)
