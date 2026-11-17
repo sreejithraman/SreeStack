@@ -76,8 +76,9 @@ Check a tool's capabilities before you rely on it.
 
 Use a compatible model/runtime from the catalog and keep the exact granted
 device ID, host, device set and lease identity through build, install and test.
-Reuse this run's active lease for its device-dependent checks. SimLock 0.7 retires
-released virtual devices and supplies new copies from seeds or named baselines;
+Reuse this run's active lease for its device-dependent checks. The qualified
+maintained local build retires released virtual devices and supplies new copies
+from seeds or named baselines;
 do not expect the next lease to preserve that device ID or run data. See
 [installed source/baseline semantics](setup.md#establish-the-worker).
 
@@ -106,11 +107,13 @@ an app bug. See
 ### Android mode
 
 Keep this Mac pilot's configured slim default and record the grant's actual mode.
-Android slim applies lower guest RAM and a verified guest policy, including
-animation changes. Use an explicit full lease for fidelity checks; full/slim use
+The maintained local build's Android slim applies lower guest RAM and a verified
+guest policy, including animation changes. Use an explicit full lease for fidelity checks; full/slim use
 separate sources and a baseline must match its saved mode. Android has no iOS
-`except` categories. Guest RAM is not host memory overhead. See the pinned
-[Android policy](https://github.com/callstackincubator/simlock/blob/392e0ac5a8d1168d19fb3d4447b908e05652d1e5/docs/internal/adr/0078-android-slim-is-a-native-source-and-guest-policy.md).
+`except` categories. Guest RAM is not host memory overhead. This qualifies the
+maintained local build, not native Android slim in stock upstream 0.7. The local
+source path is `docs/internal/adr/0078-android-slim-is-a-native-source-and-guest-policy.md`
+at the unpublished full SHA in [local build qualification](setup.md#establish-the-worker).
 
 ### Run identity and helper
 

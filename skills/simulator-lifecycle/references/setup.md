@@ -19,19 +19,14 @@ into every project.
    installed executable alone does not establish that the bridge is available.
    Keep credentials in the approved credential path, outside run evidence.
 3. For a new worker, preserve the isolated device roots and supported lease
-   identity. Set an explicit capacity appropriate to the machine and concurrency.
-   For example, this bounds iOS definitions to four, Android definitions to one,
-   and the total running devices to four:
-
-   ```sh
-   simlock config set capacity '{"strategy":"fixed","config":{"maxRunning":4,"ios":{"maxDevices":4,"maxRunning":4},"android":{"maxDevices":1,"maxRunning":1}}}'
-   ```
-
-   These match this Mac pilot's existing 4/4/1 limits; do not change them without
-   the owner's measured capacity decision. Set the supported
+   identity. Choose capacity with the worker owner. On this Mac, preserve the
+   existing running limits global=4, iOS=4, Android=1 and existing definition
+   limits. Change neither from a setup example or without the owner's measured
+   capacity decision. Set the supported
    idle shutdown/deletion policy and inspect warm-pool behavior; warm devices
-   can be exempt from idle shutdown. SimLock 0.7 retires virtual devices on
-   release; the next lease receives a new copy of a seed or named baseline.
+   can be exempt from idle shutdown. The maintained local build qualified below
+   retires virtual devices on release; the next lease receives a new copy of a
+   seed or named baseline.
    Reuse the active lease within one run, not a released device ID or app state.
    `lease.identity` does not restore cross-lease virtual-profile reuse.
    Changes requiring a SimLock daemon
@@ -43,9 +38,13 @@ Use the current [configuration reference](https://github.com/callstackincubator/
 [capacity guidance](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/worker/capacity.mdx)
 and [device roots and cleanup](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/worker/cleanup.mdx).
 
-The installed 0.7 retirement behavior is pinned in
-[virtual source/baseline semantics](https://github.com/callstackincubator/simlock/blob/392e0ac5a8d1168d19fb3d4447b908e05652d1e5/docs/internal/adr/0061-every-virtual-device-is-a-copy-of-a-source-and-a-baseline-is-a-named-source.md)
-and [release dispatch](https://github.com/callstackincubator/simlock/blob/392e0ac5a8d1168d19fb3d4447b908e05652d1e5/src/core/reclaim-coordinator.ts#L103).
+Local qualification uses the maintained SimLock build reporting version 0.7.0,
+commit `392e0ac5a8d1168d19fb3d4447b908e05652d1e5`. This commit is unpublished;
+it is not a GitHub permalink or proof of stock upstream 0.7 behavior. The local
+checkout is `/Users/sree/Documents/Dev/simlock`; pinned source paths are
+`docs/internal/adr/0061-every-virtual-device-is-a-copy-of-a-source-and-a-baseline-is-a-named-source.md`
+and `src/core/reclaim-coordinator.ts` (release dispatch at line 103).
+See the [local native qualification record](../../mac-work/references/plan.md#parent-reported-native-hardware-foundation).
 Saving an explicitly authorized named baseline ends its lease; future compatible
 leases copy that source. It is not retention of the released virtual device.
 

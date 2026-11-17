@@ -15,62 +15,101 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    args = parser.parse_args(); args.output.mkdir(parents=True, exist_ok=False)
+    args = parser.parse_args()
+    args.output.mkdir(parents=True, exist_ok=False)
     pilot = Pilot(args.root, args.output, Path.cwd())
-    outputs = args.output/'fixtures'; outputs.mkdir()
-    foreign = outputs/'foreign.fixture-lease'; foreign.write_text('foreign owner: leave untouched')
+    outputs = args.output/'fixtures'
+    outputs.mkdir()
+    foreign = outputs/'foreign.fixture-lease'
+    foreign.write_text('foreign owner: leave untouched')
     verdicts = []
     def record(case, body):
         try:
-            details = body(); verdict = 'passed'
+            details = body()
+            verdict = 'passed'
         except Exception as error:
-            details = {'error':repr(error), 'traceback':__import__('traceback').format_exc()}; verdict='failed'
-        value = {'case':case,'verdict':verdict,'details':details};verdicts.append(value);print(json.dumps(value),flush=True)
+            details = {'error':repr(error), 'traceback':__import__('traceback').format_exc()}
+            verdict='failed'
+        value = {'case':case,'verdict':verdict,'details':details}
+        verdicts.append(value)
+        print(json.dumps(value),flush=True)
     def job(label, phase, root, failure=None, seconds=.05):
         spec = pilot.operation(label)
         spec['argv'] = [pilot.python,str(SCRIPTS/'handoff_fixture.py'),phase,str(root),'--run-id',spec['operation_id'],'--seconds',str(seconds)]
-        if failure:spec['argv'] += ['--failure',failure]
+        if failure:
+            spec['argv'] += ['--failure',failure]
         return spec
     def seal(spec, root):
         return pilot.invoke([pilot.cli,'handoff','--id',spec['operation_id'],'--artifact',str(root/'artifact.bin'),'--json'])
     def run_after(spec, build):
-        argv=pilot.argv(spec);at=argv.index('--');argv[at:at]=['--handoff',build['operation_id']]
+        argv=pilot.argv(spec)
+        at=argv.index('--')
+        argv[at:at]=['--handoff',build['operation_id']]
         return pilot.invoke(argv)
     def events(root):
         path=root/'events.jsonl'
         return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
     def success():
-        root=outputs/'success';build=job('build','build',root);pilot.run(build);assert pilot.terminal(build['operation_id'])['status']=='success'
-        manifest=seal(build,root);assert seal(build,root)==manifest
+        root=outputs/'success'
+        build=job('build','build',root)
+        pilot.run(build)
+        assert pilot.terminal(build['operation_id'])['status']=='success'
+        manifest=seal(build,root)
+        assert seal(build,root)==manifest
         peer=pilot.peer()
         assert pilot.call(peer,'build_handoff',operation_id=build['operation_id'],artifacts=[str(root/'artifact.bin')])==manifest
-        check=job('checks','checks',root);run_after(check,build);done=pilot.terminal(check['operation_id'])
+        check=job('checks','checks',root)
+        run_after(check,build)
+        done=pilot.terminal(check['operation_id'])
         assert done['status']=='success' and not done['capacity_held']
         finished=next(e['result'] for e in events(root) if e['event']=='finished')
         assert finished['artifact_sha256']==hashlib.sha256((root/'artifact.bin').read_bytes()).hexdigest()
         (root/'artifact.bin').unlink()
-        late=run_after(check,build);assert late['task_id']==done['task_id']
+        late=run_after(check,build)
+        assert late['task_id']==done['task_id']
         assert sum(e['event']=='acquired' for e in events(root))==1
         return {'task_id':done['task_id'],'manifest':manifest['manifest_path'],'late_no_replay':True,'exact_artifact':True}
     def failed_build():
-        root=outputs/'failed';build=job('failed-build','build',root,'command');pilot.run(build);assert pilot.terminal(build['operation_id'])['status']=='failed'
+        root=outputs/'failed'
+        build=job('failed-build','build',root,'command')
+        pilot.run(build)
+        assert pilot.terminal(build['operation_id'])['status']=='failed'
         error=pilot.invoke([pilot.cli,'handoff','--id',build['operation_id'],'--artifact',str(root/'artifact.bin'),'--json'],expected=2)
         assert 'successful, closed build' in error and not any(e['event']=='acquired' for e in events(root))
         return {'handoff_refused':True,'acquisitions':0}
     def cancellation_and_drift():
-        root=outputs/'cancel';build=job('cancel-build','build',root);pilot.run(build);pilot.terminal(build['operation_id']);seal(build,root)
-        holder=pilot.operation('holder',10);pilot.run(holder);wait_for(lambda:pilot.event(holder['operation_id'],'start'))
-        check=job('queued-check','checks',root);run_after(check,build);pilot.cancel(check['operation_id']);assert pilot.terminal(check['operation_id'])['status']=='cancelled'
-        drift=job('drift-check','checks',root);run_after(drift,build);(root/'artifact.bin').write_text('drifted after queueing')
-        pilot.cancel(holder['operation_id']);pilot.terminal(holder['operation_id'])
-        done=pilot.terminal(drift['operation_id']);assert done['status']=='error' and 'artifact drift' in done['error']
+        root=outputs/'cancel'
+        build=job('cancel-build','build',root)
+        pilot.run(build)
+        pilot.terminal(build['operation_id'])
+        seal(build,root)
+        holder=pilot.operation('holder',10)
+        pilot.run(holder)
+        wait_for(lambda:pilot.event(holder['operation_id'],'start'))
+        check=job('queued-check','checks',root)
+        run_after(check,build)
+        pilot.cancel(check['operation_id'])
+        assert pilot.terminal(check['operation_id'])['status']=='cancelled'
+        drift=job('drift-check','checks',root)
+        run_after(drift,build)
+        (root/'artifact.bin').write_text('drifted after queueing')
+        pilot.cancel(holder['operation_id'])
+        pilot.terminal(holder['operation_id'])
+        done=pilot.terminal(drift['operation_id'])
+        assert done['status']=='error' and 'artifact drift' in done['error']
         assert not any(e['event']=='acquired' for e in events(root))
         return {'queued_cancel':'cancelled','artifact_drift':'error','acquisitions':0}
     def cleanup_failures():
         results=[]
         for failure in ('release','cleanup','command'):
-            root=outputs/failure;build=job(failure+'-build','build',root);pilot.run(build);pilot.terminal(build['operation_id']);seal(build,root)
-            check=job(failure+'-checks','checks',root,failure);run_after(check,build);done=pilot.terminal(check['operation_id'])
+            root=outputs/failure
+            build=job(failure+'-build','build',root)
+            pilot.run(build)
+            pilot.terminal(build['operation_id'])
+            seal(build,root)
+            check=job(failure+'-checks','checks',root,failure)
+            run_after(check,build)
+            done=pilot.terminal(check['operation_id'])
             result=next(e['result'] for e in events(root) if e['event']=='finished')
             assert done['status']=='failed' and done['exit_code']==70 and not done['capacity_held']
             assert result[failure if failure!='command' else 'command']=='failed'
@@ -79,9 +118,16 @@ def main():
         assert foreign.read_text()=='foreign owner: leave untouched'
         return {'results':results,'foreign_lease_unchanged':True,'device_cleanup_claim':False}
     def running_cancel():
-        root=outputs/'running-cancel';build=job('running-build','build',root);pilot.run(build);pilot.terminal(build['operation_id']);seal(build,root)
-        check=job('running-check','checks',root,seconds=10);run_after(check,build);wait_for(lambda:any(e['event']=='acquired' for e in events(root)))
-        pilot.cancel(check['operation_id']);done=pilot.terminal(check['operation_id'])
+        root=outputs/'running-cancel'
+        build=job('running-build','build',root)
+        pilot.run(build)
+        pilot.terminal(build['operation_id'])
+        seal(build,root)
+        check=job('running-check','checks',root,seconds=10)
+        run_after(check,build)
+        wait_for(lambda:any(e['event']=='acquired' for e in events(root)))
+        pilot.cancel(check['operation_id'])
+        done=pilot.terminal(check['operation_id'])
         result=wait_for(lambda:next((e['result'] for e in events(root) if e['event']=='finished'),None))
         assert done['status']=='cancelled' and not done['capacity_held'] and result['release']=='released'
         assert not (root/(check['operation_id']+'.fixture-lease')).exists()
@@ -95,4 +141,5 @@ def main():
     return int(any(v['verdict']!='passed' for v in verdicts))
 
 
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':
+    sys.exit(main())

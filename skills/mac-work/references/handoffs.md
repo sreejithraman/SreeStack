@@ -67,9 +67,10 @@ launched process group and wait for it. Swift 6.4.2's ordinary universal build
 was observed spawning compiler/clang/frontend/dsymutil processes in distinct
 groups while waiting for them. A direct graceful SIGTERM left no observed
 descendants, but that is not canonical cancellation/crash qualification. Swift
-and xcodebuild are not qualified examples here. Parent owns real-tool lifecycle
-proof; do not weaken the contract or kill shared build services to fit it.
-Parent observed the installed Node + JS pnpm invocation of SimLock
+and xcodebuild are not qualified examples here. The command qualification owner
+maintains lifecycle proof; do not weaken the contract or kill shared build services to fit it.
+The [qualification record](plan.md#real-command-eligibility-evidence) records
+the installed Node + JS pnpm invocation of SimLock
 `run build:daemon:run` staying in one group for a 2.371s build. Native pnpm12/Turbo
 spawned other groups and is unqualified. Eligibility attaches to the exact
 qualified invocation/toolchain, not to a generic command name.

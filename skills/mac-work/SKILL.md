@@ -33,8 +33,8 @@ The build must succeed and close before its exact artifacts are consumed. Only
 an already-qualified foreground project runner may use `run --handoff BUILD_ID`.
 SimLock retains device lifecycle and T3's exact bound driver retains UI ownership.
 Automatic T3 boot admission is pending; the command queue does not cover it.
-The parent owns real workload/device proof, adoption and release in the
-[spec/tasks](references/plan.md). Device limits and slim/full choices stay unchanged.
+Installation and device owners coordinate workload proof, adoption and release
+through the [spec/tasks](references/plan.md). Device limits and slim/full choices stay unchanged.
 
 When changing the dependency, use the [lifecycle recipe](references/lifecycle.md),
 [implemented ownership seam](references/repair.md), [original qualification](references/setup.md)

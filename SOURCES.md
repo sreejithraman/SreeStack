@@ -1341,13 +1341,16 @@ metadata failures block dependent work, while authorized independent supported
 project runners may continue under ownership rules and explicit holds. Runner
 success does not prove panel recovery or replace required visual proof. Keeps
 Xcode and platform tool routes for reaching a device. Explains when an iOS run needs a full lease or kept slim categories, and records the lease mode. Adds a last-resort, coordinated CoreSimulator restart for repeated iOS boot failures before a grant, guarded by a local script. Runtime lease rules stay
-with `simlock instructions`. Technical citations use checked upstream source
-documents rather than inaccessible deployed documentation routes. Build-first
+with `simlock instructions`. Published technical citations use checked upstream
+source documents rather than inaccessible deployed documentation routes. Build-first
 handoffs link the canonical mac-work receipt/artifact contract; automatic T3 boot
-admission remains unsupported. Installed 0.7 source/baseline retirement guidance
-uses checked 392e0ac5, preserving same-run leases and named baselines rather than
-claiming released virtual-profile reuse. Android mode guidance is separate from
-iOS-only categories; existing 4/4/1 limits and configured slim/full choices stay intact.
+admission remains unsupported. Source/baseline retirement and Android slim guidance
+qualify the maintained local build reporting 0.7.0 at unpublished
+`392e0ac5a8d1168d19fb3d4447b908e05652d1e5`; source paths and native proof remain
+local evidence, not published permalinks or claims about stock upstream 0.7.
+Preserves same-run leases and named baselines rather than claiming released
+virtual-profile reuse. Android mode guidance is separate from iOS-only categories;
+existing 4/4/1 limits and configured slim/full choices stay intact.
 
 ## tdd
 
