@@ -71,6 +71,18 @@ def serve(config):
         """Cancel an exact operation; unresolved ownership keeps capacity held."""
         return await asyncio.to_thread(runner.cancel, config, operation_id)
 
+    @server.tool()
+    async def work_report(limit: int = 20, operation_ids: list[str] | None = None,
+                          sample: bool = False, simlock: str | None = None,
+                          lease_ids: list[str] | None = None):
+        """Inspect jobs and optional bounded pressure signals; observation only.
+
+        SimLock is an explicit absolute 0.7 executable for non-starting recent
+        events, not active-lease authority. Caller lease IDs are correlation only.
+        """
+        import diagnostics
+        return await asyncio.to_thread(diagnostics.report, config, limit, operation_ids, sample, simlock, lease_ids)
+
     server.run(show_banner=False)
 
 
@@ -103,6 +115,15 @@ def main():
     handoff.add_argument('--artifact', action='append', required=True,
                          help='absolute file/directory; repeat for each artifact (10000 entries / 2 GiB / 30s total)')
     handoff.add_argument('--json', action='store_true')
+    report = commands.add_parser('report', help='inspect bounded jobs/results and optional pressure; never changes pressure policy')
+    report.add_argument('--limit', type=int, default=20, help='1..100; active/recovery holds first, then queued/recent')
+    report.add_argument('--id', action='append', default=[], help='exact existing operation; repeat up to 20')
+    report.add_argument('--sample', action='store_true', help='read-only Mac pressure, swap/compression and process-group RSS')
+    report.add_argument('--sample-file', type=Path, help='read historical host signals from a saved report; show freshness')
+    report.add_argument('--simlock', help='explicit absolute 0.7 executable; sample non-starting events --since 5m')
+    report.add_argument('--lease-id', action='append', default=[], help='caller-known correlation ID, not an asserted active lease')
+    report.add_argument('--output', type=Path, help='save JSON to a new file (never overwrite prior proof)')
+    report.add_argument('--json', action='store_true')
     for operation in ('status', 'cancel'):
         command = commands.add_parser(operation)
         command.add_argument('--id', required=True)
@@ -131,6 +152,14 @@ def main():
         serve(config)
         return 0
     import runner
+    if args.command == 'report':
+        import diagnostics
+        value = diagnostics.report(config, args.limit, args.id, args.sample, args.simlock, args.lease_id, args.sample_file)
+        if args.output:
+            with args.output.open('x') as stream:
+                json.dump(value, stream, sort_keys=True, indent=2); stream.write('\n')
+        print(json.dumps(value, sort_keys=True) if args.json else diagnostics.readable(value))
+        return 0
     if args.command == 'handoff':
         import handoff
         emit(handoff.seal(config, args.id, args.artifact), args.json)

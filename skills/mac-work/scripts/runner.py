@@ -57,9 +57,10 @@ def database(config):
         yield conn
 
 
-def snapshot(conn, config, operation_id):
+def snapshot(conn, config, operation_id, reconcile=True):
     import queue_lifecycle as lifecycle
-    lifecycle.reconcile(conn, 'heavy', 120)
+    if reconcile:
+        lifecycle.reconcile(conn, 'heavy', 120)
     conn.execute('BEGIN IMMEDIATE')
     operation = conn.execute('SELECT * FROM task_operations WHERE operation_id=?', (operation_id,)).fetchone()
     if operation is None:

@@ -1672,6 +1672,7 @@ closure, fixed shared policy, separate queue/execution
 limits, and exact source/patch/runtime/config verification. The user authorized
 the foreground process-group pilot; detached/shared-daemon workloads are outside
 scope. Canonical CLI/MCP, receipt-gated artifact handoffs and immutable task-owned
-install/activation/rollback are local code. No live host activation or hold migration occurs in this slice.
+install/activation/rollback and bounded receipt/OS/explicit non-starting SimLock
+event reports are local code. Pressure remains observation-only. No live host activation or hold migration occurs in this slice.
 Digests live in `skills/mac-work/candidate.json`; license and modifications are in
 `skills/mac-work/NOTICE.md`. Invocation remains model-discoverable.

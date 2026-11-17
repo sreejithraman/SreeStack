@@ -101,7 +101,11 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    explicit missing/stale signal cases; parent observes the shared T3 result.
    Inputs: fixed task 1b receipt schema; task 2 run/lease handoffs; parent integration
    owner. Shares skill docs/config with task 2: serialize edits or assign fields.
-   Blocked by: 2 for complete result attribution.
+   Blocked by: 2 (local artifact/foreground seam delivered).
+   Status: bounded CLI/MCP report over canonical receipts and observation-only OS/
+   explicit non-starting SimLock event signals implemented in mac-work/diagnostics.
+   Real app/device attribution and parent T3 showing remain independent proof.
+   See [report contract](diagnostics.md).
    Finish line: Try; no new pressure enforcement.
 
 4. **Prove representative hardware workflows**

@@ -555,7 +555,8 @@ host setup below to activate those routes.
 one pinned [Block agent-task-queue](https://github.com/block/agent-task-queue)
 root with capacity one. Its CLI and MCP facade share configuration, durable
 operation IDs, receipts and logs. [Build-first handoffs](skills/mac-work/references/handoffs.md)
-seal exact artifacts before device acquisition. Unknown group closure retains capacity.
+seal exact artifacts before device acquisition. [Job/pressure reports](skills/mac-work/references/diagnostics.md)
+show wait, execution, results and observation-only signals. Unknown group closure retains capacity.
 Detached/shared-daemon workloads are outside the user-approved pilot contract.
 
 Use the [private runner setup](skills/mac-work/references/runner.md) for an

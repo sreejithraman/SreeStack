@@ -33,6 +33,9 @@ The build must succeed and close before its exact artifacts are consumed. Only
 an already-qualified foreground project runner may use `run --handoff BUILD_ID`.
 SimLock retains device lifecycle and T3's exact bound driver retains UI ownership.
 Automatic T3 boot admission is pending; the command queue does not cover it.
+Use [job/pressure reports](references/diagnostics.md) to inspect wait/execution,
+results and recovery holds from T3. `report --sample` observes pressure; it never
+changes admission. Missing/stale signals are not a normal-pressure verdict.
 Installation and device owners coordinate workload proof, adoption and release
 through the [spec/tasks](references/plan.md). Device limits and slim/full choices stay unchanged.
 
