@@ -43,30 +43,11 @@ overrides the retry below. Use a new key for any fresh run after terminal failur
 | Uncertain dispatch or lost response, including a failed send to an owner | Repeat with its existing key in the same provider session |
 | Uncertain dispatch or lost response after a session change | Treat each tracked key, with or without an ID, as a pending run. Read known IDs through the host's route and collect finished results. Treat a live run as a wait timeout. If a read-only run stays unknown, apply its caller's failure policy. If any other run stays unknown, start no overlapping work and report a blocker |
 | Wait timeout | The run is still live. Follow the host's next step |
-| Transient terminal or provider runtime failure | May retry once per target per workflow, then treat it as unavailable |
-| Quota, or an unavailable model or provider | The [listed fallback](#availability-fallback) with no retry. Otherwise report the blocker and resume when conditions change |
+| Transient terminal or provider runtime failure | May retry once per target per workflow, then return the availability evidence to [Dispatch](../SKILL.md#dispatch) |
+| Quota, or an unavailable model or provider | Preserve results and the failure evidence, reconcile writers below, then return to [Dispatch](../SKILL.md#dispatch) without retrying the unavailable target |
 | Authentication failure | Stop and report it, or request the login through the host's secret route. Retry once resolved |
 | Permission or policy denial | Stop the blocked action. Another model or transport does not authorize it |
 | Wrong answer, failed product check, or task difficulty | Diagnose, [ask up](../SKILL.md#return), or [replace the owner](#replace-an-owner) on repeated failure |
 
 **Replacing work:** before a replacement overlaps earlier writers, account for pending runs and
 reconcile their files. A cancellation or terminal receipt alone does not show writers stopped.
-
-### Availability fallback
-
-A listed fallback is standing user authorization to use that exact provider, model, and effort
-when the row supplied the unavailable model. Apply it and notify the user of the failure and
-chosen fallback; do not ask for the same permission again on each launch or new session. This is
-the requested switch under a host's "never switch unasked" rule. Keep live host transport,
-permissions, and lifecycle rules. If the user named the model, report a blocker and wait unless
-the user authorized a substitute. Explicit effort, cost, and concurrency limits still hold. A
-fallback never authorizes unlisted models, the Simple tier, or a change to additional-review skip
-policy.
-
-Keep the assignment's scope, requirements, verification bar, and review criteria, and the exact
-fallback until availability changes or the user directs otherwise.
-Carry the row, availability evidence, chosen fallback, and any user limits in briefs and
-handoffs so a new session can continue under the same authorization. Recheck availability when
-the failure's known reset time passes or new evidence shows recovery.
-
-A review fallback runs in a new independent task and never reuses another result.
