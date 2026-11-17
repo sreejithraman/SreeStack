@@ -1648,3 +1648,9 @@ informed locally written orchestration, PR, handoff, retro, and verification
 integration. No upstream prose or code imported; existing skill import baselines
 and invocation choices remain unchanged. T3 API claims cite the T3 source beside
 the applicable guidance rather than treating p3-stack as an API specification.
+
+## mac-work
+
+Local skill for shared-Mac heavy-command admission. The pinned external queue
+is a runtime dependency, not imported skill content. Its fitness gate currently
+blocks activation; operational integration remains in the local task plan.

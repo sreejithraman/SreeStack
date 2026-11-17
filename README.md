@@ -549,6 +549,16 @@ the corresponding handoff pointer. The repository edits do not update installed
 skills or live host instructions. Apply them through your stable clone and the
 host setup below to activate those routes.
 
+### Shared Mac commands
+
+[Mac Work](skills/mac-work/SKILL.md) qualifies shared heavy-command admission
+through independent lightweight CLI and MCP clients. The pinned
+[Block agent-task-queue](https://github.com/block/agent-task-queue) candidate
+currently fails crash/descendant safety; no shared host route is activated.
+The [task plan](skills/mac-work/references/plan.md),
+[private setup](skills/mac-work/references/setup.md) and
+[repair proposal](skills/mac-work/references/repair.md) keep the remaining work explicit.
+
 ### Shared simulators
 
 [Simulator Lifecycle](skills/simulator-lifecycle/SKILL.md) routes disposable

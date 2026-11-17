@@ -36,6 +36,7 @@ class CheckRunnerTests(unittest.TestCase):
             "skills/agent-login/scripts/test_fixture.py": PASSING_TEST,
             "skills/coordinator/scripts/test_fixture.py": PASSING_TEST,
             "skills/create-image/scripts/test_fixture.py": PASSING_TEST,
+            "skills/mac-work/scripts/test_fixture.py": PASSING_TEST,
             "skills/pr/scripts/test_fixture.py": PASSING_TEST,
             "skills/simulator-lifecycle/scripts/test_fixture.py": PASSING_TEST,
             "skills/writing-for-agents/scripts/test_fixture.py": PASSING_TEST,
