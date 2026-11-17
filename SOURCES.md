@@ -1482,7 +1482,8 @@ index work, and the child limit, which apply whenever two agents run; `swarm`
 owns the decision to run work in parallel. `references/models.md` is a lookup: one editable table owns working,
 research, source-retrieval, and review model defaults, including effort and
 additional review pools, with row choice, raising a row, and UI operation.
-It also holds the Coordinator row.
+It also holds the Coordinator row. Gemini retrieval and additional review use
+Antigravity’s Hydrogen High selection without a Gemini fallback.
 `references/reuse-and-recovery.md` owns reuse, review passes, owner replacement,
 recovery, and availability fallbacks. Live host instructions own APIs, transport,
 task lifecycle, permissions, and workspace binding. Local policy owns concurrency

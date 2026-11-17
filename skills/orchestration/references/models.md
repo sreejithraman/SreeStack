@@ -17,21 +17,21 @@ model the user picked, and no running agent is replaced because its model differ
 | Demanding UI operation | Codex | GPT-6.1 Terra | High | — | — |
 | Complex UI operation | Codex | GPT-6.1 Terra | X-High | — | — |
 | General research | Codex | GPT-6.1 Sol | Medium | — | — |
-| YouTube retrieval | Antigravity | Gemini 4 Argon | High | Antigravity / Gemini 3.8 Flash / High | — |
+| YouTube retrieval | Antigravity | Gemini 4 Hydrogen High | High | — | — |
 | X retrieval | Grok | Grok 4.7 | High | — | — |
 | Primary review | Codex | GPT-6.1 Sol | High | — | — |
 | Ponytail review | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
 | Thermo review | Codex | GPT-6.1 Sol | High | — | — |
 | Adversarial review | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Additional review | Antigravity | Gemini 4 Argon | High | — | Gemini |
-| Additional review | Antigravity | Gemini 3.8 Flash | High | — | Gemini |
+| Additional review | Antigravity | Gemini 4 Hydrogen High | High | — | Gemini |
 
 The primary-review row also sets the model for cross-judges, single-reviewer audits, and second
 opinions.
 
 Resolve names and effort through `orchestrator_capabilities` to exact available IDs and options.
 A caller or project choice settles multiple matches; otherwise report the ambiguity. Gemini's
-effort can be encoded in its model ID. When a row's model is unavailable, use [availability fallback](reuse-and-recovery.md#availability-fallback).
+effort can be encoded in its model ID; Gemini 4 Hydrogen High uses `gemini-4-hydrogen-high`.
+When a row's model is unavailable, use [availability fallback](reuse-and-recovery.md#availability-fallback).
 
 ## Choose a model
 
