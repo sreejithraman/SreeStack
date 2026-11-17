@@ -1,6 +1,7 @@
-"""Run foreground build/test commands through one shared heavy=1 queue.
+"""Run qualified foreground build/test commands through one shared heavy=1 queue.
 
 Install creates a private versioned root; it does not edit provider profiles.
+Qualify the exact invocation; foreground appearance alone is insufficient.
 Commands must wait for their heavy work. Daemons and escaping groups/sessions
 are outside this pilot contract. Output logs are verbatim, not secret redaction.
 """
@@ -37,7 +38,8 @@ def serve(config):
     import asyncio
     from fastmcp import FastMCP
     import runner
-    # This entrypoint loads after startup validation. Its operations validate each call.
+    # Load tool modules at validated startup. Their operations check the active release.
+    import diagnostics
     import handoff
     server = FastMCP('Mac Work')
 
@@ -71,6 +73,20 @@ def serve(config):
         """Cancel an exact operation; unresolved ownership keeps capacity held."""
         return await asyncio.to_thread(runner.cancel, config, operation_id)
 
+    @server.tool()
+    async def work_report(limit: int = 20, operation_ids: list[str] | None = None,
+                          sample: bool = False, simlock: str | None = None,
+                          lease_ids: list[str] | None = None):
+        """Read/reconcile jobs and optionally sample pressure.
+
+        Like status, job reads may terminate verified expired/orphaned work under
+        existing closure rules. Pressure sampling never changes admission policy.
+        SimLock requires a caller-qualified maintained local executable reporting
+        0.7.0 at an absolute path; version alone is not qualification. Its recent
+        events and caller lease IDs are correlation, not active-lease authority.
+        """
+        return await asyncio.to_thread(diagnostics.report, config, limit, operation_ids, sample, simlock, lease_ids)
+
     server.run(show_banner=False)
 
 
@@ -103,6 +119,16 @@ def main():
     handoff.add_argument('--artifact', action='append', required=True,
                          help='absolute file/directory; repeat for each artifact (10000 entries / 2 GiB / 30s total)')
     handoff.add_argument('--json', action='store_true')
+    report = commands.add_parser('report', help='read/reconcile jobs like status; optional pressure sampling never changes admission policy',
+                                 description='Job reads may terminate verified expired/orphaned work under existing closure rules. Pressure sampling is observation-only.')
+    report.add_argument('--limit', type=int, default=20, help='1..100; active/recovery holds first, then queued/recent')
+    report.add_argument('--id', action='append', default=[], help='exact existing operation; repeat up to 20')
+    report.add_argument('--sample', action='store_true', help='read-only Mac pressure, swap/compression and process-group RSS')
+    report.add_argument('--sample-file', type=Path, help='read historical host signals from a saved report; show freshness')
+    report.add_argument('--simlock', help='absolute caller-qualified maintained local SimLock 0.7.0 executable; version alone is insufficient')
+    report.add_argument('--lease-id', action='append', default=[], help='caller-known correlation ID, not an asserted active lease')
+    report.add_argument('--output', type=Path, help='save JSON to a new file (never overwrite prior proof)')
+    report.add_argument('--json', action='store_true')
     for operation in ('status', 'cancel'):
         command = commands.add_parser(operation)
         command.add_argument('--id', required=True)
@@ -131,6 +157,14 @@ def main():
         serve(config)
         return 0
     import runner
+    if args.command == 'report':
+        import diagnostics
+        value = diagnostics.report(config, args.limit, args.id, args.sample, args.simlock, args.lease_id, args.sample_file)
+        if args.output:
+            with args.output.open('x') as stream:
+                json.dump(value, stream, sort_keys=True, indent=2); stream.write('\n')
+        print(json.dumps(value, sort_keys=True) if args.json else diagnostics.readable(value))
+        return 0
     if args.command == 'handoff':
         import handoff
         emit(handoff.seal(config, args.id, args.artifact), args.json)

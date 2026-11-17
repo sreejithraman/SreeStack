@@ -128,9 +128,12 @@ provider override can pick a root queue or capacity. The stdio tools are:
 - `command_status(operation_id)`
 - `cancel_command(operation_id)`
 - `build_handoff(operation_id, artifacts)`
+- `work_report(limit, operation_ids, sample, simlock, lease_ids)`
 
 For artifact sealing and dependent command inputs, use
 [build/artifact handoffs](handoffs.md).
+For job reconciliation and observation-only pressure sampling, use
+[job/pressure reports](diagnostics.md).
 
 The response schema and operation semantics match the CLI. The facade does not own
 or cancel commands merely because its connection exits. Restart the consumer after
@@ -165,9 +168,10 @@ incomplete version directories are never reused. Install under a new release nam
 to retry; arbitrary older schema migrations/bootstrap protocol changes are outside
 this first pilot. The pre-isolation reviewed launcher has a different bootstrap
 hash and cannot be upgraded in place; keep its root/proof and create a fresh private
-Try root for the repaired release. The installation and device owners coordinate host profile
-activation, project handoffs, devices, pressure policy and capacity decisions
-through the [plan](plan.md).
+Try root for the repaired release. Supported artifact handoffs and job/pressure
+reports use the contracts above. Installation and device owners coordinate host
+profile activation, broader tool/device qualification, pressure policy and capacity
+decisions through the [plan](plan.md).
 
 ## Prove it privately
 

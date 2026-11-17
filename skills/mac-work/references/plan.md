@@ -1,9 +1,14 @@
 # Shared Mac coordination
 
-Finish line: **Try**, built, proved and shown locally. No review, PR, push,
-merge, live/default host activation or migration of existing holds in this slice.
+Implementation finish line: **Try**, completed and accepted for the supported
+pilot. The user now authorizes its independent review, SreeStack publication and
+merge; parent owns that review loop, Git history, publication and landing.
+Original completed implementation gates below do not prohibit this release.
+Global/live-default activation, broader Swift/Xcode/Gradle qualification,
+old-hold migration and external Block/SimLock publication remain deferred.
 Task-owned versioned Try installation/activation is authorized. The accepted
-runner Try install is now parent-owned; new slice proofs use fresh roots.
+runner and combined Try installs are now parent-owned. Do not mutate, rebuild,
+delete or use either root for new fitness; any new proof needs a fresh root.
 Integration and release owner: parent session. Admission implementation owner:
 this slice. Branch ownership is serialized. Current main is the base.
 
@@ -47,9 +52,9 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Inputs: approved spec above; isolated worktree/runtime; Block source pin;
    serialized branch/commit ownership. No hardware jobs or live state.
    Blocked by: None.
-   Status: qualification accepted by parent; production admission remains required
-   and incomplete. See [findings](fitness.md) and [repair proposal](repair.md).
-   Finish line: Try. Stop before review/PR/merge; activation requires passing fitness.
+   Status: qualification and canonical command pilot accepted by parent; global
+   adoption remains task 6. See [findings](fitness.md) and [repair proposal](repair.md).
+   Finish line: Try (completed); supported-pilot review/merge is now parent-owned.
 
 1a. **Repair dependency lifecycle without replacing admission**
    Outcome: a maintained pinned patch repairs nondestructive initialization,
@@ -63,7 +68,8 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Status: lifecycle repairs accepted by parent. User authorized the foreground
    boundary; see [ownership seam](repair.md). Runner adds atomic operation binding
    inside the same upstream state/receipt seam.
-   Finish line: Try; no host activation, upstream publication or handoffs.
+   Finish line: Try (completed before later handoffs); no host activation or
+   external upstream publication.
 
 1b. **Settle and expose usable canonical admission**
    Outcome: one run/status/cancel route serves providers/projects with a shared
@@ -73,10 +79,11 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Inputs: user-approved foreground boundary; accepted lifecycle repair; parent
    owns integration and real-workload adoption. No detached containment claim.
    Blocked by: 1a (accepted and delivered).
-   Status: canonical CLI/MCP runner and fixed config/receipt contract implemented
-   in mac-work/runner; verification and exact runnable Try root are in the owner
-   report. See [public runner contract](runner.md).
-   Finish line: Try; stop before live/default activation, review, PR and merge.
+   Status: runner0c4bc1c accepted, with qualified real daemon builds and public
+   cancellation proved by parent. Combined handoffs/diagnostics8d4e9ec also
+   accepted; both retained roots belong to parent. See [public runner contract](runner.md).
+   Finish line: Try (completed); supported-pilot review/merge is now parent-owned,
+   with live/default activation still deferred.
 
 2. **Integrate build and device handoffs**
    Outcome: project runners and agent skills use the fixed admission contract,
@@ -90,8 +97,10 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    a separate native-integration gap, not a blocker for supported handoffs.
    Blocked by: 1b (accepted).
    Status: receipt-gated artifact seal and dependent foreground command verification
-   implemented in mac-work/handoffs; controlled lifecycle proof is separate from
-   parent-owned hardware/T3 proof. See [handoff contract](handoffs.md).
+   implemented in mac-work/handoffs and accepted. Parent proved qualified daemon
+   build → prebuilt app verification/seal → T3 interaction/retirement on both
+   platforms in the supported local Try integration below. This does not qualify
+   rebuilding those apps or queued T3 boot/cancellation. See [handoff contract](handoffs.md).
    Finish line: Try; no live hold migration or host activation.
 
 3. **Expose pressure and command results in T3**
@@ -101,7 +110,13 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    explicit missing/stale signal cases; parent observes the shared T3 result.
    Inputs: fixed task 1b receipt schema; task 2 run/lease handoffs; parent integration
    owner. Shares skill docs/config with task 2: serialize edits or assign fields.
-   Blocked by: 2 for complete result attribution.
+   Blocked by: 2 (local artifact/foreground seam delivered).
+   Status: bounded CLI/MCP report over canonical receipts and observation-only OS/
+   explicit non-starting SimLock event signals implemented in mac-work/diagnostics.
+   Parent accepted live reports during both platform leases: task/owner/revision,
+   wait/execution/results, caller-known lease IDs and timestamped normal pressure.
+   Event history still does not establish active-lease authority.
+   See [report contract](diagnostics.md).
    Finish line: Try; no new pressure enforcement.
 
 4. **Prove representative hardware workflows**
@@ -111,7 +126,10 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    bounded cleanup and cancellation; T3-visible evidence.
    Inputs: parent owns hardware and integration; available task-owned devices;
    same artifacts across build/test; existing holds remain with their owners.
-   Blocked by: 2, 3.
+   Blocked by: broader app-build/lifecycle qualification; 2 and 3 accepted locally.
+   Status: native Android foundation and supported prebuilt Android/iOS T3
+   installation, interaction and retirement proved by parent. Real app rebuilds,
+   Gradle/Xcode lifecycles and automatic queued T3 boot/cancel remain unproved.
    Finish line: Try; stop before rollout.
 
 5. **Prepare installation, upgrade and rollback**
@@ -132,6 +150,8 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    and real pilot receipts. Existing holds stay intact until adopted.
    Inputs: parent release decision for live activation and named hold owners.
    Blocked by: 4, 5.
+   Status: supported local Try accepted; global adoption, old-hold transitions and
+   rollout remain outstanding. Neither retained Try root is a second production pool.
    Finish line: Try release task; stop for parent before live changes.
 
 7. **Measure and decide capacity**
@@ -142,6 +162,9 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Inputs: parent owns hardware schedule and capacity decision; baseline/pilot data;
    serialize runs on the shared Mac; device limits unchanged.
    Blocked by: 6.
+   Status: exact daemon-build matched measurement and real cancellation remain
+   valid for identical functional runner code. Keep heavy1/global4/iOS4/Android1;
+   representative broader workloads and any capacity increase remain outstanding.
    Finish line: Try release task; stop for parent before capacity changes.
 
 8. **Publish external sources and release**
@@ -151,7 +174,11 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Inputs: parent publishing/integration owner; explicit authorization for external
    publication; no credentials or private workload data in artifacts.
    Blocked by: accepted relevant tasks above; task 7 only for a capacity increase.
-   Finish line: Try release task; no publication in the current slice.
+   Status: parent is authorized to review, publish and merge the supported
+   SreeStack pilot. External Block/SimLock publication and global rollout remain
+   separate deferred work.
+   Finish line: Try release task for external upstream publication and rollout;
+   supported-pilot SreeStack review/merge follows the current authorization above.
 
 ## Dependency and shared-resource cut
 
@@ -159,8 +186,9 @@ Current/planned stack: admission → lifecycle → runner → handoffs → diagn
 when its predecessor delivers its contract. Task 5 can prepare against fixed
 operational contracts only after task 1b alongside task 2 with disjoint files; parent integrates it.
 Task 4 and task 7 serialize actual Mac workloads. Task 6 serializes each hold's
-owner transition. Task 8 is a separate outward-facing release, never implicit
-in local Try. No task rebuilds the scheduler or adds kernel quotas.
+owner transition. Task 8's external upstream publication and rollout remain separate from the
+now-authorized supported-pilot SreeStack review/merge. No task rebuilds the
+scheduler or adds kernel quotas.
 
 ## Parent integration evidence
 
@@ -190,9 +218,9 @@ This is native foundation proof, not queue admission or a performance claim.
 
 Proof: `/Users/sree/.local/share/simlock-builds/android-slim-392e0ac5/hardware-proof-20261117/verdict.md`
 and `hardware.log` alongside it. Parent reports the live worker restored,
-connected and undrained, with zero leases/queue. Task 4 under admission remains
-blocked by handoff integration and parent-owned real workload proof. This
-slice has not driven devices or independently rerun that owner's hardware proof.
+connected and undrained, with zero leases/queue. The later supported local Try
+integration below adds T3 handoff proof; broader task 4 app-build qualification
+remains. This slice has not driven devices or independently rerun hardware proof.
 
 ## Restack and ownership record
 
@@ -210,15 +238,15 @@ in 14.125s with arm64+x86_64 Mach-O and no surviving observed descendants.
 Compiler/clang/frontend/dsymutil children used distinct process groups. Direct
 SIGTERM at 4s exited -15 with zero observed descendants at about 4.6s; this
 is not canonical cancellation/crash proof and does not qualify Swift/xcodebuild
-under the strict process-group contract. Parent is qualifying another existing
-foreground candidate. Evidence is in the parent worktree verify-proof/
+under the strict process-group contract. The exact qualified daemon invocation
+is recorded below. Evidence is in the parent worktree verify-proof/
 20261117T143101Z-workload-yvjlbl3l/profile.json, profile-build.log and cancel-profile.json.
 
 Parent next observed installed Node + JS pnpm 10.34.6 `run build:daemon:run`
 completing a full daemon build in 2.371s with all observed descendants in one PGID
 and none surviving (node-js-profile.json). Native pnpm12/Turbo uses distinct
-groups and remains unqualified. Matched serial/queued pairs and canonical
-cancellation qualification remain parent-owned; this is not a capacity increase.
+groups and remains unqualified. Parent subsequently proved matched serial/queued
+pairs and canonical cancellation below; this is not a capacity increase.
 
 ## Parent real foreground workload proof (runner accepted)
 
@@ -239,4 +267,132 @@ pnpm/Turbo, Swift, app artifacts, interactive T3 or device cancellation.
 Proof: parent worktree `/Users/sree/.t3/worktrees/SreeStack/t3-6ff706bc-093e7ae59d9a288e`,
 private Git verify-proof/20261117T143101Z-workload-yvjlbl3l/verdict.md,
 comparison-summary.json, six raw batches, real-build-cancel.json and final-build.json.
-Tasks4/6/7 still need representative app/device workflows and pilot/capacity decisions.
+Tasks4/6/7 still need broader app-build qualification, global adoption and
+representative workload/capacity decisions.
+
+## Parent-supported local Try integration (combined pilot accepted)
+
+Parent accepted handoffs/diagnostics `8d4e9ec` after inspecting public seams and
+independently using the combined install. Proof root:
+`/Users/sree/Documents/Dev/SreeStack/.git/worktrees/t3-6ff706bc-093e7ae59d9a288e/verify-proof/20261117T150817Z-handoff-itpv54tw`.
+The parent's `verdict.md` is being finalized there; the evidence below is reported
+by parent, not independently rerun by this slice.
+
+- `producer.json`: real qualified daemon build plus six independent pinned
+  Appduct fixture hash checks; task63 succeeded, exit0, closed/released.
+- `handoff.json`: manifest SHA256
+  `219513ddf0be45baf7e0850eb3d15a387941e8bb897d5e0fef4405a48d88d706`
+  binds daemon output and **prebuilt** APK/.app. `consumer.json`: task64's
+  handoff-gated metadata/ZIP validation succeeded and released capacity.
+  Both commands finished before device acquisition.
+- Exact T3 device_open on `simlock-sree-mac` granted slim Pixel9:
+  lease `395146f14a8b79b01010d00a9b95f52a`,
+  device `dev_2f777801-c103-4f59-bc6b-c382febd6a0b`; and slim iPhone18Pro:
+  lease `d01ce575b824825e91e93e438a78b8ba`,
+  device `dev_29bac193-0479-42f6-b22f-6d81690e5efd`.
+  The exact returned drivers installed sealed paths, opened each app and produced
+  snapshots; Status-tab input visibly changed both UIs. iOS prepare succeeded.
+  `android-before.png`, `android-after.png`, `ios-before.png` and `ios-after.png`
+  retain the visual proof.
+- Device_close with shutdown=true ended each session. `retirement.json` proves
+  both devices deleted with zero owned leases. `handoff-after.json` retains the
+  unchanged manifest.
+- `android-live-report.json`/`.txt` and `ios-live-report.json`/`.txt` show command
+  identity/timing/results, known lease IDs and timestamped normal pressure.
+  These signals remain observation/correlation, not active-lease authority.
+
+This proves qualified daemon build → prebuilt app verification/seal → supported
+T3 interactive handoff and teardown. It does not rebuild Android/iOS apps,
+qualify Gradle/Xcode or default Swift/native pnpm/Turbo, prove queued T3 boot/
+cancellation, or add an external device_open admission hook. Global adoption,
+old holds, global rollout, external Block/SimLock publication and capacity
+increases remain outstanding; parent now owns supported-pilot SreeStack review/merge.
+Heavy1/global4/iOS4/Android1 stay unchanged. The earlier 12-build matched
+measurement and real cancellation proof remain valid for identical functional
+runner code. No runtime rebuild or install activation accompanies this record update.
+
+## Supported-pilot review repairs (2026-11-17)
+
+The frozen first review inspected `fa44b34981539b95b24855e4747c46c55a44a1ff`.
+Its MWR-001 through MWR-006 must-fix findings and MWR-007 were assigned to this
+implementation owner. These are author repairs, not independent reassessment.
+Parent owns fresh Primary/Thermo repair assessments, Adversarial first discovery,
+final real-workload integration, publication and merge. The user's supported-pilot
+review/merge authorization remains active; global activation, broader toolchains,
+old holds, capacity increases and external Block/SimLock publication remain deferred.
+
+| Issue | Implemented contract | Focused proof |
+| --- | --- | --- |
+| MWR-001 | Upstream's successful admission transaction stores admission time/deadline. Preflight consumes that budget; expired launch refuses; process wait uses the remainder. Reports stop queue time at admission. | Admission-clock observation; partial/expired/failed preflight; real CLI handoff preflight timeout; report timing freeze. |
+| MWR-002 | Registration and gate release serialize with cancellation and validate current owner/generation/state. Committed cancellation wins. | Two SQLite clients plus real gated child; public cancel before/after registration; no command marker. |
+| MWR-003 | Trusted bootstrap/controller/worker/gate Python uses isolated imports. Requested command environment survives. | CLI/MCP caller Python override sentinels and environment output; gate startup sentinel. |
+| MWR-004 | Explicit serialized fresh bootstrap is separate from schema/policy validation on active opens. Missing/truncated state refuses without recreation/replay. | Empty/missing-table/missing-policy public refusal, damaged-byte preservation and one marker; valid idle reopen; WAL preservation guard. |
+| MWR-005 | Only recognized SQLite busy/locked errors retry through existing cancellation/queue-deadline checks. FIFO remains upstream-owned. | Actual held write transaction; cancellation/queue expiry while contended; non-lock error fails closed. |
+| MWR-006 | Successful launch is recorded after return; live owner can close a proven prelaunch abort. Registered children still use verified group closure. | Launch exception before registration, cancellation at registration, exception after registration. |
+| MWR-007 | Handled SIGTERM/SIGINT cannot interrupt bounded final closure/receipt publication. Hard-crash rules remain. | Signals injected during final close; durable terminal receipt and released capacity. |
+
+MWR-008 remains acknowledged idempotent raw-CLI cleanup; no separate refactor.
+MWR-009's proposed dead-owner/no-child automatic release is rejected: unknown
+spawn windows remain quarantined. A permanent guard retains that capacity. The
+original arbitrary-detach counterexample is still unsupported and is not relabelled.
+
+The dependency remains Block commit `48d16da41f57801bbf9462ed2df923713978b6ae`;
+maintained build version is `0.4.1+macwork.3`. Candidate source/patch/dependency
+hashes are authoritative in [candidate.json](../candidate.json). New source adds no
+scheduler, containment daemon, device hook, pressure policy or capacity change.
+Fresh private installations are required for this bootstrap revision: the old
+parent-owned launchers/proofs remain untouched, and their bootstrap hash prevents
+in-place replacement. Compatible idle installs/upgrades/rollback remain explicit.
+Historical real-build/device evidence above belongs to its recorded old runtime;
+parent must integrate the repaired runtime before carrying those claims forward.
+
+Repair proof and exact final stack/build identities are retained under this owner's
+private Git `verify-proof/review-repairs-20261117/`. It contains original red results,
+focused green worker/state results, fresh combined runner/handoff/diagnostic and
+repaired-upstream gate logs, independent build receipts/wheels, repository checks,
+retained-file reconciliation and the owner report. A test-only bytecode change
+caused by Python isolated mode ignoring the environment's bytecode flag was saved
+alongside the original, then the verified retained original was restored. Isolated
+launcher/worker invocations now pass `-B` explicitly. No parent-owned Try state,
+proof, host profile, device, old hold or shared installation is part of these tests.
+
+## Second repair batch: deadline, dead owner and runtime inventory
+
+Pass2 independently confirmed the original MWR-001..007 mechanisms repaired.
+The required premise checkpoint rejects a competing cleanup-age execution policy
+and version-only dependency integrity. MWR-010 restores recorded-deadline
+reconciliation, with age only for legacy no-deadline rows; cancellation/orphan
+intent and exact-group quarantine remain. MWR-011 treats a matching zombie as dead
+ownership, without freeing unknown no-child spawn windows. MWR-012 binds a complete
+private CPython/venv inventory to the build receipt/config and checks it from the
+fixed trusted host bootstrap before any installed candidate startup; active and
+prelaunch checks reuse that owner. Code is copied, then sealed read-only; tests
+replace private inodes atomically rather than editing uv hardlinks.
+
+The maintained dependency version is `0.4.1+macwork.4`; wheel pins remain in
+[candidate.json](../candidate.json). The fresh bootstrap/manifest protocol requires
+a fresh task-owned root. All older parent-owned roots/proofs remain unchanged,
+including the 69-operation final-pilot. Parent's repaired-0.3 real Node/JS-pnpm
+build/cancel/file-handoff supplement stays historical; parent owns new real-workload
+integration after 0.4's synthetic gates. No device/app-build requalification follows.
+
+Focused tests distinguish long unexpired, short expired and legacy deadlines and
+retain cancellation/dead-owner guards. Native MCP proof uses an idle persistent
+parent, a SIGKILLed owned worker and independent clients for active/empty groups;
+a bounded paused-parent variant records `ps` kernel state separately from libproc
+visibility. On this host `ps` can show Z while libproc returns no identity, so that
+native recovery already passes old code. The matching-`zombie=true` discriminator
+is the retained old/new memory test, not a falsely claimed native regression.
+Runtime drift proof retains actual old acceptance/sentinel execution and new
+pre-start refusal for dependency bodies, startup/import files, distributions,
+bytecode, link/type/mode changes and caller PATH selecting candidate Python.
+
+Proof, exact heads/config/inventory/wheel identities, all attempts and raw verdicts
+are under this owner's private Git `verify-proof/review-repairs-pass2-20261117/`.
+Complete hashing adds verification cost; fixture holders explicitly retain their
+queue phase until cancellation rather than relying on a three-second command.
+No assertion or deadline authority is relaxed. Parent now runs one fresh SolHigh
+Primary repair/integrated assessment with stale Thermo/Adversarial criteria, then
+owns publication/merge. Global activation, broader toolchains, old holds,
+automatic T3 boot admission, external publication and capacity increases remain
+deferred. Heavy1/global4/iOS4/Android1 and the foreground boundary are unchanged.

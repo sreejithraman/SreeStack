@@ -44,7 +44,8 @@ it is not a GitHub permalink or proof of stock upstream 0.7 behavior. The local
 checkout is `/Users/sree/Documents/Dev/simlock`; pinned source paths are
 `docs/internal/adr/0061-every-virtual-device-is-a-copy-of-a-source-and-a-baseline-is-a-named-source.md`
 and `src/core/reclaim-coordinator.ts` (release dispatch at line 103).
-See the [local native qualification record](../../mac-work/references/plan.md#parent-reported-native-hardware-foundation).
+See the [local native qualification record](../../mac-work/references/plan.md#parent-reported-native-hardware-foundation)
+and [supported Try integration](../../mac-work/references/plan.md#parent-supported-local-try-integration-combined-pilot-accepted).
 Saving an explicitly authorized named baseline ends its lease; future compatible
 leases copy that source. It is not retention of the released virtual device.
 
