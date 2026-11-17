@@ -1,0 +1,4 @@
+agent-task-queue @ https://github.com/block/agent-task-queue/archive/48d16da41f57801bbf9462ed2df923713978b6ae.tar.gz
+fastmcp==2.14.4
+# pydocket 0.16.6 imports FakeServer from fakeredis.aioredis.
+fakeredis==2.32.1
