@@ -38,7 +38,8 @@ def serve(config):
     import asyncio
     from fastmcp import FastMCP
     import runner
-    # This entrypoint loads after startup validation. Its operations validate each call.
+    # Load tool modules at validated startup. Their operations check the active release.
+    import diagnostics
     import handoff
     server = FastMCP('Mac Work')
 
@@ -84,7 +85,6 @@ def serve(config):
         0.7.0 at an absolute path; version alone is not qualification. Its recent
         events and caller lease IDs are correlation, not active-lease authority.
         """
-        import diagnostics
         return await asyncio.to_thread(diagnostics.report, config, limit, operation_ids, sample, simlock, lease_ids)
 
     server.run(show_banner=False)

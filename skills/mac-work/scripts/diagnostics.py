@@ -10,6 +10,9 @@ import selectors
 import subprocess
 import time
 
+from runner import database, snapshot
+import runner_config
+
 MAX_SAMPLE_AGE = 60
 
 
@@ -82,12 +85,10 @@ def decode_vm(text):
 
 
 def reconcile_and_read_jobs(config, limit, operation_ids):
-    from runner import database, snapshot
-    from runner_config import activation_lock, require_active
     if type(limit) is not int or not 1 <= limit <= 100 or len(operation_ids) > 20:
         raise ValueError('Report limit must be 1..100; at most 20 exact IDs')
-    with activation_lock(Path(config['root'])):
-        require_active(config)
+    with runner_config.activation_lock(Path(config['root'])):
+        runner_config.require_active(config)
         import queue_lifecycle as lifecycle
         with database(config) as conn:
             lifecycle.reconcile(conn, 'heavy', 120)

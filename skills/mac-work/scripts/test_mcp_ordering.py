@@ -79,3 +79,6 @@ class MCPOrdering(unittest.TestCase):
     def test_build_handoff_refuses_before_receipt_or_artifact_access(self):
         self.assert_refused_before_work('build_handoff', operation_id='producer',
                                         artifacts=['/unused-artifact'])
+
+    def test_report_refuses_before_job_reads_or_pressure_sampling(self):
+        self.assert_refused_before_work('work_report', operation_ids=['test'], sample=True)
