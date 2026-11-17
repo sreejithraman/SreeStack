@@ -173,7 +173,7 @@ def check(p, case):
         spec=p.operation('handoff-crash',.5)
         child=subprocess.Popen(p.argv(spec,30),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         def association():
-            with sqlite3.connect(p.root/'state/queue.db') as conn:
+            with contextlib.closing(sqlite3.connect(p.root/'state/queue.db')) as conn:
                 return conn.execute('SELECT task_id,worker_json FROM task_operations WHERE operation_id=?',(spec['operation_id'],)).fetchone()
         original=wait_for(association)
         before_claim=original[1] is None
