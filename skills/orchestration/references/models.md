@@ -8,22 +8,22 @@ model the user picked, and no running agent is replaced because its model differ
 
 | Purpose | Provider | Model | Effort | Availability fallback | Review pool |
 | --- | --- | --- | --- | --- | --- |
-| Coordinator | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Simple implementation and fixes | Codex | GPT-6.1 Sol | Medium | — | — |
-| Standard implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6 Astra / X-High | — |
-| Document writing and revision | Claude | Opus 5.5 | Medium | Codex / GPT-6.1 Sol / Medium | — |
+| Coordinator | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
+| UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
+| Simple implementation and fixes | Codex | GPT-6.2 Sol | Medium | — | — |
+| Standard implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
+| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6.2 Astra / X-High | — |
+| Document writing and revision | Claude | Opus 5.5 | Medium | Codex / GPT-6.2 Sol / Medium | — |
 | Routine UI operation | Codex | GPT-6.1 Terra | Medium | — | — |
 | Demanding UI operation | Codex | GPT-6.1 Terra | High | — | — |
 | Complex UI operation | Codex | GPT-6.1 Terra | X-High | — | — |
-| General research | Codex | GPT-6.1 Sol | Medium | — | — |
+| General research | Codex | GPT-6.2 Sol | Medium | — | — |
 | YouTube retrieval | Antigravity | Gemini 4 Hydrogen High | High | — | — |
 | X retrieval | Grok | Grok 4.7 | High | — | — |
-| Primary review | Codex | GPT-6.1 Sol | High | — | — |
-| Ponytail review | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
-| Thermo review | Codex | GPT-6.1 Sol | High | — | — |
-| Adversarial review | Claude | Opus 5.5 | High | Codex / GPT-6.1 Sol / High | — |
+| Primary review | Codex | GPT-6.2 Sol | High | — | — |
+| Ponytail review | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
+| Thermo review | Codex | GPT-6.2 Sol | High | — | — |
+| Adversarial review | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
 | Additional review | Antigravity | Gemini 4 Hydrogen High | High | — | Gemini |
 
 The primary-review row also sets the model for cross-judges, single-reviewer audits, and second
