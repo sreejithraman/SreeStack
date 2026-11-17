@@ -76,10 +76,13 @@ def serve(config):
     async def work_report(limit: int = 20, operation_ids: list[str] | None = None,
                           sample: bool = False, simlock: str | None = None,
                           lease_ids: list[str] | None = None):
-        """Inspect jobs and optional bounded pressure signals; observation only.
+        """Read/reconcile jobs and optionally sample pressure.
 
-        SimLock is an explicit absolute 0.7 executable for non-starting recent
-        events, not active-lease authority. Caller lease IDs are correlation only.
+        Like status, job reads may terminate verified expired/orphaned work under
+        existing closure rules. Pressure sampling never changes admission policy.
+        SimLock requires a caller-qualified maintained local executable reporting
+        0.7.0 at an absolute path; version alone is not qualification. Its recent
+        events and caller lease IDs are correlation, not active-lease authority.
         """
         import diagnostics
         return await asyncio.to_thread(diagnostics.report, config, limit, operation_ids, sample, simlock, lease_ids)
@@ -116,12 +119,13 @@ def main():
     handoff.add_argument('--artifact', action='append', required=True,
                          help='absolute file/directory; repeat for each artifact (10000 entries / 2 GiB / 30s total)')
     handoff.add_argument('--json', action='store_true')
-    report = commands.add_parser('report', help='inspect bounded jobs/results and optional pressure; never changes pressure policy')
+    report = commands.add_parser('report', help='read/reconcile jobs like status; optional pressure sampling never changes admission policy',
+                                 description='Job reads may terminate verified expired/orphaned work under existing closure rules. Pressure sampling is observation-only.')
     report.add_argument('--limit', type=int, default=20, help='1..100; active/recovery holds first, then queued/recent')
     report.add_argument('--id', action='append', default=[], help='exact existing operation; repeat up to 20')
     report.add_argument('--sample', action='store_true', help='read-only Mac pressure, swap/compression and process-group RSS')
     report.add_argument('--sample-file', type=Path, help='read historical host signals from a saved report; show freshness')
-    report.add_argument('--simlock', help='explicit absolute 0.7 executable; sample non-starting events --since 5m')
+    report.add_argument('--simlock', help='absolute caller-qualified maintained local SimLock 0.7.0 executable; version alone is insufficient')
     report.add_argument('--lease-id', action='append', default=[], help='caller-known correlation ID, not an asserted active lease')
     report.add_argument('--output', type=Path, help='save JSON to a new file (never overwrite prior proof)')
     report.add_argument('--json', action='store_true')

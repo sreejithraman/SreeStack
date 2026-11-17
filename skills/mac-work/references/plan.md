@@ -1,7 +1,11 @@
 # Shared Mac coordination
 
-Finish line: **Try**, built, proved and shown locally. No review, PR, push,
-merge, live/default host activation or migration of existing holds in this slice.
+Implementation finish line: **Try**, completed and accepted for the supported
+pilot. The user now authorizes its independent review, SreeStack publication and
+merge; parent owns that review loop, Git history, publication and landing.
+Original completed implementation gates below do not prohibit this release.
+Global/live-default activation, broader Swift/Xcode/Gradle qualification,
+old-hold migration and external Block/SimLock publication remain deferred.
 Task-owned versioned Try installation/activation is authorized. The accepted
 runner and combined Try installs are now parent-owned. Do not mutate, rebuild,
 delete or use either root for new fitness; any new proof needs a fresh root.
@@ -50,7 +54,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Blocked by: None.
    Status: qualification and canonical command pilot accepted by parent; global
    adoption remains task 6. See [findings](fitness.md) and [repair proposal](repair.md).
-   Finish line: Try. Stop before review/PR/merge; activation requires passing fitness.
+   Finish line: Try (completed); supported-pilot review/merge is now parent-owned.
 
 1a. **Repair dependency lifecycle without replacing admission**
    Outcome: a maintained pinned patch repairs nondestructive initialization,
@@ -64,7 +68,8 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Status: lifecycle repairs accepted by parent. User authorized the foreground
    boundary; see [ownership seam](repair.md). Runner adds atomic operation binding
    inside the same upstream state/receipt seam.
-   Finish line: Try; no host activation, upstream publication or handoffs.
+   Finish line: Try (completed before later handoffs); no host activation or
+   external upstream publication.
 
 1b. **Settle and expose usable canonical admission**
    Outcome: one run/status/cancel route serves providers/projects with a shared
@@ -77,7 +82,8 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Status: runner0c4bc1c accepted, with qualified real daemon builds and public
    cancellation proved by parent. Combined handoffs/diagnostics8d4e9ec also
    accepted; both retained roots belong to parent. See [public runner contract](runner.md).
-   Finish line: Try; stop before live/default activation, review, PR and merge.
+   Finish line: Try (completed); supported-pilot review/merge is now parent-owned,
+   with live/default activation still deferred.
 
 2. **Integrate build and device handoffs**
    Outcome: project runners and agent skills use the fixed admission contract,
@@ -168,7 +174,11 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Inputs: parent publishing/integration owner; explicit authorization for external
    publication; no credentials or private workload data in artifacts.
    Blocked by: accepted relevant tasks above; task 7 only for a capacity increase.
-   Finish line: Try release task; no publication in the current slice.
+   Status: parent is authorized to review, publish and merge the supported
+   SreeStack pilot. External Block/SimLock publication and global rollout remain
+   separate deferred work.
+   Finish line: Try release task for external upstream publication and rollout;
+   supported-pilot SreeStack review/merge follows the current authorization above.
 
 ## Dependency and shared-resource cut
 
@@ -176,8 +186,9 @@ Current/planned stack: admission → lifecycle → runner → handoffs → diagn
 when its predecessor delivers its contract. Task 5 can prepare against fixed
 operational contracts only after task 1b alongside task 2 with disjoint files; parent integrates it.
 Task 4 and task 7 serialize actual Mac workloads. Task 6 serializes each hold's
-owner transition. Task 8 is a separate outward-facing release, never implicit
-in local Try. No task rebuilds the scheduler or adds kernel quotas.
+owner transition. Task 8's external upstream publication and rollout remain separate from the
+now-authorized supported-pilot SreeStack review/merge. No task rebuilds the
+scheduler or adds kernel quotas.
 
 ## Parent integration evidence
 
@@ -294,7 +305,8 @@ This proves qualified daemon build → prebuilt app verification/seal → suppor
 T3 interactive handoff and teardown. It does not rebuild Android/iOS apps,
 qualify Gradle/Xcode or default Swift/native pnpm/Turbo, prove queued T3 boot/
 cancellation, or add an external device_open admission hook. Global adoption,
-old holds, rollout/publication and capacity increases remain outstanding.
+old holds, global rollout, external Block/SimLock publication and capacity
+increases remain outstanding; parent now owns supported-pilot SreeStack review/merge.
 Heavy1/global4/iOS4/Android1 stay unchanged. The earlier 12-build matched
 measurement and real cancellation proof remain valid for identical functional
 runner code. No runtime rebuild or install activation accompanies this record update.

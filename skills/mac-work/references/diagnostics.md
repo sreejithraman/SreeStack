@@ -18,10 +18,12 @@ in the summary; their linked files remain verbatim, not automatic secret redacti
 
 Queue wait ends at admission (or queued closure). Execution wall time starts at
 admission and includes verified group closure, which can outlast root-program
-duration. Pending times end at observation. The report reconciles lifecycle state
-like status; pressure never enters admission decisions. It does not submit,
-cancel, force-clear, change caps or stop processes. Use the existing status/cancel
-commands for exact operation actions.
+duration. Pending times end at observation. Job reads perform normal status
+reconciliation, which may terminate verified expired/orphaned work and resolve
+permits under existing closure rules. Pressure sampling never changes admission
+policy or submits/cancels work. The JSON `observation_only` flag describes pressure
+policy, not a pure database read. There is no force-clear operation; use the
+existing status/cancel commands for exact operation actions.
 
 Live `--sample` is a one-shot observation: timestamped kernel pressure, free-memory
 percentage, swap, compressor physical/logical bytes and observed job-group RSS.
@@ -77,5 +79,6 @@ MCP work_report(limit, operation_ids, sample, simlock, lease_ids) uses the same
 installed config/database and bounded samplers. `diagnostics_fitness.py --root ROOT
 --output NEW_DIR [--simlock /absolute/simlock]` proves real CLI/MCP attribution,
 queue/execution separation, live RSS, stale/missing signals and recovery holds
-with lightweight fixtures. Parent owns representative workload measurements,
-T3 display and any capacity decision; observation alone does not justify an increase.
+with lightweight fixtures. Workload, installation and device owners coordinate
+representative measurements, T3 evidence and capacity decisions; observation
+alone does not justify an increase.

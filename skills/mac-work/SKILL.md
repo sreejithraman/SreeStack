@@ -17,7 +17,7 @@ xcodebuild and native pnpm/Turbo remain unqualified. Check the
 [current eligibility evidence](references/handoffs.md#eligibility-and-proof-limits)
 before choosing a command.
 Background/shared daemons and escaping groups/sessions are unsupported; this is
-not OS containment. Keep existing holds with their owners until parent integration.
+not OS containment. Transition existing holds only with their owners.
 
 Use the one installed root's `bin/mac-work` across providers/projects. For setup,
 CLI/MCP contracts and maintenance, read [foreground runner](references/runner.md).
@@ -38,8 +38,9 @@ an already-qualified foreground project runner may use `run --handoff BUILD_ID`.
 SimLock retains device lifecycle and T3's exact bound driver retains UI ownership.
 Automatic T3 boot admission is pending; the command queue does not cover it.
 Use [job/pressure reports](references/diagnostics.md) to inspect wait/execution,
-results and recovery holds from T3. `report --sample` observes pressure; it never
-changes admission. Missing/stale signals are not a normal-pressure verdict.
+results and recovery holds from T3. Job reads reconcile like status and may stop
+verified expired/orphaned work. Pressure sampling never changes admission policy.
+Missing/stale signals are not a normal-pressure verdict.
 Installation and device owners coordinate workload proof, adoption and release
 through the [spec/tasks](references/plan.md). Device limits and slim/full choices stay unchanged.
 
