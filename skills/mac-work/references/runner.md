@@ -124,9 +124,13 @@ Installation generates `providers/codex.toml` and `providers/claude.mcp.json` un
 the private root. They point to the same bound launcher with argument `mcp`; no
 provider override can pick a root queue or capacity. The stdio tools are:
 
-- `run_command(operation_id, owner, argv, worktree, queue_seconds, execution_seconds)`
+- `run_command(operation_id, owner, argv, worktree, queue_seconds, execution_seconds, handoff_id=None)`
 - `command_status(operation_id)`
 - `cancel_command(operation_id)`
+- `build_handoff(operation_id, artifacts)`
+
+For artifact sealing and dependent command inputs, use
+[build/artifact handoffs](handoffs.md).
 
 The response schema and operation semantics match the CLI. The facade does not own
 or cancel commands merely because its connection exits. Restart the consumer after

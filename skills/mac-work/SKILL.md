@@ -28,10 +28,13 @@ closure. Capacity stays held while ownership is uncertain. Never force-clear or
 switch policy to release it. Output is verbatim, not secret redaction; avoid secret
 argv/output. Runtime/config/hash drift fails closed instead of running unqueued.
 
-The parent owns handoffs, device work, pressure diagnostics and release in the
-[spec/tasks](references/plan.md). SimLock retains lifecycle ownership and T3's
-exact bound driver retains UI ownership; their admission integration is pending.
-Device limits and slim/full choices stay unchanged until that proof passes.
+Before device acquisition, use [build/artifact handoffs](references/handoffs.md).
+The build must succeed and close before its exact artifacts are consumed. Only
+an already-qualified foreground project runner may use `run --handoff BUILD_ID`.
+SimLock retains device lifecycle and T3's exact bound driver retains UI ownership.
+Automatic T3 boot admission is pending; the command queue does not cover it.
+Installation and device owners coordinate workload proof, adoption and release
+through the [spec/tasks](references/plan.md). Device limits and slim/full choices stay unchanged.
 
 When changing the dependency, use the [lifecycle recipe](references/lifecycle.md),
 [implemented ownership seam](references/repair.md), [original qualification](references/setup.md)

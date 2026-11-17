@@ -2,7 +2,8 @@
 
 Finish line: **Try**, built, proved and shown locally. No review, PR, push,
 merge, live/default host activation or migration of existing holds in this slice.
-Task-owned versioned Try installation/activation is authorized.
+Task-owned versioned Try installation/activation is authorized. The accepted
+runner Try install is now parent-owned; new slice proofs use fresh roots.
 Integration and release owner: parent session. Admission implementation owner:
 this slice. Branch ownership is serialized. Current main is the base.
 
@@ -84,9 +85,13 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    cleanup and exact artifact/task/lease identity; parent runs hardware proof.
    Inputs: task 1b's accepted CLI/config/receipt contracts; integration owner parent;
    existing lifecycle rules and holds; global4/iOS4/Android1; slim/full choices.
-   T3 device_open has no established admission hook; a supported bounded session
-   or native seam needs a settled design. Device-open coverage remains pending.
-   Blocked by: task 1b proof/acceptance; native T3 handoff seam still needs design.
+   T3 device_open has no established admission hook. Parent selected command-only
+   queue admission; SimLock retains leases/boots. Automatic boot admission remains
+   a separate native-integration gap, not a blocker for supported handoffs.
+   Blocked by: 1b (accepted).
+   Status: receipt-gated artifact seal and dependent foreground command verification
+   implemented in mac-work/handoffs; controlled lifecycle proof is separate from
+   parent-owned hardware/T3 proof. See [handoff contract](handoffs.md).
    Finish line: Try; no live hold migration or host activation.
 
 3. **Expose pressure and command results in T3**
@@ -162,9 +167,8 @@ in local Try. No task rebuilds the scheduler or adds kernel quotas.
 Parent inspected clean `/Users/sree/Documents/Dev/t3code`. Public device_open
 accepts hostId/deviceId/platform; `apps/server/src/mcp/toolkits/device/handlers.ts:244`
 calls DeviceService.open directly. `t3 --help` has no device CLI; thread supports
-list/start/send/show. No supported external queue hook is established. Task 2
-must settle a bounded admission session around normal device tools or a native
-integration seam before claiming coverage. These are parent findings, not
+list/start/send/show. No supported external queue hook is established. Automatic T3 boot admission requires a supported native seam before claiming
+coverage; command-only handoffs continue independently. These are parent findings, not
 independent device proof from this slice. Parent's old-base checker passed
 448 tests / 62 skills; final current-main checks remain required here.
 
@@ -196,5 +200,43 @@ Parent restacked accepted admission/lifecycle onto main `b209c1ff1cd9ea9925b925f
 Admission is `01c18f235f77669c6151c4f12b68713a8ab21a83`; lifecycle is
 `01e8dcca192e8cd233d65d14dc56597e3da5165d` (bytes equal accepted pre-rebase
 `63025ed`). Parent preserved 25 ignored files and recorded the verified restoration
-in `verify-proof/restack-20261117/receipt.json`. This owner adds only runner above
+in `verify-proof/restack-20261117/receipt.json`. This owner adds runner, then handoffs and diagnostics serially above
 lifecycle. No live holds, provider profiles, devices or global capacity change.
+
+## Real-command eligibility evidence
+
+Parent observed Swift 6.4.2 universal capture build on SimLock a323 completing
+in 14.125s with arm64+x86_64 Mach-O and no surviving observed descendants.
+Compiler/clang/frontend/dsymutil children used distinct process groups. Direct
+SIGTERM at 4s exited -15 with zero observed descendants at about 4.6s; this
+is not canonical cancellation/crash proof and does not qualify Swift/xcodebuild
+under the strict process-group contract. Parent is qualifying another existing
+foreground candidate. Evidence is in the parent worktree verify-proof/
+20261117T143101Z-workload-yvjlbl3l/profile.json, profile-build.log and cancel-profile.json.
+
+Parent next observed installed Node + JS pnpm 10.34.6 `run build:daemon:run`
+completing a full daemon build in 2.371s with all observed descendants in one PGID
+and none surviving (node-js-profile.json). Native pnpm12/Turbo uses distinct
+groups and remains unqualified. Matched serial/queued pairs and canonical
+cancellation qualification remain parent-owned; this is not a capacity increase.
+
+## Parent real foreground workload proof (runner accepted)
+
+Parent accepted runner `0c4bc1c82ff798e7014fc980ca1489a3b2bd8df5` and owns its
+retained foreground-pilot install. Do not mutate, upgrade, delete or use that
+root for new fitness. Parent independently read handoff-final and ran a fresh
+stable-SimLock-worktree smoke operation; both succeeded without capacity held.
+
+Exact qualified invocation: Node 22.23.4 plus installed JS pnpm 10.34.6,
+`pnpm.cjs run build:daemon:run` on SimLock a323. All 12 matched builds passed,
+three queued pairs never overlapped, and public compiler cancellation left no
+surviving group members. A final queued build restored complete daemon output
+(task124, parent-real-build-final-20261117, main.js SHA prefix50e9b035).
+Median two-build manual serial3.796s vs queued5.035s: +1.239s / 32.6% overhead
+for this short workload, not compiler speedup. Pressure normal, swap flat1084.44MiB.
+Keep heavy1 and device caps4/4/1. This qualifies that exact invocation, not native
+pnpm/Turbo, Swift, app artifacts, interactive T3 or device cancellation.
+Proof: parent worktree `/Users/sree/.t3/worktrees/SreeStack/t3-6ff706bc-093e7ae59d9a288e`,
+private Git verify-proof/20261117T143101Z-workload-yvjlbl3l/verdict.md,
+comparison-summary.json, six raw batches, real-build-cancel.json and final-build.json.
+Tasks4/6/7 still need representative app/device workflows and pilot/capacity decisions.

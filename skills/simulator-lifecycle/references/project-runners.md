@@ -4,6 +4,13 @@ Use when adding or changing a project's normal simulator build/test command.
 Keep implementation, tests and CI configuration in that project. The shared
 skill owns the lifecycle contract; SimLock remains the device authority.
 
+Build device-independent artifacts before acquiring a lease through
+[Mac Work handoffs](../../mac-work/references/handoffs.md). Preserve the project's
+command interface and consume those exact artifacts; do not rebuild implicitly
+after acquiring. Queue a device-dependent foreground runner only after its
+existing bounded acquisition, renewal, cancellation and teardown are verified.
+The queue owns command admission, not T3 device-open admission or shared device daemons.
+
 ## One run boundary
 
 Wrap the whole device-dependent operation, including installs performed by
@@ -47,7 +54,7 @@ The runner must:
   instead of deleting while a writer may still use it.
 - Report both the original command result and teardown result. A successful test
   with failed release or cleanup is incomplete teardown. A release reply does
-  not prove the asynchronous device wipe finished.
+  not prove asynchronous virtual-device deletion or physical purge finished.
 
 Crash recovery reads the existing run receipt and live SimLock state. Stop only
 proven surviving run-owned processes, remove only proven disposable host paths,
