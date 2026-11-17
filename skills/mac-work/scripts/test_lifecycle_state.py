@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import types
 import unittest
+from unittest.mock import patch
 
 
 class ExistingState(unittest.TestCase):
@@ -65,6 +66,24 @@ class ExistingState(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'configuration mismatch'):
             self.lifecycle.configure(conn, {'heavy': 1}, 'uncontained')
         self.lifecycle.configure(conn, {'heavy': 1}, 'process-group')
+
+    def test_unknown_owner_keeps_unrecorded_spawn_window_quarantined(self):
+        conn = self.database()
+        conn.row_factory = sqlite3.Row
+        metadata = {'schema': 1, 'boot': 'fixture-boot', 'generation': 'fixture-generation',
+                    'owner': {'pid': 999999, 'pgid': 999999, 'birth': [1, 1], 'zombie': False},
+                    'ownership_contract': 'process-group', 'state': 'admitted'}
+        conn.execute("INSERT INTO queue(id,queue_name,status,pid,command,lifecycle_json) VALUES(1,'heavy','running',999999,'true',?)",
+                     (json.dumps(metadata),))
+        conn.commit()
+        with patch.object(self.lifecycle, 'boot_identity', return_value='fixture-boot'), patch.object(
+                self.lifecycle, 'process_identity', return_value=None):
+            value = self.lifecycle.close_task(conn, 1, {'status': 'error', 'duration_seconds': 0},
+                                              True, 'owner_unknown')
+        self.assertEqual(value['status'], 'recovery-pending')
+        self.assertTrue(value['capacity_held'])
+        self.assertEqual(conn.execute('SELECT status FROM queue WHERE id=1').fetchone()[0], 'running')
+        self.assertEqual(self.lifecycle.read_task(conn, 1), value)
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shlex
 import signal
+import sqlite3
 import subprocess
 import sys
 import time
@@ -46,12 +47,11 @@ def paths(config, operation_id):
 
 @contextmanager
 def database(config):
-    from queue_core import QueuePaths, ensure_db, get_db
+    from queue_core import QueuePaths, get_db
     import queue_lifecycle as lifecycle
     queue = QueuePaths.from_data_dir(Path(config['state']))
     if not queue.db_path.is_file():
         raise ValueError('Shared admission database missing; restore state, never resubmit into an empty queue')
-    ensure_db(queue)
     with get_db(queue.db_path) as conn:
         lifecycle.configure(conn, POLICY['capacities'], POLICY['ownership_contract'])
         yield conn
@@ -69,9 +69,9 @@ def snapshot(conn, config, operation_id):
     receipt, output = paths(config, operation_id)
     metadata = value['lifecycle']
     queued_at = metadata['queue_deadline'] - spec['queue_seconds']
-    started_at = metadata.get('execution_deadline')
-    if started_at is not None:
-        started_at -= spec['execution_seconds']
+    started_at = metadata.get('admitted_at')
+    if started_at is None and metadata.get('execution_deadline') is not None:
+        started_at = metadata['execution_deadline'] - spec['execution_seconds']
     value.update(schema=1, queued_at=queued_at, started_at=started_at,
                  deadlines={'queue': metadata['queue_deadline'], 'execution': metadata.get('execution_deadline')},
                  operation_id=operation_id, request=spec,
@@ -101,7 +101,7 @@ def submit(config, spec):
             receipt, output = paths(config, spec['operation_id'])
             descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
             try:
-                child = subprocess.Popen([str(Path(config['runtime']) / 'bin/python'),
+                child = subprocess.Popen([str(Path(config['runtime']) / 'bin/python'), '-I', '-B',
                     str(Path(config['_path']).parent / 'bundle/scripts/mac_work.py'),
                     '--config', str(Path(config['root']) / 'current.json'), '_worker',
                     '--configuration', config['_path'], '--sha256', config['_sha256'],
@@ -169,6 +169,7 @@ def worker(config, operation_id):
         launched = False
         result = None
         started = None
+        execution_deadline = None
         process = None
 
         def interrupted(signum, frame):
@@ -190,7 +191,17 @@ def worker(config, operation_id):
                     if time.time() >= metadata['queue_deadline']:
                         result = {'status': 'queue-timeout', 'duration_seconds': 0}
                         break
-                    admitted, _ = attempt_task_start(conn, task, 'heavy', {'heavy': 1}, os.getpid())
+                    try:
+                        admitted, _ = attempt_task_start(conn, task, 'heavy', {'heavy': 1}, os.getpid())
+                    except sqlite3.OperationalError as error:
+                        code = getattr(error, 'sqlite_errorcode', 0) & 255
+                        if code not in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}:
+                            raise
+                        admitted = False
+                    if admitted:
+                        metadata = lifecycle.read_task(conn, task)['lifecycle']
+                        started = metadata['admitted_at']
+                        execution_deadline = metadata['execution_deadline']
                 if admitted:
                     break
                 time.sleep(.1)
@@ -203,21 +214,33 @@ def worker(config, operation_id):
                     if lifecycle.read_task(conn, task)['status'] == 'recovery-pending':
                         result = {'status': 'cancelled', 'duration_seconds': 0}
                     else:
-                        launched = True
-                        started = time.time()
                         process = lifecycle.launch(conn, task, shlex.join(spec['argv']), cwd=spec['worktree'])
+                        launched = True
                 if process is not None:
                     try:
-                        code = process.wait(timeout=spec['execution_seconds'])
+                        code = process.wait(timeout=max(0, execution_deadline - time.time()))
                         result = {'status': 'success' if code == 0 else 'failed', 'exit_code': code,
                                   'duration_seconds': time.time() - started}
                     except subprocess.TimeoutExpired:
                         result = {'status': 'timeout', 'duration_seconds': time.time() - started,
                                   'timeout_seconds': spec['execution_seconds']}
         except BaseException as error:
-            result = {'status': 'interrupted' if isinstance(error, InterruptedError) else 'error',
-                      'error': str(error), 'duration_seconds': time.time() - started if started else 0}
+            if isinstance(error, TimeoutError):
+                status = 'timeout' if started is not None else 'queue-timeout'
+            elif isinstance(error, InterruptedError):
+                status = 'interrupted'
+            else:
+                status = 'error'
+            result = {'status': status, 'error': str(error),
+                      'duration_seconds': time.time() - started if started is not None else 0}
+            if status == 'timeout':
+                result['timeout_seconds'] = spec['execution_seconds']
         finally:
+            blocked = {signal.SIGTERM, signal.SIGINT}
+            previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, blocked)
+            for signum in blocked:
+                signal.signal(signum, signal.SIG_IGN)
+            signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
             with database(config) as conn:
                 lifecycle.close_task(conn, task, result, terminate=True,
                     reason='canonical_worker_finished', never_started=not launched)

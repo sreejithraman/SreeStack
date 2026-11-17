@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -I -B
 """Stable, root-bound launcher for immutable mac-work releases."""
 
 import hashlib
@@ -51,7 +51,7 @@ def main():
     python = config_path.parent / 'build/runtime/bin/python'
     if digest(python.resolve()) != config['python_sha256']:
         raise ValueError('Runtime interpreter hash mismatch')
-    os.execv(str(python), [str(python), str(bundle / 'scripts/mac_work.py'),
+    os.execv(str(python), [str(python), '-I', '-B', str(bundle / 'scripts/mac_work.py'),
                          '--config', str(pointer), *sys.argv[1:]])
 
 

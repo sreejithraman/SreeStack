@@ -1657,8 +1657,10 @@ adapts Block agent-task-queue at `48d16da41f57801bbf9462ed2df923713978b6ae`
 serialized explicit initialization, fail-closed active schema/policy validation,
 recorded-deadline/zombie-owner reconciliation and complete sealed runtime inventory,
 atomic admission clocks, cancellation-serialized gated birth/group/boot identities,
+isolated trusted Python startup with preserved command environments,
 one durable closure/quarantine path, atomic operation/task associations and worker
-claims in the existing database, fixed shared policy, separate queue/execution
+claims in the existing database, bounded SQLite contention retry, protected final
+closure, fixed shared policy, separate queue/execution
 limits, and exact source/patch/runtime/config verification. The user authorized
 the foreground process-group pilot; detached/shared-daemon workloads are outside
 scope. Canonical CLI/MCP and immutable task-owned install/activation/rollback are

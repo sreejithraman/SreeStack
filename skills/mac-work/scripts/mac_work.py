@@ -13,6 +13,8 @@ import subprocess
 import sqlite3
 import sys
 
+# Only this verified bundle directory supplements isolated Python's import path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import runner_config as configuration
 
 

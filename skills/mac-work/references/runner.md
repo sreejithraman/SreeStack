@@ -13,7 +13,7 @@ blindly kill a shared build daemon.
 From this repository root:
 
 ```sh
-python3 skills/mac-work/scripts/mac_work.py install \
+python3 -I -B skills/mac-work/scripts/mac_work.py install \
   --root /absolute/private/mac-work-try --release try-1 --json
 /absolute/private/mac-work-try/bin/mac-work run \
   --id example-1 --owner my-thread --worktree "$PWD" \
@@ -39,7 +39,10 @@ bundled runner code. CLI/MCP clients cannot select another queue or cap. Runtime
 source, patch, code, config or policy drift refuses execution; there is no direct
 shell fallback. A missing database in an active root refuses requests/activation;
 restore state instead of silently starting an empty queue and losing operation IDs.
-Version directories are never overwritten by the installer.
+Version directories are never overwritten by the installer. Trusted launcher,
+controller, worker and gate Python imports are isolated from caller overrides;
+requested commands retain their environment. Active opens validate existing schema
+and policy before mutation; empty/truncated state is not fresh bootstrap.
 
 ## Stable operations and receipts
 
@@ -62,7 +65,12 @@ its exact birth/group identities and retains either an interrupted receipt or
 recovery-pending capacity. Submission interrupted before worker ownership may end
 without execution; the same ID still returns its recorded result, never a replay.
 
-Queue time begins on registration. Execution time begins after upstream admission.
+Queue time begins on registration and stops at upstream admission. The same atomic
+transition records `admitted_at` and starts the execution deadline. Runtime/Git/artifact
+preflight consumes this budget; expired preflight cannot launch, and the command
+receives only the remaining time. `started_at` means admission, while
+`lifecycle.launched_at` records child registration. Failed preflight still records
+the admitted interval.
 `--wait-seconds 0..30` bounds only observation; expiration does not cancel or shorten
 a task's deadlines. Cancel an exact ID explicitly. Eligible foreground completion
 normally reports `success`/`failed`; deadline outcomes are `queue-timeout` and
@@ -126,7 +134,9 @@ A new submission during the build can prevent activation; the completed inactive
 version remains inspectable and can be activated later when idle. Interrupted or
 incomplete version directories are never reused. Install under a new release name
 to retry; arbitrary older schema migrations/bootstrap protocol changes are outside
-this first pilot. The installation and device owners coordinate host profile
+this first pilot. The pre-isolation reviewed launcher has a different bootstrap
+hash and cannot be upgraded in place; keep its root/proof and create a fresh private
+Try root for the repaired release. The installation and device owners coordinate host profile
 activation, project handoffs, devices, pressure policy and capacity decisions
 through the [plan](plan.md).
 
@@ -137,5 +147,11 @@ clients and harmless marker processes. Run it from the source worktree. It never
 accepts a live state directory separately from the explicit installed root.
 `--case` selects a diagnostic case, not a full qualification. Keep the raw events,
 verdicts, transcripts, build/config hashes and committed artifact identity.
+`runner_regressions.py --root ROOT --output NEW_PROOF_DIR --case CASE` adds
+boundary faults in isolated worker processes using the installed bundle. It never
+edits runtime files. Keep its raw worker snapshots as well as verdicts. The
+`active-state-replay` case creates separate disposable installs and retains their
+damaged database bytes.
+
 The [original counterexample](fitness.md) for arbitrary escapes remains known
 unsupported behavior; it is not silently counted as a passing foreground test.

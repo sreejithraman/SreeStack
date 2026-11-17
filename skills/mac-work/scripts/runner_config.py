@@ -75,7 +75,7 @@ def validate_config(path, expected_sha=None):
     if digest(Path(value['runtime']) / 'bin/python') != value['python_sha256']:
         raise ValueError('Runtime interpreter hash mismatch')
     verifier = version / 'bundle/scripts/build_runtime.py'
-    result = subprocess.run([str(Path(value['runtime']) / 'bin/python'), str(verifier),
+    result = subprocess.run([str(Path(value['runtime']) / 'bin/python'), '-I', '-B', str(verifier),
                              'verify', '--runtime', value['runtime']],
                             capture_output=True, text=True, timeout=15)
     if result.returncode:
@@ -152,13 +152,12 @@ def activate(root, release):
         state = root / 'state'
         state.mkdir(mode=0o700, exist_ok=True)
         initialize = """from pathlib import Path
-from queue_core import QueuePaths,ensure_db,get_db
-import queue_lifecycle as lifecycle
+from queue_core import QueuePaths,init_db
 import sys
-paths=QueuePaths.from_data_dir(Path(sys.argv[1]));ensure_db(paths)
-with get_db(paths.db_path) as conn:lifecycle.configure(conn,{'heavy':1},'process-group')
+paths=QueuePaths.from_data_dir(Path(sys.argv[1]))
+init_db(paths,{'heavy':1},'process-group')
 """
-        subprocess.run([str(Path(config['runtime']) / 'bin/python'), '-I', '-c', initialize, str(state)], check=True)
+        subprocess.run([str(Path(config['runtime']) / 'bin/python'), '-I', '-B', '-c', initialize, str(state)], check=True)
         write_json(root / 'current.json', {'schema': 1, 'configuration': str(path), 'sha256': digest(path)})
         setup_files(root)
     return {'release': release, 'config': str(root / 'current.json'), 'command': str(root / 'bin/mac-work')}
@@ -174,7 +173,7 @@ def install(root, release, archive=None):
     shutil.copytree(BUNDLE, bundle, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     hashes = {str(p.relative_to(bundle)): digest(p) for p in bundle.rglob('*') if p.is_file()}
     write_json(version / 'bundle-manifest.json', hashes)
-    subprocess.run([sys.executable, str(bundle / 'scripts/build_runtime.py'), 'build',
+    subprocess.run([sys.executable, '-I', '-B', str(bundle / 'scripts/build_runtime.py'), 'build',
                     '--root', str(version / 'build'), *(['--archive', str(archive.resolve())] if archive else [])],
                    check=True, stdout=sys.stderr)
     config = {'schema': 1, 'root': str(root), 'release': release, 'state': str(root / 'state'),

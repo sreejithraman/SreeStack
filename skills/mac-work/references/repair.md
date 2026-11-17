@@ -22,7 +22,8 @@ members are signalled only under their recorded identity; uncertain identity or
 closure retains capacity. A missing root, stale timer or dead owner alone cannot
 release it. The atomic admission clock starts execution, including preflight, and stops
 queue wait. Registration and gate release serialize with cancellation. Expired
-preflight cannot launch. Execution deadlines come from the recorded limit; a cleanup timer
+preflight cannot launch. Trusted Python startup ignores caller import overrides,
+while the requested command retains its environment. Execution deadlines come from the recorded limit; a cleanup timer
 cannot substitute another execution allowance.
 
 The runner revision adds `task_operations` inside the same upstream database:
