@@ -61,8 +61,11 @@ Explicit `--simlock` opts into the qualified 0.7 `events --since 5m` route. It
 connects to existing history/daemon without starting one, has a five-second
 timeout and 1 MiB output budget, and keeps only event time/type and lease/device
 IDs. Unknown versions refuse that probe. Ordinary status/list can launch a daemon
-and are not automatic report probes. See the pinned
-[non-starting event route](https://github.com/callstackincubator/simlock/blob/392e0ac5a8d1168d19fb3d4447b908e05652d1e5/src/cli/commands/events.ts#L47).
+and are not automatic report probes. Qualification used the maintained local
+build `392e0ac5a8d1168d19fb3d4447b908e05652d1e5`, not a published GitHub revision;
+the local source path is `src/cli/commands/events.ts` (non-starting route at line 47).
+See the [local build record](../../simulator-lifecycle/references/setup.md#establish-the-worker).
+Version 0.7.0 alone does not establish that another build has identical behavior.
 
 Recent events and caller-supplied IDs are correlation evidence, not a current
 active-lease inventory, ownership proof or permission to renew/release. A quiet
