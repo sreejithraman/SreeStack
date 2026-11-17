@@ -123,7 +123,29 @@ def gate_environment(core, lifecycle, directory):
     return {'trusted_import_sentinel': False, 'requested_environment_preserved': True}
 
 
-CASES = {'gate-environment': gate_environment, 'active-state' : active_state, 'admission-clock' : admission_clock, 'registration-cancel': registration_cancel}
+def registration_phase(core, lifecycle, directory):
+    conn, task = fixture(core, lifecycle, directory)
+    core.attempt_task_start(conn, task, 'heavy', {'heavy': 1}, os.getpid())
+    marker = directory / 'duplicate-command'
+    first = lifecycle.launch(conn, task, '/bin/sleep .5')
+    second = None
+    refused = False
+    try:
+        try:
+            second = lifecycle.launch(conn, task, 'touch ' + shlex.quote(str(marker)))
+        except RuntimeError:
+            refused = True
+        if second is not None:
+            second.wait(timeout=5)
+        assert refused and not marker.exists(), 'executing phase accepted another gated launch'
+    finally:
+        first.wait(timeout=5)
+        lifecycle.close_task(conn, task, {'status': 'success', 'duration_seconds': 0}, True)
+        conn.close()
+    return {'second_launch_refused': True, 'duplicate_marker': False}
+
+
+CASES = {'registration-phase': registration_phase, 'gate-environment': gate_environment, 'active-state' : active_state, 'admission-clock' : admission_clock, 'registration-cancel': registration_cancel}
 
 
 def main():

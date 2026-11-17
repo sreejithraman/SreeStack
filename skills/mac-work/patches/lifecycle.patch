@@ -246,7 +246,7 @@
 +    return lifecycle.close_task(conn, task_id)
 --- /dev/null
 +++ b/queue_lifecycle.py
-@@ -0,0 +1,363 @@
+@@ -0,0 +1,367 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# Copyright 2026 SreeStack contributors.
 +"""Local lifecycle repair; admission and FIFO remain in queue_core.
@@ -391,6 +391,8 @@
 +    """Called only within upstream's successful waiting-to-running transaction."""
 +    row = conn.execute('SELECT lifecycle_json FROM queue WHERE id=?', (task_id,)).fetchone()
 +    metadata = json.loads(row[0])
++    if metadata.get('result') or metadata.get('state') != 'waiting':
++        raise RuntimeError('Task no longer waiting for admission')
 +    now = time.time()
 +    if metadata.get('queue_deadline') is not None and now >= metadata['queue_deadline']:
 +        raise TimeoutError('Queue wait deadline expired before admission')
@@ -399,13 +401,15 @@
 +    conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(metadata), task_id))
 +
 +
-+def launch_metadata(conn, task_id, generation=None):
++def launch_metadata(conn, task_id, generation=None, *, state='admitted'):
 +    row = conn.execute('SELECT * FROM queue WHERE id=?', (task_id,)).fetchone()
 +    if row is None:
 +        raise RuntimeError('Command no longer active before gated launch')
 +    metadata = json.loads(row['lifecycle_json'])
 +    if metadata.get('result') or row['status'] != 'running':
 +        raise RuntimeError('Command cancelled before gated launch')
++    if metadata.get('state') != state:
++        raise RuntimeError('Command launch lifecycle state mismatch')
 +    if (generation is not None and metadata['generation'] != generation
 +            or row['pid'] != os.getpid()
 +            or metadata['owner'] != process_identity(os.getpid())
@@ -436,7 +440,7 @@
 +    # Identity is durable before the gate opens; cancellation serializes here too.
 +    conn.execute('BEGIN IMMEDIATE')
 +    try:
-+        launch_metadata(conn, task_id, generation)
++        launch_metadata(conn, task_id, generation, state='executing')
 +        os.write(write_fd, b'1')
 +        conn.commit()
 +    except BaseException:
