@@ -1,7 +1,8 @@
 # Shared Mac coordination
 
 Finish line: **Try**, built, proved and shown locally. No review, PR, push,
-merge, host activation or migration of existing holds in this slice.
+merge, live/default host activation or migration of existing holds in this slice.
+Task-owned versioned Try installation/activation is authorized.
 Integration and release owner: parent session. Admission implementation owner:
 this slice. Branch ownership is serialized. Current main is the base.
 
@@ -74,7 +75,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Status: canonical CLI/MCP runner and fixed config/receipt contract implemented
    in mac-work/runner; verification and exact runnable Try root are in the owner
    report. See [public runner contract](runner.md).
-   Finish line: Try; stop before activation/review/PR/merge.
+   Finish line: Try; stop before live/default activation, review, PR and merge.
 
 2. **Integrate build and device handoffs**
    Outcome: project runners and agent skills use the fixed admission contract,
