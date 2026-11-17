@@ -90,7 +90,8 @@ class Pilot:
     def call(self, peer, tool, **arguments):
         request = {'tool': tool, 'arguments': arguments}
         self.transcript.append(request)
-        peer.stdin.write(json.dumps(request) + '\n'); peer.stdin.flush()
+        peer.stdin.write(json.dumps(request) + '\n')
+        peer.stdin.flush()
         response = read_message(peer, 30)
         self.transcript.append(response)
         if 'error' in response:
@@ -99,29 +100,39 @@ class Pilot:
 
     def root_unlocked(self):
         with (self.root/'activation.lock').open('a') as lock:
-            try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            except BlockingIOError:return False
+            try:
+                fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            except BlockingIOError:
+                return False
         return True
 
     def close(self):
         for operation in self.operations:
-            with contextlib.suppress(Exception):self.cancel(operation)
+            with contextlib.suppress(Exception):
+                self.cancel(operation)
         # This proof owns only marker-identifiable fixture groups, never shared daemons.
         output = subprocess.check_output(['/bin/ps', '-axo', 'pgid=,args='], text=True)
         for line in output.splitlines():
             if str(self.events_path) in line and 'probe_job.py' in line:
                 group = int(line.strip().split(None, 1)[0])
                 if group != os.getpgrp():
-                    with contextlib.suppress(ProcessLookupError):os.killpg(group, signal.SIGKILL)
+                    with contextlib.suppress(ProcessLookupError):
+                        os.killpg(group, signal.SIGKILL)
         for operation in self.operations:
-            with contextlib.suppress(Exception):self.status(operation)
+            with contextlib.suppress(Exception):
+                self.status(operation)
         for peer in self.peers:
             if peer.poll() is None:
                 with contextlib.suppress(BrokenPipeError):
-                    peer.stdin.write('{"tool":"close"}\n'); peer.stdin.flush()
-                try:peer.wait(timeout=4)
-                except subprocess.TimeoutExpired:peer.kill();peer.wait()
-        for log in self.logs:log.close()
+                    peer.stdin.write('{"tool":"close"}\n')
+                    peer.stdin.flush()
+                try:
+                    peer.wait(timeout=4)
+                except subprocess.TimeoutExpired:
+                    peer.kill()
+                    peer.wait()
+        for log in self.logs:
+            log.close()
         (self.proof / 'transcript.json').write_text(json.dumps(self.transcript, indent=2)+'\n')
 
 
@@ -130,7 +141,8 @@ def check(p, case):
         peer = p.peer()
         specs = [p.operation('mixed', .3) for _ in range(4)]
         processes = [subprocess.Popen(p.argv(s), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for s in specs[:2]]
-        for spec in specs[2:]:p.call(peer, 'run_command', **spec)
+        for spec in specs[2:]:
+            p.call(peer, 'run_command', **spec)
         for child in processes:
             out, err = child.communicate(timeout=30)
             assert child.returncode == 0, out + err
@@ -148,7 +160,9 @@ def check(p, case):
         children=[subprocess.Popen(p.argv(spec),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True) for _ in range(5)]
         values=[p.call(peer,'run_command',**spec)]
         for child in children:
-            out,err=child.communicate(timeout=30);assert child.returncode==0,out+err;values.append(json.loads(out))
+            out,err=child.communicate(timeout=30)
+            assert child.returncode==0,out+err
+            values.append(json.loads(out))
         done=p.terminal(spec['operation_id'])
         late=p.call(peer,'run_command',**spec)
         conflict={**spec,'owner':'different-owner'}
@@ -163,7 +177,8 @@ def check(p, case):
         children=[subprocess.Popen(p.argv(v),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True) for v in (spec,other)]
         outcomes=[]
         for child in children:
-            out,err=child.communicate(timeout=30);outcomes.append((child.returncode,out,err))
+            out,err=child.communicate(timeout=30)
+            outcomes.append((child.returncode,out,err))
         assert sorted(v[0] for v in outcomes)==[0,2],outcomes
         result=p.terminal(spec['operation_id'])
         starts=sum(e['token']==spec['operation_id'] and e['event']=='start' for e in p.events())
@@ -177,8 +192,10 @@ def check(p, case):
                 return conn.execute('SELECT task_id,worker_json FROM task_operations WHERE operation_id=?',(spec['operation_id'],)).fetchone()
         original=wait_for(association)
         before_claim=original[1] is None
-        child.kill();child.communicate(timeout=5)
-        again=p.run(spec);result=p.terminal(spec['operation_id'])
+        child.kill()
+        child.communicate(timeout=5)
+        again=p.run(spec)
+        result=p.terminal(spec['operation_id'])
         starts=sum(e['token']==spec['operation_id'] and e['event']=='start' for e in p.events())
         assert again['task_id']==result['task_id']==original[0] and starts<=1
         assert result['status'] in {'success','cancelled'}
@@ -187,70 +204,112 @@ def check(p, case):
         spec=p.operation('client-death',2)
         child=subprocess.Popen(p.argv(spec,30),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         wait_for(lambda:p.event(spec['operation_id'],'start'))
-        child.kill();child.communicate(timeout=5)
-        result=p.terminal(spec['operation_id']);again=p.run(spec)
+        child.kill()
+        child.communicate(timeout=5)
+        result=p.terminal(spec['operation_id'])
+        again=p.run(spec)
         assert result['status']==again['status']=='success' and result['task_id']==again['task_id']
         return {'status':result['status'],'stable_task_id':again['task_id']}
     if case == 'queued-worker-death':
-        holder=p.operation('queued-death-holder',3);p.run(holder);wait_for(lambda:p.event(holder['operation_id'],'start'))
-        spec=p.operation('queued-worker-death');initial=p.run(spec)
+        holder=p.operation('queued-death-holder',3)
+        p.run(holder)
+        wait_for(lambda:p.event(holder['operation_id'],'start'))
+        spec=p.operation('queued-worker-death')
+        initial=p.run(spec)
         assert initial['status']=='queued'
         os.kill(initial['worker']['pid'],signal.SIGKILL)
-        result=p.terminal(spec['operation_id']);again=p.run(spec)
+        result=p.terminal(spec['operation_id'])
+        again=p.run(spec)
         p.terminal(holder['operation_id'])
         assert result['status']==again['status']=='cancelled' and not p.event(spec['operation_id'],'start')
         return {'status':result['status'],'started':False,'stable_task_id':again['task_id']}
     if case == 'argv-and-environment':
-        spec=p.operation('literal-argv');target=p.proof/'argv-value.txt';literal='spaces ; $HOME $(echo not-executed)'
+        spec=p.operation('literal-argv')
+        target=p.proof/'argv-value.txt'
+        literal='spaces ; $HOME $(echo not-executed)'
         spec['argv']=[p.python,'-c','import pathlib,sys,json;pathlib.Path(sys.argv[1]).write_text(json.dumps(sys.argv[2:]))',str(target),literal,'--config','project.json','--config=other.json']
-        previous=os.environ.get('MAC_WORK_TEST_SECRET');secret='private-fixture-value-never-dumped'
-        old_queue=os.environ.get('TASK_QUEUE_DATA_DIR');ignored=p.proof/'ignored-environment-queue'
+        previous=os.environ.get('MAC_WORK_TEST_SECRET')
+        secret='private-fixture-value-never-dumped'
+        old_queue=os.environ.get('TASK_QUEUE_DATA_DIR')
+        ignored=p.proof/'ignored-environment-queue'
         os.environ['TASK_QUEUE_DATA_DIR']=str(ignored)
         os.environ['MAC_WORK_TEST_SECRET']=secret
         try:
-            p.run(spec);result=p.terminal(spec['operation_id'])
+            p.run(spec)
+            result=p.terminal(spec['operation_id'])
         finally:
-            if previous is None:os.environ.pop('MAC_WORK_TEST_SECRET',None)
-            else:os.environ['MAC_WORK_TEST_SECRET']=previous
-            if old_queue is None:os.environ.pop('TASK_QUEUE_DATA_DIR',None)
-            else:os.environ['TASK_QUEUE_DATA_DIR']=old_queue
+            if previous is None:
+                os.environ.pop('MAC_WORK_TEST_SECRET',None)
+            else:
+                os.environ['MAC_WORK_TEST_SECRET']=previous
+            if old_queue is None:
+                os.environ.pop('TASK_QUEUE_DATA_DIR',None)
+            else:
+                os.environ['TASK_QUEUE_DATA_DIR']=old_queue
         assert not ignored.exists()
         assert result['status']=='success' and result['request']['argv']==spec['argv'] and json.loads(target.read_text())==[literal,'--config','project.json','--config=other.json']
         assert secret not in Path(result['receipt_path']).read_text() and secret not in Path(result['log_path']).read_text()
         return {'literal_argv_preserved':True,'secret_environment_not_dumped':True,'queue_environment_override_ignored':True}
     if case == 'deadlines':
-        first=p.operation('holder',3);p.run(first);wait_for(lambda:p.event(first['operation_id'],'start'))
-        waiting=p.operation('wait-success',.1);waiting['execution_seconds']=1
-        expired=p.operation('wait-expired');expired['queue_seconds']=1
-        p.run(waiting);p.run(expired)
-        a=p.terminal(expired['operation_id']);b=p.terminal(waiting['operation_id'])
-        timeout=p.operation('execution-timeout',5);timeout['execution_seconds']=1;p.run(timeout);c=p.terminal(timeout['operation_id'])
+        first=p.operation('holder',3)
+        p.run(first)
+        wait_for(lambda:p.event(first['operation_id'],'start'))
+        waiting=p.operation('wait-success',.1)
+        waiting['execution_seconds']=1
+        expired=p.operation('wait-expired')
+        expired['queue_seconds']=1
+        p.run(waiting)
+        p.run(expired)
+        a=p.terminal(expired['operation_id'])
+        b=p.terminal(waiting['operation_id'])
+        timeout=p.operation('execution-timeout',5)
+        timeout['execution_seconds']=1
+        p.run(timeout)
+        c=p.terminal(timeout['operation_id'])
         assert a['status']=='queue-timeout' and not p.event(expired['operation_id'],'start') and b['status']=='success' and c['status']=='timeout'
         return {'queued_timeout':a['status'],'wait_then_execute':b['status'],'execution_timeout':c['status']}
     if case == 'cancel':
-        first=p.operation('cancel-running',10,'linger');p.run(first);wait_for(lambda:p.event(first['operation_id'],'descendant_ready'))
-        second=p.operation('cancel-queued');p.run(second)
-        queued=p.cancel(second['operation_id']);running=p.cancel(first['operation_id'])
-        a=p.terminal(first['operation_id']);b=p.terminal(second['operation_id'])
+        first=p.operation('cancel-running',10,'linger')
+        p.run(first)
+        wait_for(lambda:p.event(first['operation_id'],'descendant_ready'))
+        second=p.operation('cancel-queued')
+        p.run(second)
+        queued=p.cancel(second['operation_id'])
+        running=p.cancel(first['operation_id'])
+        a=p.terminal(first['operation_id'])
+        b=p.terminal(second['operation_id'])
         assert a['status']==b['status']=='cancelled' and not a['capacity_held'] and not p.event(second['operation_id'],'start')
         return {'queued':b['status'],'running':a['status'],'capacity_held':a['capacity_held']}
     if case == 'worker-death':
-        spec=p.operation('worker-death',10,'linger');p.run(spec);wait_for(lambda:p.event(spec['operation_id'],'descendant_ready'))
-        state=p.status(spec['operation_id']);os.kill(state['worker']['pid'],signal.SIGKILL)
-        after=p.terminal(spec['operation_id']);again=p.run(spec)
-        next_job=p.operation('after-crash');p.run(next_job);next_result=p.terminal(next_job['operation_id'])
+        spec=p.operation('worker-death',10,'linger')
+        p.run(spec)
+        wait_for(lambda:p.event(spec['operation_id'],'descendant_ready'))
+        state=p.status(spec['operation_id'])
+        os.kill(state['worker']['pid'],signal.SIGKILL)
+        after=p.terminal(spec['operation_id'])
+        again=p.run(spec)
+        next_job=p.operation('after-crash')
+        p.run(next_job)
+        next_result=p.terminal(next_job['operation_id'])
         assert after['status']==again['status']=='interrupted' and next_result['status']=='success'
         assert sum(e['token']==spec['operation_id'] and e['event']=='start' for e in p.events())==1
         return {'interrupted':after['status'],'repeat_task_id':again['task_id'],'successor':next_result['status']}
     if case == 'server-death':
-        peer=p.peer();spec=p.operation('server-death',2);initial=p.call(peer,'run_command',**spec)
-        wait_for(lambda:p.event(spec['operation_id'],'start'));os.kill(peer.server_pid,signal.SIGKILL)
-        result=p.terminal(spec['operation_id']);fresh=p.peer();late=p.call(fresh,'command_status',operation_id=spec['operation_id'])
+        peer=p.peer()
+        spec=p.operation('server-death',2)
+        initial=p.call(peer,'run_command',**spec)
+        wait_for(lambda:p.event(spec['operation_id'],'start'))
+        os.kill(peer.server_pid,signal.SIGKILL)
+        result=p.terminal(spec['operation_id'])
+        fresh=p.peer()
+        late=p.call(fresh,'command_status',operation_id=spec['operation_id'])
         assert result['status']==late['status']=='success' and initial['task_id']==late['task_id']
         return {'status':result['status'],'late_task_id':late['task_id']}
     if case == 'drift-refusal':
-        selected=json.loads((p.root/'current.json').read_text());configuration=Path(selected['configuration'])
-        config=json.loads(configuration.read_text());version=configuration.parent
+        selected=json.loads((p.root/'current.json').read_text())
+        configuration=Path(selected['configuration'])
+        config=json.loads(configuration.read_text())
+        version=configuration.parent
         import importlib.util
         module_probe=subprocess.check_output([str(Path(config['runtime'])/'bin/python'),'-I','-c',"import importlib.util;print(importlib.util.find_spec('queue_core').origin)"],text=True).strip()
         checks=[('config',configuration,lambda b:b+b' '),
@@ -259,14 +318,16 @@ def check(p, case):
                 ('runtime',Path(module_probe),lambda b:b+b'\n# isolated drift fixture\n')]
         refused=[]
         for label,path,alter in checks:
-            original=path.read_bytes();spec=p.operation('drift-'+label)
+            original=path.read_bytes()
+            spec=p.operation('drift-'+label)
             try:
                 path.write_bytes(alter(original))
                 error=p.invoke(p.argv(spec),expected=2)
                 assert 'mismatch' in error.lower(),error
                 assert not p.event(spec['operation_id'],'start')
                 refused.append(label)
-            finally:path.write_bytes(original)
+            finally:
+                path.write_bytes(original)
         unexpected=version/'bundle/scripts/unlisted_source.py'
         spec=p.operation('drift-unlisted')
         try:
@@ -274,9 +335,11 @@ def check(p, case):
             error=p.invoke(p.argv(spec),expected=2)
             assert 'Bundle file set mismatch' in error
             refused.append('unlisted-source')
-        finally:unexpected.unlink()
+        finally:
+            unexpected.unlink()
         wait_for(p.root_unlocked)
-        database=p.root/'state/queue.db';saved=database.with_name('queue.proof-backup')
+        database=p.root/'state/queue.db'
+        saved=database.with_name('queue.proof-backup')
         assert not database.with_name('queue.db-wal').exists()
         spec=p.operation('drift-missing-state')
         database.rename(saved)
@@ -284,27 +347,43 @@ def check(p, case):
             error=p.invoke(p.argv(spec),expected=2)
             assert 'Shared admission database missing' in error and not database.exists()
             refused.append('missing-state')
-        finally:saved.rename(database)
-        valid=p.operation('after-drift');p.run(valid);assert p.terminal(valid['operation_id'])['status']=='success'
+        finally:
+            saved.rename(database)
+        valid=p.operation('after-drift')
+        p.run(valid)
+        assert p.terminal(valid['operation_id'])['status']=='success'
         return {'refused':refused,'restored_operation':'success'}
     if case == 'maintenance':
-        if p.archive is None:raise ValueError('maintenance proof requires --archive')
-        old=json.loads((p.root/'current.json').read_text());old_release=Path(old['configuration']).parent.name
-        stable=p.operation('maintenance-stable');p.run(stable);before=p.terminal(stable['operation_id'])
-        holder=p.operation('maintenance-holder',10);p.run(holder);wait_for(lambda:p.event(holder['operation_id'],'start'))
+        if p.archive is None:
+            raise ValueError('maintenance proof requires --archive')
+        old=json.loads((p.root/'current.json').read_text())
+        old_release=Path(old['configuration']).parent.name
+        stable=p.operation('maintenance-stable')
+        p.run(stable)
+        before=p.terminal(stable['operation_id'])
+        holder=p.operation('maintenance-holder',10)
+        p.run(holder)
+        wait_for(lambda:p.event(holder['operation_id'],'start'))
         error=p.invoke([p.cli,'activate','--root',str(p.root),'--release',old_release,'--json'],expected=2)
         assert 'Activation refused' in error
         blocked='blocked-'+p.prefix
         error=p.invoke([p.cli,'install','--root',str(p.root),'--release',blocked,'--archive',str(p.archive),'--json'],expected=2)
         assert 'Activation refused' in error and not (p.root/'versions'/blocked).exists()
-        p.cancel(holder['operation_id']);p.terminal(holder['operation_id']);wait_for(p.root_unlocked)
-        stale=p.peer();new_release='upgrade-'+p.prefix
+        p.cancel(holder['operation_id'])
+        p.terminal(holder['operation_id'])
+        wait_for(p.root_unlocked)
+        stale=p.peer()
+        new_release='upgrade-'+p.prefix
         upgraded=p.invoke([p.cli,'install','--root',str(p.root),'--release',new_release,'--archive',str(p.archive),'--json'])
         spec=p.operation('stale-consumer')
-        try:p.call(stale,'run_command',**spec)
-        except ValueError as error:assert 'Active release changed' in str(error)
-        else:raise AssertionError('Old MCP server accepted submission after activation')
-        same=p.run(stable);assert same['task_id']==before['task_id']
+        try:
+            p.call(stale,'run_command',**spec)
+        except ValueError as error:
+            assert 'Active release changed' in str(error)
+        else:
+            raise AssertionError('Old MCP server accepted submission after activation')
+        same=p.run(stable)
+        assert same['task_id']==before['task_id']
         wait_for(p.root_unlocked)
         rolled=p.invoke([p.cli,'activate','--root',str(p.root),'--release',old_release,'--json'])
         same_again=p.run(stable)
@@ -313,16 +392,19 @@ def check(p, case):
         return {'active_upgrade_refused':True,'active_rollback_refused':True,'upgraded':upgraded['release'],
                 'rolled_back':rolled['release'],'stable_task_id':before['task_id'],'stale_mcp_refused':True}
     if case == 'group-recovery':
-        first=p.operation('lingering-success',.1,'exit-linger');p.run(first)
+        first=p.operation('lingering-success',.1,'exit-linger')
+        p.run(first)
         wait_for(lambda:p.event(first['operation_id'],'descendant_ready'))
         held=p.terminal(first['operation_id'])
         wait_for(p.root_unlocked)
         release=Path(json.loads((p.root/'current.json').read_text())['configuration']).parent.name
         refusal=p.invoke([p.cli,'activate','--root',str(p.root),'--release',release,'--json'],expected=2)
         assert 'unresolved admission remains' in refusal
-        second=p.operation('behind-group');p.run(second)
+        second=p.operation('behind-group')
+        p.run(second)
         assert held['status']=='recovery-pending' and held['capacity_held'] and p.status(second['operation_id'])['status']=='queued'
-        leaf=p.event(first['operation_id'],'descendant_start');os.kill(leaf['pid'],signal.SIGKILL)
+        leaf=p.event(first['operation_id'],'descendant_start')
+        os.kill(leaf['pid'],signal.SIGKILL)
         recovered=wait_for(lambda:(v if (v:=p.status(first['operation_id']))['status']=='success' else None),10)
         successor=p.terminal(second['operation_id'])
         assert not recovered['capacity_held'] and successor['status']=='success'
@@ -340,16 +422,27 @@ def main():
     parser.add_argument('--worktree',type=Path,default=Path.cwd())
     parser.add_argument('--case',choices=CASES,action='append')
     parser.add_argument('--archive',type=Path,help='pinned archive for disposable upgrade proof')
-    args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=False)
-    pilot=Pilot(args.root,args.output,args.worktree);pilot.archive=args.archive.resolve() if args.archive else None;results=[]
+    args=parser.parse_args()
+    args.output.mkdir(parents=True,exist_ok=False)
+    pilot=Pilot(args.root,args.output,args.worktree)
+    pilot.archive=args.archive.resolve() if args.archive else None
+    results=[]
     try:
         for case in args.case or CASES:
-            try:details=check(pilot,case);verdict='passed'
-            except Exception as error:details={'error':repr(error),'traceback':__import__('traceback').format_exc()};verdict='failed'
-            value={'case':case,'verdict':verdict,'details':details};results.append(value);print(json.dumps(value),flush=True)
-    finally:pilot.close()
+            try:
+                details=check(pilot,case)
+                verdict='passed'
+            except Exception as error:
+                details={'error':repr(error),'traceback':__import__('traceback').format_exc()}
+                verdict='failed'
+            value={'case':case,'verdict':verdict,'details':details}
+            results.append(value)
+            print(json.dumps(value),flush=True)
+    finally:
+        pilot.close()
     (args.output/'verdicts.json').write_text(json.dumps(results,indent=2)+'\n')
     return int(any(r['verdict']!='passed' for r in results))
 
 
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':
+    sys.exit(main())

@@ -3,9 +3,10 @@
 The user selected **Foreground commands** for the pilot. Commands must wait for
 all their heavy work and keep it in the launched process group. Detached sessions,
 background build services and shared daemons are outside this contract. This is
-cooperative routing, not OS containment or raw-shell prevention. For example,
-use Gradle's `--no-daemon` mode or a project wrapper whose foreground lifetime is
-verified. Do not blindly kill a shared build daemon.
+cooperative routing, not OS containment or raw-shell prevention. Qualify the exact
+invocation's normal completion, cancellation and owner failure before routing it.
+A foreground option alone does not prove group ownership or closure. Do not
+blindly kill a shared build daemon.
 
 ## Create a task-owned Try install
 
@@ -22,7 +23,7 @@ python3 skills/mac-work/scripts/mac_work.py install \
 /absolute/private/mac-work-try/bin/mac-work cancel --id example-1 --json
 ```
 
-The parent keeps the final Try root and exact runnable command in the owner report.
+The installation owner records the selected root and exact runnable command.
 No live profiles or existing holds are changed by these examples. Installation
 requires `uv` and downloads only the pinned Python/dependency/source artifacts.
 `--archive PATH` reuses the verified upstream archive. `--help` owns remaining
@@ -101,8 +102,8 @@ activation; a stale MCP process refuses new operations under an old active confi
 The generated formats follow the official
 [Codex stdio configuration](https://developers.openai.com/codex/mcp/) and
 [Claude Code MCP configuration](https://code.claude.com/docs/en/mcp).
-They are mergeable templates, not live profile edits. The parent owns adoption of
-those templates and the existing hold inventory.
+They are mergeable templates, not live profile edits. The installation owner
+coordinates adoption with the owners of existing holds.
 
 ## Upgrade and rollback
 
@@ -125,8 +126,9 @@ A new submission during the build can prevent activation; the completed inactive
 version remains inspectable and can be activated later when idle. Interrupted or
 incomplete version directories are never reused. Install under a new release name
 to retry; arbitrary older schema migrations/bootstrap protocol changes are outside
-this first pilot. Host profile activation, project handoffs, devices, pressure
-policy and capacity increases remain parent-owned later tasks in the [plan](plan.md).
+this first pilot. The installation and device owners coordinate host profile
+activation, project handoffs, devices, pressure policy and capacity decisions
+through the [plan](plan.md).
 
 ## Prove it privately
 
