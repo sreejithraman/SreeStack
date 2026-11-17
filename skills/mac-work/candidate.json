@@ -8,10 +8,10 @@
     "commit": "48d16da41f57801bbf9462ed2df923713978b6ae"
   },
   "inputs": {
-    "patches/lifecycle.patch": "f6901d19597697dbecb6d7ed562e1470ddee8b2b50f07b239d5ba80269e08273",
+    "patches/lifecycle.patch": "3406624876650469f374d06bcd4076928056be0fb9498b6bcbad5121710d4dc6",
     "scripts/runtime.lock": "d74d538e2445710fd928ba1d3bb1626c7265245b03b08796a2ae9a81c01d85ec",
     "scripts/build.lock": "16a713850884792a40c549788da805f88f9730d8061d381ac41ccdfdbb521b0a",
-    "NOTICE.md": "8bb3587672f08ca4e8f6c768a3eb74eb0c5f74e0e154deb6bfc09fb02755a119",
+    "NOTICE.md": "560395bbdde09784be814de2dcf1ff866ec6fd835879924009d11f7061cd13ec",
     "licenses/agent-task-queue.txt": "bd54eb880333876cf6ae350fd0837b2d1641ad57b531b73033743601c5771d9a",
     "scripts/runtime_inventory.py": "bdde2d771751470b664737d86c632ad24612bc58a1fd0ac7c22010a51de16613"
   },
@@ -23,7 +23,7 @@
   },
   "repaired_modules": {
     "queue_core.py": "1600e47a3864ba1e41a8c97289b3200fa9213001db4f5d9bcb6d8d62e1d9c603",
-    "queue_lifecycle.py": "251d2ce250a9dd423c3347702da0bba7f17b91cf1080005681b05e89fcc7440c",
+    "queue_lifecycle.py": "293d555e0ef02cd1bea1648d4f2f9c7aa2e207f30964bd02bc233846fe25e7e5",
     "tq.py": "bf252ff2a7e2e2400f7f9d9e1a14bae1a8fc7e71189b016480606e4fad3a5ba2",
     "task_queue.py": "d0b7f14daa89a8ca1812beb2cba0c3ee63ba8c8b0ba2094f8a32d52868796cab",
     "pyproject.toml": "883b625f0607367639a53f6b981d35a97f182e51befee600b5f9d1a6eb1a58fd"

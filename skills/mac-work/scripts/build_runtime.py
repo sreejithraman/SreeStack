@@ -11,13 +11,15 @@ import os
 from pathlib import Path
 import re
 import shutil
+import runpy
+import types
 import subprocess
 import sys
 import tarfile
 import urllib.request
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import runtime_inventory
+runtime_inventory = types.SimpleNamespace(**runpy.run_path(
+    str(Path(__file__).with_name('runtime_inventory.py'))))
 
 BUNDLE = Path(__file__).resolve().parent.parent
 

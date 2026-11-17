@@ -1,5 +1,8 @@
 # Reproduce the lifecycle candidate
 
+This is a dependency/baseline qualification recipe. Use the
+[canonical foreground runner](runner.md) for the approved pilot.
+
 Use a new private directory and leave live admission/device state alone. These
 commands build a dependency experiment; they install nothing into host tools or
 the repository checker. Read the [ownership boundary](repair.md) first.

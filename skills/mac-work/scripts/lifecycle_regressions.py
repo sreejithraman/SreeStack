@@ -5,7 +5,6 @@ import importlib
 import json
 import os
 import shlex
-import subprocess
 from pathlib import Path
 import sqlite3
 import sys
@@ -123,6 +122,39 @@ def gate_environment(core, lifecycle, directory):
     return {'trusted_import_sentinel': False, 'requested_environment_preserved': True}
 
 
+def bootstrap_active_open(core, lifecycle, directory):
+    paths = core.QueuePaths.from_data_dir(directory)
+    core.init_db(paths, {'heavy': 1}, 'process-group')
+    with core.get_db(paths.db_path) as conn:
+        assert conn.execute('SELECT COUNT(*) FROM task_operations').fetchone()[0] == 0
+        lifecycle.configure(conn, {'heavy': 1}, 'process-group')
+    before = paths.db_path.read_bytes()
+    core.init_db(paths, {'heavy': 1}, 'process-group')
+    assert paths.db_path.read_bytes() == before, 'compatible idle initialization changed state'
+    return {'fresh_bootstrap_valid': True, 'compatible_idle_reopen': True}
+
+
+def damaged_wal_state(core, lifecycle, directory):
+    paths = core.QueuePaths.from_data_dir(directory)
+    core.init_db(paths, {'heavy': 1}, 'process-group')
+    writer = sqlite3.connect(paths.db_path)
+    try:
+        writer.execute('DROP TABLE task_operations')
+        writer.commit()
+        files = [paths.db_path, Path(str(paths.db_path) + '-wal')]
+        before = {str(path): path.read_bytes() for path in files}
+        refused = False
+        try:
+            core.ensure_db(paths)
+        except ValueError:
+            refused = True
+        assert refused, 'damaged WAL schema accepted'
+        assert all(path.read_bytes() == before[str(path)] for path in files), 'refusal checkpointed damaged WAL bytes'
+        return {'refused': True, 'database_and_wal_preserved': True}
+    finally:
+        writer.close()
+
+
 def registration_phase(core, lifecycle, directory):
     conn, task = fixture(core, lifecycle, directory)
     core.attempt_task_start(conn, task, 'heavy', {'heavy': 1}, os.getpid())
@@ -145,7 +177,7 @@ def registration_phase(core, lifecycle, directory):
     return {'second_launch_refused': True, 'duplicate_marker': False}
 
 
-CASES = {'registration-phase': registration_phase, 'gate-environment': gate_environment, 'active-state' : active_state, 'admission-clock' : admission_clock, 'registration-cancel': registration_cancel}
+CASES = {'registration-phase': registration_phase, 'damaged-wal-state': damaged_wal_state, 'bootstrap-active-open': bootstrap_active_open, 'gate-environment': gate_environment, 'active-state' : active_state, 'admission-clock' : admission_clock, 'registration-cancel': registration_cancel}
 
 
 def main():

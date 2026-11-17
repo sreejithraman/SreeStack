@@ -246,7 +246,7 @@
 +    return lifecycle.close_task(conn, task_id)
 --- /dev/null
 +++ b/queue_lifecycle.py
-@@ -0,0 +1,373 @@
+@@ -0,0 +1,433 @@
 +# SPDX-License-Identifier: Apache-2.0
 +# Copyright 2026 SreeStack contributors.
 +"""Local lifecycle repair; admission and FIFO remain in queue_core.
@@ -507,7 +507,7 @@
 +    return value
 +
 +
-+def close_task(conn, task_id, result=None, terminate=False, reason='closure_requested'):
++def close_task(conn, task_id, result=None, terminate=False, reason='closure_requested', never_started=False):
 +    """One durable closure route; an uncertain row always remains running."""
 +    if conn.in_transaction:
 +        conn.commit()
@@ -532,6 +532,8 @@
 +        metadata = json.loads(row['lifecycle_json'])
 +        target = metadata['result']
 +        closed = row['status'] == 'waiting'
++        if never_started and not metadata.get('child') and metadata.get('owner') == process_identity(os.getpid()):
++            closed = True
 +        if metadata.get('boot') and metadata['boot'] != boot_identity():
 +            closed = True
 +            metadata['reason'] = 'previous_boot_closed'
@@ -611,6 +613,64 @@
 +        except (OSError, RuntimeError):
 +            # Identity lookup failure cannot authorize signalling or capacity release.
 +            close_task(conn, row['id'], terminate=False, reason='identity_unavailable')
++
++
++def reserve_operation(conn, operation_id, request, configuration_sha256):
++    """Associate a stable caller ID with exactly one upstream task, atomically."""
++    from queue_core import insert_waiting_task, collect_task_origin
++    import shlex
++    encoded = json.dumps(request, sort_keys=True, separators=(',', ':'))
++    fingerprint = hashlib.sha256(encoded.encode()).hexdigest()
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        existing = conn.execute('SELECT * FROM task_operations WHERE operation_id=?', (operation_id,)).fetchone()
++        if existing:
++            if existing['request_sha256'] != fingerprint:
++                raise ValueError('Operation ID conflict: immutable inputs differ')
++            conn.commit()
++            return existing['task_id'], False
++        task = insert_waiting_task(conn, 'heavy', os.getpid(), str(uuid.uuid4()),
++            shlex.join(request['argv']), collect_task_origin(request['worktree'], request['owner']))
++        row = conn.execute('SELECT lifecycle_json FROM queue WHERE id=?', (task,)).fetchone()
++        meta = json.loads(row[0])
++        meta.update(execution_seconds=request['execution_seconds'], queue_seconds=request['queue_seconds'],
++                    queue_deadline=time.time() + request['queue_seconds'], revision=request['revision'],
++                    operation_id=operation_id, configuration_sha256=configuration_sha256)
++        conn.execute('UPDATE queue SET lifecycle_json=? WHERE id=?', (json.dumps(meta), task))
++        conn.execute('INSERT INTO task_operations VALUES (?,?,?,?,?,NULL)',
++                     (operation_id, encoded, fingerprint, task, configuration_sha256))
++        conn.commit()
++        return task, True
++    except Exception:
++        conn.rollback()
++        raise
++
++
++def claim_operation(conn, operation_id, configuration_sha256):
++    """A worker claims an accepted task once; a crash never makes it retryable."""
++    conn.execute('BEGIN IMMEDIATE')
++    try:
++        operation = conn.execute('SELECT * FROM task_operations WHERE operation_id=?', (operation_id,)).fetchone()
++        if operation is None or operation['worker_json'] is not None:
++            conn.commit()
++            return None
++        if operation['configuration_sha256'] != configuration_sha256:
++            raise ValueError('Operation configuration mismatch')
++        row = conn.execute('SELECT * FROM queue WHERE id=?', (operation['task_id'],)).fetchone()
++        if row is None or row['status'] != 'waiting':
++            conn.commit()
++            return None
++        owner = process_identity(os.getpid())
++        meta = json.loads(row['lifecycle_json'])
++        meta['owner'] = owner
++        conn.execute('UPDATE task_operations SET worker_json=? WHERE operation_id=?', (json.dumps(owner), operation_id))
++        conn.execute('UPDATE queue SET pid=?, server_id=?, lifecycle_json=? WHERE id=?',
++                     (os.getpid(), str(uuid.uuid4()), json.dumps(meta), row['id']))
++        conn.commit()
++        return dict(operation)
++    except Exception:
++        conn.rollback()
++        raise
 +
 +
 +if __name__ == '__main__':

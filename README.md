@@ -551,15 +551,18 @@ host setup below to activate those routes.
 
 ### Shared Mac commands
 
-[Mac Work](skills/mac-work/SKILL.md) qualifies shared heavy-command admission
-through independent lightweight CLI and MCP clients. The pinned
-[Block agent-task-queue](https://github.com/block/agent-task-queue) candidate
-has a [maintained lifecycle repair](skills/mac-work/references/lifecycle.md).
-It repairs ordinary group closure and retains unresolved permits. Arbitrary
-detached-descendant containment remains unproved, so no shared host route is activated.
-The [task plan](skills/mac-work/references/plan.md),
-[private setup](skills/mac-work/references/setup.md) and
-[repair proposal](skills/mac-work/references/repair.md) keep the remaining work explicit.
+[Mac Work](skills/mac-work/SKILL.md) routes foreground build/test commands through
+one pinned [Block agent-task-queue](https://github.com/block/agent-task-queue)
+root with capacity one. Its CLI and MCP facade share configuration, durable
+operation IDs, receipts and logs. Unknown group closure retains capacity.
+Detached/shared-daemon workloads are outside the user-approved pilot contract.
+
+Use the [private runner setup](skills/mac-work/references/runner.md) for an
+immutable Try install and generated Codex/Claude templates. The
+[task plan](skills/mac-work/references/plan.md) keeps device handoffs, pressure
+work, real workloads and rollout separate. Repository edits activate no host
+profiles and migrate no existing holds. [Original counterexamples](skills/mac-work/references/fitness.md)
+and the [maintained lifecycle seam](skills/mac-work/references/repair.md) remain inspectable.
 
 ### Shared simulators
 

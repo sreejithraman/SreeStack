@@ -1,7 +1,8 @@
 # Shared Mac coordination
 
 Finish line: **Try**, built, proved and shown locally. No review, PR, push,
-merge, host activation or migration of existing holds in this slice.
+merge, live/default host activation or migration of existing holds in this slice.
+Task-owned versioned Try installation/activation is authorized.
 Integration and release owner: parent session. Admission implementation owner:
 this slice. Branch ownership is serialized. Current main is the base.
 
@@ -12,7 +13,7 @@ providers and projects. Start with Block agent-task-queue and one heavy command
 at a time. Queue wait and execution deadlines are separate. Stable task handles
 and receipts retain owner, worktree, revision, command, deadlines and results;
 late reads never submit again. Cancellation, server death and restart must retain
-capacity until every owned descendant stops. A failed upstream fitness gate
+capacity until the foreground command’s owned active process group stops. A failed upstream fitness gate
 blocks activation; keep counterexamples and propose a bounded adapter or patch,
 not a replacement scheduler. Routing is cooperative, not raw-shell prevention.
 
@@ -23,6 +24,16 @@ Android=1; keep slim Android/iOS defaults and explicit full overrides. Diagnose
 pressure and show results in T3 before adding pressure enforcement. Increase
 capacity only after representative matched workload measurements. Installation,
 upgrade and rollback must preserve active work and existing coordination holds.
+
+## Authorized pilot boundary
+
+The user selected **Foreground commands (Recommended)** when asked whether the
+pilot should support foreground builds/tests or require containment of detached
+programs. Foreground/process-group ownership is authorized, not provisional.
+Commands must wait for all heavy work; background/shared daemons and escaping
+process groups/sessions are unsupported. The original detached counterexample
+remains known evidence outside this narrowed scope. Uncertain in-scope group
+closure still retains capacity. No force-clear or policy reinterpretation is allowed.
 
 ## Tasks
 
@@ -48,9 +59,9 @@ upgrade and rollback must preserve active work and existing coordination holds.
    repair; no reliable Mac detached-lineage seam. Default quarantine is safe
    blocking, not automatic availability. Serialized branch ownership in this slice.
    Blocked by: 1.
-   Status: local experimental patch/build recipe implemented. Universal safety
-   and usable automatic completion remain incompatible without a narrower
-   enforceable contract or containment seam; see [repair boundary](repair.md).
+   Status: lifecycle repairs accepted by parent. User authorized the foreground
+   boundary; see [ownership seam](repair.md). Runner adds atomic operation binding
+   inside the same upstream state/receipt seam.
    Finish line: Try; no host activation, upstream publication or handoffs.
 
 1b. **Settle and expose usable canonical admission**
@@ -58,12 +69,13 @@ upgrade and rollback must preserve active work and existing coordination holds.
    host config/runtime/state, stable operation IDs and complete receipts.
    Proof: real mixed clients share root capacity 1; deadline/cancel/restart and
    supported workload cases pass without unsafe release or permanent quarantine.
-   Inputs: parent acceptance of an enforceable workload/containment boundary;
-   pinned repair; owner/worktree/revision/config/receipt contracts; parent owns
-   integration. An unrestricted launcher is not justified by group-only tests.
-   Blocked by: 1a and the unresolved operational-boundary decision.
-   Status: blocked; no production launcher or settled host config contract.
-   Finish line: Try; stop before activation/review/PR/merge.
+   Inputs: user-approved foreground boundary; accepted lifecycle repair; parent
+   owns integration and real-workload adoption. No detached containment claim.
+   Blocked by: 1a (accepted and delivered).
+   Status: canonical CLI/MCP runner and fixed config/receipt contract implemented
+   in mac-work/runner; verification and exact runnable Try root are in the owner
+   report. See [public runner contract](runner.md).
+   Finish line: Try; stop before live/default activation, review, PR and merge.
 
 2. **Integrate build and device handoffs**
    Outcome: project runners and agent skills use the fixed admission contract,
@@ -74,7 +86,7 @@ upgrade and rollback must preserve active work and existing coordination holds.
    existing lifecycle rules and holds; global4/iOS4/Android1; slim/full choices.
    T3 device_open has no established admission hook; a supported bounded session
    or native seam needs a settled design. Device-open coverage remains pending.
-   Blocked by: 1b (including accepted ownership boundary).
+   Blocked by: task 1b proof/acceptance; native T3 handoff seam still needs design.
    Finish line: Try; no live hold migration or host activation.
 
 3. **Expose pressure and command results in T3**
@@ -104,6 +116,8 @@ upgrade and rollback must preserve active work and existing coordination holds.
    refusal; fresh process sees the same authoritative configuration.
    Inputs: task 1b accepted runtime contract; parent integration owner; no live activation.
    Blocked by: 1b.
+   Status: task-private immutable install/activation/rollback baseline is included
+   in runner. Managed host adoption and future schema migration remain here.
    Finish line: Try, documented and locally proved only.
 
 6. **Pilot and migrate cooperative callers**
@@ -136,7 +150,7 @@ upgrade and rollback must preserve active work and existing coordination holds.
 
 ## Dependency and shared-resource cut
 
-Proposed stack: admission → lifecycle → handoffs → diagnostics. Only create a later layer
+Current/planned stack: admission → lifecycle → runner → handoffs → diagnostics. Only create a later layer
 when its predecessor delivers its contract. Task 5 can prepare against fixed
 operational contracts only after task 1b alongside task 2 with disjoint files; parent integrates it.
 Task 4 and task 7 serialize actual Mac workloads. Task 6 serializes each hold's
@@ -173,5 +187,14 @@ This is native foundation proof, not queue admission or a performance claim.
 Proof: `/Users/sree/.local/share/simlock-builds/android-slim-392e0ac5/hardware-proof-20261117/verdict.md`
 and `hardware.log` alongside it. Parent reports the live worker restored,
 connected and undrained, with zero leases/queue. Task 4 under admission remains
-blocked by the canonical operational boundary and handoff integration. This
+blocked by handoff integration and parent-owned real workload proof. This
 slice has not driven devices or independently rerun that owner's hardware proof.
+
+## Restack and ownership record
+
+Parent restacked accepted admission/lifecycle onto main `b209c1ff1cd9ea9925b925f8a312a6dd90d0db79`.
+Admission is `01c18f235f77669c6151c4f12b68713a8ab21a83`; lifecycle is
+`01e8dcca192e8cd233d65d14dc56597e3da5165d` (bytes equal accepted pre-rebase
+`63025ed`). Parent preserved 25 ignored files and recorded the verified restoration
+in `verify-proof/restack-20261117/receipt.json`. This owner adds only runner above
+lifecycle. No live holds, provider profiles, devices or global capacity change.
