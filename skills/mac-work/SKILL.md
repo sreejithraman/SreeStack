@@ -38,9 +38,10 @@ an already-qualified foreground project runner may use `run --handoff BUILD_ID`.
 SimLock retains device lifecycle and T3's exact bound driver retains UI ownership.
 Automatic T3 boot admission is pending; the command queue does not cover it.
 Use [job/pressure reports](references/diagnostics.md) to inspect wait/execution,
-results and recovery holds from T3. Job reads reconcile like status and may stop
-verified expired/orphaned work. Pressure sampling never changes admission policy.
-Missing/stale signals are not a normal-pressure verdict.
+results, recovery holds and the installed admission mode from T3. Job reads
+reconcile like status and may stop verified expired/orphaned work. Report samples
+are observation-only. To opt into two slots under low memory pressure, use the
+[installation flag](references/runner.md#create-a-task-owned-try-install).
 Installation and device owners coordinate workload proof, adoption and release
 through the [spec/tasks](references/plan.md). Device limits and slim/full choices stay unchanged.
 

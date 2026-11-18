@@ -48,7 +48,7 @@ lifecycle operation; a crashed owner's unknown spawn window still quarantines.
 | Later status observes group closure | Resolve the original intended result; no replay. |
 | Real boot identity changes | Prior work cannot survive; reconcile without signalling reused PIDs. |
 
-Canonical policy is `heavy=1`, `process-group`. Persisted policy mismatch refuses
+The durable SQLite policy is `heavy=1`, `process-group`. Persisted policy mismatch refuses
 submission/activation. An existing uncontained queue is never silently converted;
 its unresolved permits remain outside this pilot's migration scope. Bulk clear
 is disabled and no approval/force shortcut frees capacity.

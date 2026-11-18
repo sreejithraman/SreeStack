@@ -15,6 +15,11 @@ CLI = Path(__file__).with_name('mac_work.py')
 
 
 class RunnerCLI(unittest.TestCase):
+    def test_adaptive_capacity_is_an_install_option(self):
+        result = subprocess.run([sys.executable, str(CLI), 'install', '--help'],
+                                capture_output=True, text=True, check=True)
+        self.assertIn('--adaptive-capacity', result.stdout)
+
     def test_missing_configuration_refuses_instead_of_running_directly(self):
         with tempfile.TemporaryDirectory() as directory:
             marker = Path(directory) / 'executed'

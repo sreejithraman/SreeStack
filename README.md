@@ -553,8 +553,9 @@ host setup below to activate those routes.
 
 [Mac Work](skills/mac-work/SKILL.md) routes foreground build/test commands through
 one pinned [Block agent-task-queue](https://github.com/block/agent-task-queue)
-root with capacity one. Its CLI and MCP facade share configuration, durable
-operation IDs, receipts and logs. [Build-first handoffs](skills/mac-work/references/handoffs.md)
+root with one heavy slot by default. Install with `--adaptive-capacity` to allow
+a second slot under low memory pressure. Its CLI and MCP facade share
+configuration, durable operation IDs, receipts and logs. [Build-first handoffs](skills/mac-work/references/handoffs.md)
 seal exact artifacts before device acquisition. [Job/pressure reports](skills/mac-work/references/diagnostics.md)
 show wait, execution, results and observation-only signals. Unknown group closure retains capacity.
 Detached/shared-daemon workloads are outside the user-approved pilot contract.

@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 import threading
+from unittest.mock import patch
 
 
 def installed(root):
@@ -152,7 +153,7 @@ def fault_worker(root, output, name, operation):
 
         replace(lifecycle, 'launch', fail_before_registration)
     elif name == 'sqlite-nonbusy':
-        def missing_table(conn, *args):
+        def missing_table(conn, *args, **kwargs):
             conn.execute('SELECT * FROM deliberately_missing_table')
 
         replace(core, 'attempt_task_start', missing_table)
@@ -160,7 +161,7 @@ def fault_worker(root, output, name, operation):
         original = core.attempt_task_start
         attempted = False
 
-        def contend(conn, *args):
+        def contend(conn, *args, **kwargs):
             nonlocal attempted
             if not attempted:
                 attempted = True
@@ -179,7 +180,7 @@ def fault_worker(root, output, name, operation):
                 assert ready.wait(5)
                 events.append({'held_write_transaction_seconds': .4})
             try:
-                return original(conn, *args)
+                return original(conn, *args, **kwargs)
             except sqlite3.OperationalError:
                 if name == 'sqlite-cancel':
                     for thread in timers:
@@ -272,6 +273,108 @@ def worker_case(root, output, name):
             'raw_worker': str(output / 'worker.json')}
 
 
+def adaptive_admission(root, output, case):
+    config, _ = installed(root)
+    import queue_core as core
+    import queue_lifecycle as lifecycle
+    import runner
+    assert config.get('adaptive_capacity'), 'fixture requires a disposable adaptive install'
+    operations = {}
+    observations = []
+    original_attempt = core.attempt_task_start
+    original_probe = subprocess.check_output
+    original_admitted = lifecycle.admitted
+    signals = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)}
+
+    def reserve(label):
+        operation = f'{case}-{output.parent.name}-{label}'
+        spec = runner.request(operation, 'admission-regression', ['/usr/bin/true'], str(Path.cwd()), 30, 30)
+        with runner.database(config) as conn:
+            task, created = lifecycle.reserve_operation(conn, operation, spec, config['_sha256'])
+        assert created
+        operations[task] = operation
+        return task
+
+    def attempt(task, sample, expire=False):
+        elapsed = 10.0
+        tentative = None
+
+        def probe(argv, **kwargs):
+            if argv == ['/usr/sbin/sysctl', '-n',
+                        'kern.memorystatus_vm_pressure_level', 'kern.memorystatus_level']:
+                return sample
+            return original_probe(argv, **kwargs)
+
+        def admitted(conn, task_id):
+            nonlocal elapsed, tentative
+            original_admitted(conn, task_id)
+            if expire:
+                tentative = lifecycle.read_task(conn, task_id)
+                elapsed += .25
+
+        def observe(conn, task_id, *args, **kwargs):
+            assert task_id == task
+            before = dict(conn.execute('SELECT * FROM queue WHERE id=?', (task,)).fetchone())
+            result = original_attempt(conn, task_id, *args, **kwargs)
+            with runner.database(config) as reader:
+                after = dict(reader.execute('SELECT * FROM queue WHERE id=?', (task,)).fetchone())
+                persisted = runner.snapshot(reader, config, operations[task], reconcile=False)
+            observations.append({'operation': operations[task], 'sample': sample.decode(), 'admitted': result[0],
+                                 'before': before, 'after': after, 'tentative': tentative, 'persisted': persisted})
+            # Stop this fixture worker before launch so the test measures one admission attempt.
+            raise InterruptedError('fixture observed admission')
+
+        with patch.object(runner, 'time', wraps=time) as clock, \
+             patch.object(subprocess, 'check_output', probe), \
+             patch.object(lifecycle, 'admitted', admitted), \
+             patch.object(core, 'attempt_task_start', observe):
+            clock.monotonic.side_effect = lambda: elapsed
+            clock.clock_gettime.side_effect = lambda clock_id: elapsed
+            runner.worker(config, operations[task])
+        assert observations and observations[-1]['operation'] == operations[task], 'worker never reached admission'
+        return observations[-1]
+
+    def assert_waiting(value):
+        persisted = value['persisted']
+        assert not value['admitted'] and persisted['status'] == 'queued', (
+            f"{persisted['operation_id']} committed an unexpected admission")
+        assert persisted['started_at'] is None and persisted['deadlines']['execution'] is None, persisted
+        assert value['after'] == value['before'], 'aborted admission changed the persisted queue row'
+
+    try:
+        older, newer = reserve('older'), reserve('newer')
+        normal, warning = b'1\n80\n', b'2\n80\n'
+        if case == 'adaptive-fifo':
+            newer_first = attempt(newer, normal)
+            older_warning = attempt(older, warning)
+            assert_waiting(newer_first)
+            assert older_warning['admitted'], older_warning
+            raw_older, raw_newer = reserve('raw-older'), reserve('raw-newer')
+            with runner.database(config) as conn:
+                assert original_attempt(conn, raw_newer, 'heavy', {'heavy': 2}, os.getpid())[0]
+                assert lifecycle.read_task(conn, raw_older)['status'] == 'queued'
+        else:
+            with runner.database(config) as conn:
+                assert original_attempt(conn, older, 'heavy', {'heavy': 1}, os.getpid())[0]
+            expired_second = attempt(newer, normal, expire=True)
+            assert expired_second['tentative']['lifecycle']['admitted_at']
+            assert_waiting(expired_second)
+            with runner.database(config) as conn:
+                lifecycle.close_task(conn, older, never_started=True)
+            expired_first = attempt(reserve('first'), normal, expire=True)
+            assert expired_first['admitted'] and expired_first['persisted']['started_at'], expired_first
+    finally:
+        (output / 'attempts.json').write_text(json.dumps(observations, indent=2) + '\n')
+        for sig, handler in signals.items():
+            signal.signal(sig, handler)
+        with runner.database(config) as conn:
+            for task in operations:
+                lifecycle.close_task(conn, task, never_started=True)
+    if case == 'adaptive-fifo':
+        return {'newer_with_normal_waited': True, 'older_with_warning_admitted': True, 'raw_order_unchanged': True}
+    return {'expired_second_rolled_back': True, 'expired_first_admitted': True}
+
+
 def active_state_replay(root, output):
     config, python = installed(root)
     cli = Path(config['_path']).parent / 'bundle/scripts/mac_work.py'
@@ -320,6 +423,8 @@ def active_state_replay(root, output):
 
 
 CASES = {'python-environment': python_environment, 'active-state-replay': active_state_replay,
+         'adaptive-fifo': lambda root, output: adaptive_admission(root, output, 'adaptive-fifo'),
+         'adaptive-expiry': lambda root, output: adaptive_admission(root, output, 'adaptive-expiry'),
          'sqlite-contention': lambda root, output: worker_case(root, output, 'sqlite-contention'),
          'launch-before-registration': lambda root, output: worker_case(root, output, 'launch-before-registration'),
          'finalizer-signals': lambda root, output: worker_case(root, output, 'finalizer-signals'),

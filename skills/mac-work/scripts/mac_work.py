@@ -1,4 +1,4 @@
-"""Run qualified foreground build/test commands through one shared heavy=1 queue.
+"""Run qualified foreground build/test commands through one shared heavy queue.
 
 Install creates a private versioned root; it does not edit provider profiles.
 Qualify the exact invocation; foreground appearance alone is insufficient.
@@ -50,7 +50,7 @@ def serve(config):
         """Submit once by stable ID. Commands must keep all heavy work foreground.
 
         Same ID/input returns its original task/result; changed input conflicts.
-        Read status rather than resubmitting. No queue/capacity overrides exist.
+        Read status rather than resubmitting. The installed release controls admission.
         """
         return await asyncio.to_thread(runner.submit, config, operation_id, owner, argv,
                                        worktree, queue_seconds, execution_seconds, handoff_id)
@@ -77,7 +77,7 @@ def serve(config):
     async def work_report(limit: int = 20, operation_ids: list[str] | None = None,
                           sample: bool = False, simlock: str | None = None,
                           lease_ids: list[str] | None = None):
-        """Read/reconcile jobs and optionally sample pressure.
+        """Read/reconcile jobs, show configured admission and optionally sample pressure.
 
         Like status, job reads may terminate verified expired/orphaned work under
         existing closure rules. Pressure sampling never changes admission policy.
@@ -99,6 +99,8 @@ def main():
     install.add_argument('--root', type=Path, default=configuration.DEFAULT_ROOT)
     install.add_argument('--release', required=True)
     install.add_argument('--archive', type=Path)
+    install.add_argument('--adaptive-capacity', action='store_true',
+                         help='allow up to two heavy jobs under low memory pressure (default: one)')
     install.add_argument('--json', action='store_true')
     activate = commands.add_parser('activate', help='upgrade/rollback to an existing verified release if idle')
     activate.add_argument('--root', type=Path, default=configuration.DEFAULT_ROOT)
@@ -119,7 +121,7 @@ def main():
     handoff.add_argument('--artifact', action='append', required=True,
                          help='absolute file/directory; repeat for each artifact (10000 entries / 2 GiB / 30s total)')
     handoff.add_argument('--json', action='store_true')
-    report = commands.add_parser('report', help='read/reconcile jobs like status; optional pressure sampling never changes admission policy',
+    report = commands.add_parser('report', help='read/reconcile jobs like status and show configured admission',
                                  description='Job reads may terminate verified expired/orphaned work under existing closure rules. Pressure sampling is observation-only.')
     report.add_argument('--limit', type=int, default=20, help='1..100; active/recovery holds first, then queued/recent')
     report.add_argument('--id', action='append', default=[], help='exact existing operation; repeat up to 20')
@@ -142,7 +144,7 @@ def main():
     worker.add_argument('--id', required=True)
     args = parser.parse_args()
     if args.command == 'install':
-        emit(configuration.install(args.root, args.release, args.archive), args.json)
+        emit(configuration.install(args.root, args.release, args.archive, adaptive_capacity=args.adaptive_capacity), args.json)
         return 0
     if args.command == 'activate':
         emit(configuration.activate(args.root.resolve(), args.release), args.json)

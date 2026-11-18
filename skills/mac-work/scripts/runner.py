@@ -13,7 +13,45 @@ import subprocess
 import sys
 import time
 
-from runner_config import POLICY, activation_lock, validate_config, write_json, require_active
+from runner_config import ADAPTIVE_CAPACITY, POLICY, activation_lock, validate_config, write_json, require_active
+
+ADMISSION_SAMPLE_SECONDS = .1
+
+
+def _admission_sample_expiry(config):
+    if not config.get('adaptive_capacity'):
+        return None
+    # CLOCK_MONOTONIC_RAW on macOS advances during sleep.
+    expires_at = time.clock_gettime(time.CLOCK_MONOTONIC_RAW) + ADMISSION_SAMPLE_SECONDS
+    try:
+        sample = subprocess.check_output([
+            '/usr/sbin/sysctl', '-n', 'kern.memorystatus_vm_pressure_level', 'kern.memorystatus_level',
+        ], stderr=subprocess.DEVNULL, timeout=ADMISSION_SAMPLE_SECONDS, env={})
+    except InterruptedError:
+        raise
+    except (OSError, subprocess.SubprocessError):
+        return None
+    normal = re.fullmatch(rb'1\n([0-9]{1,3})\n', sample)
+    if normal and 40 <= int(normal[1]) <= 100:
+        return expires_at
+    return None
+
+
+def _attempt_admission(conn, task, config):
+    from queue_core import attempt_task_start
+
+    capacities = POLICY['capacities']
+    commit_guard = None
+    expires_at = _admission_sample_expiry(config)
+    if expires_at is not None:
+        capacities = {'heavy': ADAPTIVE_CAPACITY}
+
+        def commit_guard(running):
+            return (running <= POLICY['capacities']['heavy']
+                    or time.clock_gettime(time.CLOCK_MONOTONIC_RAW) < expires_at)
+
+    return attempt_task_start(conn, task, 'heavy', capacities, os.getpid(),
+                              oldest_first=True, commit_guard=commit_guard)
 
 
 def request(operation_id, owner, argv, worktree, queue_seconds, execution_seconds):
@@ -162,7 +200,6 @@ def wait(config, operation_id, seconds):
 def worker(config, operation_id):
     with activation_lock(Path(config['root'])):
         require_active(config)
-        from queue_core import attempt_task_start
         import queue_lifecycle as lifecycle
         with database(config) as conn:
             operation = lifecycle.claim_operation(conn, operation_id, config['_sha256'])
@@ -196,7 +233,7 @@ def worker(config, operation_id):
                         result = {'status': 'queue-timeout', 'duration_seconds': 0}
                         break
                     try:
-                        admitted, _ = attempt_task_start(conn, task, 'heavy', {'heavy': 1}, os.getpid())
+                        admitted, _ = _attempt_admission(conn, task, config)
                     except sqlite3.OperationalError as error:
                         code = getattr(error, 'sqlite_errorcode', 0) & 255
                         if code not in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}:

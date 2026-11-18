@@ -3,8 +3,25 @@
 import sys
 import time
 import unittest
+from unittest.mock import patch
 
-from diagnostics import decode_vm, decode_swap, sample_age, read_probe, decode_events
+from diagnostics import decode_vm, decode_swap, sample_age, read_probe, decode_events, report, readable
+
+
+class AdmissionReport(unittest.TestCase):
+    def test_admission_mode_is_visible_without_pressure_sampling(self):
+        policy = {'capacities': {'heavy': 1}, 'ownership_contract': 'process-group', 'schema': 1}
+        config = {'root': '/private/mac-work', '_sha256': 'test', 'policy': policy}
+        with patch('diagnostics.reconcile_and_read_jobs', return_value=([], 0)):
+            fixed = report(config)
+            adaptive = report({**config, 'adaptive_capacity': True})
+        self.assertEqual(fixed['admission'], {'mode': 'fixed', 'max_heavy': 1})
+        self.assertEqual(adaptive['admission'], {'mode': 'adaptive', 'max_heavy': 2})
+        self.assertEqual(adaptive['policy'], policy)
+        self.assertEqual(adaptive['pressure'], {'status': 'not-requested'})
+        self.assertTrue(adaptive['observation_only'])
+        self.assertIn('heavy=adaptive (max 2)', readable(adaptive))
+        self.assertIn('Pressure samples are observation-only.', readable(adaptive))
 
 
 class Telemetry(unittest.TestCase):

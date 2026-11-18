@@ -18,6 +18,7 @@ import runtime_inventory
 BUNDLE = Path(__file__).resolve().parent.parent
 DEFAULT_ROOT = Path.home() / 'Library/Application Support/mac-work'
 POLICY = {'capacities': {'heavy': 1}, 'ownership_contract': 'process-group', 'schema': 1}
+ADAPTIVE_CAPACITY = 2
 
 
 def digest(path):
@@ -60,6 +61,8 @@ def validate_config(path, expected_sha=None):
         raise ValueError('Invalid configuration schema/path')
     if value['policy'] != POLICY or Path(value['state']) != root / 'state':
         raise ValueError('Canonical policy/state mismatch; heavy=1 and process-group are fixed')
+    if type(value.get('adaptive_capacity', False)) is not bool:
+        raise ValueError('Adaptive capacity flag must be a boolean')
     if Path(value['runtime']) != version / 'build/runtime':
         raise ValueError('Runtime path mismatch')
     manifest = version / 'bundle-manifest.json'
@@ -69,7 +72,7 @@ def validate_config(path, expected_sha=None):
     bundle = version / 'bundle'
     runtime_inventory.verify_bundle(bundle, expected_files)
     from build_runtime import verify_runtime
-    verify_runtime(Path(value['runtime']), value['build_receipt_sha256'])
+    verify_runtime(Path(value['runtime']), value['build_receipt_sha256'], bundle=bundle)
     if digest(Path(value['runtime']) / 'bin/python') != value['python_sha256']:
         raise ValueError('Runtime interpreter hash mismatch')
     value['_path'] = str(path)
@@ -154,7 +157,7 @@ init_db(paths,{'heavy':1},'process-group')
     return {'release': release, 'config': str(root / 'current.json'), 'command': str(root / 'bin/mac-work')}
 
 
-def install(root, release, archive=None):
+def install(root, release, archive=None, *, adaptive_capacity=False):
     root = root.resolve()
     version = release_directory(root, release)
     with activation_lock(root, True):
@@ -174,5 +177,7 @@ def install(root, release, archive=None):
               'launcher_sha256': digest(bundle / 'scripts/runner_bootstrap.py'),
               'python_sha256': digest(version / 'build/runtime/bin/python'),
               'build_receipt_sha256': digest(version / 'build/build-receipt.json')}
+    if adaptive_capacity:
+        config['adaptive_capacity'] = True
     write_json(version / 'config.json', config)
     return activate(root, release)

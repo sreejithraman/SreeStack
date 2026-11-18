@@ -28,12 +28,12 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def inputs(archive=None, patch=None):
-    candidate = json.loads((BUNDLE / 'candidate.json').read_text())
+def inputs(archive=None, patch=None, *, bundle=BUNDLE):
+    candidate = json.loads((bundle / 'candidate.json').read_text())
     if candidate['schema'] != 1:
         raise ValueError('Unsupported candidate schema')
     for name, expected in candidate['inputs'].items():
-        actual = patch if name == 'patches/lifecycle.patch' and patch is not None else BUNDLE / name
+        actual = patch if name == 'patches/lifecycle.patch' and patch is not None else bundle / name
         if digest(actual) != expected:
             raise ValueError(f'Input hash mismatch: {name}')
     if archive is not None and digest(archive) != candidate['source']['sha256']:
@@ -41,10 +41,10 @@ def inputs(archive=None, patch=None):
     return candidate
 
 
-def verify_runtime(runtime, expected_receipt_sha256=None):
-    candidate = inputs()
+def verify_runtime(runtime, expected_receipt_sha256=None, *, bundle=BUNDLE):
+    candidate = inputs(bundle=bundle)
     record = runtime_inventory.verify(runtime.parent, expected_receipt_sha256)
-    if record['candidate_sha256'] != digest(BUNDLE / 'candidate.json'):
+    if record['candidate_sha256'] != digest(bundle / 'candidate.json'):
         raise ValueError('Runtime candidate/configuration hash mismatch')
     observed = dict(record['observed'])
     observed.update(candidate_sha256=record['candidate_sha256'], wheel_sha256=record['wheel_sha256'],
