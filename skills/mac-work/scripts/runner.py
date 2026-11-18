@@ -1,5 +1,6 @@
 """Canonical operation handling over the upstream SQLite task/receipt seam."""
 
+from collections.abc import Mapping
 from contextlib import contextmanager
 import hashlib
 import json
@@ -13,7 +14,44 @@ import subprocess
 import sys
 import time
 
-from runner_config import POLICY, activation_lock, validate_config, write_json, require_active
+from runner_config import ADAPTIVE_CAPACITY, POLICY, activation_lock, validate_config, write_json, require_active
+
+ADMISSION_SAMPLE_SECONDS = .1
+
+
+class _FreshCapacity(Mapping):
+    def __init__(self, expires_at):
+        self.expires_at = expires_at
+
+    def __getitem__(self, queue):
+        baseline = POLICY['capacities'][queue]
+        return ADAPTIVE_CAPACITY if time.monotonic() < self.expires_at else baseline
+
+    def __iter__(self):
+        return iter(POLICY['capacities'])
+
+    def __len__(self):
+        return len(POLICY['capacities'])
+
+
+def _admission_capacities(config):
+    baseline = POLICY['capacities']
+    if not config.get('adaptive_capacity'):
+        return baseline
+    expires_at = time.monotonic() + ADMISSION_SAMPLE_SECONDS
+    try:
+        sample = subprocess.check_output([
+            '/usr/sbin/sysctl', '-n', 'kern.memorystatus_vm_pressure_level', 'kern.memorystatus_level',
+        ], stderr=subprocess.DEVNULL, timeout=ADMISSION_SAMPLE_SECONDS, env={})
+    except InterruptedError:
+        raise
+    except (OSError, subprocess.SubprocessError):
+        return baseline
+    normal = re.fullmatch(rb'1\n([0-9]{1,3})\n', sample)
+    if normal and 40 <= int(normal[1]) <= 100:
+        # Block reads this after acquiring the SQLite admission lock.
+        return _FreshCapacity(expires_at)
+    return baseline
 
 
 def request(operation_id, owner, argv, worktree, queue_seconds, execution_seconds):
@@ -196,7 +234,7 @@ def worker(config, operation_id):
                         result = {'status': 'queue-timeout', 'duration_seconds': 0}
                         break
                     try:
-                        admitted, _ = attempt_task_start(conn, task, 'heavy', {'heavy': 1}, os.getpid())
+                        admitted, _ = attempt_task_start(conn, task, 'heavy', _admission_capacities(config), os.getpid())
                     except sqlite3.OperationalError as error:
                         code = getattr(error, 'sqlite_errorcode', 0) & 255
                         if code not in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}:

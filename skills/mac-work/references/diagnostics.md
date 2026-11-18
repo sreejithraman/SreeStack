@@ -11,7 +11,8 @@ MAC_WORK_ROOT/bin/mac-work report --sample-file /absolute/new-proof/report.json
 
 Help owns flags and bounds. Reports prioritize running/recovery holds, then
 queued and recent operations. Select exact IDs for old results. JSON/readable
-output retains task/operation, owner, worktree/revision, queue wait, execution,
+output shows the configured admission mode and maximum, and retains
+task/operation, owner, worktree/revision, queue wait, execution,
 program exit, closure state, held capacity and receipt/log paths. Handoff digest
 and producer identity remain in the dependent request. Logs/argv are not embedded
 in the summary; their linked files remain verbatim, not automatic secret redaction.
@@ -23,10 +24,9 @@ worker-reported receipt duration; repaired workers include preflight in it. Old
 receipts retain their original timestamps/durations rather than inventing an
 admission clock. Pending times end at observation. Job reads perform normal status
 reconciliation, which may terminate verified expired/orphaned work and resolve
-permits under existing closure rules. Pressure sampling never changes admission
-policy or submits/cancels work. The JSON `observation_only` flag describes pressure
-policy, not a pure database read. There is no force-clear operation; use the
-existing status/cancel commands for exact operation actions.
+permits under existing closure rules. The JSON `observation_only` flag applies to
+report pressure samples. Adaptive workers take their own fresh admission samples.
+Use status or cancel to act on an exact operation.
 
 Live `--sample` is a one-shot observation: timestamped kernel pressure, free-memory
 percentage, swap, compressor physical/logical bytes and observed job-group RSS.
@@ -34,7 +34,7 @@ Native probes have two-second timeouts and 1 MiB output limits. Up to 100 jobs
 (20 by default), 20 exact IDs and 100 displayed members per group are allowed;
 large group sums include all sampled members and label truncation. Database
 queries have a five-second progress budget in addition to existing bounded
-lifecycle checks. No polling service, dashboard or pressure policy is installed.
+lifecycle checks.
 
 `ps` RSS uses 1024-byte units, converted to bytes. Summing RSS double-counts shared
 pages and is not physical footprint or causal attribution. The report records

@@ -1670,12 +1670,13 @@ atomic admission clocks, cancellation-serialized gated birth/group/boot identiti
 isolated trusted Python startup with preserved command environments,
 one durable closure/quarantine path, atomic operation/task associations and worker
 claims in the existing database, bounded SQLite contention retry, protected final
-closure, fixed shared policy, separate queue/execution
+closure, fixed durable policy, separate queue/execution
 limits, and exact source/patch/runtime/config verification. The user authorized
 the foreground process-group pilot; detached/shared-daemon workloads are outside
 scope. Canonical CLI/MCP, receipt-gated artifact handoffs and immutable task-owned
 install/activation/rollback and bounded receipt/OS/explicit non-starting SimLock
-event reports are local code. Job reads use status reconciliation; pressure
-sampling remains observation-only. No live host activation or hold migration occurs in this slice.
+event reports are local code. Job reads use status reconciliation. Adaptive
+admission is a release opt-in using fresh kernel pressure and availability samples
+with the existing SQLite policy. Report samples remain observation-only.
 Digests live in `skills/mac-work/candidate.json`; license and modifications are in
 `skills/mac-work/NOTICE.md`. Invocation remains model-discoverable.

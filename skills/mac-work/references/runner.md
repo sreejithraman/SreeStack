@@ -33,8 +33,9 @@ extra roots are for disposable tests, not independent project admission pools.
 
 The root contains `current.json`, immutable named `versions/`, a root-bound
 `bin/mac-work`, and shared `state/queue.db`. The active pointer binds an immutable
-config by digest. Config fixes root `heavy=1` and `ownership_contract=process-group`.
-It binds the runtime interpreter, candidate source/patch/dependency pins, and
+config by digest. The durable SQLite baseline is `heavy=1` with
+`ownership_contract=process-group`.
+The config also binds the runtime interpreter, candidate source/patch/dependency pins, and
 bundled runner code. CLI/MCP clients cannot select another queue or cap. Runtime,
 source, patch, code, config or policy drift refuses execution; there is no direct
 shell fallback. A missing database in an active root refuses requests/activation;
@@ -43,6 +44,19 @@ Version directories are never overwritten by the installer. Trusted launcher,
 controller, worker and gate Python imports are isolated from caller overrides;
 requested commands retain their environment. Active opens validate existing schema
 and policy before mutation; empty/truncated state is not fresh bootstrap.
+
+Install with `--adaptive-capacity` to allow a second heavy job. Omit the flag for
+fixed one-slot admission. Adaptive workers take one short sample of both kernel
+signals per admission attempt. Two slots require pressure level
+`kern.memorystatus_vm_pressure_level=1` and a memory availability estimate
+`kern.memorystatus_level` of 40–100. The estimate can include reclaimable pages.
+[Apple XNU](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/vm/vm_pageout.c#L4396-L4401)
+
+During warning or critical pressure, admission uses one slot. Unavailable,
+malformed or expired samples also allow one slot. When the cap falls, running
+jobs keep their slots until normal closure. This setting lives
+in the release config. Upgrade and rollback keep the same SQLite policy and
+operation history. Use `report` to see the active mode and configured maximum.
 
 ## Verified runtime boundary
 
@@ -132,7 +146,7 @@ provider override can pick a root queue or capacity. The stdio tools are:
 
 For artifact sealing and dependent command inputs, use
 [build/artifact handoffs](handoffs.md).
-For job reconciliation and observation-only pressure sampling, use
+For job reconciliation, the admission mode and observation-only pressure sampling, use
 [job/pressure reports](diagnostics.md).
 
 The response schema and operation semantics match the CLI. The facade does not own
@@ -148,8 +162,8 @@ coordinates adoption with the owners of existing holds.
 ## Upgrade and rollback
 
 ```sh
-/absolute/private/mac-work-try/bin/mac-work install \
-  --root /absolute/private/mac-work-try --release try-2 --json
+python3 -I -B skills/mac-work/scripts/mac_work.py install \
+  --root /absolute/private/mac-work-try --release try-2 --adaptive-capacity --json
 /absolute/private/mac-work-try/bin/mac-work activate \
   --root /absolute/private/mac-work-try --release try-1 --json
 ```

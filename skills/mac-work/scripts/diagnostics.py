@@ -249,8 +249,11 @@ def report(config, limit=20, operation_ids=None, sample=False, simlock=None, lea
     if sample and sample_file or simlock and not sample or len(lease_ids)>20:
         raise ValueError('Choose live sample or saved sample; SimLock requires live sampling; at most 20 known lease IDs')
     rows,total=reconcile_and_read_jobs(config,limit,operation_ids)
+    adaptive = config.get('adaptive_capacity', False)
+    admission = {'mode': 'adaptive' if adaptive else 'fixed',
+                 'max_heavy': runner_config.ADAPTIVE_CAPACITY if adaptive else config['policy']['capacities']['heavy']}
     value={'schema':1,'reported_at':time.time(),'root':config['root'],'configuration_sha256':config['_sha256'],
-           'policy':config['policy'],'total_operations':total,'truncated':not operation_ids and total>len(rows),
+           'policy':config['policy'],'admission':admission,'total_operations':total,'truncated':not operation_ids and total>len(rows),
            'jobs':rows,'pressure':{'status':'not-requested'},'observation_only':True}
     if sample or sample_file:
         observed=pressure(rows,simlock,lease_ids) if sample else historical(sample_file)
@@ -261,7 +264,9 @@ def report(config, limit=20, operation_ids=None, sample=False, simlock=None, lea
 
 
 def readable(value):
-    lines=[f"Mac Work: {len(value['jobs'])}/{value['total_operations']} operations; heavy=1; pressure observation only; jobs reconciled; at={value['reported_at']}"]
+    admission = value['admission']
+    lines=[f"Mac Work: {len(value['jobs'])}/{value['total_operations']} operations; heavy={admission['mode']} "
+           f"(max {admission['max_heavy']}); jobs reconciled; at={value['reported_at']}"]
     for job in value['jobs']:
         execution='not started' if job['execution_seconds'] is None else str(job['execution_seconds'])+'s'
         lines += [f"{job['operation_id']}: {job['status']} owner={job['owner']} task={job['task_id']}",
