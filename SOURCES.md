@@ -639,6 +639,8 @@ a coordinator, promotion to Coordinator for several outcomes, adoption without a
 second writer, and an outcome-based owner report with early partial reports. In a top-level thread, a
 subagent writes the change under Orchestration, and a child writes it itself.
 Native goal tracking stays optional and explicitly requested.
+On shared Macs with Mac Work configured, qualified heavy builds and tests use
+the shared installation.
 
 ## swarm
 

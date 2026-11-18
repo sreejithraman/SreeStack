@@ -112,6 +112,10 @@ and agent instructions, and
 design choices. Check small units as they become usable, and strengthen checks
 as you discover risks; a complete harness is not a prerequisite for useful work.
 
+On a shared Mac with Mac Work configured, route qualified heavy build and test
+commands through the shared installation. Follow
+[Mac Work](../mac-work/SKILL.md) for eligibility, receipts, and recovery.
+
 Use [Orchestration](../orchestration/SKILL.md) for model choice, delegation, and
 accepting helper results, within your caller's delegation allowance. Keep
 cohesive work with one writer. Use [Swarm](../swarm/SKILL.md) for bounded
