@@ -49,13 +49,16 @@ Install with `--adaptive-capacity` to allow a second heavy job. Omit the flag fo
 fixed one-slot admission. Adaptive workers take one short sample of both kernel
 signals per admission attempt. Two slots require pressure level
 `kern.memorystatus_vm_pressure_level=1` and a memory availability estimate
-`kern.memorystatus_level` of 40–100. The estimate can include reclaimable pages.
-[Apple XNU](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/vm/vm_pageout.c#L4396-L4401)
+`kern.memorystatus_level` of 40–100. [Apple XNU calculation](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/vm/vm_pageout.c#L4733-L4738)
 
 During warning or critical pressure, admission uses one slot. Unavailable,
-malformed or expired samples also allow one slot. When the cap falls, running
-jobs keep their slots until normal closure. This setting lives
-in the release config. Upgrade and rollback keep the same SQLite policy and
+malformed or expired samples also allow one slot. The oldest waiter goes first.
+A second slot requires a sample younger than 100 ms at the admission commit
+check. The elapsed clock includes system sleep.
+[Apple clock documentation](https://developer.apple.com/documentation/kernel/1646199-mach_continuous_time)
+
+When the cap falls, running jobs keep their slots until normal closure. The
+setting lives in the release config. Upgrade and rollback keep the same SQLite policy and
 operation history. Use `report` to see the active mode and configured maximum.
 
 ## Verified runtime boundary
@@ -190,15 +193,16 @@ decisions through the [plan](plan.md).
 ## Prove it privately
 
 `runner_fitness.py --root ROOT --output NEW_PROOF_DIR` drives independent CLI/MCP
-clients and harmless marker processes. Run it from the source worktree. It never
-accepts a live state directory separately from the explicit installed root.
+clients and harmless marker processes. Run it from the source worktree with a
+disposable fixed-capacity root. The harness uses that root for all queue state.
 `--case` selects a diagnostic case, not a full qualification. Keep the raw events,
 verdicts, transcripts, build/config hashes and committed artifact identity.
 `runner_regressions.py --root ROOT --output NEW_PROOF_DIR --case CASE` adds
 boundary faults in isolated worker processes using the installed bundle. It never
 edits runtime files. Keep its raw worker snapshots as well as verdicts. The
 `active-state-replay` case creates separate disposable installs and retains their
-damaged database bytes.
+damaged database bytes. Use a disposable adaptive root for `adaptive-fifo` and
+`adaptive-expiry`. Use a disposable fixed root for the other cases.
 
 The [original counterexample](fitness.md) for arbitrary escapes remains known
 unsupported behavior; it is not silently counted as a passing foreground test.

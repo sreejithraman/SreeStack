@@ -82,6 +82,7 @@ MCP work_report(limit, operation_ids, sample, simlock, lease_ids) uses the same
 installed config/database and bounded samplers. `diagnostics_fitness.py --root ROOT
 --output NEW_DIR [--simlock /absolute/simlock]` proves real CLI/MCP attribution,
 queue/execution separation, live RSS, stale/missing signals and recovery holds
-with lightweight fixtures. Workload, installation and device owners coordinate
+with lightweight fixtures. Run it against a disposable fixed-capacity root.
+Workload, installation and device owners coordinate
 representative measurements, T3 evidence and capacity decisions; observation
 alone does not justify an increase.

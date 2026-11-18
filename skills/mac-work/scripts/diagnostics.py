@@ -265,8 +265,9 @@ def report(config, limit=20, operation_ids=None, sample=False, simlock=None, lea
 
 def readable(value):
     admission = value['admission']
-    lines=[f"Mac Work: {len(value['jobs'])}/{value['total_operations']} operations; heavy={admission['mode']} "
-           f"(max {admission['max_heavy']}); jobs reconciled; at={value['reported_at']}"]
+    lines=[f"Mac Work: {len(value['jobs'])}/{value['total_operations']} operations. "
+           f"heavy={admission['mode']} (max {admission['max_heavy']}). "
+           f"Pressure samples are observation-only. Jobs reconciled at {value['reported_at']}."]
     for job in value['jobs']:
         execution='not started' if job['execution_seconds'] is None else str(job['execution_seconds'])+'s'
         lines += [f"{job['operation_id']}: {job['status']} owner={job['owner']} task={job['task_id']}",

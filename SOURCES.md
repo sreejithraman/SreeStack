@@ -1677,6 +1677,8 @@ scope. Canonical CLI/MCP, receipt-gated artifact handoffs and immutable task-own
 install/activation/rollback and bounded receipt/OS/explicit non-starting SimLock
 event reports are local code. Job reads use status reconciliation. Adaptive
 admission is a release opt-in using fresh kernel pressure and availability samples
-with the existing SQLite policy. Report samples remain observation-only.
+with the existing SQLite policy. Mac Work opts into head-of-queue admission and
+checks freshness before committing an extra slot. Report samples remain
+observation-only.
 Digests live in `skills/mac-work/candidate.json`; license and modifications are in
 `skills/mac-work/NOTICE.md`. Invocation remains model-discoverable.

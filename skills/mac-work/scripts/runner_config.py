@@ -72,7 +72,7 @@ def validate_config(path, expected_sha=None):
     bundle = version / 'bundle'
     runtime_inventory.verify_bundle(bundle, expected_files)
     from build_runtime import verify_runtime
-    verify_runtime(Path(value['runtime']), value['build_receipt_sha256'])
+    verify_runtime(Path(value['runtime']), value['build_receipt_sha256'], bundle=bundle)
     if digest(Path(value['runtime']) / 'bin/python') != value['python_sha256']:
         raise ValueError('Runtime interpreter hash mismatch')
     value['_path'] = str(path)

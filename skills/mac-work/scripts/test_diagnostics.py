@@ -21,6 +21,7 @@ class AdmissionReport(unittest.TestCase):
         self.assertEqual(adaptive['pressure'], {'status': 'not-requested'})
         self.assertTrue(adaptive['observation_only'])
         self.assertIn('heavy=adaptive (max 2)', readable(adaptive))
+        self.assertIn('Pressure samples are observation-only.', readable(adaptive))
 
 
 class Telemetry(unittest.TestCase):
