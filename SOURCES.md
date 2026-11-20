@@ -483,9 +483,10 @@ for compatibility; `HEAD` is authoritative) and, when publishing via Codex
 Sites, a separate sibling `site/` git checkout so `.git` repos never nest.
 `scripts/record.py` owns event writes with its own clock, validation, commit,
 and render: `init` (defaults to the container's `record/program.json`, rejects
-paths inside existing project repos or worktrees, and configures
-`.git/info/exclude`), `programs` (inventories program containers with
-deterministic prune-readiness facts), `grant`, `work` (add, update, scrap, and atomic
+paths inside existing project repos, bare repos, `.git` metadata, or worktrees,
+and configures `.git/info/exclude`), `programs` (inventories program containers
+with deterministic prune-readiness facts including clean `record/` and sibling
+`site/` checkouts, unexpected container files, and cleared automation), `grant`, `work` (add, update, scrap, and atomic
 dead-base scrap/rebase with `--decision`), `start`, `report` (ingesting
 structured owner `followups` into `discoveries` as open items that keep
 `status` runnable until routed), `discovery` (add or route discoveries), `answer`
@@ -499,7 +500,7 @@ work only for requested `pr-draft` or `pr-review`), cross-repo stack edges, PRs 
 rows with blockers, dead bases without halting decisions, and missing or unhashed pictures. Claude coordinators publish private Claude artifacts (linking
 with `#no_universal_links`); Codex coordinators publish private buildless
 ChatGPT Sites via `sites:sites` and `scripts/prepare_sites.py` (defaults to
-sibling `../site/dist`, refuses outputs inside `record/.git`, and inlines
+sibling `../site/dist`, refuses outputs inside the `record/` git repo, and inlines
 20-second visible live refresh with `chief-version.json`, verified by Chrome
 tests); other providers delegate static publishing to a one-shot Codex/Claude
 helper or run local-only with Inbox in chat. Both thread moves and same-thread

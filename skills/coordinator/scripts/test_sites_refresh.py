@@ -430,6 +430,16 @@ class PreparationTests(unittest.TestCase):
             self.assertIn("must be outside the program record git repo", nested.stderr)
             self.assertFalse((record_dir / "site").exists())
 
+            external_page = Path(folder) / "external.html"
+            external_page.write_text(rendered.read_text(encoding="utf-8"), encoding="utf-8")
+            nested_external = subprocess.run(
+                [sys.executable, str(PREPARE), "--page", str(external_page), "--output", str(record_dir / "site" / "dist")],
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(nested_external.returncode, 0)
+            self.assertIn("must be outside the program record git repo", nested_external.stderr)
+            self.assertFalse((record_dir / "site").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

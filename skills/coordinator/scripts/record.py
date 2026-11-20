@@ -27,7 +27,7 @@ from render_dashboard import (ACTIVE, DECISION_KEYS, DISCOVERY_IMPACTS, FINISH_L
                               PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
                               check_pictures, committed, content_name, dead_base, effective_finish, fields, git,
                               hexed, known_keys, layout, now, observation, open_blocks, page_files,
-                              pending_landing, place, quoted, records, revision, stage_page, unsatisfied, validate)
+                              pending_landing, place, quoted, recorded_threads, records, revision, stage_page, unsatisfied, validate)
 
 
 VERDICTS = ("pass", "fail", "blocked", "untested")
@@ -1432,27 +1432,40 @@ def program_slug(value):
     return slug
 
 
-def default_state_path(title, slug=None, root=None, at=None):
+def default_state_path(title, slug=None, root=None):
     """Default program.json path: <programs root>/<YYYY-MM-DD>-<slug>/record/program.json."""
-    raw = program_slug(slug or title)
-    if not re.match(r"^\d{4}-\d{2}-\d{2}-", raw):
-        day = (at or now())[:10]
-        raw = f"{day}-{raw}"
-    return programs_root(root) / raw / "record" / "program.json"
+    day = now()[:10]
+    return programs_root(root) / f"{day}-{program_slug(slug or title)}" / "record" / "program.json"
 
 
-def enclosing_git_root(folder):
-    """Return the toplevel of any git repository strictly enclosing folder, or None."""
-    ancestor = folder.absolute().parent
-    while not ancestor.exists() and ancestor != ancestor.parent:
-        ancestor = ancestor.parent
-    if not ancestor.exists():
+def git_dir_for(folder):
+    """Return the resolved git directory containing folder (worktree, bare repo, or .git metadata), or None."""
+    probe = folder.expanduser().resolve()
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not probe.exists():
         return None
-    probe = subprocess.run(
-        ["git", "-C", str(ancestor), "rev-parse", "--show-toplevel"],
+    if probe.is_file():
+        probe = probe.parent
+    result = subprocess.run(
+        ["git", "-C", str(probe), "rev-parse", "--absolute-git-dir"],
         capture_output=True, text=True,
     )
-    return Path(probe.stdout.strip()) if probe.returncode == 0 and probe.stdout.strip() else None
+    return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
+
+
+def git_toplevel(folder):
+    """Return the resolved toplevel of the git worktree containing folder, or None."""
+    result = subprocess.run(
+        ["git", "-C", str(folder), "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
+
+
+def automation_cleared(value):
+    """True when a grant automation field is unset or explicitly recorded as None (...)."""
+    return not value or bool(re.match(r"^none(?:\b|$)", value.strip(), re.I))
 
 
 def write_git_excludes(state_file):
@@ -1516,17 +1529,23 @@ class Record:
         """Initialize a new git-backed program record; a failure leaves no state file or staged entry."""
         if self.file.exists():
             raise Refused(f"{self.file} already exists")
-        enclosing = enclosing_git_root(self.file.parent)
+        target = self.file.parent.resolve()
+        enclosing = git_dir_for(target.parent)
         if enclosing is not None:
             raise Refused(
                 f"{self.file.parent} is inside git repository {enclosing}; keep program records outside "
                 f"project repos and worktrees so cleanup cannot wipe them (omit --state to use {programs_root()})"
             )
-        git_entry = self.file.parent / ".git"
+        git_entry = target / ".git"
         if git_entry.is_file():
             raise Refused(
                 f"{self.file.parent} is a linked git worktree; keep program records outside project repos "
                 f"and worktrees (omit --state to use {programs_root()})"
+            )
+        if not git_entry.exists() and target.exists() and (existing_git := git_dir_for(target)) is not None:
+            raise Refused(
+                f"{self.file.parent} is inside git repository {existing_git}; keep program records outside "
+                f"project repos and worktrees so cleanup cannot wipe them (omit --state to use {programs_root()})"
             )
         validate(state)
         if git_entry.exists():
@@ -1538,26 +1557,39 @@ class Record:
                     f"{self.file.parent} is an existing git repository with tracked files; keep program "
                     f"records in their own folder (omit --state to use {programs_root()})"
                 )
-            in_head = subprocess.run(["git", "-C", str(self.file.parent), "cat-file", "-e", f"HEAD:{self.file.name}"],
-                                     capture_output=True)
-            if in_head.returncode == 0:
-                raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")
+            head_probe = subprocess.run(["git", "-C", str(target), "rev-parse", "--verify", "-q", "HEAD"],
+                                        capture_output=True)
+            if head_probe.returncode == 0:
+                head_files = [line for line in self.git("ls-tree", "--name-only", "HEAD").splitlines() if line]
+                if self.file.name in head_files:
+                    raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")
+                if head_files:
+                    raise Refused(
+                        f"{self.file.parent} is an existing git repository with committed files; keep program "
+                        f"records in their own folder (omit --state to use {programs_root()})"
+                    )
         self.file.parent.mkdir(parents=True, exist_ok=True)
         (self.file.parent / "reports").mkdir(exist_ok=True)
         if not git_entry.exists():
             self.git("init", "-q")
         write_git_excludes(self.file)
+        created_file = False
         staged = False
         try:
-            self.file.write_text(layout(state))
+            with self.file.open("x", encoding="utf-8") as handle:
+                handle.write(layout(state))
+            created_file = True
             self.git("add", "--", self.file.name)
             staged = True
             self.git("commit", "-q", "-m", message, "--", self.file.name)
+        except FileExistsError:
+            raise Refused(f"{self.file} already exists") from None
         except (Refused, ValueError, OSError):
             if staged:
                 with contextlib.suppress(ValueError):
                     self.git("rm", "-q", "-f", "--cached", "--ignore-unmatch", "--", self.file.name)
-            self.file.unlink(missing_ok=True)
+            if created_file:
+                self.file.unlink(missing_ok=True)
             raise
         print(f"state: {self.file}")
         print(f"committed: {message}")
@@ -1621,17 +1653,16 @@ class PictureArgument(argparse.Action):
 
 
 def arguments():
-    shared = argparse.ArgumentParser(add_help=False)
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--page", type=Path, help="The last published page; default command-center.html beside the state")
+    common.add_argument("--next", help="Also set the program's next action")
+    shared = argparse.ArgumentParser(add_help=False, parents=[common])
     shared.add_argument("--state", required=True, type=Path, help="The program.json file")
-    shared.add_argument("--page", type=Path, help="The last published page; default command-center.html beside the state")
-    shared.add_argument("--next", help="Also set the program's next action")
-    init_shared = argparse.ArgumentParser(add_help=False)
+    init_shared = argparse.ArgumentParser(add_help=False, parents=[common])
     init_shared.add_argument(
         "--state", type=Path,
         help="Override path to program.json; defaults to ${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/record/program.json",
     )
-    init_shared.add_argument("--page", type=Path, help="The last published page; default command-center.html beside the state")
-    init_shared.add_argument("--next", help="Also set the program's next action")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -1944,23 +1975,45 @@ def list_programs(root, as_json=False):
     candidates = []
     if root.is_dir():
         for entry in sorted(root.iterdir()):
-            if not entry.is_dir():
+            if not entry.is_dir() or entry.is_symlink():
                 continue
-            nested = entry / "record" / "program.json"
-            flat = entry / "program.json"
-            if nested.is_file():
-                candidates.append((entry, nested))
-            elif flat.is_file():
-                candidates.append((entry, flat))
+            nested_dir = entry / "record"
+            if nested_dir.is_dir() and not nested_dir.is_symlink() and (
+                (nested_dir / ".git").exists() or (nested_dir / "program.json").exists()
+            ):
+                candidates.append((entry, nested_dir, True))
+            elif (entry / ".git").exists() or (entry / "program.json").exists():
+                candidates.append((entry, entry, False))
     at = now()
     items = []
-    for container, state_file in candidates:
-        record = Record(state_file)
+    for container, record_dir, is_nested in candidates:
+        state_file = record_dir / "program.json"
         try:
+            if (record_dir / ".git").is_file() or git_toplevel(record_dir) != record_dir.resolve():
+                raise ValueError(f"{record_dir} is not a standalone git repository")
             state = validate(committed(state_file))
-            dirty = bool(record.dirty())
-            updated = record.git("log", "-1", "--format=%cI").strip()
-            assessment = assess(state, at, {})
+            record_dirty = bool(git(state_file, "status", "--porcelain").strip())
+            site_dir = container / "site"
+            has_site = is_nested and (site_dir.exists() or site_dir.is_symlink())
+            site_dirty = False
+            if has_site:
+                if site_dir.is_symlink() or not site_dir.is_dir():
+                    site_dirty = True
+                elif (site_dir / ".git").is_dir() and git_toplevel(site_dir) == site_dir.resolve():
+                    site_status = subprocess.run(
+                        ["git", "-C", str(site_dir), "status", "--porcelain"],
+                        capture_output=True, text=True, check=True,
+                    )
+                    site_dirty = bool(site_status.stdout.strip())
+                else:
+                    site_dirty = any(site_dir.iterdir())
+            extra_entries = (
+                sorted(p.name for p in container.iterdir() if p.name not in {"record", "site"})
+                if is_nested else []
+            )
+            dirty = record_dirty or site_dirty or bool(extra_entries)
+            updated = git(state_file, "log", "-1", "--format=%cI").strip()
+            assessment = assess(state, at, recorded_threads(state))
             all_terminal = bool(state["work"]) and all(row["state"] in TERMINAL for row in state["work"])
             pending_landings = sum(1 for row in state.get("landings", []) if row["state"] in PENDING_LANDINGS)
             open_decisions = sum(1 for row in state["decisions"] if row["status"] == "open")
@@ -1968,11 +2021,14 @@ def list_programs(root, as_json=False):
                 1 for row in state.get("discoveries", [])
                 if row.get("status") == "open" or row.get("reply") == "pending"
             )
-            ready_to_prune = (
-                all_terminal and not dirty and assessment["verdict"] == "done"
-                and pending_landings == 0 and open_decisions == 0 and open_discoveries == 0
-            )
             grant = state.get("grant", {})
+            heartbeat_val = grant.get("heartbeat")
+            wake_val = grant.get("wake")
+            automation_ok = automation_cleared(heartbeat_val) and automation_cleared(wake_val)
+            ready_to_prune = (
+                bool(state["work"]) and assessment["verdict"] == "done" and not dirty
+                and pending_landings == 0 and open_discoveries == 0 and automation_ok
+            )
             items.append({
                 "program": str(container),
                 "state": str(state_file),
@@ -1981,16 +2037,20 @@ def list_programs(root, as_json=False):
                 "workCount": len(state["work"]),
                 "allTerminal": all_terminal,
                 "dirty": dirty,
+                "recordDirty": record_dirty,
+                "siteDirty": site_dirty,
+                "extraEntries": extra_entries,
                 "pendingLandings": pending_landings,
                 "openDecisions": open_decisions,
                 "openDiscoveries": open_discoveries,
-                "hasSite": (container / "site").is_dir(),
+                "hasSite": has_site,
                 "updatedAt": updated,
-                "heartbeat": grant.get("heartbeat"),
-                "wake": grant.get("wake"),
+                "heartbeat": heartbeat_val,
+                "wake": wake_val,
+                "automationCleared": automation_ok,
                 "readyToPrune": ready_to_prune,
             })
-        except (OSError, ValueError) as error:
+        except (OSError, ValueError, subprocess.CalledProcessError) as error:
             items.append({
                 "program": str(container),
                 "state": str(state_file),
@@ -2008,8 +2068,12 @@ def list_programs(root, as_json=False):
             print(f"{item['program']} | invalid: {item['error']} | prune=keep")
             continue
         extras = []
-        if item["dirty"]:
+        if item["recordDirty"]:
             extras.append("dirty")
+        if item["siteDirty"]:
+            extras.append("site-dirty")
+        if item["extraEntries"]:
+            extras.append(f"extra={','.join(item['extraEntries'])}")
         if item["hasSite"]:
             extras.append("site")
         if item["heartbeat"]:
@@ -2031,7 +2095,7 @@ def main():
         if args.command == "programs":
             return list_programs(args.root, args.json)
         if args.command == "init":
-            if args.state and (args.slug or args.root):
+            if args.state is not None and (args.slug is not None or args.root is not None):
                 raise Refused("--slug and --root apply only when --state is omitted")
             state_path = args.state or default_state_path(args.title, args.slug, args.root)
             record = Record(state_path, args.page)

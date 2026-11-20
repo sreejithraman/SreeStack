@@ -37,22 +37,45 @@ def default_output(page_file: Path) -> Path:
     raise ValueError("--output is required unless --page is inside a program's record/ folder")
 
 
-def record_git_root(page_file: Path) -> Path | None:
-    folder = page_file.expanduser().resolve().parent
-    probe = subprocess.run(
-        ["git", "-C", str(folder), "rev-parse", "--show-toplevel"],
+def git_root(path: Path) -> Path | None:
+    probe = path.expanduser().resolve()
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not probe.exists():
+        return None
+    if probe.is_file():
+        probe = probe.parent
+    result = subprocess.run(
+        ["git", "-C", str(probe), "rev-parse", "--show-toplevel"],
         capture_output=True, text=True,
     )
-    return Path(probe.stdout.strip()).resolve() if probe.returncode == 0 and probe.stdout.strip() else None
+    return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
+
+
+def is_record_repo(repo_root: Path) -> bool:
+    if (repo_root / "program.json").exists():
+        return True
+    head = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-e", "HEAD:program.json"],
+        capture_output=True,
+    )
+    return head.returncode == 0
 
 
 def prepare(page_file: Path, output: Path | None = None) -> str:
     page_file = page_file.expanduser()
     output = default_output(page_file) if output is None else output.expanduser()
-    repo_root = record_git_root(page_file)
-    if repo_root is not None and output.resolve().is_relative_to(repo_root):
+    output_resolved = output.resolve()
+    page_repo = git_root(page_file)
+    if page_repo is not None and output_resolved.is_relative_to(page_repo):
         raise ValueError(
-            f"--output ({output}) must be outside the program record git repo ({repo_root}) "
+            f"--output ({output}) must be outside the program record git repo ({page_repo}) "
+            "so Codex Sites does not nest .git inside it; use a sibling site/dist directory"
+        )
+    out_repo = git_root(output)
+    if out_repo is not None and is_record_repo(out_repo):
+        raise ValueError(
+            f"--output ({output}) must be outside the program record git repo ({out_repo}) "
             "so Codex Sites does not nest .git inside it; use a sibling site/dist directory"
         )
     page = page_file.read_text(encoding="utf-8")

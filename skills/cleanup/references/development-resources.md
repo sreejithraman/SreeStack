@@ -49,10 +49,10 @@ continue independent cleanup.
   shutdown and deletion. Use platform tooling scoped to the exact Simulator ID
   or Android AVD; a running Android serial alone does not identify the saved AVD
   to delete. Preserve physical devices, shared runtimes, and SDKs.
-- **Xcode DerivedData:** when removing a worktree on macOS, also remove its Xcode
+- **Xcode DerivedData (macOS/Xcode):** when removing a worktree on macOS, also remove its Xcode
   DerivedData folders in `~/Library/Developer/Xcode/DerivedData` (or the configured
   DerivedData location) whose `info.plist` has a `WorkspacePath` starting with the
-  removed worktree's absolute path plus `/`. During housekeeping, also remove each
+  removed worktree's absolute path plus `/`. During macOS/Xcode housekeeping, also remove each
   DerivedData folder whose `WorkspacePath` no longer exists on disk (it is a
   regenerable cache regardless of who removed the worktree). Leave every other
   DerivedData folder untouched, including folders without that key.

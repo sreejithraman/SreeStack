@@ -1859,11 +1859,10 @@ class LifecycleMutationTests(RecordCase):
         with tempfile.TemporaryDirectory() as sandbox:
             root = Path(sandbox)
             xdg = root / "xdg-state"
-            env = {**GIT_ENV, "XDG_STATE_HOME": str(xdg),
-                   "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3")}
+            env = {**GIT_ENV, "XDG_STATE_HOME": str(xdg)}
             created = subprocess.run([
                 sys.executable, str(SCRIPT), "init",
-                "--title", "Payments v2!", "--goal", "Ship retries",
+                "--title", "2025-02-07 Payments v2!", "--goal", "Ship retries",
                 "--chief", SESSION.format("chief"), "--request", "Ship retries cleanly",
             ], capture_output=True, text=True, env=env)
             self.assertEqual(created.returncode, 0, created.stderr)
@@ -1871,7 +1870,9 @@ class LifecycleMutationTests(RecordCase):
             state_file = Path(state_line.removeprefix("state: ").strip())
             self.assertEqual(state_file.name, "program.json")
             self.assertEqual(state_file.parent.name, "record")
-            self.assertTrue(state_file.parent.parent.name.endswith("-payments-v2"))
+            container_name = state_file.parent.parent.name
+            self.assertTrue(container_name.endswith("-2025-02-07-payments-v2"), container_name)
+            self.assertNotEqual(container_name[:10], "2025-02-07")
             self.assertEqual(state_file.parent.parent.parent, xdg / "coordinator" / "programs")
             (state_file.parent / "reports" / "W1.md").write_text("report\n")
             (state_file.parent / "command-center.html").write_text("page\n")
@@ -1879,7 +1880,8 @@ class LifecycleMutationTests(RecordCase):
                                     capture_output=True, text=True, check=True, env=env).stdout.strip()
             self.assertEqual(status, "")
 
-            # Reject program folders inside an existing project repo, its root, or a linked worktree.
+            # Reject program folders inside an existing project repo, its root, a linked worktree,
+            # a symlink pointing into a project repo, a bare repo, .git metadata, or a repo with staged deletions.
             project = root / "project"
             project.mkdir()
             subprocess.run(["git", "-C", str(project), "init", "-q"], check=True, env=env)
@@ -1889,11 +1891,27 @@ class LifecycleMutationTests(RecordCase):
             worktree = root / "project-wt"
             subprocess.run(["git", "-C", str(project), "worktree", "add", "-q", "-b", "wt", str(worktree)],
                            check=True, env=env)
+            (project / "subdir").mkdir()
+            alias = root / "outside-alias"
+            alias.symlink_to(project / "subdir")
+            bare = root / "bare.git"
+            subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True, env=env)
+            staged_del = root / "staged-all-del"
+            staged_del.mkdir()
+            subprocess.run(["git", "-C", str(staged_del), "init", "-q"], check=True, env=env)
+            (staged_del / "README.md").write_text("hi\n")
+            subprocess.run(["git", "-C", str(staged_del), "add", "README.md"], check=True, env=env)
+            subprocess.run(["git", "-C", str(staged_del), "commit", "-q", "-m", "init"], check=True, env=env)
+            subprocess.run(["git", "-C", str(staged_del), "rm", "-q", "README.md"], check=True, env=env)
             for bad, snippet in (
                 (project / "nested" / "program.json", "inside git repository"),
                 (project / "program.json", "tracked files"),
                 (worktree / "program.json", "linked git worktree"),
                 (worktree / "sub" / "program.json", "inside git repository"),
+                (alias / "program.json", "inside git repository"),
+                (bare / "program.json", "inside git repository"),
+                (project / ".git" / "sub" / "program.json", "inside git repository"),
+                (staged_del / "program.json", "committed files"),
             ):
                 refused = subprocess.run([
                     sys.executable, str(SCRIPT), "init", "--state", str(bad),
@@ -1902,9 +1920,10 @@ class LifecycleMutationTests(RecordCase):
                 self.assertEqual(refused.returncode, 1, f"expected refusal for {bad}")
                 self.assertIn(snippet, refused.stderr)
                 self.assertFalse(bad.exists())
-            self.assertFalse((project / "reports").exists())
+            for untouched in (project, worktree, project / "subdir", bare, staged_del):
+                self.assertFalse((untouched / "reports").exists(), f"unexpected reports/ in {untouched}")
             conflicting = subprocess.run([
-                sys.executable, str(SCRIPT), "init", "--state", str(root / "custom" / "program.json"), "--slug", "x",
+                sys.executable, str(SCRIPT), "init", "--state", str(root / "custom" / "program.json"), "--slug", "",
                 "--title", "Bad", "--goal", "Reject", "--chief", SESSION.format("chief"), "--request", "Reject",
             ], capture_output=True, text=True, env=env)
             self.assertEqual(conflicting.returncode, 1)
@@ -1913,19 +1932,27 @@ class LifecycleMutationTests(RecordCase):
     def test_programs_lists_containers_with_prune_readiness(self):
         with tempfile.TemporaryDirectory() as sandbox:
             programs = Path(sandbox) / "programs"
-            env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3")}
-            empty = subprocess.run([
-                sys.executable, str(SCRIPT), "init", "--root", str(programs), "--slug", "2026-11-18-empty",
-                "--title", "Empty", "--goal", "Fresh", "--chief", SESSION.format("chief"), "--request", "Fresh",
-            ], capture_output=True, text=True, env=env)
-            self.assertEqual(empty.returncode, 0, empty.stderr)
+            env = {**GIT_ENV}
+            def run_init(slug, title, goal):
+                res = subprocess.run([
+                    sys.executable, str(SCRIPT), "init", "--root", str(programs), "--slug", slug,
+                    "--title", title, "--goal", goal, "--chief", SESSION.format("chief"), "--request", goal,
+                ], capture_output=True, text=True, env=env)
+                self.assertEqual(res.returncode, 0, res.stderr)
+                line = next(l for l in res.stdout.splitlines() if l.startswith("state: "))
+                return Path(line.removeprefix("state: ").strip())
 
-            done_init = subprocess.run([
-                sys.executable, str(SCRIPT), "init", "--root", str(programs), "--slug", "2026-11-19-finished",
-                "--title", "Finished", "--goal", "Shipped", "--chief", SESSION.format("chief"), "--request", "Shipped",
-            ], capture_output=True, text=True, env=env)
-            self.assertEqual(done_init.returncode, 0, done_init.stderr)
-            done_state = programs / "2026-11-19-finished" / "record" / "program.json"
+            def list_json():
+                listed = subprocess.run(
+                    [sys.executable, str(SCRIPT), "programs", "--root", str(programs), "--json"],
+                    capture_output=True, text=True, check=True, env=env,
+                )
+                return {item["title"]: item for item in json.loads(listed.stdout)["programs"]}
+
+            run_init("empty", "Empty", "Fresh")
+
+            done_state = run_init("finished", "Finished", "Shipped")
+            done_container = done_state.parent.parent
             subprocess.run([
                 sys.executable, str(SCRIPT), "work", "--state", str(done_state),
                 "--id", "W1", "--add", "--title", "One", "--repo", "org/repo", "--finish-line", "land",
@@ -1933,32 +1960,113 @@ class LifecycleMutationTests(RecordCase):
             subprocess.run([
                 sys.executable, str(SCRIPT), "work", "--state", str(done_state), "--id", "W1", "--scrap",
             ], check=True, capture_output=True, text=True, env=env)
+            # Active heartbeat/wake IDs block pruning until recorded cleared.
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(done_state),
                 "--source", "User msg 1", "--start", "All outcomes", "--resolve", "Reversible choices",
-                "--user", "Merges", "--heartbeat", "None (program done)", "--wake", "None (program done)",
+                "--user", "Merges", "--heartbeat", "10m task T1", "--wake", "Webhook task T2",
             ], check=True, capture_output=True, text=True, env=env)
-            (programs / "2026-11-19-finished" / "site").mkdir()
-
-            listed = subprocess.run(
-                [sys.executable, str(SCRIPT), "programs", "--root", str(programs), "--json"],
-                capture_output=True, text=True, check=True, env=env,
-            )
-            payload = json.loads(listed.stdout)
-            by_title = {item["title"]: item for item in payload["programs"]}
+            by_title = list_json()
             self.assertFalse(by_title["Empty"]["readyToPrune"])
+            self.assertFalse(by_title["Finished"]["readyToPrune"])
+            self.assertFalse(by_title["Finished"]["automationCleared"])
+
+            # Clear automation and add a clean sibling site/ git checkout -> ready to prune.
+            subprocess.run([
+                sys.executable, str(SCRIPT), "grant", "--state", str(done_state),
+                "--heartbeat", "None (program done)", "--wake", "None (program done)",
+            ], check=True, capture_output=True, text=True, env=env)
+            site_dir = done_container / "site"
+            site_dir.mkdir()
+            subprocess.run(["git", "-C", str(site_dir), "init", "-q"], check=True, env=env)
+            (site_dir / "index.html").write_text("ok\n")
+            subprocess.run(["git", "-C", str(site_dir), "add", "index.html"], check=True, env=env)
+            subprocess.run(["git", "-C", str(site_dir), "commit", "-q", "-m", "site"], check=True, env=env)
+            by_title = list_json()
             self.assertTrue(by_title["Finished"]["readyToPrune"])
             self.assertTrue(by_title["Finished"]["hasSite"])
+            self.assertFalse(by_title["Finished"]["siteDirty"])
             self.assertEqual(by_title["Finished"]["heartbeat"], "None (program done)")
 
-            # Dirty record flips readyToPrune back to False.
-            done_state.write_text(done_state.read_text() + "\n")
-            listed_dirty = subprocess.run(
+            # Dirty sibling site/ checkout flips readyToPrune to False.
+            (site_dir / "index.html").write_text("edited\n")
+            self.assertFalse(list_json()["Finished"]["readyToPrune"])
+            self.assertTrue(list_json()["Finished"]["siteDirty"])
+            text_site_dirty = subprocess.run(
                 [sys.executable, str(SCRIPT), "programs", "--root", str(programs)],
                 capture_output=True, text=True, check=True, env=env,
+            ).stdout
+            self.assertIn("prune=keep | site-dirty | site", text_site_dirty)
+            (site_dir / "index.html").write_text("ok\n")
+
+            # Unexpected extra file directly in container blocks pruning.
+            extra = done_container / "notes.txt"
+            extra.write_text("keep me\n")
+            item = list_json()["Finished"]
+            self.assertFalse(item["readyToPrune"])
+            self.assertEqual(item["extraEntries"], ["notes.txt"])
+            extra.unlink()
+
+            # Uncommitted asset outside program.json in record/ blocks pruning.
+            files_dir = done_state.parent / "files"
+            files_dir.mkdir()
+            untracked_pic = files_dir / "draft.png"
+            untracked_pic.write_bytes(b"\x89PNG")
+            self.assertFalse(list_json()["Finished"]["readyToPrune"])
+            self.assertTrue(list_json()["Finished"]["recordDirty"])
+            untracked_pic.unlink()
+
+            # Deleted working copy of program.json is still discovered via HEAD and marked dirty.
+            saved_text = done_state.read_text()
+            done_state.unlink()
+            item = list_json()["Finished"]
+            self.assertFalse(item["readyToPrune"])
+            self.assertTrue(item["recordDirty"])
+            done_state.write_text(saved_text)
+
+            # Requested pr-review outcome at ready state is done and prune-ready even with allTerminal=False.
+            pr_state = run_init("pr-review-done", "PR Ready", "Open PR")
+            subprocess.run([
+                sys.executable, str(SCRIPT), "work", "--state", str(pr_state),
+                "--id", "W1", "--add", "--title", "One", "--repo", "org/repo", "--finish-line", "pr-review",
+            ], check=True, capture_output=True, text=True, env=env)
+            subprocess.run([
+                sys.executable, str(SCRIPT), "start", "--state", str(pr_state),
+                "--work", "W1", "--owner", "PR owner", "--session", SESSION.format("w1"),
+            ], check=True, capture_output=True, text=True, env=env)
+            (pr_state.parent / "reports" / "W1.md").write_text(
+                "```json\n" + json.dumps({
+                    "outcome": "W1", "state": "ready",
+                    "layers": [{"id": "W1-L1", "branch": "feat/w1", "status": "ready",
+                                "url": "https://github.com/org/repo/pull/1", "head": "aaaaaaa", "base": "main"}],
+                }) + "\n```\n"
             )
-            self.assertIn("Finished | verdict=done | work=1 |", listed_dirty.stdout)
-            self.assertIn("prune=keep | dirty | site", listed_dirty.stdout)
+            subprocess.run([
+                sys.executable, str(SCRIPT), "report", "--state", str(pr_state), "--work", "W1",
+            ], check=True, capture_output=True, text=True, env=env)
+            pr_item = list_json()["PR Ready"]
+            self.assertEqual(pr_item["verdict"], "done")
+            self.assertFalse(pr_item["allTerminal"])
+            self.assertTrue(pr_item["readyToPrune"])
+
+            # Active program with a recorded running owner reports verdict=working (via recorded_threads).
+            active_state = run_init("active-run", "Active", "Running")
+            subprocess.run([
+                sys.executable, str(SCRIPT), "work", "--state", str(active_state),
+                "--id", "W1", "--add", "--title", "One", "--repo", "org/repo", "--finish-line", "land",
+            ], check=True, capture_output=True, text=True, env=env)
+            subprocess.run([
+                sys.executable, str(SCRIPT), "start", "--state", str(active_state),
+                "--work", "W1", "--owner", "Worker", "--session", SESSION.format("w2"),
+            ], check=True, capture_output=True, text=True, env=env)
+            data = json.loads(active_state.read_text())
+            data["work"][0]["owner"]["seen"] = {"state": "running", "at": data["work"][0]["checkedAt"]}
+            active_state.write_text(json.dumps(data, indent=2) + "\n")
+            subprocess.run(["git", "-C", str(active_state.parent), "add", "program.json"], check=True, env=env)
+            subprocess.run(["git", "-C", str(active_state.parent), "commit", "-q", "-m", "seen running"], check=True, env=env)
+            active_item = list_json()["Active"]
+            self.assertEqual(active_item["verdict"], "working")
+            self.assertFalse(active_item["readyToPrune"])
 
 
 if __name__ == "__main__":
