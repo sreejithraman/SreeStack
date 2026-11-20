@@ -68,12 +68,12 @@ safely per the Proof ladder.
 After adding, moving, or removing an instruction file—or after moving rules between
 files or editing a file that a competing host file could shadow—start fresh sessions at
 the root (opening a matching nested file when scoped rules apply) and in each changed
-folder. For instruction files, confirm every expected file and moved rule is injected by
-the host (via its context inspector or trace evidence of startup or path-triggered
-loading, not a self-initiated file read). For rules intentionally moved behind a pointer
-into an ordinary repo doc, confirm a natural task that never names the file reaches that
-doc through the pointer before acting.
+folder. For instruction files, confirm every expected file and edited or moved rule is
+injected by the host (via its context inspector or trace evidence of startup or
+path-triggered loading, not a self-initiated file read). For rules intentionally moved
+behind a pointer into an ordinary repo doc, confirm a natural task that never names the
+file reaches that doc through the pointer before acting.
 
-Done: every expected file and moved rule loads automatically (or the gap is reported),
-every covered command is proved or reported unproven, and every covered line passes its
-test, is a guardrail, or was supplied or kept explicitly by the user.
+Done: every applicable fresh-session check above passed (or its gap is reported), every
+covered command is proved or reported unproven, and every covered line passes its test,
+is a guardrail, or was supplied or kept explicitly by the user.
