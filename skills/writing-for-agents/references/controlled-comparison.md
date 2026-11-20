@@ -134,6 +134,9 @@ shared text that helps the target without hurting other models.
    Watch for read-rate drops on other models, and report the added token cost when a
    model starts opening the skill more often.
 5. **Validate once on held-back tasks.** Run paired `base` vs final candidate trials on
-   the same held-back tasks across the target and harm-check models. Ship only if the
+   the same held-back tasks across the target and harm-check models, and verify every
+   predeclared required case passes on the exact final candidate for each applicable
+   model (rerunning any required tuning cases whose evidence predates the final text,
+   while keeping them separate from the held-back improvement estimate). Ship only if the
    target improves on held-back cases without regressing other models or failing any
    required case; if gains hold only on tuning tasks, the edits overfit.

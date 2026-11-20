@@ -78,11 +78,6 @@ def case_arm_stats(case: dict) -> dict:
     }
 
 
-def has_without_arm(case: dict) -> bool:
-    agg = case_aggregates(case)
-    return "without" in case["arms"] or "scoreWithout" in agg or "passRateWithout" in agg
-
-
 def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
     old_by_name = {case["name"]: case for case in old["cases"]}
     required_set = set(required)
@@ -95,7 +90,7 @@ def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
             "old": case_arm_stats(old_case),
             "new": case_arm_stats(new_case),
         }
-        if has_without_arm(old_case) or has_without_arm(new_case):
+        if "without" in new_case["arms"]:
             old_agg, new_agg = case_aggregates(old_case), case_aggregates(new_case)
             entry["without"] = {
                 "old_score": old_agg.get("scoreWithout"),

@@ -49,8 +49,9 @@ volatile lists (such as model catalogs) to live discovery.
 ## Verify the guide
 
 Prove every shipped call safely per the Proof ladder in `SKILL.md`. For a full audit,
-confirm every public operation is discoverable through the guide or help, and add a
-coverage check when drift is likely to recur.
+confirm every public operation is discoverable through the guide or help, and flag where
+a coverage check is needed when drift is likely to recur (add the check under an
+authorized edit).
 
 Done: every shipped call is proved or reported unproven, every help-replacement claim
 passes all five checks, and competing copies or tool defects are reported.

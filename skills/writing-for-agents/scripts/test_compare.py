@@ -131,18 +131,21 @@ class DecideTest(unittest.TestCase):
             {"old_score": 0.5, "new_score": 0.25, "old_pass_rate": 0, "new_pass_rate": 0.5},
         )
 
-    def test_without_baseline_is_omitted_when_ablation_is_with_only(self):
-        old_with = copy.deepcopy(OLD)
-        new_with = copy.deepcopy(NEW)
-        for result in (old_with, new_with):
-            result["suite"]["ablation"] = "none"
-            for case in result["cases"]:
-                case["arms"].pop("without", None)
-                case["aggregates"].pop("scoreWithout", None)
-                case["aggregates"].pop("passRateWithout", None)
-        _, report = score(old_with, new_with, "score")
-        for case in report["cases"]:
-            self.assertNotIn("without", case)
+    def test_without_baseline_is_omitted_when_without_runs_are_absent(self):
+        for ablation in ("none", None):
+            with self.subTest(ablation=ablation):
+                old_with = copy.deepcopy(OLD)
+                new_with = copy.deepcopy(NEW)
+                for result in (old_with, new_with):
+                    if ablation is None:
+                        result["suite"].pop("ablation", None)
+                    else:
+                        result["suite"]["ablation"] = ablation
+                    for case in result["cases"]:
+                        case["arms"].pop("without", None)
+                _, report = score(old_with, new_with, "score")
+                for case in report["cases"]:
+                    self.assertNotIn("without", case)
 
     def test_mixed_arm_cases_report_without_only_where_present(self):
         old_mixed = copy.deepcopy(OLD)
