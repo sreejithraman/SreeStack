@@ -1809,35 +1809,88 @@ class LifecycleMutationTests(RecordCase):
         )
         self.assertNotIn("provisional", work(after_merged, "W2"))
 
-        # 3. P4-04: Landing moved to cancelling still blocks move until withdrawn or landed!
+        # 3. P4-04 & P5-01 & P5-02: Cancelling is monotonic, checks forge before withdrawn, and handles late merge with open hold.
         self.commit(ready)
         _, rel, _ = self.event("land", "--work", "W1")
         lid = rel["landings"][-1]["id"]
+        w1_prs = {layer["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": layer["head"], "baseRefName": layer["base"]}
+                  for layer in work(rel, "W1")["layers"]}
         self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Cancelling before takeover")
+        self.refused("land", "--landing", lid, "--to", "submitted", message="is cancelling")
         self.refused("move", "--chief", SESSION.format("new-chief"), message="pending landing")
+        # Armed auto-merge blocks finalizing withdrawn!
+        armed = {url: {**info, "autoMergeRequest": {"enabledAt": "2026-11-02T17:30:00Z"}} for url, info in w1_prs.items()}
+        self.serve(prs=armed)
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Try early", message="auto-merge")
+        # Confirmed stopped on forge allows withdrawn and move!
+        self.serve(prs=w1_prs)
         self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "Forge cancellation confirmed")
         self.event("move", "--chief", SESSION.format("new-chief"))
 
-        # 4. P4-05: Escalating an already-acknowledged discovery with a held thread resets reply to pending!
-        rep = self.program.folder / "reports" / "W1.md"
+        # Late merge while an open decision blocks W1 still reconciles cleanly and keeps decision open!
+        _, rel2, _ = self.event("land", "--work", "W1")
+        lid2 = rel2["landings"][-1]["id"]
+        rel2["decisions"].append({
+            "id": "W1-D9", "question": "Follow up on retry header?",
+            "date": "2026-11-02T17:40:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Add header", "effect": "New PR", "recommended": True, "reversible": True},
+                {"label": "Skip header", "effect": "Done", "reversible": True},
+            ],
+            "blocks": [{"id": "W1", "phase": "landing"}],
+        })
+        self.program.write(rel2, "2026-11-02T17:40:00Z")
+        self.event("land", "--landing", lid2, "--to", "cancelling", "--note", "New hold opened")
+        merged_prs = {url: {**info, "state": "MERGED"} for url, info in w1_prs.items()}
+        self.serve(prs=merged_prs)
+        self.refused("land", "--landing", lid2, "--to", "withdrawn", "--note", "Try withdraw merged", message="already merged")
+        _, landed_late, late_res = self.event("land", "--landing", lid2, "--to", "landed", "--note", "Merged before cancel")
+        self.assertEqual(work(landed_late, "W1")["state"], "landed")
+        self.assertEqual(decision(landed_late, "W1-D9")["status"], "open")
+        self.assertNotIn("blocks", decision(landed_late, "W1-D9"))
+        self.assertIn("already merged while W1-D9 stayed open", late_res.stdout)
+
+        # 4. P5-03: Duplicate option labels refused via --text; quoted article-like branch name enforced exactly.
+        cur4 = self.head()
+        cur4["decisions"].append({
+            "id": "W2-D8", "question": "Pick target?",
+            "date": "2026-11-02T17:45:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Rebase W2", "effect": "Release", "recommended": True, "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                {"label": "Rebase W2", "effect": "Staging", "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "staging"}},
+                {"label": "Rebase W2 onto `new`", "effect": "Branch named new", "reversible": True},
+            ],
+            "blocks": [{"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur4, "2026-11-02T17:45:00Z")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Rebase W2",
+                     "--answer-source", "User", message="multiple options match")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--option", "3",
+                     "--answer-source", "User", message="does not match target 'new'")
+
+        # 5. P4-05: Escalating an already-acknowledged discovery with a held thread resets reply to pending on report!
+        rep = self.program.folder / "reports" / "W2.md"
         rep.parent.mkdir(parents=True, exist_ok=True)
         rep.write_text("```json\n" + json.dumps({
-            "outcome": "W1", "state": "in-review",
-            "followups": [{"id": "W1-F11", "text": "Timeout bug", "impact": "unrelated", "thread": "PRRT_11"}],
+            "outcome": "W2", "state": "building",
+            "followups": [{"id": "W2-F11", "text": "Timeout bug", "impact": "unrelated", "thread": "PRRT_11"}],
         }) + "\n```\n")
-        self.event("report", "--work", "W1")
-        self.event("discovery", "--id", "W1-F11", "--route", "Snip #11", "--reply-sent")
+        self.event("report", "--work", "W2")
+        self.event("discovery", "--id", "W2-F11", "--route", "Snip #11", "--reply-sent")
         rep.write_text("```json\n" + json.dumps({
-            "outcome": "W1", "state": "in-review",
-            "followups": [{"id": "W1-F11", "text": "Timeout bug", "impact": "shared-contract", "thread": "PRRT_11"}],
+            "outcome": "W2", "state": "building",
+            "followups": [{"id": "W2-F11", "text": "Timeout bug", "impact": "shared-contract", "thread": "PRRT_11"}],
         }) + "\n```\n")
-        self.event("report", "--work", "W1")
-        _, rerouted, reroute_res = self.event("discovery", "--id", "W1-F11", "--route", "W4")
-        f11 = next(r for r in rerouted["discoveries"] if r.get("id") == "W1-F11")
+        _, reopened_rep, _ = self.event("report", "--work", "W2")
+        self.assertEqual(next(r for r in reopened_rep["discoveries"] if r.get("id") == "W2-F11")["reply"], "pending")
+        _, rerouted, reroute_res = self.event("discovery", "--id", "W2-F11", "--route", "W4")
+        f11 = next(r for r in rerouted["discoveries"] if r.get("id") == "W2-F11")
         self.assertEqual(f11["reply"], "pending")
         self.assertIn("--reply-sent", reroute_res.stdout)
         found_esc = assess(rerouted, "2026-11-02T18:10:00Z", {})
-        self.assertTrue(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F11" for e in found_esc["runnable"]))
+        self.assertTrue(any(e["kind"] == "send deferred reply" and e["id"] == "W2-F11" for e in found_esc["runnable"]))
 
     def test_report_followups_trigger_runnable_until_routed_by_discovery(self):
         report_file = self.program.folder / "reports" / "W1.md"

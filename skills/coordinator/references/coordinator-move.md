@@ -19,9 +19,10 @@ or closed program follows resume in [lifecycle](lifecycle.md).
 
 Only the current coordinator moves a program:
 
-1. Reconcile every active landing release (`released` or `submitted` in `landings`): withdraw it
-   under [landing](landing.md#withdraw-a-release) and confirm any forge auto-merge or queue entry
-   stopped (or already merged). `record.py move` refuses while a landing release stays pending.
+1. Reconcile every pending landing release (`released`, `submitted`, or `cancelling` in `landings`):
+   withdraw it under [landing](landing.md#withdraw-a-release) (moving active releases to
+   `cancelling` first, confirming forge cancellation, then marking `withdrawn` or `landed`).
+   `record.py move` refuses while any landing release stays pending.
 2. Turn off tap-to-answer under [hosting](hosting.md), recording final stored picks while you still
    hold the record.
 3. Run `record.py move --chief <new thread link>` (updates `chief` and sets every live owner's

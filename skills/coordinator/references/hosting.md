@@ -40,19 +40,18 @@ the full wake transition in one sequence:
      a buildless static Site, reusing the checkout's `.openai/hosting.json` (`project_id`). Use no
      framework starter, package install, local server, or public audience. Wait for a confirmed
      terminal deployment URL (registration or saved version alone is not publication).
-4. Whenever the hosted URL changes, record it with `record.py grant --hosting <url>` and tell the
-   user the new URL and that the previous URL is now frozen.
 
-Only after confirmed publication, advance the marker:
+Only after confirmed publication of a staged `command-center.next.html`, advance the marker (skip
+this move on a forced unchanged publish where `command-center.html` was deployed directly):
 
 ```bash
 mv /absolute/path/command-center.next.html /absolute/path/command-center.html
 ```
 
-If the deployed URL changed, record it with `record.py grant --hosting <url>` and give the user the
-new URL (the renderer omits `hosting`, so an otherwise unchanged render needs no second publish). On
-publish failure, leave `command-center.html` and `hosting` untouched and report the error and retry
-target.
+If the deployed URL changed, record it once with `record.py grant --hosting <url>` and tell the
+user the new URL and that the previous URL is now frozen (the renderer omits `hosting`, so an
+otherwise unchanged render needs no second publish). On publish failure, leave `command-center.html`
+and `hosting` untouched and report the error and retry target.
 
 ## Tap-to-answer
 

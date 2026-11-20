@@ -309,10 +309,11 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
             raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
         match = ONTO_TARGET.search(chosen)
         if match:
+            quoted_target = match[4] is None
             raw_named = next(g for g in match.groups() if g is not None)
-            named = raw_named.rstrip(".,;:)") if match[4] is not None else raw_named
+            named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
             allowed = {rebase_onto} | ({stack_on} if stack_on else set())
-            if named not in allowed and named.lower() not in {"a", "an", "the", "new", "another"}:
+            if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
                 raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
 
 
@@ -390,6 +391,8 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             else:
                 chosen = decision_text
                 matches = [opt for opt in options if quoted(opt["label"]) == quoted(chosen)]
+                if len(matches) > 1:
+                    raise Refused(f"multiple options match {chosen!r}; pass --option <number>")
                 opt_obj = matches[0] if len(matches) == 1 else None
             source_used = answer_source
         elif stored_documents is not None:
@@ -1202,8 +1205,18 @@ def move_landing(state, at, identity, to, read_pr, note=None):
         raise Refused(f"no landing {identity}")
     if landing["state"] in {"landed", "withdrawn"}:
         raise Refused(f"{identity} is already {landing['state']}")
+    if landing["state"] == "cancelling" and to == "submitted":
+        raise Refused(f"{identity} is cancelling; confirm stopped (--to withdrawn) or merged (--to landed)")
     if to in {"withdrawn", "cancelling"} and not note:
         raise Refused(f"moving a landing to {to} needs --note: why")
+    notes = []
+    if to == "withdrawn" and landing["state"] in {"submitted", "cancelling"}:
+        for pr in landing["prs"]:
+            forge_pr = read_pr(pr["url"])
+            if forge_pr.get("state") == "MERGED":
+                raise Refused(f"{pr['url']} already merged on the forge; record --to landed instead")
+            if forge_pr.get("autoMergeRequest") or forge_pr.get("isInMergeQueue"):
+                raise Refused(f"{pr['url']} still has auto-merge or merge-queue armed on the forge; cancel it first")
     if to == "landed":
         for pr in landing["prs"]:
             if read_pr(pr["url"]).get("state") != "MERGED":
@@ -1215,11 +1228,22 @@ def move_landing(state, at, identity, to, read_pr, note=None):
                     layer["status"] = "merged"
             if all(layer["status"] == "merged" for layer in row.get("layers", [])):
                 row["state"] = "landed"
+                for decision in state.get("decisions", []):
+                    if decision["status"] == "open" and any(b["id"] == work for b in decision.get("blocks", [])):
+                        kept = [b for b in decision["blocks"] if b["id"] != work]
+                        if kept:
+                            decision["blocks"] = kept
+                        else:
+                            decision.pop("blocks", None)
+                        notes.append(
+                            f"{work} already merged while {decision['id']} stayed open; "
+                            f"create a follow-up outcome and block it on {decision['id']} if changes are needed"
+                        )
             row["checkedAt"] = at
     landing["state"] = to
     if note:
         put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
-    return f"{identity} {to}", []
+    return f"{identity} {to}", notes
 
 
 # Status: facts from the forge and the host.
@@ -1228,8 +1252,10 @@ def gh_pr(target):
     gh = shutil.which("gh")
     if not gh:
         raise OSError("gh is not installed")
-    result = subprocess.run([gh, "pr", "view", target, "--json", "state,isDraft,headRefOid,baseRefName"],
-                            capture_output=True, text=True, timeout=60)
+    result = subprocess.run(
+        [gh, "pr", "view", target, "--json", "state,isDraft,headRefOid,baseRefName,autoMergeRequest,isInMergeQueue"],
+        capture_output=True, text=True, timeout=60,
+    )
     if result.returncode:
         raise OSError(result.stderr.strip() or f"gh exited with status {result.returncode}")
     return json.loads(result.stdout)
