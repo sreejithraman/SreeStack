@@ -24,17 +24,17 @@ from urllib.parse import unquote, urlsplit
 
 from render_dashboard import (ACTIVE, DECISION_KEYS, DISCOVERY_IMPACTS, FINISH_LINES, GRANT, HALTING, IMAGE_SUFFIXES, LAYER_KEYS,
                               LIVE_LAYERS, OWNER_KEYS, OPTION_KEYS, PENDING_LANDINGS, PHASES, PICTURE_SHAPES,
-                              PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess, bases,
+                              PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
                               check_pictures, committed, content_name, dead_base, effective_finish, fields, git,
-                              hexed, known_keys, layout, now, observation, open_blocks, page_files, pending_landing,
-                              place, quoted, records, revision, stage_page, unsatisfied, validate)
+                              hexed, invalid_base_work, known_keys, layout, now, observation, open_blocks, page_files,
+                              pending_landing, place, quoted, records, revision, stage_page, unsatisfied, validate)
 
 
 VERDICTS = ("pass", "fail", "blocked", "untested")
 REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "followups", "waits", "blocked")
 ASK_KEYS = ("id", "question", "context", "pictures", "meanwhile", "recommendation", "options", "weight", "phase", "links")
-FOLLOWUP_KEYS = ("id", "text", "evidence", "impact")
-DISCOVERY_KEYS = ("id", "date", "origin", "work", "impact", "text", "evidence", "route", "status")
+FOLLOWUP_KEYS = ("id", "text", "evidence", "impact", "thread")
+DISCOVERY_KEYS = ("id", "date", "origin", "work", "impact", "text", "evidence", "thread", "route", "status")
 ROUTES = {
     "top-level": "`t3_thread_send` to the coordinator",
     "adopted": "`t3_thread_send` to the coordinator",
@@ -83,9 +83,12 @@ def decision_row(state, identity):
 MAX_NEXT_CHARS = 280
 
 
+LINE_SEPARATORS = ("\n", "\r", "\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029")
+
+
 def check_next(value):
     stripped = value.strip()
-    if not stripped or len(value.splitlines()) > 1 or len(stripped) > MAX_NEXT_CHARS:
+    if not stripped or any(sep in value for sep in LINE_SEPARATORS) or len(stripped) > MAX_NEXT_CHARS:
         raise Refused(
             f"next must be one short line (at most {MAX_NEXT_CHARS} characters) stating what happens next, "
             "not a history log; keep history in git commits, work rows, or reports"
@@ -94,7 +97,7 @@ def check_next(value):
 
 
 def set_next(state, value):
-    if value:
+    if value is not None:
         state["next"] = check_next(value)
 
 
@@ -109,7 +112,7 @@ def build_init_state(title, goal, chief, request_text, next_action=None, request
     state["chief"] = chief
     if hosting:
         state["hosting"] = hosting
-    state["next"] = check_next(next_action) if next_action else "Start ready outcomes"
+    state["next"] = check_next(next_action) if next_action is not None else "Start ready outcomes"
     state["request"] = request
     state["decisions"] = []
     state["work"] = []
@@ -225,6 +228,12 @@ def withdraw_decision(state, at, identity, why):
 
 def move_coordinator(state, chief):
     """Transfer program ownership to a new coordinator thread and update live owner routes."""
+    pending = [row["id"] for row in state.get("landings", []) if row["state"] in PENDING_LANDINGS]
+    if pending:
+        raise Refused(
+            f"pending landing(s) {', '.join(pending)} are still active under the current coordinator; "
+            "withdraw each release and confirm forge cancellation (or record merged) before moving"
+        )
     state["chief"] = chief
     updated = []
     for row in state["work"]:
@@ -237,30 +246,43 @@ def move_coordinator(state, chief):
     return f"move coordinator to {chief}", notes
 
 
-def dead_base_halting_work(state, decision_id):
-    """Active work IDs resting on a dead base that would lose their only halting decision if decision_id closes."""
+def atomic_halting_work(state, decision_id):
+    """Active work IDs with an invalid base (dead outcome or closed parent layer) whose only halting decision is decision_id."""
     by_id = {row["id"]: row for row in state["work"]}
     layers = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
+    broken = invalid_base_work(state["work"], by_id, layers)
     affected = []
-    for row in state["work"]:
-        if row["state"] in TERMINAL:
-            continue
-        has_dead = any(dead_base(by_id[base_id]) for base_id in bases(row, layers))
-        if not has_dead:
-            continue
-        halting = open_blocks(state, row["id"], HALTING)
+    for work_id in broken:
+        halting = open_blocks(state, work_id, HALTING)
         if decision_id in halting and len(halting) == 1:
-            affected.append(row["id"])
+            affected.append(work_id)
     return affected
 
 
-def check_work_decision_action(chosen, scrap, rebase_onto):
-    """Reject a decision choice whose option label clearly contradicts --scrap or --rebase-onto."""
+SCRAP_VERBS = re.compile(r"\b(scrap|close|drop|abandon)\b")
+REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget|move)\b")
+NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap|closing|close|dropping|drop|abandoning|abandon)\b")
+NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack)\b")
+ONTO_TARGET = re.compile(r"\bonto\s+([A-Za-z0-9._/@:-]+)")
+
+
+def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None):
+    """Verify the chosen option unambiguously authorizes --scrap or --rebase-onto (and its target when named)."""
     lower = chosen.lower()
-    if scrap and "rebase" in lower and "scrap" not in lower:
-        raise Refused(f"--scrap conflicts with chosen option {chosen!r}")
-    if rebase_onto is not None and "scrap" in lower and "rebase" not in lower:
-        raise Refused(f"--rebase-onto conflicts with chosen option {chosen!r}")
+    if scrap:
+        if (not SCRAP_VERBS.search(lower) or NEGATED_SCRAP.search(lower)
+                or REBASE_VERBS.search(lower) or re.search(r"\bkeep\b", lower)):
+            raise Refused(f"--scrap is not unambiguously authorized by chosen option {chosen!r}")
+    if rebase_onto is not None:
+        if (not REBASE_VERBS.search(lower) or NEGATED_REBASE.search(lower)
+                or (SCRAP_VERBS.search(lower) and not NEGATED_SCRAP.search(lower))):
+            raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
+        match = ONTO_TARGET.search(lower)
+        if match:
+            named = match[1].rstrip(".,;:)").lower()
+            allowed = {rebase_onto.lower()} | ({stack_on.lower()} if stack_on else set())
+            if named not in allowed and named not in {"a", "an", "the", "new", "another"}:
+                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {match[1]!r} in chosen option {chosen!r}")
 
 
 def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
@@ -294,8 +316,14 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
 
     layers_by_id = {layer["id"]: (layer, owner_row) for owner_row in state["work"]
                     for layer in owner_row.get("layers", [])}
-    if stack_on is not None and stack_on not in layers_by_id:
-        raise Refused(f"no layer {stack_on} to stack on")
+    if stack_on is not None:
+        if stack_on not in layers_by_id:
+            raise Refused(f"no layer {stack_on} to stack on")
+        parent_layer, parent_row = layers_by_id[stack_on]
+        if parent_row["repo"] != row["repo"]:
+            raise Refused(f"cannot stack {identity} ({row['repo']}) on {stack_on} in {parent_row['repo']}")
+        if parent_layer["branch"] != rebase_onto:
+            raise Refused(f"--rebase-onto {rebase_onto!r} does not match {stack_on}'s branch {parent_layer['branch']!r}")
 
     if decision_id is not None:
         target_decision = decision_row(state, decision_id)
@@ -306,7 +334,7 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         if pasted_text is not None:
             if not answer_source:
                 raise Refused("--decision with --pasted needs --answer-source")
-            choices = [c for c in pasted_choices(pasted_text) if c[0] == decision_id]
+            choices = [c for c in pasted_choices(pasted_text, state) if c[0] == decision_id]
             if not choices:
                 raise Refused(f"pasted text contains no choice for {decision_id}")
             _, digest, number, label = choices[-1]
@@ -315,9 +343,22 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                     or quoted(options[number - 1]["label"]) != quoted(label)):
                 raise Refused(f"{decision_id} changed since the page showed it; ask again")
             chosen = options[number - 1]["label"]
-            check_work_decision_action(chosen, scrap, rebase_onto)
+            check_work_decision_action(chosen, scrap, rebase_onto, stack_on)
             _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
             notes.extend(answer_notes)
+            if stored_documents is not None:
+                _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id])
+                notes.extend(stored_notes)
+        elif decision_option is not None or decision_text is not None:
+            if not answer_source:
+                raise Refused("--decision with --option or --text needs --answer-source")
+            chosen = option_label(target_decision, decision_option) if decision_option is not None else decision_text
+            check_work_decision_action(chosen, scrap, rebase_onto, stack_on)
+            _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
+            notes.extend(answer_notes)
+            if stored_documents is not None:
+                _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id])
+                notes.extend(stored_notes)
         elif stored_documents is not None:
             matched = []
             for document in stored_documents:
@@ -341,19 +382,14 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             if not matched:
                 raise Refused(f"no current-revision stored pick for {decision_id}")
             name, chosen, receipt = matched[-1]
-            check_work_decision_action(chosen, scrap, rebase_onto)
+            check_work_decision_action(chosen, scrap, rebase_onto, stack_on)
             _, answer_notes = settle(state, at, decision_id, chosen, "answered",
                                      source=f"The user's pick on the command center, stored at {name}")
             put(target_decision, "picksRead", target_decision.get("picksRead", []) + [receipt], DECISION_KEYS)
             notes.extend(answer_notes)
             notes.append(f"delete: {name}")
         else:
-            if not answer_source or (decision_option is None and decision_text is None):
-                raise Refused("--decision on work needs --answer-source and either --option or --text (or --pasted / --stored)")
-            chosen = option_label(target_decision, decision_option) if decision_option is not None else decision_text
-            check_work_decision_action(chosen, scrap, rebase_onto)
-            _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
-            notes.extend(answer_notes)
+            raise Refused("--decision on work needs --option, --text, --pasted (with --answer-source), or --stored")
 
     for key, value in (
         ("title", title if not add else None), ("repo", repo if not add else None),
@@ -429,20 +465,31 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             if parent_row["id"] != identity and parent_layer["status"] != "merged":
                 provisional = copy.deepcopy(row.get("provisional", {}))
                 old_on = provisional.get("on", [])
+                removed_dead = [item for item in old_on if item in dead_ids]
                 kept_on = [item for item in old_on if item not in dead_ids and item != parent_row["id"]]
+                new_on = [*kept_on, parent_row["id"]]
+                stale_basis = any(re.search(rf"\b{re.escape(dead)}\b", provisional.get("basis", "")) for dead in removed_dead)
+                stale_clears = any(re.search(rf"\b{re.escape(dead)}\b", provisional.get("clears", "")) for dead in removed_dead)
                 only_dead = bool(old_on) and not kept_on
-                default_basis = f"Stacked on {parent_row['id']} ({stack_on})"
-                default_clears = f"{parent_row['id']} lands"
-                basis_val = prov_basis or (default_basis if only_dead else provisional.get("basis")) or default_basis
-                clears_val = prov_clears or (default_clears if only_dead else provisional.get("clears")) or default_clears
+                default_basis = (f"Stacked on {parent_row['id']} ({stack_on})" if not kept_on
+                                 else f"Rested on {', '.join(new_on)} (stacked on {stack_on})")
+                default_clears = f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{parent_row['id']} lands"
+                basis_val = prov_basis or (default_basis if (only_dead or stale_basis) else provisional.get("basis")) or default_basis
+                clears_val = prov_clears or (default_clears if (only_dead or stale_clears) else provisional.get("clears")) or default_clears
                 put(provisional, "basis", basis_val, ("basis", "clears", "on"))
                 put(provisional, "clears", clears_val, ("basis", "clears", "on"))
-                put(provisional, "on", [*kept_on, parent_row["id"]], ("basis", "clears", "on"))
+                put(provisional, "on", new_on, ("basis", "clears", "on"))
                 put(row, "provisional", provisional, WORK_KEYS)
         elif "provisional" in row and not clear_provisional:
-            kept_on = [item for item in row["provisional"].get("on", []) if item not in dead_ids]
+            old_on = row["provisional"].get("on", [])
+            removed_dead = [item for item in old_on if item in dead_ids]
+            kept_on = [item for item in old_on if item not in dead_ids]
             if kept_on:
                 row["provisional"]["on"] = kept_on
+                if prov_basis is None and any(re.search(rf"\b{re.escape(dead)}\b", row["provisional"].get("basis", "")) for dead in removed_dead):
+                    row["provisional"]["basis"] = f"Rested on {', '.join(kept_on)}"
+                if prov_clears is None and any(re.search(rf"\b{re.escape(dead)}\b", row["provisional"].get("clears", "")) for dead in removed_dead):
+                    row["provisional"]["clears"] = f"{', '.join(kept_on)} land" if len(kept_on) > 1 else f"{kept_on[0]} lands"
             elif "on" in row["provisional"]:
                 if prov_basis is not None or prov_clears is not None:
                     row["provisional"].pop("on", None)
@@ -639,23 +686,38 @@ def report(state, at, work, block, source, files):
     existing_by_id = {entry["id"]: entry for entry in discoveries if entry.get("id")}
     for index, entry in enumerate(objects(block.get("followups", []), "followups")):
         only(entry, FOLLOWUP_KEYS, f"followups[{index}]")
-        fields(entry, f"followups[{index}]", ("id", "text"), ("evidence", "impact"))
+        fields(entry, f"followups[{index}]", ("id", "text"), ("evidence", "impact", "thread"))
         if "impact" in entry and entry["impact"] not in DISCOVERY_IMPACTS:
             raise Refused(f"followups[{index}].impact must be one of {', '.join(DISCOVERY_IMPACTS)}")
         existing_entry = existing_by_id.get(entry["id"])
         if existing_entry is not None:
-            if existing_entry.get("work") == work and existing_entry.get("text") == entry["text"]:
+            if existing_entry.get("work") != work or existing_entry.get("text") != entry["text"]:
+                raise Refused(
+                    f"followup ID {entry['id']!r} already belongs to another discovery "
+                    f"({existing_entry.get('work') or existing_entry.get('origin')}); prefix owner followup IDs with {work}-"
+                )
+            changed = []
+            for key in ("impact", "evidence", "thread"):
+                if key in entry and entry[key] != existing_entry.get(key):
+                    put(existing_entry, key, entry[key], DISCOVERY_KEYS)
+                    changed.append(key)
+            if not changed:
                 notes.append(f"followup {entry['id']} is already recorded; left as it is")
                 continue
-            raise Refused(
-                f"followup ID {entry['id']!r} already belongs to another discovery "
-                f"({existing_entry.get('work') or existing_entry.get('origin')}); prefix owner followup IDs with {work}-"
-            )
+            if "impact" in changed and existing_entry.get("status") == "routed":
+                prior = existing_entry["route"]
+                existing_entry["route"] = "pending"
+                put(existing_entry, "status", "open", DISCOVERY_KEYS)
+                notes.append(f"followup {entry['id']} impact changed ({existing_entry['impact']}); reopened from {prior!r} for re-routing")
+            else:
+                notes.append(f"followup {entry['id']} updated ({', '.join(changed)})")
+            followed.append(entry["id"])
+            continue
         item_row = {
             "id": entry["id"], "date": at, "origin": f"{work} report ({source})",
             "work": work, "text": entry["text"], "route": "pending", "status": "open",
         }
-        for key in ("impact", "evidence"):
+        for key in ("impact", "evidence", "thread"):
             if key in entry:
                 item_row[key] = entry[key]
         ordered = {key: item_row[key] for key in DISCOVERY_KEYS if key in item_row}
@@ -712,7 +774,7 @@ def option_label(row, number):
     return options[number - 1]["label"]
 
 
-def pasted_choices(text):
+def pasted_choices(text, state=None):
     """(decision ID, revision, option number, label) for each choice in a pasted page prompt."""
     choices, pending = [], None
     for line in (line.strip() for line in text.splitlines()):
@@ -731,35 +793,42 @@ def pasted_choices(text):
             choices.append((*pending, int(choice[1]), json.loads(choice[2])))
             pending = None
         elif line == "Reopen this decision." and pending:
-            raise Refused(f"{pending[0]}: a reopen request; reopen it under references/decisions.md#reopen")
+            identity, digest = pending
+            if state is not None:
+                row = next((r for r in state["decisions"] if r["id"] == identity), None)
+                if row is None or row["status"] not in {"resolved", "answered"} or revision(row) != digest:
+                    raise Refused(f"{identity}: stale reopen prompt (revision {digest} does not match current settled revision); ask again")
+            raise Refused(f"{identity}: verified reopen request (revision {digest}); run record.py reopen --decision {identity} --why \"...\"")
     if not choices:
         raise Refused("no decision choice found in the pasted text")
     return choices
 
 
-def answer_pasted(state, at, text, source):
+def answer_pasted(state, at, text, source, allow_atomic_only=False):
     """Record each pasted choice that matches its open decision's current revision; return the rest to ask again."""
     recorded, stale, atomic = [], [], []
-    for identity, digest, number, label in pasted_choices(text):
+    for identity, digest, number, label in pasted_choices(text, state):
         row = next((row for row in state["decisions"] if row["id"] == identity), None)
         options = row.get("options", []) if row else []
         if (row is None or row["status"] != "open" or revision(row) != digest
                 or not 1 <= number <= len(options) or quoted(options[number - 1]["label"]) != quoted(label)):
             stale.append(identity)
             continue
-        dead_work = dead_base_halting_work(state, identity)
-        if dead_work:
-            atomic.append((identity, dead_work))
+        broken_work = atomic_halting_work(state, identity)
+        if broken_work:
+            atomic.append((identity, broken_work))
             continue
         settle(state, at, identity, options[number - 1]["label"], "answered", source=source)
         recorded.append(identity)
     notes = [f"ask again: {identity} changed or closed since the page showed it" for identity in stale]
     for identity, works in atomic:
         notes.append(
-            f"atomic work transition needed for {identity} (dead base on {', '.join(works)}): "
+            f"atomic work transition needed for {identity} (invalid base on {', '.join(works)}): "
             f"run work --id {works[0]} --scrap|--rebase-onto <branch> --decision {identity} --pasted --answer-source ..."
         )
     if not recorded:
+        if allow_atomic_only and atomic and not stale:
+            return "pasted choices deferred for atomic work transition", notes, []
         raise Refused("; ".join(notes))
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
     notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
@@ -843,14 +912,14 @@ def answer_stored(state, at, documents, answered=()):
         row = before[identity]
         current = next((pick for pick in picks if pick[3] is not None), None)
         if current:
-            dead_work = dead_base_halting_work(state, identity)
-            if dead_work:
+            broken_work = atomic_halting_work(state, identity)
+            if broken_work:
                 # Keep the stored pick unread and undeleted so `work --decision --stored` can apply it atomically.
                 receipts.pop(identity, None)
                 cleanup = [line for line in cleanup if line != f"delete: {current[0]}"]
                 notes.append(
-                    f"atomic work transition needed for {identity} (dead base on {', '.join(dead_work)}; "
-                    f"user picked {quoted(current[3])}): run work --id {dead_work[0]} --scrap|--rebase-onto <branch> "
+                    f"atomic work transition needed for {identity} (invalid base on {', '.join(broken_work)}; "
+                    f"user picked {quoted(current[3])}): run work --id {broken_work[0]} --scrap|--rebase-onto <branch> "
                     f"--decision {identity} --stored <file>"
                 )
                 continue
@@ -1318,8 +1387,13 @@ class Record:
         (self.file.parent / "reports").mkdir(exist_ok=True)
         if not (self.file.parent / ".git").exists():
             self.git("init", "-q")
-        elif self.git("ls-files", "--", self.file.name).strip():
-            raise Refused(f"{self.file.name} is already tracked or staged in git")
+        else:
+            if self.git("ls-files", "--", self.file.name).strip():
+                raise Refused(f"{self.file.name} is already tracked or staged in git")
+            in_head = subprocess.run(["git", "-C", str(self.file.parent), "cat-file", "-e", f"HEAD:{self.file.name}"],
+                                     capture_output=True)
+            if in_head.returncode == 0:
+                raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")
         staged = False
         try:
             self.file.write_text(layout(state))
@@ -1454,7 +1528,8 @@ def arguments():
     choice.add_argument("--option", dest="decision_option", type=int)
     choice.add_argument("--text", dest="decision_text")
     choice.add_argument("--pasted", dest="decision_pasted", action="store_true", help="Read a copied page prompt for --decision from stdin")
-    choice.add_argument("--stored", dest="decision_stored", type=Path, metavar="FILE", help="Read a stored page pick for --decision from saved db_query output")
+    command.add_argument("--stored", dest="decision_stored", type=Path, metavar="FILE",
+                         help="Read stored page picks from saved db_query output (alone to apply a pick, or with --option/--text/--pasted so the newer user message supersedes older picks)")
     command.add_argument("--answer-source", help="User message that answered --decision")
 
     command = commands.add_parser("start", parents=[shared], help="An owner started on a work row")
@@ -1585,7 +1660,8 @@ def event(args, state, at, files):
         if not args.source:
             raise Refused("answer needs --source: the user's message that answered")
         if args.pasted:
-            message, notes, answered = answer_pasted(state, at, sys.stdin.read(), args.source)
+            message, notes, answered = answer_pasted(state, at, sys.stdin.read(), args.source,
+                                                     allow_atomic_only=documents is not None)
         elif args.decision and (args.option or args.text):
             row = decision_row(state, args.decision)
             message, notes = settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,

@@ -94,9 +94,16 @@ Run on every answer wake, heartbeat tick, resume, and before settling any decisi
    `python3 scripts/record.py answer --stored <file> --state /absolute/path/program.json` (adding
    any user-message answer flags and `--source` in the same command so the message supersedes prior
    picks).
-4. Delete each document listed on a `note: delete:` line via `db_write` `delete` with its version,
-   then delete the scratch file. (`picksRead` prevents duplicate processing if a delete fails.)
-5. Pass recorded answers to affected owners and run `record.py applied`; reopen any `reopen request:`
+4. Before deleting the scratch file, act on any `note: atomic work transition needed` line by
+   running the printed `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --stored <file>`
+   command (passing `--option`/`--text`/`--pasted` + `--answer-source` alongside `--stored <file>`
+   if a newer user message supersedes the stored pick). If an atomic transition is refused during a
+   move or backend switch, report the unapplied pick to the user and ask them to re-answer in the
+   active Inbox before abandoning the old backend.
+5. Delete ONLY the DB documents listed on a `note: delete:` line from committed commands via
+   `db_write` `delete` with their version, then delete the scratch file. (`picksRead` prevents
+   duplicate processing if a delete fails.)
+6. Pass recorded answers to affected owners and run `record.py applied`; reopen any `reopen request:`
    line with `record.py reopen`. Publish the updated page.
 
 ### Turn off
@@ -104,8 +111,10 @@ Run on every answer wake, heartbeat tick, resume, and before settling any decisi
 Run on program done, pause, coordinator move/takeover, or before leaving a Claude artifact:
 
 1. Delete `config/wake` with `db_write` `delete` (using `db_get`'s version) so open pages hide Send.
-2. Read stored picks one last time if you still hold the record.
-3. Delete the wake task (`delete_scheduled_task` in T3).
+2. Read stored picks one last time (including any atomic work transitions above) if you still hold
+   the record.
+3. Delete the wake task (`delete_scheduled_task` in T3) and record
+   `record.py grant --wake "None (<reason>)"` so future heartbeat ticks stop querying Claude DB picks.
 
 If you lack the old artifact's DB tools (e.g., from a Codex session), skip steps 1–2 and tell the
 user Send answer on the old page no longer reaches you. To re-enable on resume, repeat Set up above

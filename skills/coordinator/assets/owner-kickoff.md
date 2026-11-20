@@ -23,11 +23,11 @@ Owner report: write to `<program directory>/reports/<ID>.md`. Start with a fence
 
 ```json
 {"outcome": "<ID>", "state": "building | shown | in-review | ready",
- "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
+ "layers": [{"id": "<ID>-L1", "branch": "<branch>", "status": "local | draft | open | ready | merged | closed", "url": "<PR>", "head": "<sha>", "base": "<branch>", "stackedOn": "<layer below>"}],
  "proof": [{"assertion": "<what was checked>", "verdict": "pass | fail | blocked | untested", "url": "<evidence>"}],
  "shown": [{"label": "<result>", "url": "<link>", "access": "<what opening it needs>", "image": "<absolute path to a screenshot>"}],
  "asks": [{"id": "<ID>-D1", "question": "<one question>", "pictures": {"shape": "side-by-side | before-after | sequence", "images": [{"image": "<absolute path>", "caption": "<caption>"}]}, "options": [{"label": "<option>", "effect": "<effect and how to reverse it>", "image": "<absolute path>", "recommended": true, "reversible": true}], "phase": "start | access | proof | acceptance | landing", "meanwhile": "<what continues>"}],
- "followups": [{"id": "<ID>-F1", "text": "<deferred review finding or discovery>", "evidence": "<location and evidence>", "impact": "unrelated | shared-contract | requested-scope"}],
+ "followups": [{"id": "<ID>-F1", "text": "<deferred review finding or discovery>", "evidence": "<location and evidence>", "impact": "unrelated | shared-contract | requested-scope", "thread": "<GitHub thread ID if a held deferred PR reply awaits routing>"}],
  "waits": [{"on": "<what>", "event": "<what ends it>"}],
  "blocked": "<missing prerequisite and who can supply it>"}
 ```

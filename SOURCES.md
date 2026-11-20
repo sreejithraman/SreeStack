@@ -1106,10 +1106,12 @@ while retaining other nonignored untracked source.
   routes repairs with one unified rule (owner-verified wording polish and clean
   disjoint rebases carry forward coverage; small or Pass 2+ repairs use one
   independent reviewer; large Pass-1 repairs fan out by changed concern;
-  Attack-the-Premise pauses repeating invariants; final integrated Primary
-  check runs when Primary did not review the last code repair). Returns
-  coverage, `review-fix-loop` commit-status command/result, `Deferred` items,
-  and `Stops` for the caller to route.
+  Attack-the-Premise pauses repeating invariants; cumulative integrated Primary
+  check ensures Primary assessed all accumulated repairs and their interactions
+  on the final snapshot). Returns
+  coverage, `review-fix-loop` commit-status command/SHA for the publishing
+  workflow to post after preparation, `Deferred` items (routed to a durable home
+  when standalone for the user), and `Stops` for the caller to route.
 
 ## pr
 

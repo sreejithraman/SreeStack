@@ -39,9 +39,12 @@ Before accepting a result:
    report path.
 2. **Evidence & coverage:** confirm the coverage block includes Review and every
    assigned reference, reports no unaddressed unread hunks or unmet criteria, and
-   that cited files, lines, symbols, and quotes match the frozen snapshot. A
-   fabricated location, mismatched quote, or unread changed hunk invalidates the
-   affected coverage (retain any useful observations as unverified claims).
+   that cited files, lines, symbols, and quotes match the frozen snapshot. For a
+   clean verdict with zero findings, corroborate coverage against the delivered
+   diff packet or reviewer tool reads (recording a coverage gap when the host
+   hides tool activity). A fabricated location, mismatched quote, or unread
+   changed hunk invalidates the affected coverage (retain any useful observations
+   as unverified claims).
 3. **Preserve prior reports:** keep earlier-pass reports intact at their unique pass
    paths before starting later passes or repairs so prior evidence is never
    overwritten.

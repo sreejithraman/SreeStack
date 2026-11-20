@@ -24,8 +24,9 @@ applies:
 - **Waits:** pending PRs, live helpers/watchers, and the events they await.
 - **Decisions:** open decision requests with IDs, reversible method choices made, and provisional
   assumptions with what depends on them.
-- **Follow-ups:** routed items, deferred review findings (with ID, origin, evidence, impact, and
-  suggested destination/finish line), and fixes kept under the scope exception with their reason.
+- **Follow-ups:** routed items, deferred review findings (with ID, origin, evidence, impact, any
+  open GitHub `thread` ID awaiting a recorded home for a held deferred reply, and suggested
+  destination/finish line), and fixes kept under the scope exception with their reason.
 - **Sources:** follow-up messages received and handled.
 
 ## Pause, transfer, or adoption

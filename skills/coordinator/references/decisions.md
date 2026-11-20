@@ -78,9 +78,13 @@ Withdraw obsolete decisions with `record.py withdraw`.
 
 ## Reopen
 
-The user can reopen any coordinator-resolved (or answered) decision. Run
+The user can reopen any coordinator-resolved (or answered) decision. For a copied reopen prompt
+from the page (`Copy to reopen`), verify its stamped revision matches `render_dashboard.py --revision <ID>`
+(or pass it to `answer --pasted`, which verifies the revision before directing `reopen`) — ask
+again if the revision is stale. For a verified reopen or direct user message, run
 `record.py reopen --decision <ID> --why "<reason>" [--block <WORK:PHASE>]`, which moves prior
-answer/basis into `rationale`, sets `status: "open"`, and drops `applied`. Notify affected owners
+answer/basis into `rationale`, increments the decision's revision (so unread picks from earlier
+openings are rejected as stale), sets `status: "open"`, and drops `applied`. Notify affected owners
 and withdraw any affected landing release. If work already landed, create a follow-up outcome and
 block it on the reopened decision. A reopened decision stays with the user.
 

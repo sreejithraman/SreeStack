@@ -1423,7 +1423,7 @@ class LifecycleMutationTests(RecordCase):
         self.refused(
             "work", "--id", "W6", "--scrap",
             "--decision", "W6-D1", "--option", "1", "--answer-source", "User msg 11",
-            message="conflicts with chosen option",
+            message="not unambiguously authorized",
         )
         # Unrelated decision is refused.
         self.refused(
@@ -1453,10 +1453,10 @@ class LifecycleMutationTests(RecordCase):
             work(s, "W1").update(state="scrapped"),
             work(s, "W1").pop("blocked", None),
             s["work"].append({
-                "id": "W9", "title": "Alt parent", "repo": "acme/app", "kind": "outcome",
+                "id": "W9", "title": "Alt parent", "repo": "example/exports", "kind": "outcome",
                 "state": "in-review", "finishLine": "land", "checkedAt": "2026-11-02T17:00:00Z",
                 "owner": {"name": "Alt owner", "start": "top-level", "route": "t3"},
-                "layers": [{"id": "W9-L1", "branch": "feat/w9", "status": "open", "url": "https://github.com/acme/app/pull/99", "base": "main"}],
+                "layers": [{"id": "W9-L1", "branch": "feat/w9", "status": "open", "url": "https://github.com/example/exports/pull/99", "base": "main"}],
             }),
             s["decisions"].append({
                 "id": "W2-D8", "question": "W1 was scrapped. Scrap or rebase W2?",
@@ -1541,6 +1541,113 @@ class LifecycleMutationTests(RecordCase):
                 self.assertEqual(row["owner"]["route"], "`t3_thread_send` to the coordinator")
         self.assertIn("do not publish from this thread", result.stdout)
         self.assertNotIn("Publish ", result.stdout)
+
+    def test_move_refuses_pending_landing_release(self):
+        self.commit(ready)
+        _, _, _ = self.event("land", "--work", "W1")
+        self.refused("move", "--chief", SESSION.format("new-chief"), message="pending landing")
+
+    def test_pass2_edge_cases_closed_layer_precedence_targets_and_provisional_draft(self):
+        # 1. Empty --next and trailing newline are rejected at CLI boundary; staged deletion blocks init.
+        self.refused("grant", "--heartbeat", "10m", "--next", "", message="one short line")
+        self.refused("grant", "--heartbeat", "10m", "--next", "hello\n", message="one short line")
+        deleted_repo = self.program.folder.parent / "staged-del" / "program.json"
+        deleted_repo.parent.mkdir()
+        env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3"),
+               "RECORD_FIXTURES": str(self.fixtures)}
+        subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(deleted_repo),
+            "--title", "Keep", "--goal", "Keep", "--chief", SESSION.format("chief"), "--request", "Keep",
+        ], capture_output=True, text=True, check=True, env=env)
+        subprocess.run(["git", "-C", str(deleted_repo.parent), "rm", "-q", "program.json"], check=True, env=env)
+        reinit = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(deleted_repo),
+            "--title", "Overwrite", "--goal", "No", "--chief", SESSION.format("chief"), "--request", "No",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(reinit.returncode, 1)
+        self.assertIn("HEAD", reinit.stderr)
+
+        # 2. Individually closed parent layer W1-L2 (while W1-L1 stays open) holds atomic pick without breaking W6 batch;
+        #    ambiguous/wrong-target options are refused; newer chat answer supersedes older stored scrap pick.
+        self.commit(lambda s: (
+            work(s, "W1")["layers"][1].update(status="closed"),
+            s["decisions"].append({
+                "id": "W2-D7", "question": "W1-L2 closed. Scrap or rebase W2?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase W2 onto main instead of scrapping it", "effect": "Rebase", "recommended": True, "reversible": True},
+                    {"label": "Scrap W2", "effect": "Close W2", "reversible": False},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+        ))
+        cur = self.head()
+        d7 = decision(cur, "W2-D7")
+        d6 = decision(cur, "W6-D1")
+        picks_file = self.program.folder.parent / "mixed-closed.jsonl"
+        picks_file.write_text("\n".join([
+            json.dumps({"id": f"{d7['id'].encode().hex()}-{revision(d7)}", "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+                        "data": {"decision": "W2-D7", "revision": revision(d7), "option": 2, "label": "Scrap W2"}}),
+            json.dumps({"id": f"{d6['id'].encode().hex()}-{revision(d6)}", "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+                        "data": {"decision": "W6-D1", "revision": revision(d6), "option": 1, "label": d6["options"][0]["label"]}}),
+            json.dumps({"count": 2}),
+        ]) + "\n")
+        _, after_batch, res_batch = self.event("answer", "--stored", str(picks_file))
+        self.assertEqual(decision(after_batch, "W6-D1")["status"], "answered")
+        self.assertEqual(decision(after_batch, "W2-D7")["status"], "open")
+        self.assertIn("atomic work transition needed for W2-D7", res_batch.stdout)
+
+        # Opposing negated label ("instead of scrapping") refused for --scrap; wrong target refused for --rebase-onto.
+        self.refused("work", "--id", "W2", "--scrap", "--decision", "W2-D7", "--option", "1",
+                     "--answer-source", "User", message="not unambiguously authorized")
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D7", "--option", "1",
+                     "--answer-source", "User", message="does not match target")
+
+        # Newer chat rebase answer supersedes older stored scrap pick in the same atomic commit!
+        _, after_super, res_super = self.event(
+            "work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D7", "--option", "1",
+            "--answer-source", "User chat override", "--stored", str(picks_file),
+        )
+        self.assertEqual(decision(after_super, "W2-D7")["answer"], "Rebase W2 onto main instead of scrapping it")
+        self.assertIn("superseded", res_super.stdout)
+        self.assertNotIn("stalePick", decision(after_super, "W2-D7"))
+
+        # 3. Requested provisional pr-draft can mark state=ready and stop cleanly without landing.
+        self.commit(lambda s: (
+            work(s, "W2").update(
+                finishLine="pr-draft",
+                state="ready",
+                provisional={"basis": "Waiting on W1", "clears": "W1 lands", "on": ["W1"]},
+                layers=[dict(work(s, "W2")["layers"][0], status="draft", url="https://github.com/example/exports/pull/22")],
+            ),
+        ))
+        found_draft = assess(self.head(), "2026-11-02T18:00:00Z", {})
+        self.assertFalse(any(e["id"] == "W2" and e["kind"] in {"idle owner", "release"} for e in found_draft["runnable"]))
+
+        # 4. Copied reopen prompt validates settled revision.
+        resolved = next(r for r in self.head()["decisions"] if r["status"] == "resolved")
+        good_reopen = decision_prompt(resolved, self.head(), "Reopen this decision.")
+        bad_reopen = good_reopen.replace(revision(resolved), "0000000000")
+        self.refused("answer", "--pasted", "--source", "Copy", stdin=bad_reopen, message="stale reopen prompt")
+        self.refused("answer", "--pasted", "--source", "Copy", stdin=good_reopen, message="verified reopen request")
+
+        # 5. Followup impact escalation reopens a previously routed discovery.
+        rep = self.program.folder / "reports" / "W1.md"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F9", "text": "Timeout differs", "impact": "unrelated"}],
+        }) + "\n```\n")
+        self.event("report", "--work", "W1")
+        self.event("discovery", "--id", "W1-F9", "--route", "Snip #1")
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F9", "text": "Timeout differs", "impact": "shared-contract", "thread": "PRRT_1"}],
+        }) + "\n```\n")
+        _, esc, esc_res = self.event("report", "--work", "W1")
+        f9 = next(r for r in esc["discoveries"] if r.get("id") == "W1-F9")
+        self.assertEqual((f9["status"], f9["impact"], f9["thread"]), ("open", "shared-contract", "PRRT_1"))
+        self.assertIn("reopened", esc_res.stdout)
 
     def test_report_followups_trigger_runnable_until_routed_by_discovery(self):
         report_file = self.program.folder / "reports" / "W1.md"

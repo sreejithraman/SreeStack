@@ -260,7 +260,7 @@ def validate_work(row, layers):
     if finish == "try" and published:
         raise ValueError(f"{path}: Try stops before the PR; a published layer needs a PR or Land finish line")
     if state == "ready":
-        if "provisional" in row:
+        if "provisional" in row and effective not in {"pr-draft", "pr-review"}:
             raise ValueError(f"{path}: provisional work is never ready; keep it in review until its condition clears")
         allowed, wording = READY_LAYERS[effective]
         if not row.get("layers") or any(layer["status"] not in allowed for layer in row["layers"]):
@@ -303,6 +303,33 @@ def bases(row, layers):
     return [identity for identity in dict.fromkeys(found) if identity != row["id"]]
 
 
+def invalid_base_work(work, by_id, layers):
+    """Non-terminal work IDs resting on a dead base or an individually closed parent layer: {work_id: message}."""
+    broken = {}
+    for identity, (layer, row) in layers.items():
+        if row["state"] in TERMINAL or "stackedOn" not in layer:
+            continue
+        parent, parent_row = layers[layer["stackedOn"]]
+        if layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row):
+            broken.setdefault(
+                row["id"],
+                f"work[{row['id']}].layers[{identity}].stackedOn names closed {parent['id']}; "
+                "record the restack or halt it with its decision",
+            )
+    for row in work:
+        if row["state"] in TERMINAL:
+            continue
+        for identity in bases(row, layers):
+            reason = dead_base(by_id[identity])
+            if reason:
+                broken.setdefault(
+                    row["id"],
+                    f"work[{row['id']}] rests on {reason} {identity}; "
+                    "halt it with its scrap-or-rebase decision or record its new base",
+                )
+    return broken
+
+
 def validate_edges(work, by_id, layers, halted):
     for row in work:
         path = f"work[{row['id']}]"
@@ -325,18 +352,13 @@ def validate_edges(work, by_id, layers, halted):
         if "stackedOn" not in layer:
             continue
         parent, parent_row = layers[layer["stackedOn"]]
-        if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
-                and row["id"] not in halted):
-            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its decision")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
             raise ValueError(f"{where}: {parent['id']} is another owner's unmerged layer; mark this outcome provisional on {parent_row['id']}")
-    for row in work:
-        for identity in bases(row, layers):
-            reason = dead_base(by_id[identity])
-            if reason and row["id"] not in halted:
-                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase decision or record its new base")
+    for identity, message in invalid_base_work(work, by_id, layers).items():
+        if identity not in halted:
+            raise ValueError(message)
 
     def depends_on(row):
         found = list(row.get("blockedBy", []))
@@ -498,7 +520,7 @@ def validate(state):
         ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
         ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
         ("waits", ("date", "on", "event"), ("work",)),
-        ("discoveries", ("date", "origin", "text", "route"), ("id", "work", "impact", "evidence", "status")),
+        ("discoveries", ("date", "origin", "text", "route"), ("id", "work", "impact", "evidence", "thread", "status")),
     ):
         for index, row in enumerate(records(state.get(name, []), name)):
             known_keys(row, f"{name}[{index}]", (*required, *optional))

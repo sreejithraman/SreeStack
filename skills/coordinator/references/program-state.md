@@ -84,8 +84,8 @@ type ReportBlock = {
   outcome: string; // work ID
   state: "planned" | "building" | "shown" | "in-review" | "ready" | "unknown"; // never terminal
   finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // recorded only when row has none
-  layers?: { id: string; branch: string; status: "local"|"draft"|"open"|"ready"|"closed";
-    url?: string; head?: string; base?: string; stackedOn?: string }[]; // bottom first
+  layers?: { id: string; branch: string; status: "local"|"draft"|"open"|"ready"|"merged"|"closed";
+    url?: string; head?: string; base?: string; stackedOn?: string }[]; // bottom first; repeat merged layers unchanged
   proof?: { assertion: string; verdict: "pass"|"fail"|"blocked"|"untested"; url?: string }[];
   shown?: { label: string; url: string; access?: string; image?: string }[]; // image: abs path
   asks?: { id: string; question: string; phase?: "start"|"access"|"proof"|"acceptance"|"landing";
@@ -96,7 +96,7 @@ type ReportBlock = {
       reversible?: boolean }[];
     weight?: "quick"|"judgment"; links?: { label: string; url: string }[] }[];
   followups?: { id: string; text: string; evidence?: string;
-    impact?: "unrelated"|"shared-contract"|"requested-scope" }[];
+    impact?: "unrelated"|"shared-contract"|"requested-scope"; thread?: string }[];
   waits?: { on: string; event: string }[];
   blocked?: string | null; // null clears it
 };

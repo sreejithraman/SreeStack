@@ -33,9 +33,12 @@ when a result looks wrong.
   fixes something, check that review evidence covers the change. If it's missing or stale,
   rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
   held replies, and read the state again. When Review Sweep returns a **held deferred reply**
-  waiting on the caller to record a durable home (even with no code edit or push), return the
-  deferred item and thread ID to the caller; once the recorded home comes back, post the held
-  reply, resolve the thread, and read the state again.
+  waiting on a recorded durable home (even with no code edit or push): if no parent workflow owns
+  routing (a direct user request to PR or Merge), record an unrelated deferral's durable home
+  yourself (tracker issue or Snip Snap ID), post the reply, resolve the thread, and read the state
+  again (returning a stop only if routing needs a scope or permission decision); if a parent
+  workflow owns routing, return the deferred item and thread ID to the caller, and once the
+  recorded home comes back, post the held reply, resolve the thread, and read the state again.
 - **No passing review status:** for a requested draft PR still carrying `## Provisional`,
   treat the missing review status as expected until the provisional condition clears or before
   marking it ready. Otherwise take the head through PR's

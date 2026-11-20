@@ -51,10 +51,10 @@ turn off tap-to-answer under [hosting](hosting.md).
 
 1. Re-read `SKILL.md`, start from `next`, and run `record.py status`.
 2. Reconcile the record with current files, threads, and forge state, and force-publish the page
-   under [hosting](hosting.md) before dispatching new work.
+   under [hosting](hosting.md) before dispatching new work (which owns restoring tap-to-answer and
+   updating `grant.wake` once when on Claude).
 3. Re-enable the paused heartbeat — or recreate it if deleted/missing, updating `grant.heartbeat` —
    and verify `enabled` and `nextRunAt` (upgrade any pre-stored-picks prompt to the template above).
-4. Restore tap-to-answer under [hosting](hosting.md) and update `grant.wake`.
 
 ## Chief-of-Staff migration
 

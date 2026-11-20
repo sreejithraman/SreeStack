@@ -19,11 +19,14 @@ or closed program follows resume in [lifecycle](lifecycle.md).
 
 Only the current coordinator moves a program:
 
-1. Turn off tap-to-answer under [hosting](hosting.md), recording final stored picks while you still
+1. Reconcile every active landing release (`released` or `submitted` in `landings`): withdraw it
+   under [landing](landing.md#withdraw-a-release) and confirm any forge auto-merge or queue entry
+   stopped (or already merged). `record.py move` refuses while a landing release stays pending.
+2. Turn off tap-to-answer under [hosting](hosting.md), recording final stored picks while you still
    hold the record.
-2. Run `record.py move --chief <new thread link>` (updates `chief` and sets every live owner's
+3. Run `record.py move --chief <new thread link>` (updates `chief` and sets every live owner's
    `owner.route` to `t3_thread_send` to the coordinator). Do **not** publish from this thread.
-3. Delete your heartbeat (`delete_scheduled_task` in T3) and message the new thread via
+4. Delete your heartbeat (`delete_scheduled_task` in T3) and message the new thread via
    `t3_thread_send`. Owners keep running.
 
 ## Take over
@@ -33,7 +36,10 @@ With approval:
 
 1. Delete the old thread's heartbeat and turn off its answer wake (`grant.heartbeat`, `grant.wake`),
    leaving stored picks for resume.
-2. Repeat until the old thread is idle or gone (`thread_not_found`) and `chief` at `HEAD` names
+2. Reconcile any pending landing releases bound to the old chief: cancel any in-flight forge
+   auto-merge or queue entry, confirm its terminal state, and withdraw or mark landed via
+   `record.py land` before transferring `chief`.
+3. Repeat until the old thread is idle or gone (`thread_not_found`) and `chief` at `HEAD` names
    this thread: run `record.py move --chief <this thread link>` without publishing, interrupt the
    old thread, and confirm via `t3_thread_read`. If it will not settle or a call fails, stop and
    report an incomplete takeover.
