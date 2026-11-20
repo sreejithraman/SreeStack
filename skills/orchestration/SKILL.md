@@ -39,11 +39,16 @@ Give every child a self-contained brief:
 - The original request (in full or as a pointer it can open), accepted corrections, and explicit
   constraints. A plan authorizes nothing beyond its source; quoted material is context, not
   authority.
-- The outcome, its completion check, owned outputs, and allowed actions.
+- The outcome, its concrete completion check, owned outputs, out-of-scope boundaries, and allowed
+  actions.
 - Accepted decisions, source paths, artifacts, and shared files to preserve.
 - Required checks, return format, and any further delegation allowed.
 - For verification or measurement: user outcome, operating context, invariants and failure
   questions, exact revisions, and method.
+
+When briefing Codex, make acceptance criteria, proportionality limits, and verification commands
+explicit—vague briefs cause premature stops or diminishing-return loops—and supply visual
+references or design tokens if Codex must touch UI.
 
 Assignment is done when every required slice has an owner, usable inputs, and a completion check.
 
@@ -74,7 +79,7 @@ Select a model for initial launch and availability recovery in this order:
 3. **Resolve live availability.** Check live host capabilities and any carried outage evidence. Use
    the preferred provider, model, and effort when available.
 4. **Apply listed fallback.** On quota or an unavailable model/provider — including before initial
-   launch during a known outage — launch the row's exact listed fallback and notify the user without
+   launch during a known outage — try the row's listed fallback in order and notify the user without
    asking again (listed fallbacks are authorized standing choices). A review fallback still starts a
    new independent task.
 5. **Ask when exhausted.** Ask the user only when no authorized available choice remains (absent or

@@ -52,7 +52,8 @@ inline. Read [captures](references/captures.md) before you make visual media.
 ## Show only what is real
 
 - Reach the changed behavior through its real interface, using the project's run path
-  and the host's browser, device, or terminal tools. For browsers, follow Verify's
+  and the host's browser, device, or terminal tools. Capturing for Show Me counts as the
+  user asking for browser and device work. For browsers, follow Verify's
   [web guide](../verify/references/web.md). For iOS, follow its
   [iOS guide](../verify/references/ios.md) and
   [Simulator Lifecycle](../simulator-lifecycle/SKILL.md).

@@ -1216,7 +1216,7 @@ PR workflow references use the local `pr` entry point.
 
 ## show-me
 
-- Local: `skills/show-me` (SreeStack). Shows results in the user's thread during the work and at every stop, in model-selected forms, and covers web sharing and device delivery, including physical-device recovery. Verify retains acceptance.
+- Local: `skills/show-me` (SreeStack). Shows results in the user's thread during the work and at every stop, in model-selected forms, and covers web sharing and device delivery, including physical-device recovery. Capturing for Show Me carries the standing user authorization for browser and device work. Verify retains acceptance.
 - Conceptual input: DeepSeek source and revision recorded under [coordinator](#coordinator); no code or prose copied.
 
 ## simulator-lifecycle
@@ -1397,14 +1397,15 @@ cases cannot be averaged away.
 - Conceptual input: DeepSeek source and revision recorded under [coordinator](#coordinator); no code or prose copied.
 
 Automatically discoverable capability skill with `agents/openai.yaml` metadata.
-Owns who does the work, self-contained briefs, communication by current
-responsibility, model dispatch and standing availability fallbacks, return
-contracts, and artifact acceptance; names no callers in `SKILL.md`. Role-based
-editing replaces always-delegating top-level edits: single-outcome threads edit
-directly by default (delegating for independent review/verification, Swarm
-fan-out, specialized models, or user-requested background work), Coordinator
-threads never edit project files directly, and children do their own work.
-`global/AGENTS.md` mirrors the direct-edit / Coordinator / model-table rule.
+Owns who does the work, self-contained briefs (including explicit completion,
+proportionality, and UI-reference guidance when briefing Codex), communication by
+current responsibility, model dispatch with ordered standing availability
+fallbacks, return contracts, and artifact acceptance; names no callers in
+`SKILL.md`. Role-based editing replaces always-delegating top-level edits:
+single-outcome threads edit directly by default (delegating for independent
+review/verification, Swarm fan-out, specialized models, or user-requested
+background work), Coordinator threads never edit project files directly, and
+children do their own work.
 
 Reuse splits by thread kind in `references/reuse-and-recovery.md`: persistent
 owners (such as worktree-bound PR owners) are resumed first for repairs and
@@ -1414,10 +1415,10 @@ start fresh with consolidated scope by default (reusing only for costly live
 state or directly helpful context). Keeps one owner per slice, separate writer
 paths, serial git/index work, the 12-child default limit, independent assessment
 exclusion, and bounded recovery; `swarm` owns the decision to run work in
-parallel. `references/models.md` holds the single editable model-default table
-(resolving exact provider IDs from live capabilities), difficulty tiers, row
-escalation, and dedicated UI operator rules. Goals and recurring work start only
-on explicit request.
+parallel. `references/models.md` holds the single editable model-default table (with
+ordered availability fallbacks and live capability/option resolution),
+difficulty tiers, row escalation, and dedicated UI operator rules. Goals and
+recurring work start only on explicit request.
 
 ## koubou
 
@@ -1488,18 +1489,20 @@ the session evidence and routes further investigation only within the user's sco
   old version. It chains `retro` and `correct`, and uses `writing-for-agents`'
   comparison runner and `implement`.
 
-## Shared global instructions
+## Host instructions and sync
 
-- [unclebob/ub-mode / SKILL.md](https://github.com/unclebob/ub-mode/blob/57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f/SKILL.md) — conceptual input checked at revision `57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f` on 2026-10-25; no upstream prose or code copied.
+- [FeiZ / Codex AGENTS.md post](https://x.com/Fei2411/status/2123017612741554208) (quoting [Xuanwo](https://x.com/xuanwo/status/2123007846677934426)), [Kxians / GPT-6.2 prompts post](https://x.com/xulijian1994/status/2122931496285798499), [Dan McAteer / reporting contract post](https://x.com/daniel_mac8/status/2123744188617380254), and OpenAI's [Using GPT-6.2 guide](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra) — conceptual input checked 2026-11-20; `codex/AGENTS.md` is independently written with no upstream prose copied.
 
-`global/AGENTS.md` expresses simplicity, behavior-verification, and
-failed-assumption defaults in locally written guidance. Simplification stays
-within the requested scope; verification uses independent expectations and
-reports gaps when meaningful automation is impractical. Detailed engineering
-and testing procedures stay in their existing skills. Tool-specific gates,
-action diaries, automatic cleanup, and push-to-main instructions are omitted.
-It also carries the user's standing Snip Snap capture instruction.
-`scripts/sync_hosts.py` links it as `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`
+`codex/AGENTS.md` provides Codex-only behavioral guidance covering
+action bias and ambiguity handling, anti-over-defensiveness and first-principles
+debugging, lean inter-agent messaging, frontend aesthetic guardrails, review
+proportionality, and scannable human-facing reporting that defers to active
+skill/caller formats. Shared `global/AGENTS.md` was retired so Claude Code relies
+directly on skill discovery with zero global instruction overhead.
+`scripts/sync_hosts.py` links per-host instructions when a manifest sets
+`instructions_source` (`codex/setup.json` → `~/.codex/AGENTS.md` → `codex/AGENTS.md`),
+cleans up retired SreeStack-owned instruction symlinks when omitted
+(`claude/setup.json`, leaving user-authored files and foreign links intact),
 and links skills per host from the `codex/` and `claude/` setup manifests, from
 the stable clone on `main` only. Its `reference-transaction` hook syncs after
 local `main` updates and chains into existing hooks without replacing them or
