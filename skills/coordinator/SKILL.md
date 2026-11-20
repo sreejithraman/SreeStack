@@ -141,9 +141,10 @@ wakes — not status prose alone.
 
 Triage decision requests under [decisions](references/decisions.md#triage) and resume owners for
 unaffected work. Give every incoming discovery or deferred owner `followups` item a concrete
-disposition via `record.py discovery` (open discoveries keep `status` runnable until routed; when a
-followup carries a `thread` ID for a held deferred PR reply, send the recorded destination back to
-that PR's owner so it can post the reply and resolve the thread):
+disposition via `record.py discovery` (open discoveries and pending held deferred PR replies keep
+`status` runnable until routed and acknowledged with `--reply-sent`; when a followup carries a
+`thread` ID, send the recorded destination back to that PR's owner so it can post the reply and
+resolve the thread):
 
 | Discovery | Action |
 | --- | --- |

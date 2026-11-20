@@ -1646,8 +1646,114 @@ class LifecycleMutationTests(RecordCase):
         }) + "\n```\n")
         _, esc, esc_res = self.event("report", "--work", "W1")
         f9 = next(r for r in esc["discoveries"] if r.get("id") == "W1-F9")
-        self.assertEqual((f9["status"], f9["impact"], f9["thread"]), ("open", "shared-contract", "PRRT_1"))
+        self.assertEqual((f9["status"], f9["impact"], f9["thread"], f9["reply"]), ("open", "shared-contract", "PRRT_1", "pending"))
         self.assertIn("reopened", esc_res.stdout)
+
+    def test_pass3_typed_actions_coexisting_holds_cross_repo_closed_layer_and_reply_handoff(self):
+        # 1. P3-01: Formatted backtick targets, case-sensitive branch names, close-PR phrasing, and typed option actions.
+        self.commit(lambda s: (
+            work(s, "W1")["layers"][1].update(status="closed"),
+            s["decisions"].append({
+                "id": "W2-D6", "question": "W1-L2 closed. How should W2 proceed?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase W2 onto `release`", "effect": "Rebase", "recommended": True, "reversible": True},
+                    {"label": "Rebase W2 onto Release", "effect": "Case test", "reversible": True},
+                    {"label": "Close the obsolete W2 pull request and continue the work", "effect": "Continue", "reversible": True},
+                    {"label": "Drop branch cleanly", "effect": "Typed scrap", "reversible": False,
+                     "action": {"type": "scrap", "work": "W2"}},
+                    {"label": "Move onto main", "effect": "Typed rebase", "reversible": True,
+                     "action": {"type": "rebase", "work": "W2", "onto": "main"}},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+            # Coexisting unrelated access hold on W2 (P3-02).
+            s["decisions"].append({
+                "id": "W2-D5", "question": "Sign in to staging?",
+                "date": "2026-11-02T17:11:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Done — access is ready", "effect": "Unblock access", "recommended": True, "reversible": True},
+                    {"label": "Defer this outcome", "effect": "Wait", "reversible": True},
+                ],
+                "blocks": [{"id": "W2", "phase": "access"}],
+            }),
+        ))
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D6", "--option", "1",
+                     "--answer-source", "User", message="does not match target")
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D6", "--option", "2",
+                     "--answer-source", "User", message="does not match target")
+        self.refused("work", "--id", "W2", "--scrap", "--decision", "W2-D6", "--option", "3",
+                     "--answer-source", "User", message="not unambiguously authorized")
+        # Typed action rejects wrong target and wrong transition type.
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D6", "--option", "5",
+                     "--answer-source", "User", message="does not match typed option target")
+        self.refused("work", "--id", "W2", "--scrap", "--decision", "W2-D6", "--option", "5",
+                     "--answer-source", "User", message="conflicts with typed option action")
+
+        # 2. P3-02: With two halting decisions on W2, unrelated access hold settles normally while base-repair pick defers!
+        cur = self.head()
+        d5, d6 = decision(cur, "W2-D5"), decision(cur, "W2-D6")
+        picks = self.program.folder.parent / "coexist.jsonl"
+        picks.write_text("\n".join([
+            json.dumps({"id": f"{d5['id'].encode().hex()}-{revision(d5)}", "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+                        "data": {"decision": "W2-D5", "revision": revision(d5), "option": 1, "label": "Done — access is ready"}}),
+            json.dumps({"id": f"{d6['id'].encode().hex()}-{revision(d6)}", "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+                        "data": {"decision": "W2-D6", "revision": revision(d6), "option": 5, "label": "Move onto main"}}),
+            json.dumps({"count": 2}),
+        ]) + "\n")
+        _, after_co, co_res = self.event("answer", "--stored", str(picks))
+        self.assertEqual(decision(after_co, "W2-D5")["status"], "answered")
+        self.assertEqual(decision(after_co, "W2-D6")["status"], "open")
+        self.assertIn("atomic work transition needed for W2-D6", co_res.stdout)
+
+        # 3. P3-03: Same-command --repo change cannot create a cross-repo stack edge.
+        self.refused("work", "--id", "W2", "--repo", "other/repo", "--rebase-onto", "feat/exports-schema",
+                     "--stack-on", "W1-L1", "--decision", "W2-D6", "--option", "5", "--answer-source", "User",
+                     message="cannot stack W2 (other/repo)")
+
+        # 4. P3-04: Rebase off closed W1-L2 onto live sibling W1-L1 with coexisting W3 refreshes stale W1-L2 text!
+        self.commit(lambda s: (
+            work(s, "W2").update(provisional={
+                "basis": "Staged on W1-L2; also needs W3",
+                "clears": "W1-L2 merges and W3 lands",
+                "on": ["W1", "W3"],
+            }),
+            decision(s, "W2-D6")["options"].append({
+                "label": "Restack on W1-L1", "effect": "Use live sibling", "reversible": True,
+                "action": {"type": "rebase", "work": "W2", "onto": work(s, "W1")["layers"][0]["branch"], "stackOn": "W1-L1"},
+            }),
+        ))
+        w1_l1_branch = work(self.head(), "W1")["layers"][0]["branch"]
+        _, after_sib, _ = self.event(
+            "work", "--id", "W2", "--rebase-onto", w1_l1_branch, "--stack-on", "W1-L1",
+            "--decision", "W2-D6", "--option", "6", "--answer-source", "User msg",
+        )
+        w2_prov = work(after_sib, "W2")["provisional"]
+        self.assertNotIn("W1-L2", w2_prov["basis"])
+        self.assertNotIn("W1-L2", w2_prov["clears"])
+        self.assertEqual(sorted(w2_prov["on"]), ["W1", "W3"])
+
+        # 5. P3-06: Attaching a GitHub thread to an already-routed discovery makes reply handoff runnable until --reply-sent.
+        rep = self.program.folder / "reports" / "W1.md"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F10", "text": "Pre-existing lint debt", "impact": "unrelated"}],
+        }) + "\n```\n")
+        self.event("report", "--work", "W1")
+        self.event("discovery", "--id", "W1-F10", "--route", "Snip #77")
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F10", "text": "Pre-existing lint debt", "impact": "unrelated", "thread": "PRRT_77"}],
+        }) + "\n```\n")
+        _, with_thread, thread_res = self.event("report", "--work", "W1")
+        self.assertIn("--reply-sent", thread_res.stdout)
+        self.assertNotIn("--route ...", thread_res.stdout)
+        found_reply = assess(with_thread, "2026-11-02T18:00:00Z", {})
+        self.assertTrue(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F10" for e in found_reply["runnable"]))
+        _, sent, _ = self.event("discovery", "--id", "W1-F10", "--reply-sent")
+        found_done = assess(sent, "2026-11-02T18:05:00Z", {})
+        self.assertFalse(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F10" for e in found_done["runnable"]))
 
     def test_report_followups_trigger_runnable_until_routed_by_discovery(self):
         report_file = self.program.folder / "reports" / "W1.md"

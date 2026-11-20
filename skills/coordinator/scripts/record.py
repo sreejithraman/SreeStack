@@ -34,7 +34,7 @@ VERDICTS = ("pass", "fail", "blocked", "untested")
 REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "followups", "waits", "blocked")
 ASK_KEYS = ("id", "question", "context", "pictures", "meanwhile", "recommendation", "options", "weight", "phase", "links")
 FOLLOWUP_KEYS = ("id", "text", "evidence", "impact", "thread")
-DISCOVERY_KEYS = ("id", "date", "origin", "work", "impact", "text", "evidence", "thread", "route", "status")
+DISCOVERY_KEYS = ("id", "date", "origin", "work", "impact", "text", "evidence", "thread", "reply", "route", "status")
 ROUTES = {
     "top-level": "`t3_thread_send` to the coordinator",
     "adopted": "`t3_thread_send` to the coordinator",
@@ -246,43 +246,73 @@ def move_coordinator(state, chief):
     return f"move coordinator to {chief}", notes
 
 
+SCRAP_VERBS = re.compile(r"\bscrap(?:ping|ped)?\b")
+REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget)\b")
+NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap)\b")
+NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
+ONTO_TARGET = re.compile(r"\bonto\s+[`\"']?([A-Za-z0-9._/@:-]+)[`\"']?", re.I)
+
+
+def is_base_repair_decision(row):
+    """True when this decision's options represent a scrap-or-rebase base-repair choice."""
+    options = row.get("options", [])
+    if any(isinstance(opt.get("action"), dict) and opt["action"].get("type") in {"scrap", "rebase"} for opt in options):
+        return True
+    has_scrap = any(SCRAP_VERBS.search(opt.get("label", "").lower()) and not NEGATED_SCRAP.search(opt.get("label", "").lower())
+                    for opt in options)
+    has_rebase = any(REBASE_VERBS.search(opt.get("label", "").lower()) and not NEGATED_REBASE.search(opt.get("label", "").lower())
+                     for opt in options)
+    return has_scrap and has_rebase
+
+
 def atomic_halting_work(state, decision_id):
-    """Active work IDs with an invalid base (dead outcome or closed parent layer) whose only halting decision is decision_id."""
+    """Active work IDs with an invalid base that require atomic work handling when decision_id is answered."""
     by_id = {row["id"]: row for row in state["work"]}
     layers = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
     broken = invalid_base_work(state["work"], by_id, layers)
+    target = next((row for row in state["decisions"] if row["id"] == decision_id), None)
+    base_repair = is_base_repair_decision(target) if target else False
     affected = []
     for work_id in broken:
         halting = open_blocks(state, work_id, HALTING)
-        if decision_id in halting and len(halting) == 1:
+        if decision_id in halting and (len(halting) == 1 or base_repair):
             affected.append(work_id)
     return affected
 
 
-SCRAP_VERBS = re.compile(r"\b(scrap|close|drop|abandon)\b")
-REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget|move)\b")
-NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap|closing|close|dropping|drop|abandoning|abandon)\b")
-NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack)\b")
-ONTO_TARGET = re.compile(r"\bonto\s+([A-Za-z0-9._/@:-]+)")
-
-
-def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None):
-    """Verify the chosen option unambiguously authorizes --scrap or --rebase-onto (and its target when named)."""
+def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_id=None, option=None):
+    """Verify the chosen option unambiguously authorizes --scrap or --rebase-onto (and its exact target)."""
+    action = option.get("action") if isinstance(option, dict) else None
+    if isinstance(action, dict):
+        if "work" in action and work_id is not None and action["work"] != work_id:
+            raise Refused(f"chosen option action targets {action['work']}, not {work_id}")
+        if scrap:
+            if action.get("type") != "scrap":
+                raise Refused(f"--scrap conflicts with typed option action {action.get('type')!r}")
+            return
+        if rebase_onto is not None:
+            if action.get("type") != "rebase":
+                raise Refused(f"--rebase-onto conflicts with typed option action {action.get('type')!r}")
+            if action.get("onto") != rebase_onto:
+                raise Refused(f"--rebase-onto {rebase_onto!r} does not match typed option target {action.get('onto')!r}")
+            if action.get("stackOn") != stack_on:
+                raise Refused(f"--stack-on {stack_on!r} does not match typed option stackOn {action.get('stackOn')!r}")
+            return
     lower = chosen.lower()
     if scrap:
         if (not SCRAP_VERBS.search(lower) or NEGATED_SCRAP.search(lower)
-                or REBASE_VERBS.search(lower) or re.search(r"\bkeep\b", lower)):
+                or REBASE_VERBS.search(lower) or re.search(r"\b(keep|continue)\b", lower)):
             raise Refused(f"--scrap is not unambiguously authorized by chosen option {chosen!r}")
     if rebase_onto is not None:
         if (not REBASE_VERBS.search(lower) or NEGATED_REBASE.search(lower)
                 or (SCRAP_VERBS.search(lower) and not NEGATED_SCRAP.search(lower))):
             raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
-        match = ONTO_TARGET.search(lower)
+        match = ONTO_TARGET.search(chosen)
         if match:
-            named = match[1].rstrip(".,;:)").lower()
-            allowed = {rebase_onto.lower()} | ({stack_on.lower()} if stack_on else set())
-            if named not in allowed and named not in {"a", "an", "the", "new", "another"}:
-                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {match[1]!r} in chosen option {chosen!r}")
+            named = match[1].rstrip(".,;:)")
+            allowed = {rebase_onto} | ({stack_on} if stack_on else set())
+            if named not in allowed and named.lower() not in {"a", "an", "the", "new", "another"}:
+                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
 
 
 def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
@@ -316,12 +346,13 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
 
     layers_by_id = {layer["id"]: (layer, owner_row) for owner_row in state["work"]
                     for layer in owner_row.get("layers", [])}
+    effective_repo = repo if (repo is not None and not add) else row["repo"]
     if stack_on is not None:
         if stack_on not in layers_by_id:
             raise Refused(f"no layer {stack_on} to stack on")
         parent_layer, parent_row = layers_by_id[stack_on]
-        if parent_row["repo"] != row["repo"]:
-            raise Refused(f"cannot stack {identity} ({row['repo']}) on {stack_on} in {parent_row['repo']}")
+        if parent_row["repo"] != effective_repo:
+            raise Refused(f"cannot stack {identity} ({effective_repo}) on {stack_on} in {parent_row['repo']}")
         if parent_layer["branch"] != rebase_onto:
             raise Refused(f"--rebase-onto {rebase_onto!r} does not match {stack_on}'s branch {parent_layer['branch']!r}")
 
@@ -342,8 +373,9 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             if (revision(target_decision) != digest or not 1 <= number <= len(options)
                     or quoted(options[number - 1]["label"]) != quoted(label)):
                 raise Refused(f"{decision_id} changed since the page showed it; ask again")
-            chosen = options[number - 1]["label"]
-            check_work_decision_action(chosen, scrap, rebase_onto, stack_on)
+            opt_obj = options[number - 1]
+            chosen = opt_obj["label"]
+            check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
             _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
             notes.extend(answer_notes)
             if stored_documents is not None:
@@ -352,8 +384,11 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         elif decision_option is not None or decision_text is not None:
             if not answer_source:
                 raise Refused("--decision with --option or --text needs --answer-source")
+            opt_obj = target_decision.get("options", [])[decision_option - 1] if (
+                decision_option is not None and 1 <= decision_option <= len(target_decision.get("options", []))
+            ) else None
             chosen = option_label(target_decision, decision_option) if decision_option is not None else decision_text
-            check_work_decision_action(chosen, scrap, rebase_onto, stack_on)
+            check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
             _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
             notes.extend(answer_notes)
             if stored_documents is not None:
@@ -378,11 +413,12 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                 options = target_decision.get("options", [])
                 if (revision(target_decision) == digest and 1 <= number <= len(options)
                         and quoted(options[number - 1]["label"]) == quoted(label)):
-                    matched.append((name, options[number - 1]["label"], receipt))
+                    matched.append((name, options[number - 1], receipt))
             if not matched:
                 raise Refused(f"no current-revision stored pick for {decision_id}")
-            name, chosen, receipt = matched[-1]
-            check_work_decision_action(chosen, scrap, rebase_onto, stack_on)
+            name, opt_obj, receipt = matched[-1]
+            chosen = opt_obj["label"]
+            check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
             _, answer_notes = settle(state, at, decision_id, chosen, "answered",
                                      source=f"The user's pick on the command center, stored at {name}")
             put(target_decision, "picksRead", target_decision.get("picksRead", []) + [receipt], DECISION_KEYS)
@@ -447,6 +483,8 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         bottom_layers = [layer for layer in live_layers
                          if "stackedOn" not in layer or layers_by_id.get(layer["stackedOn"], (None, {}))[1].get("id") != identity]
         target_layers = bottom_layers or live_layers[:1]
+        removed_layer_ids = [layer["stackedOn"] for layer in target_layers
+                             if "stackedOn" in layer and layer["stackedOn"] != stack_on]
         for layer in target_layers:
             put(layer, "base", rebase_onto, LAYER_KEYS)
             if stack_on is not None:
@@ -460,35 +498,39 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         for layer in live_layers:
             if layer["status"] == "ready":
                 layer["status"] = "open" if layer.get("url") else "local"
-        if stack_on is not None:
-            parent_layer, parent_row = layers_by_id[stack_on]
-            if parent_row["id"] != identity and parent_layer["status"] != "merged":
-                provisional = copy.deepcopy(row.get("provisional", {}))
-                old_on = provisional.get("on", [])
-                removed_dead = [item for item in old_on if item in dead_ids]
-                kept_on = [item for item in old_on if item not in dead_ids and item != parent_row["id"]]
-                new_on = [*kept_on, parent_row["id"]]
-                stale_basis = any(re.search(rf"\b{re.escape(dead)}\b", provisional.get("basis", "")) for dead in removed_dead)
-                stale_clears = any(re.search(rf"\b{re.escape(dead)}\b", provisional.get("clears", "")) for dead in removed_dead)
-                only_dead = bool(old_on) and not kept_on
-                default_basis = (f"Stacked on {parent_row['id']} ({stack_on})" if not kept_on
-                                 else f"Rested on {', '.join(new_on)} (stacked on {stack_on})")
-                default_clears = f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{parent_row['id']} lands"
-                basis_val = prov_basis or (default_basis if (only_dead or stale_basis) else provisional.get("basis")) or default_basis
-                clears_val = prov_clears or (default_clears if (only_dead or stale_clears) else provisional.get("clears")) or default_clears
-                put(provisional, "basis", basis_val, ("basis", "clears", "on"))
-                put(provisional, "clears", clears_val, ("basis", "clears", "on"))
-                put(provisional, "on", new_on, ("basis", "clears", "on"))
-                put(row, "provisional", provisional, WORK_KEYS)
+        unmerged_parent = (
+            layers_by_id[stack_on][1]
+            if (stack_on is not None and layers_by_id[stack_on][1]["id"] != identity
+                and layers_by_id[stack_on][0]["status"] != "merged")
+            else None
+        )
+        if unmerged_parent is not None:
+            provisional = copy.deepcopy(row.get("provisional", {}))
+            old_on = provisional.get("on", [])
+            removed_tokens = [item for item in old_on if item in dead_ids] + removed_layer_ids
+            kept_on = [item for item in old_on if item not in dead_ids and item != unmerged_parent["id"]]
+            new_on = [*kept_on, unmerged_parent["id"]]
+            stale_basis = any(re.search(rf"\b{re.escape(tok)}\b", provisional.get("basis", "")) for tok in removed_tokens)
+            stale_clears = any(re.search(rf"\b{re.escape(tok)}\b", provisional.get("clears", "")) for tok in removed_tokens)
+            only_dead = bool(old_on) and not kept_on
+            default_basis = (f"Stacked on {unmerged_parent['id']} ({stack_on})" if not kept_on
+                             else f"Rested on {', '.join(new_on)} (stacked on {stack_on})")
+            default_clears = f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands"
+            basis_val = prov_basis or (default_basis if (only_dead or stale_basis) else provisional.get("basis")) or default_basis
+            clears_val = prov_clears or (default_clears if (only_dead or stale_clears) else provisional.get("clears")) or default_clears
+            put(provisional, "basis", basis_val, ("basis", "clears", "on"))
+            put(provisional, "clears", clears_val, ("basis", "clears", "on"))
+            put(provisional, "on", new_on, ("basis", "clears", "on"))
+            put(row, "provisional", provisional, WORK_KEYS)
         elif "provisional" in row and not clear_provisional:
             old_on = row["provisional"].get("on", [])
-            removed_dead = [item for item in old_on if item in dead_ids]
+            removed_tokens = [item for item in old_on if item in dead_ids] + removed_layer_ids
             kept_on = [item for item in old_on if item not in dead_ids]
             if kept_on:
                 row["provisional"]["on"] = kept_on
-                if prov_basis is None and any(re.search(rf"\b{re.escape(dead)}\b", row["provisional"].get("basis", "")) for dead in removed_dead):
+                if prov_basis is None and any(re.search(rf"\b{re.escape(tok)}\b", row["provisional"].get("basis", "")) for tok in removed_tokens):
                     row["provisional"]["basis"] = f"Rested on {', '.join(kept_on)}"
-                if prov_clears is None and any(re.search(rf"\b{re.escape(dead)}\b", row["provisional"].get("clears", "")) for dead in removed_dead):
+                if prov_clears is None and any(re.search(rf"\b{re.escape(tok)}\b", row["provisional"].get("clears", "")) for tok in removed_tokens):
                     row["provisional"]["clears"] = f"{', '.join(kept_on)} land" if len(kept_on) > 1 else f"{kept_on[0]} lands"
             elif "on" in row["provisional"]:
                 if prov_basis is not None or prov_clears is not None:
@@ -681,7 +723,7 @@ def report(state, at, work, block, source, files):
             decision["links"] = ask["links"]
         state["decisions"].append({key: decision[key] for key in DECISION_KEYS if key in decision})
         asked.append(ask.get("id"))
-    followed = []
+    followed, to_route, to_reply = [], [], []
     discoveries = list(state.get("discoveries", []))
     existing_by_id = {entry["id"]: entry for entry in discoveries if entry.get("id")}
     for index, entry in enumerate(objects(block.get("followups", []), "followups")):
@@ -704,13 +746,24 @@ def report(state, at, work, block, source, files):
             if not changed:
                 notes.append(f"followup {entry['id']} is already recorded; left as it is")
                 continue
+            if "thread" in changed:
+                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
             if "impact" in changed and existing_entry.get("status") == "routed":
                 prior = existing_entry["route"]
                 existing_entry["route"] = "pending"
                 put(existing_entry, "status", "open", DISCOVERY_KEYS)
                 notes.append(f"followup {entry['id']} impact changed ({existing_entry['impact']}); reopened from {prior!r} for re-routing")
+                to_route.append(entry["id"])
+            elif existing_entry.get("status") == "routed" and existing_entry.get("reply") == "pending":
+                notes.append(
+                    f"followup {entry['id']} attached thread {existing_entry['thread']} to routed home "
+                    f"({existing_entry['route']}); send it to {work} and run `discovery --id {entry['id']} --reply-sent`"
+                )
+                to_reply.append(entry["id"])
             else:
                 notes.append(f"followup {entry['id']} updated ({', '.join(changed)})")
+                if existing_entry.get("status") == "open":
+                    to_route.append(entry["id"])
             followed.append(entry["id"])
             continue
         item_row = {
@@ -720,10 +773,13 @@ def report(state, at, work, block, source, files):
         for key in ("impact", "evidence", "thread"):
             if key in entry:
                 item_row[key] = entry[key]
+        if "thread" in entry:
+            item_row["reply"] = "pending"
         ordered = {key: item_row[key] for key in DISCOVERY_KEYS if key in item_row}
         existing_by_id[entry["id"]] = ordered
         discoveries.append(ordered)
         followed.append(entry["id"])
+        to_route.append(entry["id"])
     if followed:
         replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
     row["checkedAt"] = at
@@ -733,7 +789,8 @@ def report(state, at, work, block, source, files):
         notes.append(f"triage {', '.join(asked)}: resolve it with `resolve`, or ask the user")
     if followed:
         message += f", followups {', '.join(followed)}"
-        notes.append(f"route {', '.join(followed)} with `discovery --id <ID> --route ...`")
+        if to_route:
+            notes.append(f"route {', '.join(to_route)} with `discovery --id <ID> --route ...`")
     return message, notes
 
 
@@ -987,8 +1044,8 @@ def next_discovery_id(discoveries):
 
 
 def record_discovery(state, at, identity=None, add=False, origin=None, work=None, text=None,
-                     evidence=None, impact=None, route=None):
-    """Add a discovery or record the disposition route of an open discovery."""
+                     evidence=None, impact=None, route=None, reply_sent=False):
+    """Add a discovery, record its disposition route, or mark a held deferred PR reply sent."""
     discoveries = list(state.get("discoveries", []))
     if work:
         work_row(state, work)
@@ -1016,8 +1073,21 @@ def record_discovery(state, at, identity=None, add=False, origin=None, work=None
         replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
         label = assigned_id or origin
         return f"discovery {label}: {entry['route']}", []
+    if reply_sent and not route:
+        if not identity:
+            raise Refused("discovery --reply-sent needs --id")
+        target = next((row for row in discoveries if row.get("id") == identity), None)
+        if target is None:
+            raise Refused(f"no discovery {identity}")
+        if target.get("status") != "routed":
+            raise Refused(f"discovery {identity} must be routed before marking its deferred reply sent")
+        if target.get("reply") != "pending":
+            raise Refused(f"discovery {identity} has no pending deferred PR reply")
+        put(target, "reply", "sent", DISCOVERY_KEYS)
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+        return f"discovery {identity} reply sent", []
     if not identity or not route or not route.strip():
-        raise Refused("discovery needs --id and --route (or --add with --origin and --text)")
+        raise Refused("discovery needs --id and --route (or --reply-sent, or --add with --origin and --text)")
     target = next((row for row in discoveries if row.get("id") == identity), None)
     if target is None:
         raise Refused(f"no discovery {identity}")
@@ -1027,8 +1097,14 @@ def record_discovery(state, at, identity=None, add=False, origin=None, work=None
         raise Refused("routing a discovery needs a concrete destination, not 'pending'")
     target["route"] = route.strip()
     put(target, "status", "routed", DISCOVERY_KEYS)
+    notes = []
+    if reply_sent and target.get("reply") == "pending":
+        put(target, "reply", "sent", DISCOVERY_KEYS)
+    elif target.get("reply") == "pending":
+        notes.append(f"send recorded route ({target['route']}) to {target.get('work') or 'PR owner'} "
+                     f"for thread {target['thread']}, then run `discovery --id {identity} --reply-sent`")
     replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
-    return f"discovery {identity} routed: {target['route']}", []
+    return f"discovery {identity} routed: {target['route']}", notes
 
 
 def wait(state, at, on, event=None, work=None, clear=False):
@@ -1609,6 +1685,7 @@ def arguments():
     command.add_argument("--evidence", help="Location or evidence note (with --add)")
     command.add_argument("--impact", choices=DISCOVERY_IMPACTS, help="unrelated, shared-contract, or requested-scope")
     command.add_argument("--route", help="Disposition: work ID, snip ID, issue URL, or declined reason")
+    command.add_argument("--reply-sent", action="store_true", help="Mark a routed discovery's held deferred PR reply sent to its PR owner")
 
     command = commands.add_parser("status", parents=[shared], help="Read PRs and owner threads; list what to do now")
     mode = command.add_mutually_exclusive_group()
@@ -1689,7 +1766,7 @@ def event(args, state, at, files):
         return release(state, at, args.work, args.lander, args.target, args.keep, args.note)
     if args.command == "discovery":
         return record_discovery(state, at, args.id, args.add, args.origin, args.work,
-                                args.text, args.evidence, args.impact, args.route)
+                                args.text, args.evidence, args.impact, args.route, args.reply_sent)
     return wait(state, at, args.on, args.event, args.work, args.clear)
 
 

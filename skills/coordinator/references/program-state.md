@@ -28,7 +28,7 @@ to update `next` in the same commit; run `<command> --help` for full flags):
 | Passed answer to affected owners | `applied --decision W6-D1` |
 | Release or update a landing | `land --work W1` or `land --landing L2 --to submitted\|landed\|withdrawn [--note "<why>"]` |
 | Record or clear a wait | `wait --on "<what>" --event "<ends it>" [--work W1] [--clear]` |
-| Add or route a discovery / deferred follow-up | `discovery --id W1-F1 --route "<work ID \| snip ID \| issue \| declined>"` (or `--add --origin "..." --text "..." --route "..."`) |
+| Add or route a discovery / deferred follow-up | `discovery --id W1-F1 --route "<work ID \| snip ID \| issue \| declined>" [--reply-sent]` (or `--add ...`, or `--id W1-F1 --reply-sent`) |
 | Transfer coordinator ownership | `move --chief <new thread link>` (does not prompt to publish) |
 | Check forge/threads and verdict | `status` (also `--heartbeat`, `--turn-end`, `--json`, `--exit-code`) |
 
@@ -119,12 +119,12 @@ enforced by `record.py` and `render_dashboard.py`:
 - **Halting vs. non-halting phases:** `start`, `access`, and `proof` halt work; `acceptance` and
   `landing` let building/proof continue (and cover a shown Try or ready stop).
 - **Runnable triggers:** unstarted ready rows, idle owners with no wait/blocker/halting decision,
-  unapplied answers, unrouted open discoveries (`followups`), a reversible recommended decision
-  halting startable work (provisional start), or a settled decision with a `stalePick` (reopen
-  request).
+  unapplied answers, unrouted open discoveries (`followups`), routed discoveries with a pending
+  held deferred PR reply (`reply: "pending"`), a reversible recommended decision halting startable
+  work (provisional start), or a settled decision with a `stalePick` (reopen request).
 - **Dead base:** an outcome that was `scrapped` or whose layers are all `closed` without landing.
   Active dependents resting on it require a halting scrap-or-rebase decision, resolved atomically
   with `record.py work --scrap` or `--rebase-onto` plus `--decision`.
 - **Outcome states:** `planned`, `building`, `shown` (Try with `results`), `in-review`, `ready`
-  (never provisional), `landed`, `scrapped`, `unknown`. Support rows use `planned`, `building`,
-  `done`, `scrapped`, `unknown`.
+  (provisional allowed only for requested `pr-draft` or `pr-review`, never `land`), `landed`,
+  `scrapped`, `unknown`. Support rows use `planned`, `building`, `done`, `scrapped`, `unknown`.

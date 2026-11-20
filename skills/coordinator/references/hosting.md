@@ -100,9 +100,11 @@ Run on every answer wake, heartbeat tick, resume, and before settling any decisi
    if a newer user message supersedes the stored pick). If an atomic transition is refused during a
    move or backend switch, report the unapplied pick to the user and ask them to re-answer in the
    active Inbox before abandoning the old backend.
-5. Delete ONLY the DB documents listed on a `note: delete:` line from committed commands via
-   `db_write` `delete` with their version, then delete the scratch file. (`picksRead` prevents
-   duplicate processing if a delete fails.)
+5. Delete ONLY the DB documents listed on a `note: delete:` line from a command that exited 0
+   (including a validated `unchanged:` replay of an already-recorded pick after an earlier delete
+   failure; never delete documents from a refused command or an unapplied
+   `atomic work transition needed` note) via `db_write` `delete` with their version, then delete
+   the scratch file. (`picksRead` prevents duplicate processing if a delete fails.)
 6. Pass recorded answers to affected owners and run `record.py applied`; reopen any `reopen request:`
    line with `record.py reopen`. Publish the updated page.
 

@@ -92,3 +92,9 @@ unless asked to monitor. Merge waits for it unless the user says to go ahead.
 `pr_state` blocks on a draft. A draft is finished when every started check is terminal, no
 code-caused failure remains, feedback handling is complete, and you've recorded checks that
 draft policy skipped.
+
+A requested **provisional review-ready PR** (non-draft carrying `## Provisional`) is finished when
+`## Provisional` is the only blocker `pr_state` reports — passing `review-fix-loop` status on the
+current head, terminal passing checks, every `to_settle` item decided, and feedback handling
+complete. Keep `## Provisional` in the body so Merge stays blocked until the provisional condition
+clears.

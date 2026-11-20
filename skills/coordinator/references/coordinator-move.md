@@ -34,11 +34,13 @@ Only the current coordinator moves a program:
 If `chief`'s thread cannot act, ask the user to approve a takeover (the one exception to forwarding).
 With approval:
 
-1. Delete the old thread's heartbeat and turn off its answer wake (`grant.heartbeat`, `grant.wake`),
-   leaving stored picks for resume.
-2. Reconcile any pending landing releases bound to the old chief: cancel any in-flight forge
-   auto-merge or queue entry, confirm its terminal state, and withdraw or mark landed via
-   `record.py land` before transferring `chief`.
+1. Interrupt the old thread (`t3_thread_interrupt`), delete its heartbeat, and turn off its answer
+   wake (`grant.heartbeat`, `grant.wake`), leaving stored picks for resume.
+2. Reconcile any pending landing releases bound to the old chief in the same order as
+   [landing](landing.md#withdraw-a-release): withdraw each release first (`record.py land --landing
+   <ID> --to withdrawn --note "Coordinator takeover"`), notify/fence its lander so it cannot
+   re-submit, then cancel any in-flight forge auto-merge or merge-queue entry and confirm it
+   stopped (or mark `landed` if already merged).
 3. Repeat until the old thread is idle or gone (`thread_not_found`) and `chief` at `HEAD` names
    this thread: run `record.py move --chief <this thread link>` without publishing, interrupt the
    old thread, and confirm via `t3_thread_read`. If it will not settle or a call fails, stop and

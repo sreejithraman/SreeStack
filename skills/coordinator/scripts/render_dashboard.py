@@ -37,6 +37,8 @@ LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
 DISCOVERY_STATUSES = ("open", "routed")
 DISCOVERY_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
+DISCOVERY_REPLIES = ("pending", "sent")
+OPTION_ACTION_TYPES = ("scrap", "rebase")
 HISTORY = {"date", "source", "answerSource", "rationale", "applied", "stalePick", "picksRead"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
@@ -44,7 +46,7 @@ PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next
 GRANT = ("date", "source", "start", "resolve", "user")
 DECISION_KEYS = ("id", "question", "date", "source", "status", "reopened", "context", "pictures", "meanwhile", "recommendation",
                  "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied", "stalePick", "picksRead")
-OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible")
+OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible", "action")
 PICTURE_SHAPES = {"side-by-side": (2, 3), "before-after": (2, 2), "sequence": (2, 8)}  # shape: (fewest, most) images
 STALE_PICK = ("label", "revision", "at")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
@@ -352,6 +354,8 @@ def validate_edges(work, by_id, layers, halted):
         if "stackedOn" not in layer:
             continue
         parent, parent_row = layers[layer["stackedOn"]]
+        if row["state"] not in TERMINAL and parent_row["repo"] != row["repo"]:
+            raise ValueError(f"{where}: cannot stack {row['id']} ({row['repo']}) on {parent['id']} in {parent_row['repo']}")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
@@ -434,6 +438,18 @@ def validate_decision(row, by_id):
         raise ValueError(f"{path}.picksRead must list the stored picks read, such as \"picks/<id> (version 1) 2026-11-02T18:00:00Z\"")
     for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
         known_keys(option, f"{path}.options[{index}]", OPTION_KEYS)
+        if "action" in option:
+            action = known_keys(obj(option["action"], f"{path}.options[{index}].action"),
+                                f"{path}.options[{index}].action", ("type", "work", "onto", "stackOn"))
+            action_type = one_of(action.get("type"), OPTION_ACTION_TYPES, f"{path}.options[{index}].action.type")
+            if "work" in action:
+                known(text(action["work"], f"{path}.options[{index}].action.work"), f"{path}.options[{index}].action.work", by_id)
+            if action_type == "rebase":
+                text(action.get("onto"), f"{path}.options[{index}].action.onto")
+                if "stackOn" in action:
+                    text(action["stackOn"], f"{path}.options[{index}].action.stackOn")
+            elif "onto" in action or "stackOn" in action:
+                raise ValueError(f"{path}.options[{index}].action: scrap action cannot set onto or stackOn")
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
         if "image" in option:
@@ -520,7 +536,7 @@ def validate(state):
         ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
         ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
         ("waits", ("date", "on", "event"), ("work",)),
-        ("discoveries", ("date", "origin", "text", "route"), ("id", "work", "impact", "evidence", "thread", "status")),
+        ("discoveries", ("date", "origin", "text", "route"), ("id", "work", "impact", "evidence", "thread", "reply", "status")),
     ):
         for index, row in enumerate(records(state.get(name, []), name)):
             known_keys(row, f"{name}[{index}]", (*required, *optional))
@@ -534,6 +550,11 @@ def validate(state):
                         text(row.get("id"), f"discoveries[{index}].id")
                 if "impact" in row:
                     one_of(row["impact"], DISCOVERY_IMPACTS, f"discoveries[{index}].impact")
+                if "reply" in row:
+                    one_of(row["reply"], DISCOVERY_REPLIES, f"discoveries[{index}].reply")
+                    if row["reply"] == "pending":
+                        text(row.get("id"), f"discoveries[{index}].id")
+                        text(row.get("thread"), f"discoveries[{index}].thread")
     discovery_ids = [row["id"] for row in state.get("discoveries", []) if "id" in row]
     if len(discovery_ids) != len(set(discovery_ids)):
         raise ValueError("discoveries contain duplicate ids")
@@ -737,6 +758,13 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
         if discovery.get("status") == "open":
             impact = f"[{discovery['impact']}] " if discovery.get("impact") else ""
             runnable.append(item("route discovery", discovery["id"], f"{impact}{discovery['text']}", discovery["date"]))
+        elif discovery.get("status") == "routed" and discovery.get("reply") == "pending":
+            target = discovery.get("work") or "PR owner"
+            runnable.append(item(
+                "send deferred reply", discovery["id"],
+                f"send recorded route ({discovery['route']}) to {target} for thread {discovery['thread']}, then run discovery --reply-sent",
+                discovery["date"],
+            ))
     open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
     for wait in state.get("waits", []):
         if wait.get("work", "program") in open_rows | {"program"}:

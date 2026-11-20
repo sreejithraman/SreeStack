@@ -488,9 +488,9 @@ structured owner `followups` into `discoveries` as open items that keep
 `--heartbeat`, `--json`, `--exit-code`), and enforces single-line `next` values
 (at most 280 characters) so the command center stays scannable on mobile.
 Validation in `scripts/render_dashboard.py`
-rejects unknown keys, provisional landings/ready states, PRs on Try, terminal
-rows with blockers, dead bases without halting decisions, and missing or
-unhashed pictures. Claude coordinators publish private Claude artifacts (linking
+rejects unknown keys, provisional landings and Land-ready states (allowing `ready` on provisional
+work only for requested `pr-draft` or `pr-review`), cross-repo stack edges, PRs on Try, terminal
+rows with blockers, dead bases without halting decisions, and missing or unhashed pictures. Claude coordinators publish private Claude artifacts (linking
 with `#no_universal_links`); Codex coordinators publish private buildless
 ChatGPT Sites via `sites:sites` and `scripts/prepare_sites.py` (which inlines
 20-second visible live refresh with `chief-version.json`, verified by Chrome
