@@ -240,6 +240,8 @@ class EventTests(RecordCase):
         changed, after, _ = self.event("wait", "--on", "CI", "--event", "Done", "--next", "Check CI")
         self.assertEqual(changed, {"waits", "next"})
         self.assertEqual(after["next"], "Check CI")
+        self.refused("wait", "--on", "CI2", "--event", "Done", "--next", "x" * 281, message="at most 280 characters")
+        self.refused("wait", "--on", "CI2", "--event", "Done", "--next", "Line 1\nLine 2", message="one short line")
 
 
 class ReportTests(RecordCase):
@@ -1292,6 +1294,192 @@ class TurnEndTests(RecordCase):
                          ["W1 (ready): ready with no landing release"])
         work(landing, "W1")["finishLine"] = "pr-review"
         self.assertEqual(orphans(landing, {"W2": {"status": "running"}, "W6": {"status": "running"}}), [], "a requested PR state is a stop for the user")
+
+
+class LifecycleMutationTests(RecordCase):
+    def test_init_creates_git_repo_and_initial_commit(self):
+        fresh = self.program.folder.parent / "fresh-program" / "program.json"
+        env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3"),
+               "RECORD_FIXTURES": str(self.fixtures)}
+        result = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(fresh),
+            "--title", "Payments", "--goal", "Ship retries", "--chief", SESSION.format("chief"),
+            "--request", "Ship retries cleanly", "--request-source", "User msg 1", "--next", "Add outcomes",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((fresh.parent / "reports").is_dir())
+        state = json.loads(fresh.read_text())
+        self.assertEqual((state["title"], state["next"], state["work"], state["decisions"]),
+                         ("Payments", "Add outcomes", [], []))
+        self.assertEqual(state["request"], {"text": "Ship retries cleanly", "sources": ["User msg 1"]})
+        again = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(fresh),
+            "--title", "Payments", "--goal", "Ship retries", "--chief", SESSION.format("chief"),
+            "--request", "Ship retries cleanly",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(again.returncode, 1)
+        self.assertIn("already exists", again.stderr)
+
+    def test_grant_updates_grant_landing_authority_and_hosting(self):
+        _, after, _ = self.event(
+            "grant", "--source", "User msg 2", "--start", "All program outcomes",
+            "--resolve", "Settled reversible choices", "--user", "Merges and scope",
+            "--heartbeat", "10m task T1", "--wake", "Webhook task T2",
+            "--landing", "Scoped PRs once green", "--hosting", "https://claude.ai/artifacts/abc",
+        )
+        self.assertEqual(after["grant"]["start"], "All program outcomes")
+        self.assertEqual(after["grant"]["heartbeat"], "10m task T1")
+        self.assertEqual(after["grant"]["wake"], "Webhook task T2")
+        self.assertEqual(after["landingAuthority"]["text"], "Scoped PRs once green")
+        self.assertEqual(after["hosting"], "https://claude.ai/artifacts/abc")
+
+        _, after, _ = self.event("grant", "--heartbeat", "20m task T1")
+        self.assertEqual(after["grant"]["heartbeat"], "20m task T1")
+        self.assertEqual(after["grant"]["start"], "All program outcomes")
+        self.refused("grant", "--landing", "Need source", message="--landing needs --source")
+        self.refused("grant", message="at least one field")
+
+    def test_work_add_and_update(self):
+        _, after, _ = self.event(
+            "work", "--id", "W9", "--add", "--title", "Add webhook", "--repo", "acme/app",
+            "--finish-line", "land", "--finish-line-reason", "Settled and reversible",
+            "--description", "Emit signed webhooks", "--scope", "src/webhooks/**",
+            "--blocked-by", "W1", "--source", "Issue #9", "--optional",
+        )
+        row = work(after, "W9")
+        self.assertEqual((row["state"], row["finishLine"], row["required"], row["blockedBy"]),
+                         ("planned", "land", False, ["W1"]))
+        self.refused("work", "--id", "W9", "--add", "--title", "Dup", "--repo", "acme/app", message="already exists")
+
+        _, after, _ = self.event("work", "--id", "W9", "--required", "--clear-blocked-by",
+                                 "--provisional-basis", "Waiting on W1", "--provisional-clears", "W1 lands",
+                                 "--provisional-on", "W1")
+        row = work(after, "W9")
+        self.assertNotIn("required", row)
+        self.assertNotIn("blockedBy", row)
+        self.assertEqual(row["provisional"]["on"], ["W1"])
+        self.refused("work", "--id", "W9", message="at least one field")
+
+    def test_work_scrap_and_rebase_answer_decision_atomically(self):
+        # W2 stacks on W1-L2 and is provisional on W1; scrap W1, then resolve W2's dead-base decision atomically.
+        self.commit(lambda s: (
+            work(s, "W1").update(state="scrapped"),
+            work(s, "W1").pop("blocked", None),
+            s["decisions"].append({
+                "id": "W2-D9", "question": "W1 was scrapped. Scrap or rebase W2?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase onto main", "effect": "Drop W1 layer", "recommended": True, "reversible": True},
+                    {"label": "Scrap W2", "effect": "Close W2", "reversible": False},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+        ))
+        _, after, _ = self.event(
+            "work", "--id", "W2", "--rebase-onto", "main",
+            "--decision", "W2-D9", "--option", "1", "--answer-source", "User msg 10",
+        )
+        w2 = work(after, "W2")
+        self.assertEqual(w2["layers"][0]["base"], "main")
+        self.assertNotIn("stackedOn", w2["layers"][0])
+        self.assertNotIn("provisional", w2)
+        self.assertEqual(decision(after, "W2-D9")["status"], "answered")
+
+    def test_work_scrap_clears_blockers_and_answers_decision(self):
+        _, after, _ = self.event(
+            "work", "--id", "W6", "--scrap",
+            "--decision", "W6-D1", "--option", "2", "--answer-source", "User msg 11",
+        )
+        self.assertEqual(work(after, "W6")["state"], "scrapped")
+        self.assertNotIn("blocked", work(after, "W6"))
+        self.assertEqual(decision(after, "W6-D1")["status"], "answered")
+
+    def test_reopen_and_withdraw_preserve_history(self):
+        resolved = next(row for row in self.state["decisions"] if row["status"] == "resolved")
+        _, after, result = self.event("reopen", "--decision", resolved["id"], "--why", "User wants to revisit",
+                                      "--block", "W1:landing")
+        row = decision(after, resolved["id"])
+        self.assertEqual(row["status"], "open")
+        self.assertNotIn("basis", row)
+        self.assertNotIn("answer", row)
+        self.assertNotIn("applied", row)
+        self.assertIn(resolved["answer"], row["rationale"])
+        self.assertIn("reopened: User wants to revisit", row["rationale"])
+        self.assertEqual(row["blocks"], [{"id": "W1", "phase": "landing"}])
+        self.assertIn("withdraw any affected landing release", result.stdout)
+        self.refused("reopen", "--decision", resolved["id"], "--why", "Again", message="only a resolved or answered decision")
+
+        _, after, _ = self.event("withdraw", "--decision", resolved["id"], "--why", "Superseded by W9")
+        row = decision(after, resolved["id"])
+        self.assertEqual(row["status"], "withdrawn")
+        self.assertIn("withdrawn: Superseded by W9", row["rationale"])
+        self.refused("withdraw", "--decision", resolved["id"], "--why", "Again", message="already withdrawn")
+
+    def test_move_transfers_chief_and_live_owner_routes_without_publish_prompt(self):
+        new_chief = SESSION.format("new-chief")
+        _, after, result = self.event("move", "--chief", new_chief)
+        self.assertEqual(after["chief"], new_chief)
+        for row in after["work"]:
+            if row["state"] not in {"landed", "done", "scrapped"} and "owner" in row:
+                self.assertEqual(row["owner"]["route"], "`t3_thread_send` to the coordinator")
+        self.assertIn("do not publish from this thread", result.stdout)
+        self.assertNotIn("Publish ", result.stdout)
+
+    def test_report_followups_trigger_runnable_until_routed_by_discovery(self):
+        report_file = self.program.folder / "reports" / "W1.md"
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(
+            "```json\n"
+            + json.dumps({
+                "outcome": "W1",
+                "state": "in-review",
+                "followups": [
+                    {
+                        "id": "W1-F1",
+                        "text": "Shared retry helper also swallows timeout errors in W2",
+                        "evidence": "retry.py:42",
+                        "impact": "shared-contract",
+                    }
+                ],
+            })
+            + "\n```\n\nDeferred out-of-scope finding.\n"
+        )
+        _, after, result = self.event("report", "--work", "W1")
+        self.assertIn("followups W1-F1", result.stdout)
+        entries = [row for row in after.get("discoveries", []) if row.get("id") == "W1-F1"]
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["status"], "open")
+        self.assertEqual(entries[0]["route"], "pending")
+        self.assertEqual(entries[0]["impact"], "shared-contract")
+
+        found = assess(after, "2026-11-02T18:00:00Z", {})
+        self.assertEqual(found["verdict"], "runnable")
+        self.assertTrue(any(entry["kind"] == "route discovery" and entry["id"] == "W1-F1"
+                            for entry in found["runnable"]))
+
+        # Re-reporting the same followup ID is idempotent.
+        _, after_repeat, repeat_res = self.event("report", "--work", "W1")
+        self.assertIn("already recorded", repeat_res.stdout)
+        self.assertEqual(len([row for row in after_repeat.get("discoveries", []) if row.get("id") == "W1-F1"]), 1)
+
+        # Routing the discovery resolves the runnable trigger.
+        self.refused("discovery", "--id", "W1-F1", "--route", "pending", message="concrete destination")
+        _, routed, _ = self.event("discovery", "--id", "W1-F1", "--route", "Sent to W2 owner")
+        entry = next(row for row in routed["discoveries"] if row.get("id") == "W1-F1")
+        self.assertEqual(entry["status"], "routed")
+        self.assertEqual(entry["route"], "Sent to W2 owner")
+        found_after = assess(routed, "2026-11-02T18:05:00Z", {})
+        self.assertFalse(any(entry["kind"] == "route discovery" and entry["id"] == "W1-F1"
+                             for entry in found_after["runnable"]))
+        self.refused("discovery", "--id", "W1-F1", "--route", "Again", message="already routed")
+
+        # Coordinator can also add a discovery directly.
+        _, added, _ = self.event("discovery", "--add", "--id", "D99", "--origin", "PR #10 review",
+                                 "--text", "Clean up unused flag", "--impact", "unrelated",
+                                 "--route", "Snip #42")
+        d99 = next(row for row in added["discoveries"] if row.get("id") == "D99")
+        self.assertEqual(d99["status"], "routed")
+        self.assertEqual(d99["route"], "Snip #42")
 
 
 if __name__ == "__main__":

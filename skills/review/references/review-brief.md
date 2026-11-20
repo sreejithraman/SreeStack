@@ -41,12 +41,11 @@ For delegated assessments, also apply [Review evidence](review-evidence.md).
 
 ## Round inputs
 
-First-round reviewers, including a later wave that stays first discovery, receive
-no earlier verdicts or author defenses. [Review Fix Loop](../../review-fix-loop/SKILL.md)
-makes the Adversarial wave first discovery. Mark such a wave "first discovery" in its
-brief, because the peer-read boundary depends on that mark. Reviewers within a round
-receive no peer findings or verdicts from that round, even when concurrency requires
-serial dispatch.
+First-round reviewers, including any later wave the caller marks `first discovery`,
+receive no earlier verdicts or author defenses. Mark such a wave `first discovery` in
+its brief, because the peer-read boundary depends on that mark. Reviewers within a
+round receive no peer findings or verdicts from that round, even when concurrency
+requires serial dispatch.
 
 Later rounds include:
 
@@ -67,8 +66,7 @@ scope, including regressions from fixes. Earlier acceptance or rejection is not 
 ## Review request
 
 Read the assigned references and apply Review to the full scope. Follow
-[Delegated reviews](../SKILL.md#delegated-reviews), and return its coverage receipt.
-Do not read same-round peer reports, coverage receipts, summaries, or task
-conversations, including completion archives. Work read-only, and leave edits,
-commits, external actions, delegation, and acceptance to the caller. Return findings
-in the references' requested format.
+[Delegated reviews](../SKILL.md#delegated-reviews), and return its coverage block.
+Do not read same-round peer reports, summaries, or task conversations. Work
+read-only, and leave edits, commits, external actions, delegation, and acceptance
+to the caller. Return findings in the references' requested format.

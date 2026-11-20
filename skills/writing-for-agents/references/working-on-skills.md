@@ -18,6 +18,16 @@ A skill is one of two kinds:
 For example, `review` assesses a change, `review-sweep` settles findings, and
 `review-fix-loop` chains them.
 
+- **Dependencies point downward only.** A capability or lower workflow never links
+  up to a higher workflow or names its internals (such as `implement` or
+  `coordinator` inside `review-sweep` or `pr`). Instead, it takes scope and limits
+  from its caller and returns structured outcomes (such as deferred items or stops)
+  for the caller to route. Entry-boundary routing pointers (such as `implement`
+  offering `coordinator` for multi-outcome work) are the only exception.
+- **Home shared rules in the lower layer.** Under *One home per meaning*, when both
+  a lower skill and a higher workflow need the same rule, place it in the lower
+  skill or a shared foundation skill rather than linking upward.
+
 ## Write the description
 
 A model-invoked description is only a trigger; leave capabilities and procedure to the
@@ -108,8 +118,9 @@ To pick a target, rank skills by `SKILL.md` size and lines added vs removed in
 - Read `SKILL.md`, every reference, its project record, and its real runs (see Learn from
   real runs in controlled comparison); add tool guidance if it teaches a tool.
 - Check the contract, `Done` condition, invocation choice, description triggers and
-  exclusions, and every line against the line test (flagging no-ops, duplicates,
-  environment-held facts, and stale rules).
+  exclusions, downward-only dependencies (flagging upward links or higher-workflow
+  internals leaked into lower skills), and every line against the line test
+  (flagging no-ops, duplicates, environment-held facts, and stale rules).
 - Report each failing line with evidence. Label suspected no-ops as predictions until a
   fresh-session trial proves them.
 

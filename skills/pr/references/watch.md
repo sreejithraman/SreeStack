@@ -35,8 +35,10 @@ when a result looks wrong.
   held replies, and read the state again.
 - **No passing review status:** take the head through PR's
   [Prepare and Review steps](../SKILL.md#publish), unless posting its status already failed;
-  then report that blocker. A new head of reviewed work is a
-  [repair pass](../../review-fix-loop/SKILL.md#4-route-repairs).
+  then report that blocker. A new head of reviewed work follows
+  [Review Fix Loop's repair routing](../../review-fix-loop/SKILL.md#route-repairs) (clean
+  disjoint rebases carry forward coverage and stamp the new pushed SHA; edits or interacting
+  base changes run a repair pass).
 - **A missing check:** explain it, including workflows filtered out by a stacked PR's base or
   by draft status.
 - **Behind or conflicted:** read what the new base commits touch, then decide with

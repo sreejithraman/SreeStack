@@ -15,7 +15,7 @@ Commit owned edits with a terse subject, and run checks needed by final staging.
 Push after review, with upstream tracking. Push existing ahead commits without an
 empty commit; reuse an already published head when nothing changed. Then run any
 held `review-fix-loop` status command as
-[Review Fix Loop's finish step](../../review-fix-loop/SKILL.md#6-finish) says. For a
+[Review Fix Loop's finish step](../../review-fix-loop/SKILL.md#finish) says. For a
 caller-owned restack, use force-with-lease only on the named branch after review.
 Return a lease failure to the caller as changed remote state.
 

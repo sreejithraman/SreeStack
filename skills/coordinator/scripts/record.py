@@ -22,16 +22,20 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
-from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, IMAGE_SUFFIXES, LAYER_KEYS, OWNER_KEYS,
-                              OPTION_KEYS, PENDING_LANDINGS, PICTURE_SHAPES, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES,
-                              TERMINAL, WORK_KEYS, assess, check_pictures, committed, content_name, effective_finish,
-                              fields, git, hexed, known_keys, layout, now, observation, open_blocks, page_files,
-                              pending_landing, place, quoted, records, revision, stage_page, unsatisfied, validate)
+from render_dashboard import (ACTIVE, DECISION_KEYS, FINISH_LINES, GRANT, HALTING, IMAGE_SUFFIXES, LAYER_KEYS,
+                              LIVE_LAYERS, OWNER_KEYS, OPTION_KEYS, PENDING_LANDINGS, PHASES, PICTURE_SHAPES,
+                              PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
+                              check_pictures, committed, content_name, dead_base, effective_finish, fields, git,
+                              hexed, known_keys, layout, now, observation, open_blocks, page_files, pending_landing,
+                              place, quoted, records, revision, stage_page, unsatisfied, validate)
 
 
 VERDICTS = ("pass", "fail", "blocked", "untested")
-REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "waits", "blocked")
+REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "followups", "waits", "blocked")
 ASK_KEYS = ("id", "question", "context", "pictures", "meanwhile", "recommendation", "options", "weight", "phase", "links")
+FOLLOWUP_KEYS = ("id", "text", "evidence", "impact")
+FOLLOWUP_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
+DISCOVERY_KEYS = ("id", "date", "origin", "work", "impact", "text", "evidence", "route", "status")
 ROUTES = {
     "top-level": "`t3_thread_send` to the coordinator",
     "adopted": "`t3_thread_send` to the coordinator",
@@ -77,9 +81,280 @@ def decision_row(state, identity):
 
 
 
+MAX_NEXT_CHARS = 280
+
+
+def check_next(value):
+    if "\n" in value or "\r" in value or len(value.strip()) > MAX_NEXT_CHARS:
+        raise Refused(
+            f"next must be one short line (at most {MAX_NEXT_CHARS} characters) stating what happens next, "
+            "not a history log; keep history in git commits, work rows, or reports"
+        )
+    return value.strip()
+
+
 def set_next(state, value):
     if value:
-        state["next"] = value
+        state["next"] = check_next(value)
+
+
+def build_init_state(title, goal, chief, request_text, next_action=None, request_sources=None, finish_line=None, hosting=None):
+    """Build a fresh, validated program record."""
+    request = {"text": request_text}
+    if request_sources:
+        request["sources"] = list(request_sources)
+    state = {"title": title, "goal": goal}
+    if finish_line:
+        state["finishLine"] = finish_line
+    state["chief"] = chief
+    if hosting:
+        state["hosting"] = hosting
+    state["next"] = check_next(next_action) if next_action else "Start ready outcomes"
+    state["request"] = request
+    state["decisions"] = []
+    state["work"] = []
+    return validate(state)
+
+
+def update_grant(state, at, source=None, start_rule=None, resolve_rule=None, user_rule=None,
+                 heartbeat_rule=None, wake_rule=None, landing_rule=None, hosting=None, finish_line=None):
+    """Set or update program grant, landing authority, hosting URL, or program finish line."""
+    grant_values = (("start", start_rule), ("resolve", resolve_rule), ("user", user_rule),
+                    ("heartbeat", heartbeat_rule), ("wake", wake_rule))
+    touched_grant = any(value is not None for _, value in grant_values) or (source is not None and landing_rule is None)
+    if not (touched_grant or landing_rule is not None or hosting is not None or finish_line is not None):
+        raise Refused("grant needs at least one field to set (--start, --resolve, --user, --heartbeat, --wake, --landing, --hosting, or --finish-line)")
+    parts = []
+    if touched_grant:
+        grant = copy.deepcopy(state.get("grant", {}))
+        order = (*GRANT, "heartbeat", "wake")
+        if "date" not in grant or source is not None:
+            put(grant, "date", at, order)
+        if source is not None:
+            put(grant, "source", source, order)
+        for key, value in grant_values:
+            if value is not None:
+                put(grant, key, value, order)
+        put(state, "grant", grant, PROGRAM_KEYS)
+        parts.append("grant")
+    if landing_rule is not None:
+        if not source:
+            raise Refused("--landing needs --source: the user's message that authorized it")
+        put(state, "landingAuthority", {"date": at, "source": source, "text": landing_rule}, PROGRAM_KEYS)
+        parts.append("landingAuthority")
+    if hosting is not None:
+        put(state, "hosting", hosting, PROGRAM_KEYS)
+        parts.append("hosting")
+    if finish_line is not None:
+        put(state, "finishLine", finish_line, PROGRAM_KEYS)
+        parts.append("finishLine")
+    return f"update {', '.join(parts)}", []
+
+
+def parse_blocks(entries):
+    blocks = []
+    for raw in entries:
+        if ":" not in raw:
+            raise Refused(f"--block {raw!r} must be WORK_ID:PHASE (phase: {', '.join(PHASES)})")
+        work_id, phase = raw.rsplit(":", 1)
+        blocks.append({"id": work_id, "phase": phase})
+    return blocks
+
+
+def archive_decision_history(row, at, note):
+    """Move any settled answer and basis/source into rationale with the new note."""
+    pieces = []
+    if row.get("rationale"):
+        pieces.append(row["rationale"])
+    if "answer" in row:
+        earlier = f"{at}: prior {row['status']} answer {json.dumps(row.pop('answer'), ensure_ascii=False)}"
+        if "basis" in row:
+            earlier += f" (basis: {row.pop('basis')})."
+        elif "answerSource" in row:
+            earlier += f" (source: {row.pop('answerSource')})."
+        else:
+            earlier += "."
+        pieces.append(earlier)
+    else:
+        row.pop("basis", None)
+        row.pop("answerSource", None)
+    pieces.append(f"{at}: {note}")
+    put(row, "rationale", " ".join(pieces), DECISION_KEYS)
+
+
+def reopen_decision(state, at, identity, why, blocks=None):
+    """Reopen a resolved or answered decision; keep its prior answer in rationale."""
+    row = decision_row(state, identity)
+    if row["status"] not in {"resolved", "answered"}:
+        raise Refused(f"{identity} is {row['status']}; only a resolved or answered decision can be reopened")
+    archive_decision_history(row, at, f"reopened: {why}")
+    row["status"] = "open"
+    row.pop("applied", None)
+    row.pop("stalePick", None)
+    by_id = {item["id"]: item for item in state["work"]}
+    notes = []
+    if blocks is not None:
+        put(row, "blocks", parse_blocks(blocks), DECISION_KEYS)
+    elif "blocks" in row:
+        landed = [entry["id"] for entry in row["blocks"] if by_id.get(entry["id"], {}).get("state") in TERMINAL]
+        kept = [entry for entry in row["blocks"] if entry["id"] not in landed]
+        if kept:
+            row["blocks"] = kept
+        else:
+            row.pop("blocks", None)
+        if landed:
+            notes.append(f"dropped terminal blocks ({', '.join(landed)}); add a follow-up outcome if landed work needs changes")
+    affected = ", ".join(entry["id"] for entry in row.get("blocks", []))
+    notes.append(f"notify affected owners ({affected or 'if any'}) and withdraw any affected landing release")
+    return f"{identity} reopened", notes
+
+
+def withdraw_decision(state, at, identity, why):
+    """Withdraw a decision and preserve its history in rationale."""
+    row = decision_row(state, identity)
+    if row["status"] == "withdrawn":
+        raise Refused(f"{identity} is already withdrawn")
+    archive_decision_history(row, at, f"withdrawn: {why}")
+    row["status"] = "withdrawn"
+    row.pop("applied", None)
+    row.pop("stalePick", None)
+    return f"{identity} withdrawn", ["reconcile any blockers or work that depended on this decision"]
+
+
+def move_coordinator(state, chief):
+    """Transfer program ownership to a new coordinator thread and update live owner routes."""
+    state["chief"] = chief
+    updated = []
+    for row in state["work"]:
+        if row["state"] not in TERMINAL and "owner" in row:
+            put(row["owner"], "route", ROUTES["top-level"], OWNER_KEYS)
+            updated.append(row["id"])
+    notes = ["do not publish from this thread; delete your heartbeat and send the handoff to the new coordinator"]
+    if updated:
+        notes.append(f"updated owner.route for {', '.join(updated)}")
+    return f"move coordinator to {chief}", notes
+
+
+def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
+                unknown_reason=None, description=None, scope=None, finish_line=None, finish_line_reason=None,
+                origin=None, blocked=None, clear_blocked=False, blocked_by=None, clear_blocked_by=False,
+                sources=None, optional=False, required=False, prov_basis=None, prov_clears=None, prov_on=None,
+                clear_provisional=False, scrap=False, rebase_onto=None, stack_on=None,
+                decision_id=None, decision_option=None, decision_text=None, answer_source=None):
+    """Add, update, scrap, or rebase a work row, optionally answering its decision in the same commit."""
+    existing = next((row for row in state["work"] if row["id"] == identity), None)
+    notes = []
+    if add:
+        if existing is not None:
+            raise Refused(f"work {identity} already exists; omit --add to update it")
+        if not title or not repo:
+            raise Refused("work --add needs --title and --repo")
+        row = {"id": identity, "title": title, "repo": repo, "kind": kind or "outcome",
+               "state": work_state or "planned", "checkedAt": at}
+        state["work"].append(row)
+        action = f"{identity} add: {title}"
+    else:
+        if existing is None:
+            raise Refused(f"no work {identity}; pass --add to create it")
+        row = existing
+        action = f"{identity} update"
+
+    for key, value in (
+        ("title", title if not add else None), ("repo", repo if not add else None),
+        ("kind", kind if not add else None), ("description", description), ("scope", scope),
+        ("finishLine", finish_line), ("finishLineReason", finish_line_reason), ("origin", origin),
+        ("unknownReason", unknown_reason),
+    ):
+        if value is not None:
+            put(row, key, value, WORK_KEYS)
+    if work_state is not None and not add:
+        row["state"] = work_state
+        if work_state != "unknown":
+            row.pop("unknownReason", None)
+    if sources is not None:
+        replace_list(row, "sources", sources)
+    if clear_blocked:
+        row.pop("blocked", None)
+    elif blocked is not None:
+        put(row, "blocked", blocked, WORK_KEYS)
+    if clear_blocked_by:
+        row.pop("blockedBy", None)
+    elif blocked_by is not None:
+        replace_list(row, "blockedBy", blocked_by)
+    if optional:
+        put(row, "required", False, WORK_KEYS)
+    elif required:
+        row.pop("required", None)
+
+    if clear_provisional:
+        row.pop("provisional", None)
+    elif prov_basis is not None or prov_clears is not None or prov_on is not None:
+        provisional = copy.deepcopy(row.get("provisional", {}))
+        if prov_basis is not None:
+            put(provisional, "basis", prov_basis, ("basis", "clears", "on"))
+        if prov_clears is not None:
+            put(provisional, "clears", prov_clears, ("basis", "clears", "on"))
+        if prov_on is not None:
+            put(provisional, "on", prov_on, ("basis", "clears", "on"))
+        put(row, "provisional", provisional, WORK_KEYS)
+
+    if decision_id is not None:
+        if not answer_source or (decision_option is None and decision_text is None):
+            raise Refused("--decision on work needs --answer-source and either --option or --text")
+        target_decision = decision_row(state, decision_id)
+        chosen = option_label(target_decision, decision_option) if decision_option is not None else decision_text
+        _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
+        notes.extend(answer_notes)
+
+    layers_by_id = {layer["id"]: (layer, owner_row) for owner_row in state["work"]
+                    for layer in owner_row.get("layers", [])}
+
+    if scrap:
+        row["state"] = "scrapped"
+        row.pop("blockedBy", None)
+        row.pop("blocked", None)
+        row.pop("unknownReason", None)
+        action = f"{identity} scrapped"
+
+    if rebase_onto is not None:
+        dead_ids = {item["id"] for item in state["work"] if dead_base(item)}
+        live_layers = [layer for layer in row.get("layers", []) if layer["status"] in LIVE_LAYERS]
+        bottom_layers = [layer for layer in live_layers
+                         if "stackedOn" not in layer or layers_by_id.get(layer["stackedOn"], (None, {}))[1].get("id") != identity]
+        target_layers = bottom_layers or live_layers[:1]
+        for layer in target_layers:
+            put(layer, "base", rebase_onto, LAYER_KEYS)
+            if stack_on is not None:
+                put(layer, "stackedOn", stack_on, LAYER_KEYS)
+            else:
+                layer.pop("stackedOn", None)
+        if stack_on is not None:
+            if stack_on not in layers_by_id:
+                raise Refused(f"no layer {stack_on} to stack on")
+            parent_layer, parent_row = layers_by_id[stack_on]
+            if parent_row["id"] != identity and parent_layer["status"] != "merged":
+                provisional = copy.deepcopy(row.get("provisional", {}))
+                kept_on = [item for item in provisional.get("on", []) if item not in dead_ids and item != parent_row["id"]]
+                put(provisional, "basis", prov_basis or provisional.get("basis") or f"Stacked on {parent_row['id']} ({stack_on})", ("basis", "clears", "on"))
+                put(provisional, "clears", prov_clears or provisional.get("clears") or f"{parent_row['id']} lands", ("basis", "clears", "on"))
+                put(provisional, "on", [*kept_on, parent_row["id"]], ("basis", "clears", "on"))
+                put(row, "provisional", provisional, WORK_KEYS)
+        elif "provisional" in row and not clear_provisional:
+            kept_on = [item for item in row["provisional"].get("on", []) if item not in dead_ids]
+            if kept_on:
+                row["provisional"]["on"] = kept_on
+            elif "on" in row["provisional"]:
+                row.pop("provisional", None)
+        action = f"{identity} rebased onto {rebase_onto}"
+
+    if not add and not any((
+        title, repo, kind, work_state, unknown_reason, description, scope, finish_line, finish_line_reason,
+        origin, blocked, clear_blocked, blocked_by, clear_blocked_by, sources, optional, required,
+        prov_basis, prov_clears, prov_on, clear_provisional, scrap, rebase_onto, decision_id,
+    )):
+        raise Refused("work needs at least one field to update, or --add to create a row")
+    row["checkedAt"] = at
+    return action, notes
 
 
 # Events. Each takes the committed program and returns the commit message and notes to print.
@@ -256,11 +531,37 @@ def report(state, at, work, block, source, files):
             decision["links"] = ask["links"]
         state["decisions"].append({key: decision[key] for key in DECISION_KEYS if key in decision})
         asked.append(ask.get("id"))
+    followed = []
+    discoveries = list(state.get("discoveries", []))
+    existing_ids = {entry.get("id") for entry in discoveries if entry.get("id")}
+    for index, entry in enumerate(objects(block.get("followups", []), "followups")):
+        only(entry, FOLLOWUP_KEYS, f"followups[{index}]")
+        fields(entry, f"followups[{index}]", ("id", "text"), ("evidence", "impact"))
+        if "impact" in entry and entry["impact"] not in FOLLOWUP_IMPACTS:
+            raise Refused(f"followups[{index}].impact must be one of {', '.join(FOLLOWUP_IMPACTS)}")
+        if entry["id"] in existing_ids:
+            notes.append(f"followup {entry['id']} is already recorded; left as it is")
+            continue
+        existing_ids.add(entry["id"])
+        item_row = {
+            "id": entry["id"], "date": at, "origin": f"{work} report ({source})",
+            "work": work, "text": entry["text"], "route": "pending", "status": "open",
+        }
+        for key in ("impact", "evidence"):
+            if key in entry:
+                item_row[key] = entry[key]
+        discoveries.append({key: item_row[key] for key in DISCOVERY_KEYS if key in item_row})
+        followed.append(entry["id"])
+    if followed:
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
     row["checkedAt"] = at
     message = f"{work} report: {block['state']}"
     if asked:
         message += f", asks {', '.join(asked)}"
         notes.append(f"triage {', '.join(asked)}: resolve it with `resolve`, or ask the user")
+    if followed:
+        message += f", followups {', '.join(followed)}"
+        notes.append(f"route {', '.join(followed)} with `discovery --id <ID> --route ...`")
     return message, notes
 
 
@@ -479,6 +780,52 @@ def applied(state, identities):
         if row.pop("applied", None) is not False:
             raise Refused(f"{identity} has no answer waiting to be applied")
     return f"{', '.join(identities)} applied", []
+
+
+def record_discovery(state, at, identity=None, add=False, origin=None, work=None, text=None,
+                     evidence=None, impact=None, route=None):
+    """Add a discovery or record the disposition route of an open discovery."""
+    discoveries = list(state.get("discoveries", []))
+    if work:
+        work_row(state, work)
+    if impact and impact not in FOLLOWUP_IMPACTS:
+        raise Refused(f"--impact must be one of {', '.join(FOLLOWUP_IMPACTS)}")
+    if add:
+        if not origin or not text:
+            raise Refused("discovery --add needs --origin and --text")
+        if identity and any(row.get("id") == identity for row in discoveries):
+            raise Refused(f"discovery {identity} already exists")
+        routed = bool(route and route.strip() and route.strip().lower() != "pending")
+        entry = {
+            "date": at, "origin": origin, "text": text,
+            "route": route.strip() if routed else "pending",
+            "status": "routed" if routed else "open",
+        }
+        if identity:
+            entry["id"] = identity
+        if work:
+            entry["work"] = work
+        if impact:
+            entry["impact"] = impact
+        if evidence:
+            entry["evidence"] = evidence
+        discoveries.append({key: entry[key] for key in DISCOVERY_KEYS if key in entry})
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+        label = identity or origin
+        return f"discovery {label}: {entry['route']}", []
+    if not identity or not route or not route.strip():
+        raise Refused("discovery needs --id and --route (or --add with --origin and --text)")
+    target = next((row for row in discoveries if row.get("id") == identity), None)
+    if target is None:
+        raise Refused(f"no discovery {identity}")
+    if target.get("status") == "routed":
+        raise Refused(f"discovery {identity} is already routed ({target['route']})")
+    if route.strip().lower() == "pending":
+        raise Refused("routing a discovery needs a concrete destination, not 'pending'")
+    target["route"] = route.strip()
+    put(target, "status", "routed", DISCOVERY_KEYS)
+    replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+    return f"discovery {identity} routed: {target['route']}", []
 
 
 def wait(state, at, on, event=None, work=None, clear=False):
@@ -828,6 +1175,26 @@ class Record:
             raise Refused(f"{self.file} is not one value per line; run render_dashboard.py --check for the fix")
         return state
 
+    def create(self, state, message):
+        """Initialize a new git-backed program record; a failure leaves no state file."""
+        if self.file.exists():
+            raise Refused(f"{self.file} already exists")
+        validate(state)
+        self.file.parent.mkdir(parents=True, exist_ok=True)
+        (self.file.parent / "reports").mkdir(exist_ok=True)
+        if not (self.file.parent / ".git").exists():
+            result = subprocess.run(["git", "-C", str(self.file.parent), "init", "-q"], capture_output=True, text=True)
+            if result.returncode:
+                raise Refused(result.stderr.strip() or "git init failed")
+        try:
+            self.file.write_text(layout(state))
+            self.git("add", "--", self.file.name)
+            self.git("commit", "-q", "-m", message, "--", self.file.name)
+        except (Refused, ValueError, OSError):
+            self.file.unlink(missing_ok=True)
+            raise
+        print(f"committed: {message}")
+
     def save(self, state, message, files=None):
         """Commit state with files (record path: content) written into the program folder; a failure changes nothing."""
         validate(state)
@@ -894,6 +1261,60 @@ def arguments():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
 
+    command = commands.add_parser("init", parents=[shared], help="Create and commit a new program record")
+    command.add_argument("--title", required=True)
+    command.add_argument("--goal", required=True)
+    command.add_argument("--chief", required=True, help="The current coordinator thread link")
+    command.add_argument("--request", required=True, help="The original user request")
+    command.add_argument("--request-source", action="append", help="A source reference for the request; repeatable")
+    command.add_argument("--finish-line", help="Program-wide finish-line note")
+    command.add_argument("--hosting", help="Initial published command center URL")
+
+    command = commands.add_parser("grant", parents=[shared], help="Set or update the grant, landing authority, or hosting URL")
+    command.add_argument("--source", help="The user's message that authorized the grant or landing authority")
+    command.add_argument("--start", dest="start_rule", help="Which owners and support tasks the coordinator may start")
+    command.add_argument("--resolve", dest="resolve_rule", help="Which decisions the coordinator settles itself")
+    command.add_argument("--user", dest="user_rule", help="What stays with the user")
+    command.add_argument("--heartbeat", dest="heartbeat_rule", help="Heartbeat timing policy and scheduled task ID, or why none")
+    command.add_argument("--wake", dest="wake_rule", help="Answer wake scheduled task ID, or why none")
+    command.add_argument("--landing", dest="landing_rule", help="Agreed landing scope and gates (sets landingAuthority)")
+    command.add_argument("--hosting", help="Current published command center URL")
+    command.add_argument("--finish-line", help="Program-wide finish-line note")
+
+    command = commands.add_parser("work", parents=[shared], help="Add, update, scrap, or rebase a work row")
+    command.add_argument("--id", required=True, help="Work ID, such as W1")
+    command.add_argument("--add", action="store_true", help="Create a new work row")
+    command.add_argument("--title")
+    command.add_argument("--repo")
+    command.add_argument("--kind", choices=("outcome", "follow-up", "support"))
+    command.add_argument("--status", dest="work_state", choices=tuple(STATES), help="Work row state")
+    command.add_argument("--unknown-reason")
+    command.add_argument("--description")
+    command.add_argument("--scope")
+    command.add_argument("--finish-line", choices=tuple(FINISH_LINES))
+    command.add_argument("--finish-line-reason")
+    command.add_argument("--origin")
+    command.add_argument("--source", dest="sources", action="append", help="Source reference; repeatable")
+    command.add_argument("--blocked")
+    command.add_argument("--clear-blocked", action="store_true")
+    command.add_argument("--blocked-by", action="append", help="Logical dependency work ID; repeatable")
+    command.add_argument("--clear-blocked-by", action="store_true")
+    req = command.add_mutually_exclusive_group()
+    req.add_argument("--optional", action="store_true", help="Mark proposed work outside committed scope")
+    req.add_argument("--required", action="store_true", help="Mark work as required")
+    command.add_argument("--provisional-basis")
+    command.add_argument("--provisional-clears")
+    command.add_argument("--provisional-on", action="append", help="Outcome ID this provisional work rests on; repeatable")
+    command.add_argument("--clear-provisional", action="store_true")
+    command.add_argument("--scrap", action="store_true", help="Scrap this work row and clear active blockers")
+    command.add_argument("--rebase-onto", help="Move live layers' base onto this branch (and clear or retarget dead-base provisional state)")
+    command.add_argument("--stack-on", help="Layer ID to set as stackedOn when rebasing onto another unmerged layer")
+    command.add_argument("--decision", dest="decision_id", help="Decision ID to answer in the same commit as --scrap or --rebase-onto")
+    choice = command.add_mutually_exclusive_group()
+    choice.add_argument("--option", dest="decision_option", type=int)
+    choice.add_argument("--text", dest="decision_text")
+    command.add_argument("--answer-source", help="User message that answered --decision")
+
     command = commands.add_parser("start", parents=[shared], help="An owner started on a work row")
     command.add_argument("--work", required=True)
     command.add_argument("--owner", required=True, help="The owner's name")
@@ -932,6 +1353,18 @@ def arguments():
     choice.add_argument("--option", type=int)
     choice.add_argument("--text")
 
+    command = commands.add_parser("reopen", parents=[shared], help="Reopen a resolved or answered decision")
+    command.add_argument("--decision", required=True)
+    command.add_argument("--why", required=True)
+    command.add_argument("--block", dest="blocks", action="append", help="Unlanded outcome and phase as WORK_ID:PHASE; repeatable")
+
+    command = commands.add_parser("withdraw", parents=[shared], help="Withdraw a decision and preserve its history")
+    command.add_argument("--decision", required=True)
+    command.add_argument("--why", required=True)
+
+    command = commands.add_parser("move", parents=[shared], help="Transfer coordinator ownership and live owner routes")
+    command.add_argument("--chief", required=True, help="The new coordinator thread link")
+
     command = commands.add_parser("applied", parents=[shared], help="You passed answers to the owners they affect")
     command.add_argument("--decision", action="append", required=True)
 
@@ -950,10 +1383,20 @@ def arguments():
     command.add_argument("--work")
     command.add_argument("--clear", action="store_true")
 
+    command = commands.add_parser("discovery", parents=[shared], help="Add or route a discovery / deferred follow-up")
+    command.add_argument("--id", help="Discovery ID (to route an open item, or assign on --add)")
+    command.add_argument("--add", action="store_true", help="Record a new discovery")
+    command.add_argument("--origin", help="Where the discovery came from (with --add)")
+    command.add_argument("--work", help="Originating work ID, if any")
+    command.add_argument("--text", help="What was discovered or deferred (with --add)")
+    command.add_argument("--evidence", help="Location or evidence note (with --add)")
+    command.add_argument("--impact", choices=FOLLOWUP_IMPACTS, help="unrelated, shared-contract, or requested-scope")
+    command.add_argument("--route", help="Disposition: work ID, snip ID, issue URL, or declined reason")
+
     command = commands.add_parser("status", parents=[shared], help="Read PRs and owner threads; list what to do now")
     mode = command.add_mutually_exclusive_group()
     mode.add_argument("--turn-end", action="store_true",
-                      help="Commit nothing; fail while the verdict is runnable, the record is dirty, or the page is behind")
+                      help="Commit nothing; fail while the verdict is runnable, the record is dirty, an owner's thread state moved, or the page is behind")
     mode.add_argument("--heartbeat", action="store_true",
                       help="Commit nothing; print heartbeat: quiet, wake, or done against what was last seen")
     mode.add_argument("--exit-code", action="store_true", help="Exit 0 done, 3 waiting, 4 working, 5 runnable")
@@ -964,6 +1407,22 @@ def arguments():
 
 def event(args, state, at, files):
     """Apply the command's event to state; files gains each file the commit must add: its record path and content."""
+    if args.command == "grant":
+        return update_grant(state, at, args.source, args.start_rule, args.resolve_rule, args.user_rule,
+                            args.heartbeat_rule, args.wake_rule, args.landing_rule, args.hosting, args.finish_line)
+    if args.command == "work":
+        return mutate_work(state, at, args.id, args.add, args.title, args.repo, args.kind, args.work_state,
+                           args.unknown_reason, args.description, args.scope, args.finish_line, args.finish_line_reason,
+                           args.origin, args.blocked, args.clear_blocked, args.blocked_by, args.clear_blocked_by,
+                           args.sources, args.optional, args.required, args.provisional_basis, args.provisional_clears,
+                           args.provisional_on, args.clear_provisional, args.scrap, args.rebase_onto, args.stack_on,
+                           args.decision_id, args.decision_option, args.decision_text, args.answer_source)
+    if args.command == "reopen":
+        return reopen_decision(state, at, args.decision, args.why, args.blocks)
+    if args.command == "withdraw":
+        return withdraw_decision(state, at, args.decision, args.why)
+    if args.command == "move":
+        return move_coordinator(state, args.chief)
     if args.command == "start":
         return start(state, at, args.work, args.owner, args.mode, args.session, args.route, args.workspace, args.replace)
     if args.command == "report":
@@ -1007,6 +1466,9 @@ def event(args, state, at, files):
         if not args.work:
             raise Refused("land needs --work to release, or --landing with --to")
         return release(state, at, args.work, args.lander, args.target, args.keep, args.note)
+    if args.command == "discovery":
+        return record_discovery(state, at, args.id, args.add, args.origin, args.work,
+                                args.text, args.evidence, args.impact, args.route)
     return wait(state, at, args.on, args.event, args.work, args.clear)
 
 
@@ -1102,6 +1564,12 @@ def main():
     try:
         if args.command == "status":
             return status(args, record)
+        if args.command == "init":
+            state = build_init_state(args.title, args.goal, args.chief, args.request,
+                                     args.next, args.request_source, args.finish_line, args.hosting)
+            record.create(state, f"init: {args.title}")
+            record.render()
+            return 0
         state = record.load()
         before = copy.deepcopy(state)
         files = {}
@@ -1113,7 +1581,8 @@ def main():
             record.save(state, message, files)
         for note in notes:
             print(f"note: {note}")
-        record.render()
+        if args.command != "move":
+            record.render()
         return 1 if any(note.startswith("ask again") for note in notes) else 0
     except (Refused, OSError, ValueError) as error:
         print(f"refused: {error}", file=sys.stderr)

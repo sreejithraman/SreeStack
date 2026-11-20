@@ -494,13 +494,21 @@ def validate(state):
         ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
         ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
         ("waits", ("date", "on", "event"), ("work",)),
-        ("discoveries", ("date", "origin", "text", "route"), ()),
+        ("discoveries", ("date", "origin", "text", "route"), ("id", "work", "impact", "evidence", "status")),
     ):
         for index, row in enumerate(records(state.get(name, []), name)):
             known_keys(row, f"{name}[{index}]", (*required, *optional))
             fields(row, f"{name}[{index}]", required, optional)
             if "work" in row:
                 known(row["work"], f"{name}[{index}].work", by_id)
+            if name == "discoveries":
+                if "status" in row and row["status"] not in {"open", "routed"}:
+                    raise ValueError(f"discoveries[{index}].status must be open or routed")
+                if "impact" in row and row["impact"] not in {"unrelated", "shared-contract", "requested-scope"}:
+                    raise ValueError(f"discoveries[{index}].impact must be unrelated, shared-contract, or requested-scope")
+    discovery_ids = [row["id"] for row in state.get("discoveries", []) if "id" in row]
+    if len(discovery_ids) != len(set(discovery_ids)):
+        raise ValueError("discoveries contain duplicate ids")
     for row in state.get("landings", []):
         validate_landing(row, by_id)
     return state
@@ -697,6 +705,11 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
         elif decision.get("applied") is False:
             affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
             runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
+    for index, discovery in enumerate(state.get("discoveries", [])):
+        if discovery.get("status") == "open":
+            label = discovery.get("id") or f"discovery[{index}]"
+            impact = f"[{discovery['impact']}] " if discovery.get("impact") else ""
+            runnable.append(item("route discovery", label, f"{impact}{discovery['text']}", discovery["date"]))
     open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
     for wait in state.get("waits", []):
         if wait.get("work", "program") in open_rows | {"program"}:

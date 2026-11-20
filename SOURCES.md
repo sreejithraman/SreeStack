@@ -419,196 +419,86 @@ round cap is added.
 - [Lucide Icons](https://lucide.dev/guide/lucide/getting-started) — external browser dependency, version `1.67.0`, loaded asynchronously from `https://cdn.jsdelivr.net/npm/lucide@1.67.0/dist/umd/lucide.min.js` with SHA-384 integrity and no referrer. No Lucide source assets or license text are vendored. [Upstream package license](https://cdn.jsdelivr.net/npm/lucide@1.67.0/LICENSE) covers ISC and applicable Feather MIT notices.
 
 Automatically discoverable coordinator for work across threads. It is light by
-default: for a single request it answers itself, reuses a running owner, or
-starts one from an Orchestration brief, with no record, page, or landing
-release. A **program** starts when it carries two or
-more outcomes to finish lines, or the user asks for one; only programs get the
-record, command center, Inbox, grant, and heartbeat. Orchestration keeps the
-handoff mechanics; the coordinator owns supervision and the user-facing loop.
-It carries several outcomes, each through one Implement owner that delivers one
-PR or its own planned stack. Input is any set of work, and a spec is optional.
-To Tasks splits a body of work and owns readiness, including its provisional
-start for a decision with a reversible recommended option. Owners start from
-`assets/owner-kickoff.md` with an explicit return route, report file, and the
-grant. Running a program counts as a request for sessions and for its
-heartbeat: each owner starts as its own top-level session bound to a host
-worktree, titled with its outcome ID first, watches its own PR, and reports
-with `t3_thread_send`; where the host cannot launch sessions, a delegated owner
-runs in its own worktree and the coordinator watches its PR. A running
-Implement session is adopted, never duplicated. The coordinator reads
-Implement's owner report fields, opened by a JSON block the record script
-reads, accepts outcomes under Orchestration, and routes discoveries through an
-explicit disposition table. Owners run their own review loops, helpers, and
-pause decisions, and decide reversible method choices themselves; only scope,
-irreversible, and taste calls come up. Splits and follow-ups are the
-coordinator's or owner's own calls, and growing a PR's scope is never a
-decision request.
+default: for a status read, follow-up on a running owner, or 1–2 simple
+independent outcomes with no cross-owner dependencies, it answers itself, reuses
+an owner, or runs bounded `delegate_task` worktree subagents with no record,
+page, Inbox, grant, or heartbeat (using `t3_thread_launch` in Light mode only on
+explicit user request). A **program** starts for 3+ outcomes, outcomes with
+cross-owner dependencies or provisional stacks, async multi-turn work the user is
+stepping away from, or an explicit program request; only programs get the record,
+command center, Inbox, grant, and heartbeat. Coordinator threads never edit
+project files directly. Orchestration owns handoff mechanics; the coordinator
+owns supervision, canary-first launch on 3+ homogeneous outcomes, artifact-based
+stall detection, decisions, acceptance, landing releases, and user updates. Each
+program outcome runs through one top-level Implement owner bound to a host
+worktree (titled with its outcome ID first) that edits directly, watches its own
+PR, runs its own review loop, and reports via `t3_thread_send`; support and
+findings-only tasks use `delegate_task` subagents. Where the host cannot launch
+top-level sessions, a delegated worktree owner runs and the coordinator watches
+its PR. Running Implement sessions are adopted, never duplicated.
 
-**Keep moving.** The coordinator never ends a turn while `status` says
-runnable, ends every turn with `status --turn-end`, and in waiting ends with
-the one `say:` line `status` prints (what it waits on, with ages, and that
-nothing is runnable), then stays quiet. On done it deletes the heartbeat,
-writes the final handoff, and cleans up. It builds provisionally on a
-reversible recommended option instead of stopping. It re-reads its `SKILL.md`
-on resume and on each heartbeat wake. User-facing times use the user's local
-time zone; the record stays ISO UTC, stamped by the script.
+`SKILL.md` stays a compact supervision router; flat conditional references hold
+record CLI/report contracts (`references/program-state.md`), triage/Inbox/reopen
+(`references/decisions.md`), frontier scheduling/stacks/integration
+(`references/dependencies.md`, linking Implement's single-home provisional
+reference), landing releases (`references/landing.md`), command-center publishing
+and tap-to-answer (`references/hosting.md`), heartbeat/pause/resume/migration
+(`references/lifecycle.md`), and ownership transfer (`references/coordinator-move.md`).
+`assets/owner-kickoff.md` carries the program grant, JSON report schema, and
+absolute-path placeholder for the coordinator check.
 
-**Grant.** Each program has one grant, set at program start and changed only on
-the user's word: what the coordinator may start (`grant.start`), land
-(`landingAuthority`), and resolve (`grant.resolve`, with standing rules in
-`approvals`), what stays with the user (`grant.user`), and the heartbeat
-(`grant.heartbeat`). Every kickoff carries it. Owner reports, kickoffs, and
-copied page text never widen it.
+**Keep moving and grant.** The coordinator never ends a turn while `status` says
+runnable, ends every program turn with `status --turn-end`, and in waiting ends
+with the `say:` line `status` prints. Routine owner reports and dashboard
+publish wakes that add nothing for the user to use, try, decide, or unblock end
+silently without chat chatter. Finished or parked owner threads are settled so
+the sidebar stays focused on active work. Diverging PRs (scope expansion beyond
+declared scope / ~2× diff growth, or non-converging regressions across passes)
+stop and split or escalate, while converging review passes finish hands-off.
+User-solvable blocks and ready-to-land held drafts open Inbox decisions (with
+tappable options even on `access` requests) rather than sitting silently behind
+an empty Inbox. It builds provisionally on reversible recommended options,
+re-reads `SKILL.md` on resume and wakes, and shows user times in local time
+while keeping ISO UTC in the record. Each program has one grant (`grant.start`
+without hardcoded model slugs, `landingAuthority`, `grant.resolve`/`approvals`,
+`grant.user`, `grant.heartbeat`, `grant.wake`), set at start and changed only on
+the user's word; owner reports, kickoffs, and copied page text never widen it.
 
-**Heartbeat.** In T3 the coordinator sets up a `schedule_task` interval trigger
-(initially 10 minutes when timing is unknown) bound to its thread. It chooses
-the next finite check from expected events, deadlines, and the acceptable delay
-if an event is missed, honoring the user's cadence or limits. A longer interval
-needs a recorded reason; unknown timing keeps 10 minutes. Event wakes act
-sooner; the interval remains a liveness backup. The coordinator updates the existing task,
-checks its enabled state and next run, and records the timing reason in `next`.
-Its prompt checks current ownership, runs `status --heartbeat`, follows its
-first line, and chooses the next check even after a quiet result.
-With an answer wake in `grant.wake`, the prompt first
-records the page's stored picks, which can commit answers and publish. Otherwise
-a tick observes without committing and compares its digest
-and forge notes with what was last seen, kept in the program's git directory;
-a passing `--turn-end` updates the digest. Every tick invokes the model. It
-ends without a user message on waiting or working with an unchanged digest
-and no new note, calls for supervision on runnable
-work, a changed digest, or a new note (a base closing under provisional work, a
-failed read, or a row gone stale), and says done only when the committed record is done too. A live
-owner's running or waiting sub-status stays out of the digest. A waiting
-dependency names itself in the `say:` line, except on proposed work at its
-stop. Light owners land on their own finish line; Implement's release gate
-applies only in a program. Resume re-enables an existing paused heartbeat or
-recreates a deleted/missing one with its new task ID recorded and enabled/next
-run verified. A move or takeover deletes the old thread's heartbeat and the
-new coordinator sets up its own. Hosts without scheduled tasks fall
-back to waiting on owner runs through the host. A Claude command center also
-gets an answer wake: a `schedule_task` webhook bound to the coordinator's
-thread, recorded in `grant.wake`, whose link lives only in the page database.
-Done, pause, a move, a takeover, and leaving the artifact delete that link
-before the last read of stored picks, and an open page re-reads it, so Send
-turns off.
+**Heartbeat and answer wake.** In T3 the coordinator creates a bound interval
+`schedule_task` with a short verbatim prompt (no holds/grants stuffed into it),
+default 10 minutes when owners are active, paused when 0 owners run and waiting
+purely on the user, lengthened to 1–6 hours for slow external waits, and
+verified via `enabled` and `nextRunAt` (rotating to a fresh thread via
+`record.py move` if a long-lived thread becomes heavily compacted); hosts
+without scheduled tasks wait on owner runs through the host. A Claude command
+center also gets a bound webhook `schedule_task` (`grant.wake`) whose URL stays
+only in the owner-only page database (`config/wake`), verified via `get_artifact`
+and `db_rules_get`, and deleted before the final pick read on done, pause, move,
+takeover, or leaving the artifact. Sites pages keep Copy answer alone.
 
-**Routing.** Senders read the committed `chief` and the target thread before
-waking it, reconciling recent direction with `next`, owners, waits, and
-`owner.route`. Orchestration owns the general communication and closure rule.
-Coordinator stores completion dispositions and successor routes in `next` and
-`owner.route`, and settles the thread after its obligations finish.
-
-**Inbox.** The user-facing queue is the **Inbox**, in prose and in the
-renderer's tab; its record key is `decisions`. An Inbox item has one
-question, its context, two or more options with effects, exactly one
-recommended option, pictures whenever the choice is visual (one per option, a
-side-by-side, a before and after, or a short sequence), optional visuals in
-`links`, what it blocks, what continues
-meanwhile, and when it was asked; bundled asks split into one item per
-question. The Inbox is asynchronous: program asks never use a blocking question
-tool unless the user is present and in a live back-and-forth. IDs are never
-reused.
-
-Each outcome takes Implement's Land, Try, or PR finish line. Land picked under
-that policy authorizes merging within the agreed program scope, with Merge's
-requirements as the gate; the coordinator's landing release decides when.
-Owners land their own outcome on release, and the coordinator lands only sets
-that span owners, with one recorded lander, one pending landing per target
-branch including queued merges, and withdrawal recorded before notifying.
-Provisional work, on another owner's unmerged layer or an open decision's
-recommended option, builds and is shown but never lands. A shown Try waits for
-the user's merge, changes, or scrap choice, one outcome at a time unless the
-user names a set, after seeing the effect on dependents. The coordinator
-triages decision requests: it resolves reversible, unreserved ones that a
-recorded source or the user's standing approval settles, and the user can
-reopen any of them. Holds, project rules, and a calling workflow's finish line
-narrow the default. `references/dependencies.md` keeps the upstream frontier
-scheduling, adds verification at the dependent's base and provisional bases,
-and linearizes fork-and-join inputs into reviewable stacks. Existing trackers
-stay authoritative; there is no mandatory wiki, Linear, Slack, or cloud
-runtime.
-
-The program record is one file, `program.json`, organized by topic: program
-facts and the grant, `decisions` (each decision from arrival to answer or
-withdrawal), `work` (each row with its scope, sources, and owner with that
-owner's plumbing), tradeoffs, discoveries, landings, and waits. The `chief` key
-names the current coordinator, so older records still validate.
-The renderer picks what the page shows. Owners write only their own report
-files. The program folder is a git repo; its last commit is the record and its
-log the history. `scripts/record.py` records each event (start, report, answer,
-resolve, applied, land, wait) with its own clock: it refuses an uncommitted
-record, changes only what the event changes, validates, commits, and renders.
-Its `status` reads PRs from `gh` and owner threads from the T3 CLI, records
-forge facts and each owner's observed thread state, and lists what to do now. It reports one verdict (runnable,
-working, waiting, or done) with a digest of its facts, as JSON or an exit code
-on request. Orphaned work, idle owners owing work, and a Need whose recommended
-option is marked `reversible` and halts startable work count as runnable.
-`status --turn-end` commits nothing and fails while the verdict is runnable,
-the record is dirty, an owner's live thread state differs from the record, or
-the page is behind the record. Answers stay
-`applied: false` until the coordinator runs `applied`. A report cannot record a
-merge; `status` reads merges at the forge. The renderer shows every time in
-the viewer's time zone. The original command center
-(`scripts/render_dashboard.py`, `assets/command-center.html`) renders it with
-a health strip of the `status` verdict and counts computed from the recorded
-facts, the rendered record commit, the Inbox before Work, collapsible sections,
-per-row observation times, a pick list per decision with one answer action
-whose prompt names one recorded option at its revision, Inbox and option
-pictures that open larger in an in-page viewer, Send answer on a Claude
-artifact, which saves the pick in the owner-only page database keyed by
-decision and revision and then offers the wake link, with Copy answer kept as
-the fallback, each open item's age,
-judgment calls ahead of quick picks with a batch prompt, reopenable
-coordinator-resolved decisions, and accepted tradeoffs. Each work row is one
-outcome, follow-up, or support task, counted once, with a "now" line and its
-owner's observed state, its finish line, result cards with thumbnails for
-committed images, provisional condition, owner, and PR layers; landed, done,
-and scrapped rows collapse into one closed section. Each decision names the
-outcomes it blocks and the phase each waits at. Below 900px it stays one column; wider, the Inbox is a
-dual-pane view and Work a board of stage lanes. It replaces the supplied
-archive's integrations, and its page database holds only unrecorded picks and
-the wake link; no archive code or prose is copied. `answer --stored` reads
-saved `db_query` output as untrusted data, records a pick only at its Need's
-current revision, and marks any other `stalePick`, which asks again on an open
-Need and makes a settled one a runnable reopen request. An answer from the
-user's message, recorded in the same command, supersedes its Need's stored
-picks; each Need's `picksRead` names every pick read for it by path and save
-time, so a pick read again after a failed delete changes nothing. Validation rejects provisional landings, PRs on a Try, stacks on
-another owner's unmerged layer without a provisional mark, terminal rows with
-active blockers, entries that name missing work, pictures missing from the
-program folder or not named by their content, and fields the schema doesn't
-name.
-
-Claude coordinators publish a private Claude artifact; Codex coordinators use
-the available plugin-managed `sites:sites` skill for a private ChatGPT Site
-with the existing HTML as buildless `dist/index.html`. Coordinators need their
-backend's tools. Each backend reuses its target; Site identity persists in
-`.openai/hosting.json`. `prepare_sites.py` adds a removable Sites-only refresh
-script and content version file to the rendered page; their `chief-version`
-names stay so open Sites keep updating. Visible Sites check every 20 seconds
-and on return or focus, consume matching fetched HTML as a full document, and
-restore the existing view. Hidden pages abort checks; failed or sign-in
-responses keep the page available, without a second document request that
-could fail after validation. Preparation inlines the updater and scopes view
-initialization, saving the view and clearing its clock before replacement.
-Claude keeps its native viewer without polling. All Site files publish together
-through Sites; the helper leaves the renderer, canonical record, and
-publication markers alone. `hosting` holds the current successful
-publication's URL, with no extra provider-switch approval or parallel program
-record. Coordinator ownership and takeover coordination remain. Hosting-link
-commits render normally without redeploying an unchanged page. The
-published-page marker advances only after confirmed publication, including a
-successful terminal Sites deployment; failures remain visible.
-`render_dashboard.py --page` renders the last commit beside the last published
-page with its result images in `files/`, says whether it changed, and stamps
-the commit and time that changed it; the
-coordinator republishes on a change and on every resume and move. The page
-keeps the viewer's place in session storage; the coordinator stays the only
-writer of the record. Local Chrome tests serve prepared committed pages and exercise full
-document replacement, restoration, visibility, request overlap, rejected
-responses, cache mismatches, repeated initialization, and same-origin
-resources. Header-dependent failure responses verify that updates use the
-validated HTML without another document request.
+**Record, scripts, and hosting.** The program folder is a git repo whose `HEAD`
+is authoritative (`program.json` keeps the `chief` key for compatibility).
+`scripts/record.py` owns event writes with its own clock, validation, commit,
+and render: `init`, `grant`, `work` (add, update, scrap, and atomic
+dead-base scrap/rebase with `--decision`), `start`, `report` (ingesting
+structured owner `followups` into `discoveries` as open items that keep
+`status` runnable until routed), `discovery` (add or route discoveries), `answer`
+(including `--pasted` and `--stored`), `picture`, `resolve`, `reopen`,
+`withdraw`, `applied`, `land`, `wait`, `move`, and `status` (`--turn-end`,
+`--heartbeat`, `--json`, `--exit-code`), and enforces single-line `next` values
+(at most 280 characters) so the command center stays scannable on mobile.
+Validation in `scripts/render_dashboard.py`
+rejects unknown keys, provisional landings/ready states, PRs on Try, terminal
+rows with blockers, dead bases without halting decisions, and missing or
+unhashed pictures. Claude coordinators publish private Claude artifacts (linking
+with `#no_universal_links`); Codex coordinators publish private buildless
+ChatGPT Sites via `sites:sites` and `scripts/prepare_sites.py` (which inlines
+20-second visible live refresh with `chief-version.json`, verified by Chrome
+tests); other providers delegate static publishing to a one-shot Codex/Claude
+helper or run local-only with Inbox in chat. Both thread moves and same-thread
+provider switches clear stale `grant.wake` entries when leaving Claude and warn
+when an earlier hosted URL is frozen. Existing trackers stay authoritative; no
+mandatory wiki, Linear, Slack, or cloud runtime.
 
 ## implement
 
@@ -617,30 +507,25 @@ validated HTML without another document request.
 - Conceptual input: DeepSeek source and revision recorded under [coordinator](#coordinator); no code or prose copied.
 
 Automatically discoverable workflow that carries one outcome, as one PR or a
-planned stack from the same owner, to its finish line, written against a generic
-caller. Keeps upstream spec/ticket resolution, asking on an ambiguous ticket,
-TDD at meaningful seams, and verification; no tracker is required for a supplied
-spec. Upstream's unconditional review-then-commit ending is replaced by finish
-lines: it picks **Land** for settled, reversible work and **Try** otherwise,
-states the pick so the user can override it, and keeps an explicitly requested
-PR state. Land selected under that policy is the merge request Merge needs;
-outline approval grants no landing; holds, caller finish lines, and destructive
-or outward-facing actions stop it. Try stops before review and the PR. Under a
-coordinator, the owner lands its own PR or stack on the coordinator's release
-and decides reversible method choices itself, sending up only scope,
-irreversible, and taste calls.
-Adds preflight through Agent Login, Show Me baselines and showing at each stop,
-provisional work that stops at Try, the upstream pstack measurable-target
-pursuit that keeps hard targets and rejects regressions (its host-specific wake
-loop and broad side-fix authority are omitted), invariant escalation through
-Attack the Premise, a shrink-only scope rule, follow-up
-routing with separate finish lines, owners running their own review loops under
-a coordinator, promotion to Coordinator for several outcomes, adoption without a
-second writer, and an outcome-based owner report with early partial reports. In a top-level thread, a
-subagent writes the change under Orchestration, and a child writes it itself.
-Native goal tracking stays optional and explicitly requested.
-On shared Macs with Mac Work configured, qualified heavy builds and tests use
-the shared installation.
+planned stack from one owner, to its finish line. Edits its workspace directly
+by default and delegates through Orchestration only for independent review or
+verification, Swarm fan-out, specialized models, or user-requested background
+work. Keeps upstream spec/ticket resolution, asking on an ambiguous ticket, TDD
+at meaningful seams, and verification; no tracker is required for a supplied
+spec. Replaces upstream's unconditional review-then-commit ending with finish
+lines (**Land** for settled, reversible work; **Try** otherwise, stopping before
+review and PR; **PR** for an explicitly requested PR state), stated in the first
+message only when a user caller omitted one. Owns the outcome-level shrink-only
+scope and deferral-routing contract (`#keep-scope-and-decisions`) and finish-line
+policy (`#2-state-the-finish-line-and-prepare`), interacting with session callers
+generically while delegating PR/Merge internals to `pr` and `merge`. Conditional flat references hold
+single-home provisional rules (`references/provisional.md`, shared with
+Coordinator), hard-target pursuit (`references/target-pursuit.md`, adding
+upstream's revert-non-advancing-attempts and suspect-easy-passes discipline),
+and session-caller reporting, pause, and adoption (`references/caller-report.md`).
+Adds Agent Login preflight, Show Me baselines/stops, Attack the Premise on
+repeated invariant breaks, promotion to Coordinator for multi-outcome work, and
+Mac Work routing on shared Macs. Native goal tracking stays explicitly requested.
 
 ## swarm
 
@@ -1200,29 +1085,30 @@ Indirect-consumer checks use `blast-radius`; React or Next assessments use
 The shared review brief carries applicable evaluation criteria and evidence,
 including empirical comparison conditions and qualitative judgments. Review checks
 changes to tests, fixtures, and measurement methods.
-Delegated review evidence adds explicit workflow/pass identities, configured
-model metadata, task-specific output paths, supported read-range receipts,
-frozen-source citation checks, and caller-retained original artifacts.
-Common inputs are separate from same-round peer outputs; briefs state the
-cooperative peer-read boundary and exposure uses the existing failure policy.
-Source snapshots exclude designated generated review artifacts while retaining
-other nonignored untracked source.
+Delegated review evidence uses workflow/pass identities, configured model
+metadata, unique report paths, a concise coverage block (base/head, references
+read, files/criteria covered, and gaps), frozen-source citation checks, and
+preserved prior-pass reports. Common inputs stay separate from same-round peer
+outputs; briefs state the peer-read boundary and exposure follows the caller's
+failure policy. Source snapshots exclude designated generated review artifacts
+while retaining other nonignored untracked source.
 
 ## review-fix-loop
 
-- Local: `skills/review-fix-loop` (SreeStack). T3-owned passes map required
-  assessments to their named model defaults. Impact-based coverage selects one
-  Primary for contained work, Primary plus a fitting lens for contained risk, and
-  staged Primary, Ponytail, and Thermo, then Adversarial, for substantial work.
-  Fixes route by what they change to new tasks on the original reviewers'
-  models for those angles, under Orchestration's review-pass rule; Primary's
-  integrated check covers cumulative repairs; later repair passes narrow to one
-  reviewer; and repeated repairs to an invariant or new issues from a second pass
-  on the same component trigger a parent design checkpoint. The first independent pass adds one random optional
-  reviewer from each provider pool. The loop owns provider-reference delivery,
-  skips, and stable snapshots. Generic delegation and handoff use Orchestration,
-  with tasks mapped to review assignments and workflow/pass identities; findings
-  use Review Sweep with stable issue IDs and per-issue repair/check evidence.
+- Local: `skills/review-fix-loop` (SreeStack). Owner-driven review convergence
+  loop with no upward links to `implement`, `coordinator`, or `pr`: maps
+  required assessments to named model defaults via `orchestration`, selects
+  proportional initial discovery (owner prose check, single Primary, Primary +
+  lens for failure-sensitive changes, or two-wave Primary/Ponytail/Thermo then
+  first-discovery Adversarial for substantial work), adds one general reviewer
+  per configured additional-review pool on the first independent pass, and
+  routes repairs with one unified rule (owner-verified wording polish and clean
+  disjoint rebases carry forward coverage; small or Pass 2+ repairs use one
+  independent reviewer; large Pass-1 repairs fan out by changed concern;
+  Attack-the-Premise pauses repeating invariants; final integrated Primary
+  check runs when Primary did not review the last code repair). Returns
+  coverage, `review-fix-loop` commit-status command/result, `Deferred` items,
+  and `Stops` for the caller to route.
 
 ## pr
 
@@ -1232,8 +1118,11 @@ other nonignored untracked source.
 - [mattpocock/skills / skills/engineering/pr](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/pr) — PR-body structure, visual selection, evidence, and merge-risk guidance adapted into `references/pr-body.md`; import baseline `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`. Upstream credits [HumanLayer / show-me](https://github.com/humanlayer/skills/tree/ca7c8088db69e315a8b2deea43820270457f8f3c/plugins/show-me/skills/show-me) for visual guidance; the origin revision used by Matt is unrecorded. HumanLayer MIT notice checked at `ca7c8088db69e315a8b2deea43820270457f8f3c` in `licenses/humanlayer-skills.txt`.
 
 The local name and UI are `pr`, with automatic discovery. It owns PR text, publication, and
-watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing runs `show-dont-tell`, commits, then runs the review
-loop on that commit and pushes after it; earlier review counts only for the same commit.
+watching. Fixing feedback moved to `review-sweep` and merging to `merge`. Publishing runs
+`show-dont-tell`, commits, runs `review-fix-loop` on that commit (allowing `## Provisional`
+drafts to defer review until ready and clean disjoint rebases to carry forward coverage),
+pushes, posts the `review-fix-loop` commit status, and surfaces `Deferred` items and `Stops`
+to its caller.
 `scripts/pr_state.py` reads one head's checks, threads, comments, and reviews through every page,
 replacing hand-read readiness with `blockers`, `pending`, and `to_settle`.
 It also gates on the head's `review-fix-loop` commit status context, kept apart from CI
@@ -1256,14 +1145,15 @@ on conflicts, and verify hashes after success or recovery.
 
 ## review-sweep
 
-- Local: `skills/review-sweep` (SreeStack). Canonical issues retain workflow/pass,
-  source-report relationships, and assignment/model provenance. Acceptance,
-  applied repairs, and snapshot-specific checks remain separate; accepted fixes
-  follow orchestration's repair routing.
-  Settlement weighs supported exposure and impact, preserving rare material and
-  required failures while deferring low-impact work and rejecting hypotheticals.
-  Findings outside Implement's scope rule defer as follow-ups whatever their
-  severity.
+- Local: `skills/review-sweep` (SreeStack). Self-contained finding settlement
+  with no upward links to `implement` or `coordinator`: canonical issues retain
+  workflow/pass, source-report relationships, and assignment/model provenance;
+  acceptance, applied repairs, and snapshot-specific checks remain separate.
+  Owns its local shrink-only scope boundary and `Continue or stop` rules,
+  packages `Defer` items with `unrelated`, `shared-contract`, or
+  `requested-scope` impact (recording a real durable home when standalone or
+  returning them to the caller to route), and requires a recorded home before
+  resolving deferred PR threads.
 
 ## setup-sreestack
 
@@ -1437,8 +1327,9 @@ removals and rewrites, and controlled comparison for improvement claims or clear
 guardrail). Guardrails have a dedicated `#guardrails` section and remain exempt from the
 line test until enforced in code on every host or cleared by a controlled comparison.
 
-`references/working-on-skills.md` owns capability/workflow contracts, trigger-and-exclusion
-descriptions, paired Claude Code (`disable-model-invocation`, per
+`references/working-on-skills.md` owns capability/workflow contracts, downward-only
+skill dependency layering (keeping shared rules in lower layers and preventing upward
+coupling), trigger-and-exclusion descriptions, paired Claude Code (`disable-model-invocation`, per
 [Claude Code skills docs](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill))
 and Codex (`policy.allow_implicit_invocation`, per
 [Codex skill docs](https://developers.openai.com/codex/build-skills#optional-metadata))
@@ -1499,78 +1390,28 @@ cases cannot be averaged away.
 - [cursor/plugins / pstack/skills/swarm](https://github.com/cursor/plugins/tree/ecc249f1e306fc64ddf83c7bed16cacf7c2239db/pstack/skills/swarm) — commit `ecc249f1e306fc64ddf83c7bed16cacf7c2239db`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Conceptual input: DeepSeek source and revision recorded under [coordinator](#coordinator); no code or prose copied.
 
-The entrypoint owns who does the work, assignment, dispatch, return, and
-acceptance. Communication follows current outstanding responsibility, the
-action a message enables or requires, and whether shared state suffices; past
-participation alone does not justify a wake. Completion closes responsibilities
-or hands them off with a discoverable disposition and successor. Finished turns
-and UI settlement alone do not end ownership. Original owners remain first for
-repairs and in-scope follow-up, subject to explicit handoff or closure. Failed
-handoffs recheck current ownership before resending.
-It keeps one owner per slice, separate writer paths, serial git and
-index work, and the child limit, which apply whenever two agents run; `swarm`
-owns the decision to run work in parallel. `references/models.md` is a lookup: one editable table owns working,
-research, source-retrieval, and review model defaults, including effort and
-additional review pools, with row choice, raising a row, and UI operation.
-It also holds the Coordinator row. Gemini retrieval and additional review use
-Antigravity’s Hydrogen High selection without a Gemini fallback.
-Dispatch owns one model-selection rule for initial launch and availability
-recovery, using the table's preferred/fallback/effort data. The model reference
-routes selection back to Dispatch. `references/reuse-and-recovery.md` owns
-reuse, review passes, owner replacement, partial-work preservation, writer
-reconciliation, and bounded retries; availability evidence returns to Dispatch.
-Live host instructions own APIs, transport,
-task lifecycle, permissions, and workspace binding. Local policy owns concurrency
-and bounded recovery, subject to caller-specific failure policy.
+Automatically discoverable capability skill with `agents/openai.yaml` metadata.
+Owns who does the work, self-contained briefs, communication by current
+responsibility, model dispatch and standing availability fallbacks, return
+contracts, and artifact acceptance; names no callers in `SKILL.md`. Role-based
+editing replaces always-delegating top-level edits: single-outcome threads edit
+directly by default (delegating for independent review/verification, Swarm
+fan-out, specialized models, or user-requested background work), Coordinator
+threads never edit project files directly, and children do their own work.
+`global/AGENTS.md` mirrors the direct-edit / Coordinator / model-table rule.
 
-The table says what to launch, not who may work. A top-level thread gives every
-project-file edit to a subagent, in the background, and stays free;
-`global/AGENTS.md` carries that rule because not every model loads this skill.
-Children do their own work and delegate only when their task says to. A stuck agent asks up; a parent answers and resumes it, can
-launch a read-only reviewer for a second opinion, and replaces an owner only on
-evidence of repeated failure. A further replacement with no new evidence is a blocker.
-A thread that cannot launch a subagent says so and asks. A slice's owner is the agent that wrote it. Repairs go to that
-owner first, by resuming its thread, because T3's rule bars a new delegate and resuming
-starts none. No owner left means explicit closure without a successor, or an owner thread that
-is gone or can't be resumed, not a finished run; T3's
-rule then applies, and a repair it does not cover launches from the table. A lost owner
-follows recovery, not the repeated-failure test.
-
-Row choice distinguishes source review and research, dedicated UI operation, UI
-building, document writing and revision, then Simple, Standard, or Hardest
-implementation. Hardest is rare and requires evidence that Standard is insufficient;
-its Codex fallback is GPT-6.2 Astra at X-High. The existing agent handles routine UI
-operation; a dedicated operator is reserved for substantial work, specialized
-capabilities, required independence, or repeated operational difficulty, at a tier
-set by flow complexity and false-pass cost, with Verify retaining assertions and
-verdicts. Dispatch honors explicit pins and effort/cost/concurrency limits,
-uses the available preference, or applies the exact listed fallback with a
-notice under the user's standing authorization in Dispatch. Known outages apply before the first
-launch as well as after failure. It asks for a model choice only when none is
-available and authorized. Unlisted choices, Simple downgrades, and changes to
-additional-review skips stay unauthorized. Briefs and handoffs carry row,
-outage/reset evidence, model/effort, and user limits; reset or recovery evidence
-triggers an availability recheck for new work. A review fallback stays a new
-independent task. Authentication and permission denials remain recovery stops;
-host transport, permissions, lifecycle, and owner reuse still govern dispatch.
-
-Names no callers. Briefs carry the original request and accepted corrections;
-explicit human holds persist until released.
-A new assignment prefers a retained agent when its context helps and it matches the
-row's model and effort, workspace, and a host continuation that is both supported and
-permitted. In-scope follow-up stays
-with its owner whatever its model. An agent that wrote or directed a change is excluded
-from later independent assessment of it. The first review pass uses fresh agents on the
-review rows; later passes use a new task on the same model as that reviewer, with its
-outputs archived and same-round peer content kept out. Children return decision requests
-that stay open until answered or withdrawn; a parent sends them to a Coordinator's Inbox when one
-exists, otherwise through the host's user-input route. A parent notices a child that stopped
-while it owes work and resumes or recovers it. A result is accepted only
-after inspecting its artifact at a named revision; every required slice is accounted for.
-Acceptance and delivery stay separate. Review Fix Loop owns assessment
-coverage, and PR runs that loop when no matching review evidence exists. Goals and
-recurring work start only on request; a Coordinator's grant records that request for its
-heartbeat.
+Reuse splits by thread kind in `references/reuse-and-recovery.md`: persistent
+owners (such as worktree-bound PR owners) are resumed first for repairs and
+in-scope follow-ups unless repeated failure, stale assumptions, or dropped
+directives warrant replacement; ephemeral helpers, research, and review rechecks
+start fresh with consolidated scope by default (reusing only for costly live
+state or directly helpful context). Keeps one owner per slice, separate writer
+paths, serial git/index work, the 12-child default limit, independent assessment
+exclusion, and bounded recovery; `swarm` owns the decision to run work in
+parallel. `references/models.md` holds the single editable model-default table
+(resolving exact provider IDs from live capabilities), difficulty tiers, row
+escalation, and dedicated UI operator rules. Goals and recurring work start only
+on explicit request.
 
 ## koubou
 

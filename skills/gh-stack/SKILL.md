@@ -38,8 +38,9 @@ their callers and use separate stacks for independent work.
   PR's [Prepare and Review steps](../pr/SKILL.md#publish) on each layer against its immediate
   base.
   Run each layer's held `review-fix-loop` status command unchanged once its SHA is pushed, as
-  [Review Fix Loop's finish step](../review-fix-loop/SKILL.md#6-finish) says. After a restack,
-  rerun the loop for that layer as a [repair pass](../review-fix-loop/SKILL.md#4-route-repairs).
+  [Review Fix Loop's finish step](../review-fix-loop/SKILL.md#finish) says. After a restack,
+  follow [Review Fix Loop's repair routing](../review-fix-loop/SKILL.md#route-repairs) for
+  that layer.
   Land through [Merge](../merge/SKILL.md): run
   `gh stack merge` only from its land step.
 

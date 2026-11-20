@@ -30,10 +30,14 @@ Watching an existing PR starts at step 4.
    against the immediate base, including docs-only changes, unless earlier evidence covers
    this change. Then [commit](references/publish.md#commit).
 2. **Get it reviewed.** Run [Review Fix Loop](../review-fix-loop/SKILL.md) on the committed
-   head. A new head of reviewed work, such as after a base update or restack, is a
-   [repair pass](../review-fix-loop/SKILL.md#4-route-repairs). Earlier review of this exact
-   commit [finishes it](../review-fix-loop/SKILL.md#6-finish) and posts the status. Continue
-   once review and verification pass.
+   head; record its `review-fix-loop` commit status only after Prepare covers this change. A
+   new head of reviewed work, such as after a base update or restack, uses its
+   [repair routing](../review-fix-loop/SKILL.md#route-repairs) (clean disjoint rebases carry
+   forward coverage; edits or interacting base changes run a repair pass). Earlier review of
+   this exact commit [finishes it](../review-fix-loop/SKILL.md#finish) and posts the status.
+   A draft PR carrying `## Provisional` may skip Review Fix Loop until the provisional
+   condition clears or before marking it ready (`pr_state` blocks both drafts and
+   `## Provisional`). Continue once required review and verification pass.
 3. **Publish it.** Follow [publish](references/publish.md#push). Publish ready for review
    unless the user asks for a draft. In T3, link each PR you create, push to, or take over,
    including every stack layer.
@@ -41,5 +45,6 @@ Watching an existing PR starts at step 4.
 
 ## Report
 
-Give the PR link, head and base, verification, readiness, and blockers. A caller gets the same
-evidence plus related issues and task resources.
+Give the PR link, head and base, verification, readiness, blockers, and any `Deferred`
+findings or `Stops` returned by review or feedback settlement for the caller to route. A
+caller gets the same evidence plus related issues and task resources.

@@ -18,9 +18,10 @@ Worth-fixing:
 
 Defer:
 - [id] location - claim
+  Impact: [unrelated | shared-contract | requested-scope]
   Reason:
   Origin and evidence:
-  Home:
+  Home: [recorded issue/snip ID, or "caller to route"]
 
 Acknowledge:
 - ...

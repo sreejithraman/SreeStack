@@ -186,8 +186,7 @@ The bar for approval is:
 
 Support blocking findings with material impact, an explicit contract violation,
 or a concrete structural regression under Review's evidence bar. Return the
-evidence needed for Review Sweep's
-[classification](../../review-sweep/references/classification.md); a signal or
+evidence a triage caller needs to classify impact and remedy; a signal or
 a plausible alternative alone is insufficient.
 
 Investigate these candidates and establish the benefit before recommending a fix:

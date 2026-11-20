@@ -117,25 +117,16 @@ a clean review.
 
 ## Delegated reviews
 
-Write only to the report and receipt paths your brief or task names.
+Write only to the report path your brief or task names.
 
-Do not read same-round peer reports, coverage receipts, summaries, or task
-conversations, including completion archives. Earlier-round findings, evidence, and
-dispositions are inputs to reassess independently, unless your brief marks this pass
-first discovery. Then they are same-round peer content. If you receive same-round
-peer content, stop that assessment and disclose the exposure.
+Do not read same-round peer reports, summaries, or task conversations. Earlier-round
+findings, evidence, and dispositions are inputs to reassess independently, unless
+your brief marks this pass `first discovery` — then treat them as same-round peer
+content. If you receive same-round peer content, stop that assessment and disclose
+the exposure.
 
-Return a coverage receipt with the findings, so the caller can validate coverage
-before accepting or retaining the assessment. Give workflow/pass, the assignment
-key, snapshot identity, references read including this skill, and one row per
-reviewed input:
-
-| Input | Snapshot file/hash | Lines read | Read evidence | Gaps |
-| --- | --- | --- | --- | --- |
-| Source or required reference | Exact path and content hash | Inclusive ranges, or empty file | Tool call/output or supplied packet location | Unread ranges and reason, or none |
-
-Record actual reads, including nearby context that supports findings. Metadata, file
-listings, and truncated command output cover only what was visible. Recover missing
-output before claiming its ranges. Cite only locations checked against this snapshot.
-List unmet criteria separately from unread source. A self-authored manifest without
-supporting read evidence leaves coverage unproven.
+Include a brief coverage block with your findings: workflow/pass, assignment and
+model identity, snapshot (base and head), references read, files and criteria
+covered, and any unread ranges, unavailable tools, or unmet criteria. Cite only
+locations and quotes checked against this snapshot; metadata, file listings, and
+truncated output cover only what was visible.
