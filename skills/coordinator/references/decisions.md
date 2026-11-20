@@ -28,10 +28,7 @@ Ensure every open decision has:
 
 - `id` (prefixed with its outcome), `question`, `context`, and `date` (stamped by `record.py`).
 - Two or more `options`, each with `effect` and reversal cost (`reversible: true` only when undoing
-  costs only rework). For scrap-or-rebase base-repair options, attach an explicit typed `action`
-  (`{"type": "scrap", "work": "<ID>"}` or `{"type": "rebase", "work": "<ID>", "onto": "<branch>",
-  "stackOn": "<layer>"}`) so `record.py work --decision` enforces the exact transition and target.
-  This includes `access` requests: state the exact 1-line action the user takes
+  costs only rework). This includes `access` requests: state the exact 1-line action the user takes
   (such as signing in through T3's terminal drawer) and provide tappable options (such as
   `"Done — access is ready"` and `"Defer this outcome"`), never an optionless card.
 - Exactly one `recommended` option with `recommendation` rationale.
@@ -73,10 +70,9 @@ Answers count only from the user's own messages, host input tools, or verified p
   decision raises a reopen request.
 
 After `answer` or `resolve`, update affected owners, dependencies, and landing releases, then run
-`record.py applied`. For a dead-base scrap-or-rebase answer (whether direct, `--pasted`, or
-`--stored`), `answer` leaves the dead-base pick for atomic handling; record the answer and work
-transition together with `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID>`
-(passing `--option`/`--text` + `--answer-source`, `--pasted` + `--answer-source`, or `--stored <file>`).
+`record.py applied`. For a dead-base scrap-or-rebase answer, record the answer and work transition
+together with `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --option <N> --answer-source "<msg>"`
+(then re-run `answer --stored <file>` if the pick came from the page so its DB document is cleaned up).
 Withdraw obsolete decisions with `record.py withdraw`.
 
 ## Reopen

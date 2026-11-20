@@ -27,6 +27,7 @@ CHECKS = (
     ("-m", "unittest", "discover", "-s", "skills/create-image/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/mac-work/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/pr/scripts", "-p", "test_*.py"),
+    ("-m", "unittest", "discover", "-s", "skills/review-fix-loop/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/simulator-lifecycle/scripts", "-p", "test_*.py"),
     ("-m", "unittest", "discover", "-s", "skills/writing-for-agents/scripts", "-p", "test_*.py"),
     ("scripts/check_skills.py",),

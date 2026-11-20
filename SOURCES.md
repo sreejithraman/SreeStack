@@ -1106,7 +1106,9 @@ while retaining other nonignored untracked source.
   routes repairs with one unified rule (owner-verified wording polish and clean
   disjoint rebases carry forward coverage; small or Pass 2+ repairs use one
   independent reviewer; large Pass-1 repairs fan out by changed concern;
-  Attack-the-Premise pauses repeating invariants; cumulative integrated Primary
+  `scripts/convergence.py` gates Pass 2+ routing with deterministic
+  `CONVERGING`, `PREMISE_CUT`, and `DEFER_AND_FINISH` modes; cumulative
+  integrated Primary
   check ensures Primary assessed all accumulated repairs and their interactions
   on the final snapshot). Returns
   coverage, `review-fix-loop` commit-status command/SHA for the publishing
@@ -1152,7 +1154,8 @@ on conflicts, and verify hashes after success or recovery.
   with no upward links to `implement` or `coordinator`: canonical issues retain
   workflow/pass, source-report relationships, and assignment/model provenance;
   acceptance, applied repairs, and snapshot-specific checks remain separate.
-  Owns its local shrink-only scope boundary and `Continue or stop` rules,
+  Owns its local shrink-only scope boundary, `Challenge before accepting`
+  implementer pushback rules, and `Continue or stop` rules,
   packages `Defer` items with `unrelated`, `shared-contract`, or
   `requested-scope` impact (recording a real durable home when standalone or
   returning them to the caller to route), and requires a recorded home before

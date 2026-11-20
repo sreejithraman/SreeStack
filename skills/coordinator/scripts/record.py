@@ -26,7 +26,7 @@ from render_dashboard import (ACTIVE, DECISION_KEYS, DISCOVERY_IMPACTS, FINISH_L
                               LIVE_LAYERS, OWNER_KEYS, OPTION_KEYS, PENDING_LANDINGS, PHASES, PICTURE_SHAPES,
                               PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
                               check_pictures, committed, content_name, dead_base, effective_finish, fields, git,
-                              hexed, invalid_base_work, known_keys, layout, now, observation, open_blocks, page_files,
+                              hexed, known_keys, layout, now, observation, open_blocks, page_files,
                               pending_landing, place, quoted, records, revision, stage_page, unsatisfied, validate)
 
 
@@ -249,143 +249,13 @@ def move_coordinator(state, chief):
     return f"move coordinator to {chief}", notes
 
 
-SCRAP_VERBS = re.compile(r"\bscrap(?:ping|ped)?\b")
-REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget)\b")
-NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not|never)\s+(scrapping|scrap)\b")
-NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not|never)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
-TARGET_GROUP = r"(?:`(?P<bt>[^`]+)`|\"(?P<dq>[^\"]+)\"|'(?P<sq>[^']+)'|(?P<bare>[^\s?]+))"
-ONTO_TARGET = re.compile(rf"\bonto\s+{TARGET_GROUP}", re.I)
-AFFIRMATIVE_PREFIX = r"^\s*(?:(?:please|yes|ok|okay|go\s+ahead(?:\s+and)?|let'?s)\s*,?\s*)*"
-WORK_OBJECT = r"(?:\s+(?:work\s+)?(?!(?:please|thanks|thank|now|onto)\b)(?P<work>[A-Za-z][A-Za-z0-9_-]*))?"
-POLITE_SUFFIX = r"(?:[\s,]*(?:please|thanks|thank\s+you|now))*\s*[.!]?\s*$"
-FREE_TEXT_REBASE = re.compile(rf"{AFFIRMATIVE_PREFIX}(?:rebase|restack|retarget){WORK_OBJECT}\s+onto\s+{TARGET_GROUP}{POLITE_SUFFIX}", re.I)
-FREE_TEXT_SCRAP = re.compile(rf"{AFFIRMATIVE_PREFIX}scrap{WORK_OBJECT}{POLITE_SUFFIX}", re.I)
-
-
-def extract_onto_target(match):
-    """Return (target, was_quoted) from an onto-target match, stripping only Git-illegal trailing '.' when unquoted."""
-    bare = match.group("bare")
-    quoted_target = bare is None
-    raw_named = bare if bare is not None else (match.group("bt") or match.group("dq") or match.group("sq"))
-    # Git forbids branch names ending with '.', so only a sentence period is stripped on unquoted refs;
-    # punctuation legal in Git refs (such as ';', ',', '!') stays literal.
-    named = raw_named if quoted_target else (raw_named[:-1] if raw_named.endswith(".") else raw_named)
-    return named, quoted_target
-
-
-def is_base_repair_decision(row):
-    """True when this decision's options represent a scrap-or-rebase base-repair choice."""
-    options = row.get("options", [])
-    if any(isinstance(opt.get("action"), dict) and opt["action"].get("type") in {"scrap", "rebase"} for opt in options):
-        return True
-    has_scrap = any(SCRAP_VERBS.search(opt.get("label", "").lower()) and not NEGATED_SCRAP.search(opt.get("label", "").lower())
-                    for opt in options)
-    has_rebase = any(REBASE_VERBS.search(opt.get("label", "").lower()) and not NEGATED_REBASE.search(opt.get("label", "").lower())
-                     for opt in options)
-    return has_scrap and has_rebase
-
-
-def atomic_halting_work(state, decision_id):
-    """Active work IDs with an invalid base that require atomic work handling when decision_id is answered."""
-    by_id = {row["id"]: row for row in state["work"]}
-    layers = {layer["id"]: (layer, row) for row in state["work"] for layer in row.get("layers", [])}
-    broken = invalid_base_work(state["work"], by_id, layers)
-    target = next((row for row in state["decisions"] if row["id"] == decision_id), None)
-    base_repair = is_base_repair_decision(target) if target else False
-    affected = []
-    for work_id in broken:
-        halting = open_blocks(state, work_id, HALTING)
-        if decision_id in halting and (len(halting) == 1 or base_repair):
-            affected.append(work_id)
-    return affected
-
-
-def normalized_choice(value):
-    """Case- and trailing-period-insensitive option label key; keeps '?' and Git-legal '!' literal."""
-    return quoted(value.strip().rstrip(".")).casefold()
-
-
-def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_id=None, option=None, raw_text=None):
-    """Verify the chosen option or affirmative free text unambiguously authorizes --scrap or --rebase-onto."""
-    action = option.get("action") if isinstance(option, dict) else None
-    if isinstance(action, dict):
-        if "work" in action and work_id is not None and action["work"] != work_id:
-            raise Refused(f"chosen option action targets {action['work']}, not {work_id}")
-        if scrap:
-            if action.get("type") != "scrap":
-                raise Refused(f"--scrap conflicts with typed option action {action.get('type')!r}")
-            return
-        if rebase_onto is not None:
-            if action.get("type") != "rebase":
-                raise Refused(f"--rebase-onto conflicts with typed option action {action.get('type')!r}")
-            if action.get("onto") != rebase_onto:
-                raise Refused(f"--rebase-onto {rebase_onto!r} does not match typed option target {action.get('onto')!r}")
-            if action.get("stackOn") != stack_on:
-                raise Refused(f"--stack-on {stack_on!r} does not match typed option stackOn {action.get('stackOn')!r}")
-            if raw_text is not None:
-                allowed = {rebase_onto} | ({stack_on} if stack_on else set())
-                for match in ONTO_TARGET.finditer(raw_text):
-                    named, _ = extract_onto_target(match)
-                    if named not in allowed:
-                        raise Refused(
-                            f"--rebase-onto {rebase_onto!r} does not match literal target {named!r} in text {raw_text!r}"
-                        )
-            return
-    if option is None:
-        if scrap:
-            match = FREE_TEXT_SCRAP.fullmatch(chosen)
-            if not match:
-                raise Refused(
-                    f"free-text scrap {chosen!r} is not an unconditional affirmative scrap authorization; "
-                    "pass --option <number> or an explicit affirmative command"
-                )
-            named_work = match.group("work")
-            if named_work and work_id is not None and named_work.lower() not in {"it", "this"} and named_work != work_id:
-                raise Refused(f"free-text scrap {chosen!r} targets {named_work}, not {work_id}")
-            return
-        if rebase_onto is not None:
-            match = FREE_TEXT_REBASE.fullmatch(chosen)
-            if not match:
-                raise Refused(
-                    f"free-text rebase {chosen!r} must be an unconditional affirmative single-target command "
-                    f"(e.g. 'Rebase {work_id or ''} onto {rebase_onto}') or pass --option <number>"
-                )
-            named_work = match.group("work")
-            if named_work and work_id is not None and named_work.lower() not in {"it", "this"} and named_work != work_id:
-                raise Refused(f"free-text rebase {chosen!r} targets {named_work}, not {work_id}")
-            named, _ = extract_onto_target(match)
-            allowed = {rebase_onto} | ({stack_on} if stack_on else set())
-            if named not in allowed:
-                raise Refused(
-                    f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}"
-                )
-            return
-        return
-    lower = chosen.lower()
-    if scrap:
-        if (not SCRAP_VERBS.search(lower) or NEGATED_SCRAP.search(lower)
-                or REBASE_VERBS.search(lower) or re.search(r"\b(keep|continue)\b", lower)):
-            raise Refused(f"--scrap is not unambiguously authorized by chosen option {chosen!r}")
-    if rebase_onto is not None:
-        if (not REBASE_VERBS.search(lower) or NEGATED_REBASE.search(lower)
-                or (SCRAP_VERBS.search(lower) and not NEGATED_SCRAP.search(lower))):
-            raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
-        matches = list(ONTO_TARGET.finditer(chosen))
-        allowed = {rebase_onto} | ({stack_on} if stack_on else set())
-        for match in matches:
-            named, quoted_target = extract_onto_target(match)
-            if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
-                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
-
-
 def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
                 unknown_reason=None, description=None, scope=None, finish_line=None, finish_line_reason=None,
                 origin=None, blocked=None, clear_blocked=False, blocked_by=None, clear_blocked_by=False,
                 sources=None, optional=False, required=False, prov_basis=None, prov_clears=None, prov_on=None,
                 clear_provisional=False, scrap=False, rebase_onto=None, stack_on=None,
-                decision_id=None, decision_option=None, decision_text=None, answer_source=None,
-                pasted_text=None, stored_documents=None):
-    """Add, update, scrap, or rebase a work row, optionally answering its decision in the same commit."""
+                decision_id=None, decision_option=None, answer_source=None):
+    """Add, update, scrap, or rebase a work row, optionally answering its open decision in the same commit."""
     if scrap and rebase_onto is not None:
         raise Refused("choose either --scrap or --rebase-onto, not both")
     if stack_on is not None and rebase_onto is None:
@@ -410,16 +280,7 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             raise Refused(f"no work {identity}; pass --add to create it")
         row = existing
         if row["state"] == "landed":
-            if scrap:
-                raise Refused(f"{identity} is already landed; create a follow-up outcome instead of scrapping landed work")
-            if rebase_onto is not None:
-                raise Refused(f"{identity} is already landed; create a follow-up outcome instead of rebasing landed work")
-            if work_state is not None and work_state != "landed":
-                raise Refused(f"{identity} is already landed; keep landed history intact and create a follow-up outcome for new work")
-            if finish_line is not None and finish_line != row.get("finishLine"):
-                raise Refused(f"{identity} is already landed; cannot change its finish line")
-            if blocked is not None or blocked_by:
-                raise Refused(f"{identity} is already landed; create a follow-up outcome instead of blocking landed work")
+            raise Refused(f"{identity} is already landed; create a follow-up outcome instead of mutating landed work")
         action = f"{identity} update"
 
     layers_by_id = {layer["id"]: (layer, owner_row) for owner_row in state["work"]
@@ -440,86 +301,11 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             raise Refused(f"{decision_id} is {target_decision['status']}; work --decision only answers an open decision")
         if not any(entry["id"] == identity for entry in target_decision.get("blocks", [])):
             raise Refused(f"{decision_id} does not block {identity}")
-        if not scrap and rebase_onto is None and atomic_halting_work(state, decision_id):
-            raise Refused(
-                f"{decision_id} authorizes a base repair on {identity}; pass --scrap or --rebase-onto in the same command"
-            )
-        options = target_decision.get("options", [])
-        extra_receipt, extra_delete, all_pasted, raw_decision_text = None, None, None, None
-        if pasted_text is not None:
-            if not answer_source:
-                raise Refused("--decision with --pasted needs --answer-source")
-            all_pasted = pasted_choices(pasted_text, state)
-            choices = [c for c in all_pasted if c[0] == decision_id]
-            if not choices:
-                raise Refused(f"pasted text contains no choice for {decision_id}")
-            _, digest, number, label = choices[-1]
-            if (revision(target_decision) != digest or not 1 <= number <= len(options)
-                    or quoted(options[number - 1]["label"]) != quoted(label)):
-                raise Refused(f"{decision_id} changed since the page showed it; ask again")
-            opt_obj = options[number - 1]
-            chosen, source_used = opt_obj["label"], answer_source
-        elif decision_option is not None or decision_text is not None:
-            if not answer_source:
-                raise Refused("--decision with --option or --text needs --answer-source")
-            if decision_option is not None:
-                chosen = option_label(target_decision, decision_option)
-                opt_obj = options[decision_option - 1]
-            else:
-                if (scrap or rebase_onto is not None) and "?" in decision_text:
-                    raise Refused(
-                        f"question-form text {decision_text!r} cannot authorize a base repair; "
-                        "pass --option <number> or an unconditional affirmative answer"
-                    )
-                chosen = decision_text
-                raw_decision_text = decision_text
-                matches = [opt for opt in options if normalized_choice(opt["label"]) == normalized_choice(chosen)]
-                if len(matches) > 1:
-                    raise Refused(f"multiple options match {chosen!r}; pass --option <number>")
-                opt_obj = matches[0] if len(matches) == 1 else None
-            source_used = answer_source
-        elif stored_documents is not None:
-            matched = []
-            for document in stored_documents:
-                if not DOCUMENT_ID.fullmatch(document["id"]) or document["id"] in {".", ".."}:
-                    continue
-                path, data = f"picks/{document['id']}", document["data"]
-                if data.get("decision") != decision_id:
-                    continue
-                name = f"{path} (version {document['version']})"
-                digest, number, label = (data.get(key) for key in ("revision", "option", "label"))
-                if not (isinstance(digest, str) and type(number) is int and isinstance(label, str)
-                        and label.strip() and document["id"] == f"{hexed(decision_id)}-{digest}"):
-                    continue
-                receipt = f"{name} {document['updatedAt']}"
-                if receipt in target_decision.get("picksRead", []):
-                    continue
-                if (revision(target_decision) == digest and 1 <= number <= len(options)
-                        and quoted(options[number - 1]["label"]) == quoted(label)):
-                    matched.append((name, options[number - 1], receipt))
-            if not matched:
-                raise Refused(f"no current-revision stored pick for {decision_id}")
-            name, opt_obj, extra_receipt = matched[-1]
-            chosen = opt_obj["label"]
-            source_used = f"The user's pick on the command center, stored at {name}"
-            extra_delete = f"delete: {name}"
-        else:
-            raise Refused("--decision on work needs --option, --text, --pasted (with --answer-source), or --stored")
-        check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj, raw_text=raw_decision_text)
-        _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=source_used, allow_atomic=True)
-        if extra_receipt:
-            put(target_decision, "picksRead", target_decision.get("picksRead", []) + [extra_receipt], DECISION_KEYS)
+        if decision_option is None or not answer_source:
+            raise Refused("work --decision needs --option <number> and --answer-source <msg>")
+        chosen = option_label(target_decision, decision_option)
+        _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
         notes.extend(answer_notes)
-        if extra_delete:
-            notes.append(extra_delete)
-        elif stored_documents is not None:
-            remaining_atomic = (
-                [cid for cid in current_pasted_atomic_ids(state, all_pasted) if cid != decision_id]
-                if all_pasted is not None else []
-            )
-            _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id],
-                                            deferred_atomic=remaining_atomic)
-            notes.extend(stored_notes)
 
     for key, value in (
         ("title", title if not add else None), ("repo", repo if not add else None),
@@ -552,98 +338,61 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         row.pop("provisional", None)
     elif prov_basis is not None or prov_clears is not None or prov_on is not None:
         provisional = copy.deepcopy(row.get("provisional", {}))
-        if prov_basis is not None:
-            put(provisional, "basis", prov_basis, ("basis", "clears", "on"))
-        if prov_clears is not None:
-            put(provisional, "clears", prov_clears, ("basis", "clears", "on"))
-        if prov_on is not None:
-            put(provisional, "on", prov_on, ("basis", "clears", "on"))
+        for key, value in (("basis", prov_basis), ("clears", prov_clears), ("on", prov_on)):
+            if value is not None:
+                put(provisional, key, value, ("basis", "clears", "on"))
         put(row, "provisional", provisional, WORK_KEYS)
 
     if scrap:
         if pending_landing(state, identity):
             raise Refused(f"{identity} has pending landing {pending_landing(state, identity)['id']}; withdraw it before scrapping")
         row["state"] = "scrapped"
-        row.pop("blockedBy", None)
-        row.pop("blocked", None)
-        row.pop("unknownReason", None)
+        for key in ("blockedBy", "blocked", "unknownReason"):
+            row.pop(key, None)
         action = f"{identity} scrapped"
 
     if rebase_onto is not None:
         if pending_landing(state, identity):
             raise Refused(f"{identity} has pending landing {pending_landing(state, identity)['id']}; withdraw it before rebasing")
-        dead_ids = {item["id"] for item in state["work"] if dead_base(item)}
         live_layers = [layer for layer in row.get("layers", []) if layer["status"] in LIVE_LAYERS]
         bottom_layers = [layer for layer in live_layers
                          if "stackedOn" not in layer or layers_by_id.get(layer["stackedOn"], (None, {}))[1].get("id") != identity]
-        target_layers = bottom_layers or live_layers[:1]
-        removed_layer_ids = [layer["stackedOn"] for layer in target_layers
-                             if "stackedOn" in layer and layer["stackedOn"] != stack_on]
-        for layer in target_layers:
+        for layer in bottom_layers or live_layers[:1]:
             put(layer, "base", rebase_onto, LAYER_KEYS)
             if stack_on is not None:
                 put(layer, "stackedOn", stack_on, LAYER_KEYS)
             else:
                 layer.pop("stackedOn", None)
-        # Rebasing invalidates readiness earned on the previous base until proof and checks refresh.
         if row["state"] == "ready":
             row["state"] = "in-review"
             row.pop("acceptance", None)
         for layer in live_layers:
             if layer["status"] == "ready":
                 layer["status"] = "open" if layer.get("url") else "local"
+        dead_ids = {item["id"] for item in state["work"] if dead_base(item)}
         unmerged_parent = (
             layers_by_id[stack_on][1]
             if (stack_on is not None and layers_by_id[stack_on][1]["id"] != identity
                 and layers_by_id[stack_on][0]["status"] != "merged")
             else None
         )
-        remaining_unmerged_stack_owners = {
-            layers_by_id[layer["stackedOn"]][1]["id"]
-            for layer in live_layers
-            if "stackedOn" in layer and layer["stackedOn"] in layers_by_id
-            and layers_by_id[layer["stackedOn"]][1]["id"] != identity
-            and layers_by_id[layer["stackedOn"]][0]["status"] != "merged"
-        }
-        detached_owners = {
-            layers_by_id[lid][1]["id"]
-            for lid in removed_layer_ids
-            if lid in layers_by_id and layers_by_id[lid][1]["id"] not in remaining_unmerged_stack_owners
-        }
-        drop_ids = dead_ids | detached_owners
         if unmerged_parent is not None:
             provisional = copy.deepcopy(row.get("provisional", {}))
-            old_on = provisional.get("on", [])
-            removed_tokens = [item for item in old_on if item in drop_ids] + removed_layer_ids
-            kept_on = [item for item in old_on if item not in drop_ids and item != unmerged_parent["id"]]
+            kept_on = [item for item in provisional.get("on", []) if item not in dead_ids and item != unmerged_parent["id"]]
             new_on = [*kept_on, unmerged_parent["id"]]
-            stale_basis = any(re.search(rf"\b{re.escape(tok)}\b", provisional.get("basis", "")) for tok in removed_tokens)
-            stale_clears = any(re.search(rf"\b{re.escape(tok)}\b", provisional.get("clears", "")) for tok in removed_tokens)
-            only_dropped = bool(old_on) and not kept_on
-            default_basis = (f"Stacked on {unmerged_parent['id']} ({stack_on})" if not kept_on
-                             else f"Rested on {', '.join(new_on)} (stacked on {stack_on})")
-            default_clears = f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands"
-            basis_val = prov_basis or (default_basis if (only_dropped or stale_basis) else provisional.get("basis")) or default_basis
-            clears_val = prov_clears or (default_clears if (only_dropped or stale_clears) else provisional.get("clears")) or default_clears
-            put(provisional, "basis", basis_val, ("basis", "clears", "on"))
-            put(provisional, "clears", clears_val, ("basis", "clears", "on"))
+            put(provisional, "basis", prov_basis or f"Stacked on {unmerged_parent['id']} ({stack_on})", ("basis", "clears", "on"))
+            put(provisional, "clears", prov_clears or f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands",
+                ("basis", "clears", "on"))
             put(provisional, "on", new_on, ("basis", "clears", "on"))
             put(row, "provisional", provisional, WORK_KEYS)
         elif "provisional" in row and not clear_provisional:
-            old_on = row["provisional"].get("on", [])
-            removed_tokens = [item for item in old_on if item in drop_ids] + removed_layer_ids
-            kept_on = [item for item in old_on if item not in drop_ids]
+            kept_on = [item for item in row["provisional"].get("on", []) if item not in dead_ids]
             if kept_on:
                 row["provisional"]["on"] = kept_on
-                if prov_basis is None and any(re.search(rf"\b{re.escape(tok)}\b", row["provisional"].get("basis", "")) for tok in removed_tokens):
-                    row["provisional"]["basis"] = f"Rested on {', '.join(kept_on)}"
-                if prov_clears is None and any(re.search(rf"\b{re.escape(tok)}\b", row["provisional"].get("clears", "")) for tok in removed_tokens):
-                    row["provisional"]["clears"] = f"{', '.join(kept_on)} land" if len(kept_on) > 1 else f"{kept_on[0]} lands"
+            elif "on" in row["provisional"] and prov_basis is None and prov_clears is None:
+                row.pop("provisional", None)
             elif "on" in row["provisional"]:
-                if prov_basis is not None or prov_clears is not None:
-                    row["provisional"].pop("on", None)
-                else:
-                    row.pop("provisional", None)
+                row["provisional"].pop("on", None)
         action = f"{identity} rebased onto {rebase_onto}"
 
     if not add and not any((
@@ -930,20 +679,13 @@ def replace_list(row, key, value, order=WORK_KEYS):
         row.pop(key, None)
 
 
-def settle(state, at, identity, answer, status, source=None, basis=None, allow_atomic=False):
+def settle(state, at, identity, answer, status, source=None, basis=None):
     """Record an answer: answered when it is the user's, resolved when it is the coordinator's call."""
     row = decision_row(state, identity)
     if row["status"] == "withdrawn":
         raise Refused(f"{identity} was withdrawn")
     if status == "resolved" and row["status"] != "open":
         raise Refused(f"{identity} is {row['status']}; only an open decision can be resolved")
-    if not allow_atomic and row["status"] == "open":
-        broken = atomic_halting_work(state, identity)
-        if broken:
-            raise Refused(
-                f"atomic work transition needed for {identity} (invalid base on {', '.join(broken)}): "
-                f"run work --id {broken[0]} --scrap|--rebase-onto <branch> --decision {identity} ..."
-            )
     if row["status"] != "open":
         earlier = f"{at}: replaced the earlier {row['status']} answer {json.dumps(row['answer'], ensure_ascii=False)}"
         earlier += f" (basis: {row.pop('basis')})." if "basis" in row else f" (source: {row.pop('answerSource')})."
@@ -997,22 +739,9 @@ def pasted_choices(text, state=None):
     return choices
 
 
-def current_pasted_atomic_ids(state, choices):
-    """Decision IDs in parsed pasted choices matching an open decision's current revision that require atomic handling."""
-    found = []
-    for identity, digest, number, label in choices:
-        row = next((r for r in state["decisions"] if r["id"] == identity), None)
-        options = row.get("options", []) if row else []
-        if (row is not None and row["status"] == "open" and revision(row) == digest
-                and 1 <= number <= len(options) and quoted(options[number - 1]["label"]) == quoted(label)
-                and atomic_halting_work(state, identity) and identity not in found):
-            found.append(identity)
-    return found
-
-
-def answer_pasted(state, at, text, source, allow_atomic_only=False):
+def answer_pasted(state, at, text, source):
     """Record each pasted choice that matches its open decision's current revision; return the rest to ask again."""
-    recorded, stale, atomic = [], [], []
+    recorded, stale = [], []
     for identity, digest, number, label in pasted_choices(text, state):
         row = next((row for row in state["decisions"] if row["id"] == identity), None)
         options = row.get("options", []) if row else []
@@ -1020,27 +749,14 @@ def answer_pasted(state, at, text, source, allow_atomic_only=False):
                 or not 1 <= number <= len(options) or quoted(options[number - 1]["label"]) != quoted(label)):
             stale.append(identity)
             continue
-        broken_work = atomic_halting_work(state, identity)
-        if broken_work:
-            atomic.append((identity, broken_work))
-            continue
         settle(state, at, identity, options[number - 1]["label"], "answered", source=source)
         recorded.append(identity)
     notes = [f"ask again: {identity} changed or closed since the page showed it" for identity in stale]
-    stored_flag = " --stored <file>" if allow_atomic_only else ""
-    for identity, works in atomic:
-        notes.append(
-            f"atomic work transition needed for {identity} (invalid base on {', '.join(works)}): "
-            f"run work --id {works[0]} --scrap|--rebase-onto <branch> --decision {identity} --pasted --answer-source ...{stored_flag}"
-        )
-    atomic_ids = [identity for identity, _ in atomic]
     if not recorded:
-        if allow_atomic_only and atomic and not stale:
-            return "pasted choices deferred for atomic work transition", notes, [], atomic_ids
         raise Refused("; ".join(notes))
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
     notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
-    return f"{', '.join(recorded)} answered", notes, recorded, atomic_ids
+    return f"{', '.join(recorded)} answered", notes, recorded
 
 
 def stored_picks(text):
@@ -1074,20 +790,18 @@ def stored_picks(text):
 NOTHING_STORED = "stored picks: nothing to record"
 
 
-def answer_stored(state, at, documents, answered=(), deferred_atomic=()):
+def answer_stored(state, at, documents, answered=()):
     """Record each stored page pick that matches its open decision's current revision.
 
     Each decision gets one outcome, judged against the record as it stood before this import: a pick at its
     current revision wins over picks for earlier ones. A pick for an earlier revision is never applied: it
     marks the decision's stalePick, which asks again on an open decision and makes a reopen request of a
     settled one. Picks for the decisions in answered, which the user's message just answered, were saved
-    before that message was read, so it supersedes them. Picks for decisions in deferred_atomic have a newer
-    valid pasted choice waiting on an atomic `work` command, so they stay unread and undeleted without emitting
-    a conflicting stored-only action. Each decision's picksRead names every pick read for it by path, version,
-    and save time, so reading one again after a failed cleanup changes nothing.
+    before that message was read, so it supersedes them. Each decision's picksRead names every pick read for
+    it by path, version, and save time, so reading one again after a failed cleanup changes nothing.
     """
     before = {row["id"]: row for row in state["decisions"]}  # each row changes only after all its picks are read
-    notes, cleanup, found, superseded, deferred_stored, receipts = [], [], {}, set(), set(), {}
+    notes, cleanup, found, superseded, receipts = [], [], {}, set(), {}
     for document in documents:
         if not DOCUMENT_ID.fullmatch(document["id"]) or document["id"] in {".", ".."}:
             notes.append(f"ignored {json.dumps(document['id'])}: not a document ID")
@@ -1108,10 +822,6 @@ def answer_stored(state, at, documents, answered=(), deferred_atomic=()):
         if receipt in row.get("picksRead", []):
             notes.append(f"{identity} already read {path}")
             continue
-        if identity in deferred_atomic:
-            cleanup.pop()
-            deferred_stored.add(identity)
-            continue
         receipts.setdefault(identity, []).append(receipt)
         if identity in answered:
             superseded.add(identity)
@@ -1126,17 +836,6 @@ def answer_stored(state, at, documents, answered=(), deferred_atomic=()):
         row = before[identity]
         current = next((pick for pick in picks if pick[3] is not None), None)
         if current:
-            broken_work = atomic_halting_work(state, identity)
-            if broken_work:
-                # Keep the stored pick unread and undeleted so `work --decision --stored` can apply it atomically.
-                receipts.pop(identity, None)
-                cleanup = [line for line in cleanup if line != f"delete: {current[0]}"]
-                notes.append(
-                    f"atomic work transition needed for {identity} (invalid base on {', '.join(broken_work)}; "
-                    f"user picked {quoted(current[3])}): run work --id {broken_work[0]} --scrap|--rebase-onto <branch> "
-                    f"--decision {identity} --stored <file>"
-                )
-                continue
             settle(state, at, identity, current[3], "answered",
                    source=f"The user's pick on the command center, stored at {current[0]}")
             recorded.append(identity)
@@ -1152,10 +851,6 @@ def answer_stored(state, at, documents, answered=(), deferred_atomic=()):
         notes.append(f"stale: {identity} changed since the page showed it; the Inbox asks again" if row["status"] == "open"
                      else f"reopen request: the user picked {quoted(label)} after {identity} was {row['status']}; "
                           "reopen it under references/decisions.md#reopen")
-    for identity in sorted(deferred_stored):
-        notes.append(
-            f"deferred stored pick for {identity}: kept unread until the pasted atomic work command runs with --stored <file>"
-        )
     for identity in superseded:
         notes.append(f"superseded: the user's message replaces {identity}'s page pick")
     for identity, read in receipts.items():
@@ -1348,92 +1043,6 @@ def apply_forge_layer(layer, pr, work_id=None, notes=None):
     return moved
 
 
-def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=None):
-    """Apply observed merge facts to fully merged work in a landing, landing it and detaching open holds."""
-    reconciled = set()
-    for work_id in work_ids:
-        row = work_row(state, work_id)
-        for layer in row.get("layers", []):
-            url = layer.get("url")
-            if not url:
-                continue
-            pr = (forge_by_url or {}).get(url)
-            if isinstance(pr, dict):
-                apply_forge_layer(layer, pr, work_id, notes)
-            if url in merged_urls:
-                layer["status"] = "merged"
-        layers = row.get("layers", [])
-        if layers and all(layer["status"] == "merged" for layer in layers):
-            if effective_finish(row) == "land":
-                if row["state"] != "landed":
-                    prev = row["state"]
-                    row["state"] = "landed"
-                    row.pop("unknownReason", None)
-                    notes.append(f"{work_id}: {prev} -> landed")
-                    reconciled.add(work_id)
-                blocked_parts = []
-                if row.get("blocked"):
-                    blocked_parts.append(f"blocked: {row.pop('blocked')}")
-                if row.get("blockedBy"):
-                    blocked_parts.append(f"blockedBy: {', '.join(row.pop('blockedBy'))}")
-                if blocked_parts:
-                    discoveries = list(state.get("discoveries", []))
-                    disc_id = next_discovery_id(discoveries)
-                    detail = "; ".join(blocked_parts)
-                    entry = {
-                        "id": disc_id,
-                        "date": at,
-                        "origin": f"Late merge on {work_id}",
-                        "work": work_id,
-                        "text": f"{work_id} merged on the forge while active blocker remained ({detail})",
-                        "impact": "shared-contract",
-                        "route": "pending",
-                        "status": "open",
-                    }
-                    discoveries.append({key: entry[key] for key in DISCOVERY_KEYS if key in entry})
-                    replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
-                    notes.append(
-                        f"{work_id} already merged while blocked ({detail}); "
-                        f"moved blocker to open discovery {disc_id} for follow-up routing"
-                    )
-                for decision in state.get("decisions", []):
-                    if decision["status"] == "open" and any(b["id"] == work_id for b in decision.get("blocks", [])):
-                        kept = [b for b in decision["blocks"] if b["id"] != work_id]
-                        if kept:
-                            decision["blocks"] = kept
-                        else:
-                            decision.pop("blocks", None)
-                        notes.append(
-                            f"{work_id} already merged while {decision['id']} stayed open; "
-                            f"create a follow-up outcome and block it on {decision['id']} if changes are needed"
-                        )
-            else:
-                notes.append(f"{work_id}: all PRs merged on the forge despite finish line {effective_finish(row)}; settle by hand")
-        elif row["state"] == "ready" and any(layer["status"] not in READY_LAYERS[effective_finish(row)][0] for layer in layers):
-            row["state"] = "in-review"
-        row["checkedAt"] = at
-    return reconciled
-
-
-def merged_lapsed(row, facts, merged_urls, at):
-    """Fallback row keeping valid bases/heads on stopped layers while recording merged layers and lapsing readiness."""
-    fallback = copy.deepcopy(row)
-    observed = {layer["id"]: layer for layer in facts.get("layers", [])}
-    allowed = READY_LAYERS.get(effective_finish(row), (set(),))[0]
-    unsupported = False
-    for layer in fallback.get("layers", []):
-        if layer.get("url") in merged_urls:
-            layer["status"] = "merged"
-        elif observed[layer["id"]]["status"] not in allowed:
-            unsupported = True
-            if layer["status"] == "ready":
-                layer["status"] = "open"
-    if fallback["state"] == "ready" and unsupported:
-        fallback["state"] = "in-review"
-    fallback["checkedAt"] = at
-    return fallback
-
-
 def move_landing(state, at, identity, to, read_pr, note=None):
     landing = next((row for row in state.get("landings", []) if row["id"] == identity), None)
     if landing is None:
@@ -1451,13 +1060,12 @@ def move_landing(state, at, identity, to, read_pr, note=None):
         )
     notes = []
     if to == "withdrawn":
-        forge_by_url, merged_urls, stopped_urls = {}, [], []
+        merged_urls, stopped_urls = [], []
         for pr in landing["prs"]:
             url = pr["url"]
             forge_pr = read_pr(url)
             if not isinstance(forge_pr, dict) or forge_pr.get("state") not in {"OPEN", "CLOSED", "MERGED"}:
                 raise Refused(f"{url} returned incomplete forge state; confirm on GitHub before withdrawing")
-            forge_by_url[url] = forge_pr
             if forge_pr["state"] == "MERGED":
                 merged_urls.append(url)
                 continue
@@ -1470,81 +1078,39 @@ def move_landing(state, at, identity, to, read_pr, note=None):
             stopped_urls.append(url)
         if not stopped_urls:
             raise Refused(f"all PRs in {identity} already merged on the forge; record --to landed instead")
-        landing["state"] = "withdrawn"
-        if note:
-            put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
-        merged_set = set(merged_urls)
-        landed_ids = set()
-        for wid in landing["work"]:
-            row = work_row(state, wid)
-            layers = row.get("layers", [])
-            if layers and all(layer["status"] == "merged" or layer.get("url") in merged_set for layer in layers):
-                trial = copy.deepcopy(state)
-                trial_notes = []
-                reconciled = reconcile_landed_work(trial, at, [wid], merged_set, trial_notes, forge_by_url)
-                try:
-                    validate(trial)
-                except ValueError as error:
-                    notes.append(f"{wid}: could not reconcile merged work automatically; settle by hand: {error}")
-                else:
-                    state["work"] = trial["work"]
-                    state["decisions"] = trial["decisions"]
-                    if "discoveries" in trial:
-                        replace_list(state, "discoveries", trial["discoveries"], PROGRAM_KEYS)
-                    landed_ids |= reconciled
-                    notes.extend(trial_notes)
-        candidates, kept = {}, {}
-        work_indices = {row["id"]: idx for idx, row in enumerate(state["work"])}
-        for wid in landing["work"]:
-            if wid in landed_ids:
-                continue
-            index = work_indices[wid]
-            row = state["work"][index]
-            facts = copy.deepcopy(row)
-            for layer in facts.get("layers", []):
-                url = layer.get("url")
-                if url in forge_by_url:
-                    apply_forge_layer(layer, forge_by_url[url], wid, notes)
-            facts["checkedAt"] = at
-            derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
-            if derived != row:
-                labels = (
-                    (derived, None),
-                    (facts, "its forge facts"),
-                    (merged_lapsed(row, facts, merged_set, at), "its merged layers and lapsed readiness"),
-                    (lapsed(row, facts), "that its readiness lapsed"),
-                    (row, "nothing"),
-                )
-                unique = [(option, label) for position, (option, label) in enumerate(labels)
-                          if option is row or option not in [other for other, _ in labels[position + 1:]]]
-                candidates[index] = [option for option, _ in unique]
-                kept[index] = {id(option): label for option, label in unique}
-        if candidates:
-            reasons = first_valid(state, candidates)
-            for index, (*_, original) in candidates.items():
-                row = state["work"][index]
-                if index in reasons:
-                    notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
-                elif row["state"] != original["state"]:
-                    notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
         if merged_urls:
+            merged_set = set(merged_urls)
+            for wid in landing["work"]:
+                row = work_row(state, wid)
+                for layer in row.get("layers", []):
+                    if layer.get("url") in merged_set:
+                        layer["status"] = "merged"
+                if (row.get("layers") and all(layer["status"] == "merged" for layer in row["layers"])
+                        and effective_finish(row) == "land" and not open_blocks(state, wid)
+                        and not row.get("blocked") and not row.get("blockedBy")):
+                    row["state"] = "landed"
+                    row.pop("unknownReason", None)
+                row["checkedAt"] = at
             notes.append(
                 f"{identity} partially merged before cancellation: merged {', '.join(merged_urls)}; "
-                f"confirmed stopped {', '.join(stopped_urls)} (fresh release required to land remaining work)"
+                f"confirmed stopped {', '.join(stopped_urls)} (fresh release required for remaining work)"
             )
-        return f"{identity} withdrawn", notes
     if to == "landed":
-        forge_by_url = {}
         for pr in landing["prs"]:
             forge_pr = read_pr(pr["url"])
             if not isinstance(forge_pr, dict) or forge_pr.get("state") != "MERGED":
                 raise Refused(f"{pr['url']} is not merged on the forge")
-            forge_by_url[pr["url"]] = forge_pr
         for wid in landing["work"]:
             row = work_row(state, wid)
             if effective_finish(row) != "land":
                 raise Refused(f"{wid} has finish line {effective_finish(row)}, not land; reconcile it before recording {identity} landed")
-        reconcile_landed_work(state, at, landing["work"], {pr["url"] for pr in landing["prs"]}, notes, forge_by_url)
+            for layer in row.get("layers", []):
+                if any(pr["url"] == layer.get("url") for pr in landing["prs"]):
+                    layer["status"] = "merged"
+            if all(layer["status"] == "merged" for layer in row.get("layers", [])):
+                row["state"] = "landed"
+                row.pop("unknownReason", None)
+            row["checkedAt"] = at
     landing["state"] = to
     if note:
         put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
@@ -1748,98 +1314,35 @@ def observe(state, at, read_pr, threads):
             candidates[index] = [option for option, _ in unique]
             kept[index] = {id(option): label for option, label in unique}
     reasons = first_valid(state, candidates)
-    selected_labels = {index: kept[index][id(state["work"][index])] for index in reasons}
-    merged = ({layer["url"] for row in state["work"] for layer in row.get("layers", [])
-               if layer["status"] == "merged" and "url" in layer}
-              | {url for url, pr in forge.items() if isinstance(pr, dict) and pr.get("state") == "MERGED"})
-    reconciled_works = set()
-    landing_notes = []
-    for landing_index, landing in enumerate(state.get("landings", [])):
+    for index, (*_, original) in candidates.items():
+        row = state["work"][index]
+        if index in reasons:
+            notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
+        elif row["state"] != original["state"]:
+            notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
+    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
+        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
+            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
+    merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
+              if layer["status"] == "merged" and "url" in layer}
+    for landing in state.get("landings", []):
         if landing["state"] not in PENDING_LANDINGS:
             continue
-        all_merged = all(entry["url"] in merged for entry in landing["prs"])
-        newly_merged_works = [
-            wid for wid in landing["work"]
-            if (row := work_row(state, wid))["state"] != "landed" and row.get("layers")
-            and all(layer.get("url") in merged or layer["status"] == "merged" for layer in row["layers"])
-        ]
-        if all_merged or newly_merged_works:
-            trial = copy.deepcopy(state)
-            trial_notes = []
-            reconciled = (
-                reconcile_landed_work(trial, at, newly_merged_works, merged, trial_notes, forge)
-                if newly_merged_works else set()
-            )
-            if all_merged and all(
-                work_row(trial, wid)["state"] == "landed"
-                for wid in landing["work"]
-                if work_row(trial, wid).get("layers")
-                and all(layer["status"] == "merged" for layer in work_row(trial, wid)["layers"])
-            ):
-                trial["landings"][landing_index]["state"] = "landed"
-                trial_notes.append(f"{landing['id']}: landed")
-            try:
-                validate(trial)
-            except ValueError as error:
-                landing_notes.append(f"{landing['id']}: could not reconcile merged landing automatically; settle by hand: {error}")
-            else:
-                state["work"] = trial["work"]
-                state["decisions"] = trial["decisions"]
-                state["landings"] = trial["landings"]
-                if "discoveries" in trial:
-                    replace_list(state, "discoveries", trial["discoveries"], PROGRAM_KEYS)
-                reconciled_works |= reconciled
-                landing_notes.extend(trial_notes)
-                if state["landings"][landing_index]["state"] == "landed":
-                    continue
+        all_merged = all(entry["url"] in merged or forge.get(entry["url"], {}).get("state") == "MERGED" for entry in landing["prs"])
+        if all_merged and all(work_row(state, wid)["state"] == "landed" for wid in landing["work"]):
+            landing["state"] = "landed"
+            notes.append(f"{landing['id']}: landed")
+            continue
         for entry in landing["prs"]:
             pr = forge.get(entry["url"])
             if pr and pr.get("state") != "MERGED" and (
                     not pr.get("headRefOid", "").startswith(entry["head"])
                     or (not re.fullmatch(r"[0-9a-f]{7,40}", entry["base"]) and pr.get("baseRefName") != entry["base"])):
-                landing_notes.append(
+                notes.append(
                     f"{landing['id']}: a released head or base moved; move it to --to cancelling before notifying "
                     f"{landing['lander']} and confirm forge cancellation before withdrawing"
                 )
                 break
-    withdrawn_work = {
-        wid for landing in state.get("landings", [])
-        if landing["state"] == "withdrawn"
-        for wid in landing["work"]
-    }
-    standalone_merged = [
-        row["id"] for row in state["work"]
-        if row["state"] not in TERMINAL and row.get("layers") and effective_finish(row) == "land"
-        and all(layer.get("url") in merged or layer["status"] == "merged" for layer in row["layers"])
-        and (row["id"] in withdrawn_work or not open_blocks(state, row["id"]))
-    ]
-    for wid in standalone_merged:
-        trial = copy.deepcopy(state)
-        trial_notes = []
-        reconciled = reconcile_landed_work(trial, at, [wid], merged, trial_notes, forge)
-        try:
-            validate(trial)
-        except ValueError as error:
-            landing_notes.append(f"{wid}: could not reconcile merged work automatically; settle by hand: {error}")
-        else:
-            state["work"] = trial["work"]
-            state["decisions"] = trial["decisions"]
-            if "discoveries" in trial:
-                replace_list(state, "discoveries", trial["discoveries"], PROGRAM_KEYS)
-            reconciled_works |= reconciled
-            landing_notes.extend(trial_notes)
-    for index, (*_, original) in candidates.items():
-        row = state["work"][index]
-        if row["id"] in reconciled_works:
-            continue
-        if index in reasons:
-            notes.append(f"{row['id']}: recorded {selected_labels[index]} from the forge; settle by hand: {reasons[index]}")
-        elif row["state"] != original["state"]:
-            notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
-    notes.extend(landing_notes)
-    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
-        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
-            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     return notes
 
 
@@ -2057,13 +1560,8 @@ def arguments():
     transition.add_argument("--rebase-onto", help="Move live layers' base onto this branch (and clear or retarget dead-base provisional state)")
     command.add_argument("--stack-on", help="Layer ID to set as stackedOn when rebasing onto another unmerged layer")
     command.add_argument("--decision", dest="decision_id", help="Decision ID to answer in the same commit as --scrap or --rebase-onto")
-    choice = command.add_mutually_exclusive_group()
-    choice.add_argument("--option", dest="decision_option", type=int)
-    choice.add_argument("--text", dest="decision_text")
-    choice.add_argument("--pasted", dest="decision_pasted", action="store_true", help="Read a copied page prompt for --decision from stdin")
-    command.add_argument("--stored", dest="decision_stored", type=Path, metavar="FILE",
-                         help="Read stored page picks from saved db_query output (alone to apply a pick, or with --option/--text/--pasted so the newer user message supersedes older picks)")
-    command.add_argument("--answer-source", help="User message that answered --decision")
+    command.add_argument("--option", dest="decision_option", type=int, help="Chosen option number for --decision")
+    command.add_argument("--answer-source", help="User message or stored pick that answered --decision")
 
     command = commands.add_parser("start", parents=[shared], help="An owner started on a work row")
     command.add_argument("--work", required=True)
@@ -2162,15 +1660,12 @@ def event(args, state, at, files):
         return update_grant(state, at, args.source, args.start_rule, args.resolve_rule, args.user_rule,
                             args.heartbeat_rule, args.wake_rule, args.landing_rule, args.hosting, args.finish_line)
     if args.command == "work":
-        pasted = sys.stdin.read() if args.decision_pasted else None
-        stored = stored_picks(args.decision_stored.read_text()) if args.decision_stored else None
         return mutate_work(state, at, args.id, args.add, args.title, args.repo, args.kind, args.work_state,
                            args.unknown_reason, args.description, args.scope, args.finish_line, args.finish_line_reason,
                            args.origin, args.blocked, args.clear_blocked, args.blocked_by, args.clear_blocked_by,
                            args.sources, args.optional, args.required, args.provisional_basis, args.provisional_clears,
                            args.provisional_on, args.clear_provisional, args.scrap, args.rebase_onto, args.stack_on,
-                           args.decision_id, args.decision_option, args.decision_text, args.answer_source,
-                           pasted, stored)
+                           args.decision_id, args.decision_option, args.answer_source)
     if args.command == "reopen":
         return reopen_decision(state, at, args.decision, args.why, args.blocks)
     if args.command == "withdraw":
@@ -2194,19 +1689,17 @@ def event(args, state, at, files):
         if not args.source:
             raise Refused("answer needs --source: the user's message that answered")
         if args.pasted:
-            message, notes, answered, deferred_atomic = answer_pasted(
-                state, at, sys.stdin.read(), args.source, allow_atomic_only=documents is not None
-            )
+            message, notes, answered = answer_pasted(state, at, sys.stdin.read(), args.source)
         elif args.decision and (args.option or args.text):
             row = decision_row(state, args.decision)
             message, notes = settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
                                     "answered", source=args.source)
-            answered, deferred_atomic = [args.decision], []
+            answered = [args.decision]
         else:
             raise Refused("answer needs --decision with --option or --text, --pasted, or --stored")
         if documents is None:
             return message, notes
-        stored_message, stored_notes = answer_stored(state, at, documents, answered, deferred_atomic)
+        stored_message, stored_notes = answer_stored(state, at, documents, answered)
         return message if stored_message == NOTHING_STORED else f"{message}; {stored_message}", notes + stored_notes
     if args.command == "resolve":
         row = decision_row(state, args.decision)

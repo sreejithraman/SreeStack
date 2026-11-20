@@ -116,12 +116,41 @@ evidence, and report stalled disputes rather than repeating equivalent passes.
 
 ## Route repairs
 
-Keep converging passes going while they stay inside scope and resolve findings.
+Before every Pass 2+ repair or dispatch, run the deterministic convergence check
+from this skill's folder and paste its output block at the top of the pass brief:
+
+```sh
+python3 scripts/convergence.py --base <base sha> --pass1 <pass1 sha> --head HEAD [--premise-cut-at <sha>]
+```
+
+Act on its mode autonomously (no HITL unless a genuine product/scope decision or
+required contract blocker remains):
+
+- **`CONVERGING`:** continue with a tightly scoped repair-verification pass below.
+  Pass 2+ reviewers verify accepted fixes, check for regressions, and check
+  cumulative repair coherence using the compact `ID | Disposition | 1-line premise`
+  table from prior passes — do **not** re-run open-ended Adversarial red-team
+  fuzzing across unchanged surfaces (Wave 1 + Wave 2 already did full discovery).
+- **`PREMISE_CUT`** (same production file repaired in 2+ consecutive passes, 3+
+  total passes, or repair additions >50% of its Pass 1 diff): **additive patching
+  on the flagged file(s) is forbidden.** Pause incremental fixes, apply
+  [Attack the Premise](../engineering-principles/references/attack-the-premise.md)
+  (and run a fresh `Ponytail` simplification pass if the cut isn't obvious) to
+  **delete or narrow the offending abstraction** (tighten permissive inputs to
+  structured contracts, or fail closed instead of auto-reconciling). Commit the
+  simplification and pass `--premise-cut-at <sha>` on the next convergence check.
+- **`DEFER_AND_FINISH`** (oscillation persists after a premise cut, or 5+ repair
+  commits with repeated hits): stop adding complexity. Fail closed or `Defer`
+  remaining non-critical or synthetic edge cases with 1-line factual premises (to
+  durable homes), run one final scoped verification check on the settled head, and
+  finish. Escalate to the caller/user only if a required contract blocker or
+  product/scope decision genuinely cannot be settled autonomously.
+
 Every repair pass uses fresh reviewer tasks on the original reviewers' models
 (never resuming a prior reviewer thread), scoped to all changes since the last
 completed pass plus affected behavior, consumers, and dependencies, with the
-original diff and prior findings as context. Reviewers with no routed fix keep
-their valid coverage.
+original diff and prior findings' compact disposition table as context. Reviewers
+with no routed fix keep their valid coverage.
 
 Choose the route by what changed:
 
@@ -137,9 +166,9 @@ Choose the route by what changed:
 - **Small repair** (one component, no new contract or failure-sensitive behavior)
   **or any Pass 2+ repair:** run **one** independent reviewer — the reviewer whose
   finding was fixed, or Primary when fixing findings from multiple reviewers.
-  That reviewer checks every criterion the repair made stale (with prior evidence
-  attached) and refreshes that coverage. Add a second reviewer only if a repair
-  touches a component no earlier pass reviewed.
+  That reviewer checks the repaired findings, regressions, and cumulative repair
+  coherence (with prior dispositions attached) and refreshes that coverage. Add a
+  second reviewer only if a repair touches a component no earlier pass reviewed.
 - **Large Pass-1 repair** (multiple components, or changing an ownership boundary,
   guarantee, types, or failure-sensitive behavior): run the union of fresh tasks
   for what changed — Primary for correctness/requirements/tests, Ponytail for
@@ -147,17 +176,8 @@ Choose the route by what changed:
   Adversarial for failure-sensitive contracts. Add an outside perspective only
   for a disputed assumption or material ownership change.
 
-**Attack the Premise checkpoint:** when a repair cycle reopens an invariant
-already repaired, or a second pass finds new issues in the same component, pause
-further review of it and apply
-[Attack the Premise](../engineering-principles/references/attack-the-premise.md).
-Keep the counterexamples. Record a settled reversible design fix before the next
-pass; if the diagnosis reveals a scope split, an ownership boundary change, or a
-diverging change (repairs pulling in new subsystems or repeatedly introducing
-regressions), return a stop or split decision to the caller rather than grinding.
-
-Repeat Validate and settle and Route repairs until no routed fixes or checkpoint
-work remain.
+Repeat Validate and settle and Route repairs until no routed fixes or convergence
+actions remain.
 
 **Final integrated check:** if code or substantive-instruction repairs ran after
 initial discovery, ensure a fresh Primary assessment has checked **all accumulated

@@ -23,9 +23,14 @@ rounds.
    requirements, and checks. Use [Verify](../verify/SKILL.md) when a real workflow settles a
    dispute. Done: every claim has evidence and a state: true, pre-existing, handled,
    contradicted, duplicate, or unjustified churn.
-3. **Decide.** Apply [classification](references/classification.md) once per issue, then its
-   [continue or stop](references/classification.md#continue-or-stop) test. Only Must-fix and
-   Worth-fixing are accepted. Record reasons for rejecting, acknowledging, or deferring.
+3. **Decide.** Challenge every verified finding under
+   [classification](references/classification.md) — a reviewer's `High` severity,
+   `confidence: 1.0`, or even a real reproduction does not make it `Must-fix`. Push back on
+   synthetic torture paths, reviewer-invented guarantees, or patches worse than the bug; prefer
+   narrowing a permissive contract over adding heuristics. Then apply
+   [continue or stop](references/classification.md#continue-or-stop). Only Must-fix and
+   Worth-fixing are accepted. Record a crisp 1-line falsifiable premise for every rejection,
+   deferral, or narrowed contract so later passes treat it as settled.
 4. **Repair and check.** Follow [Orchestration](../orchestration/SKILL.md#who-does-the-work) for who
    repairs, and pick the model of any repair you delegate from
    [the model table](../orchestration/references/models.md#choose-a-model).

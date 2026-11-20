@@ -52,10 +52,10 @@ hosted backend is available), do not claim external publication: if the render s
 `command-center.next.html` (`page: behind`), verify it on disk and run the same `mv` locally so
 `command-center.html` stays current and `status --turn-end` passes; if the render is unchanged
 (`page: current`, no `.next.html` staged), verify and retain the existing `command-center.html`.
-In both cases, post any open Inbox items directly in chat. When switching from any previously
-hosted page to local-only mode, run **Turn off** below with reason `local only; Inbox in chat`
-(which skips already-absent wake parts) and tell the user which previous hosted URL is now frozen
-and that the local file plus chat Inbox are active instead.
+In both cases, post any open Inbox items directly in chat. When switching from a previously
+hosted page to local-only mode, Step 2 above (**Turn off** with reason `local only; Inbox in chat`)
+runs once; tell the user which previous hosted URL is now frozen and that the local file plus chat
+Inbox are active instead.
 
 If the deployed URL changed, record it once with `record.py grant --hosting <url>` and tell the
 user the new URL and that the previous URL is now frozen (the renderer omits `hosting`, so an
@@ -106,17 +106,16 @@ Run on every answer wake, heartbeat tick, resume, and before settling any decisi
    `python3 scripts/record.py answer --stored <file> --state /absolute/path/program.json` (adding
    any user-message answer flags and `--source` in the same command so the message supersedes prior
    picks).
-4. Before deleting the scratch file, act on any `note: atomic work transition needed` line by
-   running the printed `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --stored <file>`
-   command (passing `--option`/`--text`/`--pasted` + `--answer-source` alongside `--stored <file>`
-   if a newer user message supersedes the stored pick). If an atomic transition is refused during a
-   move or backend switch, report the unapplied pick to the user and ask them to re-answer in the
-   active Inbox before abandoning the old backend.
+4. If `answer --stored` refuses a dead-base decision because its work must scrap or rebase in the
+   same commit, apply that choice first via
+   `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --option <N> --answer-source "<pick or newer user message>"`,
+   then re-run `answer --stored <file>` so remaining picks record and every applied pick prints its
+   `delete:` line.
 5. Delete ONLY the DB documents listed on a `note: delete:` line from a command that exited 0
    (including a validated `unchanged:` replay of an already-recorded pick after an earlier delete
-   failure; never delete documents from a refused command or an unapplied
-   `atomic work transition needed` note) via `db_write` `delete` with their version, then delete
-   the scratch file. (`picksRead` prevents duplicate processing if a delete fails.)
+   failure; never delete documents from a refused command) via `db_write` `delete` with their
+   version, then delete the scratch file. (`picksRead` prevents duplicate processing if a delete
+   fails.)
 6. Pass recorded answers to affected owners and run `record.py applied`; reopen any `reopen request:`
    line with `record.py reopen`. Publish the updated page.
 
@@ -128,11 +127,14 @@ Site with no wake task, as complete):
 
 1. If you have the old Claude artifact's DB tools and `config/wake` exists, delete `config/wake`
    with `db_write` `delete` (using `db_get`'s version) so open pages hide Send.
-2. If you have the old Claude artifact's DB tools and still hold the record, read stored picks one
-   last time (including any atomic work transitions above).
+2. If you have the old Claude artifact's DB tools and still hold the record, drain stored picks
+   one last time (steps 1–5 of **Stored picks** above, plus owner handoffs and `record.py applied`,
+   **without publishing or setting up a wake**).
 3. If `grant.wake` names a webhook task ID, delete it (`delete_scheduled_task` in T3).
 4. Record `record.py grant --wake "None (<reason>)"` so future heartbeat ticks stop querying Claude
-   DB picks.
+   DB picks, and verify `config/wake` and the old wake task are absent before reporting teardown
+   complete. (During an approved takeover, delete the old wake task before transfer and write
+   `grant.wake` once this thread holds `chief`.)
 
 If leaving an active Claude artifact without its DB tools (e.g., from a Codex or local-only
 session), steps 1–2 are skipped; tell the user Send answer on the old page no longer reaches you

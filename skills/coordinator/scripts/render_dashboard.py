@@ -38,7 +38,6 @@ DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
 DISCOVERY_STATUSES = ("open", "routed")
 DISCOVERY_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
 DISCOVERY_REPLIES = ("pending", "sent")
-OPTION_ACTION_TYPES = ("scrap", "rebase")
 HISTORY = {"date", "source", "answerSource", "rationale", "applied", "stalePick", "picksRead"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
@@ -46,7 +45,7 @@ PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next
 GRANT = ("date", "source", "start", "resolve", "user")
 DECISION_KEYS = ("id", "question", "date", "source", "status", "reopened", "context", "pictures", "meanwhile", "recommendation",
                  "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied", "stalePick", "picksRead")
-OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible", "action")
+OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible")
 PICTURE_SHAPES = {"side-by-side": (2, 3), "before-after": (2, 2), "sequence": (2, 8)}  # shape: (fewest, most) images
 STALE_PICK = ("label", "revision", "at")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
@@ -438,18 +437,6 @@ def validate_decision(row, by_id):
         raise ValueError(f"{path}.picksRead must list the stored picks read, such as \"picks/<id> (version 1) 2026-11-02T18:00:00Z\"")
     for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
         known_keys(option, f"{path}.options[{index}]", OPTION_KEYS)
-        if "action" in option:
-            action = known_keys(obj(option["action"], f"{path}.options[{index}].action"),
-                                f"{path}.options[{index}].action", ("type", "work", "onto", "stackOn"))
-            action_type = one_of(action.get("type"), OPTION_ACTION_TYPES, f"{path}.options[{index}].action.type")
-            if "work" in action:
-                known(text(action["work"], f"{path}.options[{index}].action.work"), f"{path}.options[{index}].action.work", by_id)
-            if action_type == "rebase":
-                text(action.get("onto"), f"{path}.options[{index}].action.onto")
-                if "stackOn" in action:
-                    text(action["stackOn"], f"{path}.options[{index}].action.stackOn")
-            elif "onto" in action or "stackOn" in action:
-                raise ValueError(f"{path}.options[{index}].action: scrap action cannot set onto or stackOn")
         for key in ("label", "effect"):
             text(option.get(key), f"{path}.options.{key}")
         if "image" in option:

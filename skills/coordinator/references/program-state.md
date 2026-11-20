@@ -93,7 +93,7 @@ type ReportBlock = {
       images: { image: string; caption?: string }[] };
     meanwhile?: string; recommendation?: string;
     options?: { label: string; effect: string; image?: string; recommended?: boolean;
-      reversible?: boolean; action?: { type: "scrap"|"rebase"; work?: string; onto?: string; stackOn?: string } }[];
+      reversible?: boolean }[];
     weight?: "quick"|"judgment"; links?: { label: string; url: string }[] }[];
   followups?: { id: string; text: string; evidence?: string;
     impact?: "unrelated"|"shared-contract"|"requested-scope"; thread?: string }[];

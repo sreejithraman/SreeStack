@@ -26,6 +26,35 @@ Classify each canonical issue once after merging equivalent source reports:
 
 Only `Must-fix` and `Worth-fixing` are accepted findings.
 
+### Challenge before accepting
+
+Reviewers optimize for one lens and are fallible critics, not approval gates. A
+reviewer's `High` severity, `confidence: 1.0`, or even a working reproduction does
+**not** automatically make a finding `Must-fix`. Before writing a fix, challenge
+every verified finding against four tests:
+
+1. **Real-use vs. synthetic torture path:** Does this trigger occur in real
+   operation, or only by chaining unlikely or contradictory manual steps? A true
+   repro of an unrealistic torture path is `Defer` or `Won't do`, regardless of
+   reviewer severity.
+2. **Narrow/delete vs. patch bloat:** When a finding exploits permissive input
+   parsing (such as free-form prose in a CLI) or multi-state auto-reconciliation,
+   **tighten the contract or fail closed** (delete the permissive path) instead of
+   adding regexes, heuristics, or special-case branches.
+3. **Fix worse than the bug:** If fixing the finding adds more fragility, hidden
+   state, or surface area than the risk it prevents, push back (`Defer` or
+   `Won't do`) with a concrete rationale.
+4. **Reviewer-invented guarantee:** Push back and `Defer` guarantees nobody
+   requested rather than growing scope to chase a clean verdict.
+
+Never push back on broken real contracts: invalid CLI invocations, crashes on
+normal paths, violated explicit requirements, or data loss on normal operations.
+
+Record every pushback (`Defer`, `Won't do`, or narrowed contract) with a 1-line
+falsifiable premise (`ID | Disposition | 1-line premise`) so later review passes
+treat it as settled unless they uncover concrete new evidence that disproves that
+premise.
+
 Duplicate is a report relationship, not a rejection reason. Valid corroborating
 reports retain the canonical issue's disposition. If the issue is already settled,
 link the repeat to that decision and its repair/check evidence without creating
