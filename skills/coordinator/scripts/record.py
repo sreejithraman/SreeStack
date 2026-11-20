@@ -1079,9 +1079,15 @@ def move_landing(state, at, identity, to, read_pr, note=None):
             stopped_urls.append(url)
         if not stopped_urls:
             raise Refused(f"all PRs in {identity} already merged on the forge; record --to landed instead")
+        landing["state"] = to
+        if note:
+            put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
+        candidates = {}
         for wid in landing["work"]:
-            row = work_row(state, wid)
-            for layer in row.get("layers", []):
+            index = next(i for i, item in enumerate(state["work"]) if item["id"] == wid)
+            original = state["work"][index]
+            updated = copy.deepcopy(original)
+            for layer in updated.get("layers", []):
                 forge_pr = observed.get(layer.get("url"))
                 if not forge_pr:
                     continue
@@ -1098,28 +1104,40 @@ def move_landing(state, at, identity, to, read_pr, note=None):
                     if base and layer.get("base") and base != layer["base"]:
                         moved = True
                         notes.append(f"{wid}: {layer['id']} base moved to {base}")
-                    status = "closed" if forge_pr["state"] == "CLOSED" else "draft" if forge_pr.get("isDraft") else (
-                        "open" if layer["status"] == "ready" and moved else layer["status"]
+                    status = "closed" if forge_pr["state"] == "CLOSED" else (
+                        "draft" if forge_pr.get("isDraft") else ("ready" if layer["status"] == "ready" and not moved else "open")
                     )
                     if status != layer["status"]:
                         if status == "closed":
                             notes.append(f"{wid}: {layer['id']} closed without merge")
                         layer["status"] = status
-            if (row["state"] == "ready"
-                    and any(layer["status"] not in READY_LAYERS[effective_finish(row)][0] for layer in row.get("layers", []))):
-                row["state"] = "in-review"
-                row.pop("acceptance", None)
-            if (merged_urls and row.get("layers") and all(layer["status"] == "merged" for layer in row["layers"])
-                    and effective_finish(row) == "land" and not open_blocks(state, wid)
-                    and not row.get("blocked") and not row.get("blockedBy")):
-                row["state"] = "landed"
-                row.pop("unknownReason", None)
-            row["checkedAt"] = at
+            if (updated["state"] == "ready"
+                    and any(layer["status"] not in READY_LAYERS[effective_finish(updated)][0] for layer in updated.get("layers", []))):
+                updated["state"] = "in-review"
+                updated.pop("acceptance", None)
+            if (merged_urls and updated.get("layers") and all(layer["status"] == "merged" for layer in updated["layers"])
+                    and effective_finish(updated) == "land" and not open_blocks(state, wid)
+                    and not updated.get("blocked") and not updated.get("blockedBy")):
+                updated["state"] = "landed"
+                updated.pop("unknownReason", None)
+            updated["checkedAt"] = at
+            fallback = lapsed(original, updated)
+            fallback.pop("acceptance", None) if fallback["state"] != "ready" else None
+            fallback["checkedAt"] = at
+            options = [updated]
+            if fallback != updated:
+                options.append(fallback)
+            if original not in options:
+                options.append(original)
+            candidates[index] = options
+        for index, reason in first_valid(state, candidates).items():
+            notes.append(f"{state['work'][index]['id']}: withdrew landing with partial forge state; settle by hand: {reason}")
         if merged_urls:
             notes.append(
                 f"{identity} partially merged before cancellation: merged {', '.join(merged_urls)}; "
                 f"confirmed stopped {', '.join(stopped_urls)} (fresh release required for remaining work)"
             )
+        return f"{identity} {to}", notes
     if to == "landed":
         observed = {}
         for pr in landing["prs"]:

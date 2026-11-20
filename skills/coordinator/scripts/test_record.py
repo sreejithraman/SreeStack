@@ -1790,7 +1790,38 @@ class LifecycleMutationTests(RecordCase):
         self.refused("land", "--work", "W4", message="not ready to land")
         self.event("move", "--chief", SESSION.format("chief-2"))
 
-        # 3. land --to landed records observed merged head and clears unknownReason; open landing hold stays held.
+        # 3. Withdrawing a two-layer stack with a closed parent + open child withdraws cleanly (lapsing readiness)
+        #    and withdrawing a reopened PR updates status from closed back to open (without restoring readiness).
+        self.commit(two_ready)
+        _, rel_stack, _ = self.event("land", "--work", "W1")
+        lid_stack = rel_stack["landings"][-1]["id"]
+        self.event("land", "--landing", lid_stack, "--to", "cancelling", "--note", "Parent PR closed")
+        w1_s = work(self.head(), "W1")["layers"]
+        self.serve(prs={
+            w1_s[0]["url"]: {"state": "CLOSED", "isDraft": False, "headRefOid": w1_s[0]["head"], "baseRefName": w1_s[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_s[1]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": w1_s[1]["head"], "baseRefName": w1_s[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, stack_after, stack_res = self.event("land", "--landing", lid_stack, "--to", "withdrawn", "--note", "Stopped stack")
+        self.assertEqual(stack_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(stack_after, "W1")["state"], "in-review")
+        self.assertIn("settle by hand", stack_res.stdout)
+        self.event("move", "--chief", SESSION.format("chief-3"))
+
+        _, rel_reopen, _ = self.event("land", "--work", "W4")
+        lid_reopen = rel_reopen["landings"][-1]["id"]
+        self.event("land", "--landing", lid_reopen, "--to", "cancelling", "--note", "Closed then reopened")
+        self.serve(prs={"https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "CLOSED"}})
+        self.event("status")
+        self.assertEqual(work(self.head(), "W4")["layers"][0]["status"], "closed")
+        self.serve(prs={"https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "OPEN"}})
+        _, reopened_after, _ = self.event("land", "--landing", lid_reopen, "--to", "withdrawn", "--note", "Reopened PR stopped")
+        self.assertEqual(reopened_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(reopened_after, "W4")["layers"][0]["status"], "open")
+        self.assertEqual(work(reopened_after, "W4")["state"], "in-review")
+
+        # 4. land --to landed records observed merged head and clears unknownReason; open landing hold stays held.
         self.commit(lambda s: work(s, "W4").update(
             state="ready", layers=[{**work(s, "W4")["layers"][0], "status": "ready"}],
         ))
