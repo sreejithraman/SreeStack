@@ -98,7 +98,7 @@ Choose the cheapest proof that settles the claim:
 - **A routing or handoff question:** a dry-run trial. Freeze the tree, write the
   expected handoffs first, and have fresh sessions trace the scenario without
   running it, under
-  [Run trials safely](../writing-for-agents/references/working-on-skills.md#run-trials-safely).
+  [Run trials safely](../writing-for-agents/references/controlled-comparison.md#run-trials-safely).
   It proves routing only, not tool effects, discovery, or cost.
 - **A deterministic check:** Correct's guard proof, historical rejection plus
   valid-path success. Add a model run only when you also claim agent behavior

@@ -15,12 +15,13 @@ existing `--json` result files.
 Targets: score (overallScore), pass_rate (overallPassRate), cost_usd (mean agent
 cost per plugin run, judge cost excluded) and turns (mean turns per plugin run).
 
-Prints a JSON decision. Exit 0: the candidate beat the baseline on the target. Exit
-1: no win, which includes equal results, a failed run of a required case, and a
-target without telemetry. Exit 2: invalid evidence, such as a partial run, a missing,
-failed or aborted run, skipped paid graders, or results that differ in cases, case
-settings, model, Claude version or ablation. No result is a significance test, and no result
-shows equivalence.
+Prints a JSON decision with aggregate metrics and a per-case summary (including the
+no-skill baseline arm when ablation is with-without). Exit 0: the candidate beat the
+baseline on the target. Exit 1: no win, which includes equal results, a failed run of a
+required case, and a target without telemetry. Exit 2: invalid evidence, such as a
+partial run, a missing, failed or aborted run, skipped paid graders, or results that
+differ in cases, case settings, model, Claude version or ablation. No result is a
+significance test, and no result shows equivalence.
 
 Limits: `claude plugin eval` is experimental and runs only on Claude Code. It
 reports no token counts and sandboxes shell tools, but not hooks or MCP servers.
@@ -48,11 +49,52 @@ def plugin_runs(result: dict) -> list[dict]:
     return [run for case in result["cases"] for run in case["arms"].get("with", [])]
 
 
-def mean_of(result: dict, field: str) -> float | None:
-    values = [run.get(field) for run in plugin_runs(result)]
+def mean_of_runs(runs: list[dict], field: str) -> float | None:
+    values = [run.get(field) for run in runs]
     if not values or any(not isinstance(value, (int, float)) for value in values):
         return None
     return sum(values) / len(values)
+
+
+def mean_of(result: dict, field: str) -> float | None:
+    return mean_of_runs(plugin_runs(result), field)
+
+
+def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
+    old_by_name = {case["name"]: case for case in old["cases"]}
+    has_baseline = new["suite"].get("ablation") == "with-without"
+    required_set = set(required)
+    summary = []
+    for new_case in new["cases"]:
+        old_case = old_by_name[new_case["name"]]
+
+        def arm_stats(case: dict) -> dict:
+            runs = case["arms"]["with"]
+            agg = case["aggregates"]
+            return {
+                "score": agg.get("score"),
+                "pass_rate": agg.get("passRate"),
+                "passed": sum(1 for run in runs if run.get("passed")),
+                "runs": len(runs),
+                "turns": mean_of_runs(runs, "turns"),
+                "cost_usd": mean_of_runs(runs, "costUsd"),
+            }
+
+        entry = {
+            "name": new_case["name"],
+            "required": new_case["name"] in required_set,
+            "old": arm_stats(old_case),
+            "new": arm_stats(new_case),
+        }
+        if has_baseline:
+            entry["without"] = {
+                "old_score": old_case["aggregates"].get("scoreWithout"),
+                "new_score": new_case["aggregates"].get("scoreWithout"),
+                "old_pass_rate": old_case["aggregates"].get("passRateWithout"),
+                "new_pass_rate": new_case["aggregates"].get("passRateWithout"),
+            }
+        summary.append(entry)
+    return summary
 
 
 def metric(result: dict, target: str) -> float | None:
@@ -116,6 +158,7 @@ def decide(old: dict, new: dict, target: str, required: list[str]) -> tuple[int,
         return 2, {**report, "decision": "invalid", "reasons": found}
     report["old"], report["new"] = metric(old, target), metric(new, target)
     report["suite_cost_usd"] = {"old": old.get("costUsd"), "new": new.get("costUsd")}
+    report["cases"] = case_summaries(old, new, required)
     failed = [case["name"] for case in new["cases"] if case["name"] in required
               and not all(run.get("passed") for run in case["arms"]["with"])]
     if failed:

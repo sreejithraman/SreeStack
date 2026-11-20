@@ -105,6 +105,32 @@ class DecideTest(unittest.TestCase):
                 self.assertEqual((code, report["decision"]), (2, "invalid"), report)
         self.assertEqual(score(OLD, NEW, "score", "absent")[1]["decision"], "invalid")
 
+    def test_report_includes_compact_per_case_summary_and_baseline(self):
+        code, report = score(OLD, NEW, "score", "file")
+        self.assertEqual((code, report["decision"]), (1, "rejected"))
+        by_name = {case["name"]: case for case in report["cases"]}
+        self.assertEqual(set(by_name), {"codeword", "file"})
+        self.assertFalse(by_name["codeword"]["required"])
+        self.assertTrue(by_name["file"]["required"])
+        self.assertEqual(by_name["file"]["old"]["passed"], 2)
+        self.assertEqual(by_name["file"]["new"]["passed"], 1)
+        self.assertEqual(by_name["file"]["new"]["runs"], 2)
+        self.assertEqual(by_name["file"]["old"]["turns"], 4.0)
+        self.assertEqual(by_name["file"]["new"]["turns"], 4.0)
+        self.assertEqual(
+            by_name["file"]["without"],
+            {"old_score": 0.5, "new_score": 0.5, "old_pass_rate": 0, "new_pass_rate": 0},
+        )
+
+    def test_without_baseline_is_omitted_when_ablation_is_with_only(self):
+        old_with = copy.deepcopy(OLD)
+        new_with = copy.deepcopy(NEW)
+        for result in (old_with, new_with):
+            result["suite"]["ablation"] = "with"
+        _, report = score(old_with, new_with, "score")
+        for case in report["cases"]:
+            self.assertNotIn("without", case)
+
 
 class RunTest(unittest.TestCase):
     def setUp(self):

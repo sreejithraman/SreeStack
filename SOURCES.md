@@ -1417,45 +1417,63 @@ Setup references use the local `setup-sreestack` entry point.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/5f41df1220eb5759c413390206f1b9e6c63be754) — commit `5f41df1220eb5759c413390206f1b9e6c63be754`; `SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, and `references/adapter.md` inform the revision, tool-guidance, and evaluation procedures, and `scripts/eval.mjs` informed the comparison rules in `scripts/compare.py` (MIT).
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/b93e14766ef327e2ff1b1d44f93027fb654e880b) — v0.2.0, commit `b93e14766ef327e2ff1b1d44f93027fb654e880b`; `skills/skill-diet/SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, `references/adapter.md`, and `skills/skill-model-gap/SKILL.md` inform the revision, tool-guidance, cross-model gap, and evaluation procedures, and `scripts/eval.mjs` informed the comparison rules in `scripts/compare.py` (MIT).
 
-A local rewrite around one test: a line stays only if removing it changes what an
-agent does. Keeps the upstream concepts that change behavior: pointers, placement,
-completion conditions, leading words, and pruning. Adds a ranked choice of home for
-guidance, goal-first writing, capability and workflow contracts, plain-writing rules,
-test-based rules, and retesting after model releases. Drops router skills and the
-upstream goal of the same process on every run.
+Locally rewritten around one test: a line stays only if removing it changes what an
+agent does. Keeps the upstream concepts that change behavior: pointers, late loading,
+falsifiable completion conditions, and pruning. Adds a ranked choice of home for
+guidance, outcome-first contracts, test-based rules, rule precedence, one-clause
+rationale for counterintuitive rules, calibration examples, compact script outputs, and
+retesting after model releases. Drops router skills, leading words, the blanket ban on
+prohibitions, and the upstream goal of the same process on every run.
 
-Documents paired Claude Code and Codex invocation settings, writes context pointers
-as request-shaped triggers, and limits a model-invoked description to its triggers.
-Existing invocation choices are preserved.
-Rewrites start fresh, then settle old rules by the failure they prevent. Tool guidance
-covers drift, help quality, call syntax, and usage-derived examples. Working on Skills
-starts from real runs. Controlled Comparison keeps matched variants, calibration,
-full outcome checks, and normal host integration.
+`SKILL.md` opens with its contract and routes immediately to four standalone references
+without cross-file step-number links. Links inside the skill stay limited to unread local
+files, scripts, handoff skills, and external specs an agent must look up (`claude plugin
+eval`), keeping static host-doc citations here rather than inline. It replaces the fixed
+3-run gate on every added rule with a proportional proof ladder (static/safe checks for
+factual fixes, smoke trials for behavioral edits and triggers, `Settle what changed` for
+removals and rewrites, and controlled comparison for improvement claims or clearing a
+guardrail). Guardrails have a dedicated `#guardrails` section and remain exempt from the
+line test until enforced in code on every host or cleared by a controlled comparison.
 
-`scripts/compare.py` builds on Claude Code's experimental `claude plugin eval`,
-checked on Claude Code 2.1.318. It wraps the old and new skill trees as identical
-plugins over one copy of the eval cases, always passes `--no-publish`, and stops
-before the new run when the old one is partial. Scoring follows `eval.mjs`'s
-paired comparison with local rules: one declared target, a veto from any failed run
-of a required case, no win on equal results, missing telemetry reported as
-unproven, and no claim of equivalence or significance. It treats a partial run, a missing, failed,
-aborted, or skipped run, and results that differ in cases, case settings, model,
-Claude version, or ablation as invalid. The whole old suite runs before the new
-one. It drops skill-diet's own harness, its MISS and WORSE pass
-rules, regex answer scoring, token sums, and Codex runs; Codex comparisons use
-dry-run trials. `plugin eval` reports no token counts. Paid runs stay out of the
-checks.
+`references/working-on-skills.md` owns capability/workflow contracts, trigger-and-exclusion
+descriptions, paired Claude Code (`disable-model-invocation`, per
+[Claude Code skills docs](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill))
+and Codex (`policy.allow_implicit_invocation`, per
+[Codex skill docs](https://developers.openai.com/codex/build-skills#optional-metadata))
+invocation settings (preserving existing invocation choices), and fresh rewrites settled
+by meaning (allowing batched candidate runs for rewrites). `references/tool-guidance.md`
+covers drift, help quality, call syntax, compact script output, and safe call
+verification. `references/agent-instructions.md` is local and kept host-agnostic around `AGENTS.md`
+(omitting inline vendor byte/line ceilings, per-host rules-folder matrices, and per-host
+inspector commands), grounded in host docs
+([Claude Code memory](https://code.claude.com/docs/en/memory) and
+[Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)), load
+tests on Claude Code 2.1.318 and Codex 0.166.0, and published evaluations checked on
+2026-11-05 ([generated-file study](https://arxiv.org/html/2602.11988v1) and
+[Vercel's evals](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals)).
+`references/controlled-comparison.md` is the single home for session-log sampling,
+safe fresh-session trials (`#run-trials-safely`), controlled comparisons (10–15 real
+tasks, held-back split for iterative tuning, matched variants, served-model checks,
+calibration probe safeguards, timeout-on-hang checks, full outcome checks, normal
+skill-collection integration, and dry-run fallback for hosts without `claude plugin eval`), and closing cross-model gaps (loading-rate check first,
+side-by-side diagnosis, capability-ceiling test, and multi-model harm checks). It keeps
+cross-model tuning inside this reference rather than adding a separate `skill-model-gap`
+skill, and omits `metadata.tested-with`/`tested-on` frontmatter (warning only against
+using `model:`/`effort:` frontmatter for notes).
 
-Keeps skill-diet's steps for adding a rule, its level rule, and its counts of 10–15
-requests and three runs. Holds an added rule to the three runs a removal needs, in
-place of one fresh session. Exempts a named set of guardrails from the line test.
-
-`SKILL.md` covers writing for any agent document and ends by routing to a guide for
-each kind of document. `references/agent-instructions.md` is local, built from host
-documentation and published evaluations checked on 2026-11-05, plus load tests on Claude
-Code 2.1.318 and Codex 0.166.0.
+`scripts/compare.py` builds on Claude Code's experimental `claude plugin eval`, checked
+on Claude Code 2.1.318. It wraps the old and new skill trees as identical plugins over
+one copy of the eval cases, always passes `--no-publish`, stops before the new run when
+the old one is partial, and emits a compact JSON decision with per-case stats (including
+the `without` baseline arm when present). Scoring follows `eval.mjs`'s paired comparison
+with local rules: one declared target, a veto from any failed run of a required case, no
+win on equal results, missing telemetry reported as unproven, and no claim of equivalence
+or significance. It marks partial, missing, failed, aborted, skipped, or mismatched
+results invalid, runs the old suite before the new one, and drops skill-diet's own
+harness, MISS/WORSE rules, regex answer scoring, token sums, and Codex runs (Codex uses
+dry-run trials). Paid runs stay out of repo checks.
 
 Uses shared review owners. Does not adopt fixed size or growth budgets,
 inactivity-based host removal, schema-field hiding, fixed safety-line counts, or
