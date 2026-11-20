@@ -23,12 +23,12 @@ Proof ladder in `SKILL.md`, then cut every line that fails the three tests.
 
 ## Use one file
 
-Write `AGENTS.md` so every host reads the same source of truth. Before consolidating or
-removing an existing host-specific file (such as `CLAUDE.md` or `GEMINI.md`), confirm
-every supported host loads `AGENTS.md` without being shadowed by another file. If a host
-or external tool requires another filename, symlink it to `AGENTS.md` where symlinks
-work rather than using `@` imports, which load eagerly and can break in subfolders. Put
-truly host-only rules in that host's rules folder.
+Write `AGENTS.md` so every host reads the same source of truth. Before removing an
+existing host-specific file (such as `CLAUDE.md` or `GEMINI.md`), verify on the proposed
+layout (for example, in a disposable checkout) that every supported host loads
+`AGENTS.md` automatically. If a host or external tool requires another filename, symlink
+it to `AGENTS.md` where symlinks work rather than using `@` imports, which load eagerly
+and can break in subfolders. Put truly host-only rules in that host's rules folder.
 
 ## Put the rest where it will load
 
@@ -56,20 +56,23 @@ Reuse docs the project already maintains and add no agent-only copy.
 
 - **Targeted edit:** check only the changed lines and the commands they name. Report any
   other failing lines or competing host instruction files you notice without moving them
-  unasked. If the edit removes, weakens, or moves guidance, apply the Proof ladder and
-  Settle what changed on the affected paths.
+  unasked.
 - **Full rewrite:** check every line and command from a clean checkout, moving rules that
-  still matter to their proper home instead of deleting them, and settle removed or
-  weakened rules per the Proof ladder.
+  still matter to their proper home instead of deleting them.
 
-Test instruction-file lines against the three root tests, and doc lines against what a
-doc holds. Prove each covered command safely per the Proof ladder.
+For any edit or rewrite that removes, weakens, or moves guidance, apply the Proof ladder
+and Settle what changed on the affected paths. Test instruction-file lines against the
+three root tests, and doc lines against what a doc holds. Prove each covered command
+safely per the Proof ladder.
 
-After adding, moving, or removing an instruction file—or after a targeted move or edit
-that a competing host file could shadow—start fresh sessions at the root and in each
-changed folder and confirm the edited or moved rule actually loads (via the host's
-context inspector or by asking it to quote the specific rule from the file).
+After adding, moving, or removing an instruction file—or after moving rules between
+files or editing a file that a competing host file could shadow—start fresh sessions at
+the root (opening a matching nested file when scoped rules apply) and in each changed
+folder. Confirm every expected instruction file and the edited or moved rule load
+automatically: inspect loaded context with the host's context inspector, or use a natural
+request that never names the file and confirm from the trace that the source loaded
+before action.
 
-Done: every file and moved rule that should load still does, every covered command is
-proved or reported unproven, and every covered line passes its test, is a guardrail, or
-was supplied or kept explicitly by the user.
+Done: every expected file and moved rule loads automatically (or the gap is reported),
+every covered command is proved or reported unproven, and every covered line passes its
+test, is a guardrail, or was supplied or kept explicitly by the user.

@@ -1445,8 +1445,8 @@ and Codex (`policy.allow_implicit_invocation`, per
 invocation settings (preserving existing invocation choices), and fresh rewrites settled
 by meaning (allowing batched candidate runs for rewrites). Direct-from-`SKILL.md`
 reference linking follows [Claude skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#avoid-deeply-nested-references). `references/tool-guidance.md`
-covers drift, help quality, call syntax, compact script output, and safe call
-verification. `references/agent-instructions.md` is local and kept host-agnostic around `AGENTS.md`
+covers drift, help quality, and call syntax (with compact script output and safe-call
+verification owned by `SKILL.md`). `references/agent-instructions.md` is local and kept host-agnostic around `AGENTS.md`
 (omitting inline vendor byte/line ceilings, per-host rules-folder matrices, and per-host
 inspector commands), grounded in host docs
 ([Claude Code memory](https://code.claude.com/docs/en/memory) and
@@ -1471,10 +1471,11 @@ the old one is partial, and emits a compact JSON decision with per-case stats (i
 the `without` baseline arm when present). Scoring follows `eval.mjs`'s paired comparison
 with local rules: one declared target, a veto from any failed run of a required case, no
 win on equal results, missing telemetry reported as unproven, and no claim of equivalence
-or significance. It marks partial, missing, failed, aborted, skipped, or mismatched
+or significance. It marks partial, missing, failed, aborted, skipped, duplicate-name, or mismatched
 results invalid, runs the old suite before the new one, and drops skill-diet's own
-harness, MISS/WORSE rules, regex answer scoring, token sums, and Codex runs (Codex uses
-dry-run trials). Paid runs stay out of repo checks.
+harness, MISS/WORSE rules, regex answer scoring, token sums, and Codex runs (other hosts
+without `claude plugin eval` use dry-run trials unless authenticated isolated behavioral
+runs are available). Paid runs stay out of repo checks.
 
 Uses shared review owners. Does not adopt fixed size or growth budgets,
 inactivity-based host removal, schema-field hiding, fixed safety-line counts, or

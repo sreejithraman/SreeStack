@@ -15,13 +15,13 @@ existing `--json` result files.
 Targets: score (overallScore), pass_rate (overallPassRate), cost_usd (mean agent
 cost per plugin run, judge cost excluded) and turns (mean turns per plugin run).
 
-Prints a JSON decision with aggregate metrics and a per-case summary (including the
-no-skill baseline arm when ablation is with-without). Exit 0: the candidate beat the
-baseline on the target. Exit 1: no win, which includes equal results, a failed run of a
-required case, and a target without telemetry. Exit 2: invalid evidence, such as a
-partial run, a missing, failed or aborted run, skipped paid graders, or results that
-differ in cases, case settings, model, Claude version or ablation. No result is a
-significance test, and no result shows equivalence.
+Prints a JSON decision with aggregate metrics and a per-case summary (including each
+case's no-skill baseline arm when present). Exit 0: the candidate beat the baseline on
+the target. Exit 1: no win, which includes equal results, a failed run of a required
+case, and a target without telemetry. Exit 2: invalid evidence, such as a partial run,
+a missing, failed or aborted run, skipped paid graders, duplicate case names, or results
+that differ in cases, case arms, case settings, model, Claude version or ablation. No
+result is a significance test, and no result shows equivalence.
 
 Limits: `claude plugin eval` is experimental and runs only on Claude Code. It
 reports no token counts and sandboxes shell tools, but not hooks or MCP servers.
@@ -78,9 +78,13 @@ def case_arm_stats(case: dict) -> dict:
     }
 
 
+def has_without_arm(case: dict) -> bool:
+    agg = case_aggregates(case)
+    return "without" in case["arms"] or "scoreWithout" in agg or "passRateWithout" in agg
+
+
 def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
     old_by_name = {case["name"]: case for case in old["cases"]}
-    has_baseline = new["suite"].get("ablation") == "with-without"
     required_set = set(required)
     summary = []
     for new_case in new["cases"]:
@@ -91,7 +95,7 @@ def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
             "old": case_arm_stats(old_case),
             "new": case_arm_stats(new_case),
         }
-        if has_baseline:
+        if has_without_arm(old_case) or has_without_arm(new_case):
             old_agg, new_agg = case_aggregates(old_case), case_aggregates(new_case)
             entry["without"] = {
                 "old_score": old_agg.get("scoreWithout"),
@@ -129,8 +133,13 @@ def problems(old: dict, new: dict, required: list[str]) -> list[str]:
         if not result["suite"].get("plugins"):
             found.append(f"{label}: no plugin loaded")
         arms = ["with", "without"] if result["suite"].get("ablation") == "with-without" else ["with"]
+        seen_names = set()
         for case in result["cases"]:
-            for arm in arms:
+            if case["name"] in seen_names:
+                found.append(f"{label}: duplicate case name {case['name']!r}")
+            seen_names.add(case["name"])
+            case_arms = ["with", "without"] if ("without" in case["arms"] or "without" in arms) else ["with"]
+            for arm in case_arms:
                 runs = case["arms"].get(arm, [])
                 if len(runs) != case["runsPerCase"]:
                     found.append(f"{label}: {case['name']} has {len(runs)} of {case['runsPerCase']} {arm} runs")
@@ -148,12 +157,17 @@ def problems(old: dict, new: dict, required: list[str]) -> list[str]:
     for field in ("modelOverride", "ablation", "threshold"):
         if old["suite"].get(field) != new["suite"].get(field):
             found.append(f"suite.{field} differs: {old['suite'].get(field)!r} vs {new['suite'].get(field)!r}")
-    old_cases = {case["name"]: case_shape(case) for case in old["cases"]}
-    new_cases = {case["name"]: case_shape(case) for case in new["cases"]}
+    old_by_name = {case["name"]: case for case in old["cases"]}
+    new_by_name = {case["name"]: case for case in new["cases"]}
+    old_cases = {name: case_shape(case) for name, case in old_by_name.items()}
+    new_cases = {name: case_shape(case) for name, case in new_by_name.items()}
     if old_cases.keys() != new_cases.keys():
         found.append(f"case sets differ: {sorted(old_cases)} vs {sorted(new_cases)}")
-    found += [f"{name}: case settings differ" for name in sorted(old_cases.keys() & new_cases.keys())
-              if old_cases[name] != new_cases[name]]
+    for name in sorted(old_cases.keys() & new_cases.keys()):
+        if old_cases[name] != new_cases[name]:
+            found.append(f"{name}: case settings differ")
+        if sorted(old_by_name[name]["arms"]) != sorted(new_by_name[name]["arms"]):
+            found.append(f"{name}: case arms differ")
     found += [f"required case {name!r} is not in the results" for name in required if name not in new_cases]
     return found
 

@@ -71,27 +71,31 @@ request has a result or stated gap.
 
 ## Change an existing skill
 
-Read the skill's project record (`SOURCES.md`) first. Preserve local adaptations and its
-invocation choice unless the user asks to change them. Edit the source of truth, not an
-installed copy. If the change touches a CLI, API, SDK, MCP tool, or bundled script, also
-read [tool guidance](tool-guidance.md).
+Read the skill's project record (such as `SOURCES.md`) first. Preserve local adaptations
+and its invocation choice unless the user asks to change them. Edit the source of truth,
+not an installed copy. If the change touches a CLI, API, SDK, MCP tool, or bundled
+script, also read [tool guidance](tool-guidance.md).
 
 For a whole-skill overhaul, use Rewrite below. For a **targeted change**:
 
 1. Inspect consumers, links, and tests that depend on the changed text. If the reported
    problem does not hold, stop and report that.
-2. When the edit removes, weakens, or moves guidance, or changes a trigger or handoff,
+2. When the edit adds or changes a behavioral rule, trigger, or handoff, confirm the
+   failure first per the Proof ladder in `SKILL.md` (new guardrails skip this step).
+   When it removes, weakens, or moves guidance, or changes a trigger or handoff, also
    record the affected survival items and collect representative requests (including
    near-misses for triggers) before editing.
-3. Apply the edit. Update `SOURCES.md` and host metadata (`agents/openai.yaml`) if local
-   differences or metadata changed.
-4. Prove the change per the Proof ladder in `SKILL.md`, exercising the affected requests
-   on the final text when step 2 applies. If the edit removes, weakens, or moves
-   guidance, run Settle what changed on the affected paths.
+3. Apply the edit. Update the project record and host metadata (`agents/openai.yaml`) if
+   local differences or metadata changed.
+4. Prove the change per the Proof ladder in `SKILL.md`. When step 2 applies, run the
+   affected requests in fresh sessions on each model that uses the skill against the
+   final text (including the old text where behavior must stay equal), report
+   unavailable trials as gaps, and run Settle what changed on any reduced or moved
+   guidance.
 5. Run project checks and report final-text results and any remaining gaps.
 
-Done: the required proof passed (or the problem was reported invalid), any reduced or
-moved guidance is settled, and project checks pass.
+Done: the required proof passed or has its gap stated (or the problem was reported
+invalid), any reduced or moved guidance is settled, and project checks pass.
 
 ## Audit
 
@@ -159,5 +163,5 @@ this order:
 5. **Otherwise** gather the evidence or restore the rule.
 
 A restored rule may live in any home that reaches the agent before the action. Write it
-in that home's voice and rerun affected requests. Done: every old rule is in a group with
-a recorded decision and reason.
+in that home's voice and rerun affected requests on each affected model. Done: every old
+rule is in a group with a recorded decision and reason.

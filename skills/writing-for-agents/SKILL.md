@@ -1,6 +1,6 @@
 ---
 name: writing-for-agents
-description: Write, edit, audit, or rewrite skills, AGENTS.md, CLAUDE.md, tool guides, or agent docs, or evaluate or fix cross-model gaps in agent behavior or context use.
+description: Write, edit, audit, or rewrite skills, AGENTS.md, CLAUDE.md, tool guides, or agent docs, evaluate whether instructions change agent behavior or context use, or fix cross-model skill gaps.
 ---
 
 # Writing for Agents
@@ -8,11 +8,11 @@ description: Write, edit, audit, or rewrite skills, AGENTS.md, CLAUDE.md, tool g
 Make every line in an agent-facing document earn its context by changing what the agent
 does. Start from the document or skill to create, edit, audit, or evaluate and the goal
 or failure behind it. Leave the guidance in the strongest home that can hold it—code,
-tool help, or the document—with proof matching the change's risk. You are done when
-every covered line passes the line test, is a protected guardrail, or was supplied or
-kept explicitly by the user (or, for a read-only audit, every finding cites evidence),
-project checks pass, and the required proof for the change type succeeded or has its gap
-stated.
+tool help, or the document—with proof matching the change's risk. You are done when the
+matching guide's `Done` condition holds: for edits, every covered line passes the line
+test, is a protected guardrail, or was supplied or kept explicitly by the user, project
+checks pass, and required proof succeeded or has its gap stated; for a read-only audit,
+every finding cites evidence.
 
 ## Go to the matching guides first
 
@@ -61,16 +61,20 @@ document.
   each stage where rushing would skip required work—with a condition that proves it is
   done. Number steps only when order changes the result; express other required work as
   conditions the result must meet. Ask for coverage (*"every modified model accounted
-  for"*) rather than vague completion (*"understanding reached"*). If an agent still
-  rushes an early stage, hide later stages behind a subagent or handoff.
+  for"*) rather than vague completion (*"understanding reached"*). Sharpen an early
+  stage's condition first; if an agent still rushes past it, hide later stages behind a
+  subagent or handoff.
 - **Write the normal path first.** Give a rare case one line, or move it behind a
   pointer if it needs more.
+- **Keep each instruction unambiguous.** Give each instruction its own sentence, and use
+  one term for one thing.
 - **Replace judgment words with a test.** Swap *small*, *big*, *relevant*, *appropriate*,
   *tight*, or *as needed* for how to decide. Prefer one test over a list of cases, and
   sort rules by outcome rather than source.
 - **Set precedence when rules can collide.** Reserve absolute words for real guardrails;
-  where priorities can conflict, state which wins (user instruction > guardrail > project
-  rule > skill default).
+  where local priorities can conflict, state which wins—for example, an explicit
+  instruction from an authorized user > project rule > skill default—while keeping
+  non-waivable policy, host permissions, and safety guardrails above local overrides.
 - **Pair prohibitions with the replacement path.** State the action you want directly;
   when forbidding an action, name what the agent should do instead.
 - **Give a one-clause *why* for counterintuitive rules.** Skip rationale for obvious
@@ -125,8 +129,8 @@ the class before appending a new line, and put incident details in the commit me
 | Change | Minimum proof |
 | --- | --- |
 | Factual or command fix, link spelling fix, exact user wording, or rule moved into passing code | Prove the command safely or verify against source, and run project checks. |
-| Adding or editing a behavioral rule, trigger, or handoff | Confirm the failure (session log or reproduction; new guardrails skip this step), apply the edit, and run fresh-session trials on affected requests (plus a near-miss for triggers). |
-| Removing, weakening, moving, or rewriting guidance | Capture affected survival items and requests before editing, run [Settle what changed](references/working-on-skills.md#settle-what-changed), and verify affected paths. |
+| Adding or editing a behavioral rule, trigger, or handoff | Confirm the failure (session log or reproduction; new guardrails skip this step), apply the edit, and run fresh-session trials on affected requests on each model that uses it (plus a near-miss for triggers). |
+| Removing, weakening, moving, or rewriting guidance | Capture affected survival items and requests before editing, run [Settle what changed](references/working-on-skills.md#settle-what-changed), and verify affected paths on each model that uses it. |
 | Claiming measurable improvement (cost, turns, pass rate) or clearing a guardrail | Run a controlled comparison. |
 
 **Proving a command safely:** run a command live only if it risks nothing a guardrail

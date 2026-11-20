@@ -138,9 +138,38 @@ class DecideTest(unittest.TestCase):
             result["suite"]["ablation"] = "none"
             for case in result["cases"]:
                 case["arms"].pop("without", None)
+                case["aggregates"].pop("scoreWithout", None)
+                case["aggregates"].pop("passRateWithout", None)
         _, report = score(old_with, new_with, "score")
         for case in report["cases"]:
             self.assertNotIn("without", case)
+
+    def test_mixed_arm_cases_report_without_only_where_present(self):
+        old_mixed = copy.deepcopy(OLD)
+        new_mixed = copy.deepcopy(NEW)
+        for result in (old_mixed, new_mixed):
+            result["suite"].pop("ablation", None)
+            result["cases"][0]["arms"].pop("without", None)
+            result["cases"][0]["aggregates"].pop("scoreWithout", None)
+            result["cases"][0]["aggregates"].pop("passRateWithout", None)
+        code, report = score(old_mixed, new_mixed, "score", "file")
+        self.assertEqual((code, report["decision"]), (1, "rejected"))
+        by_name = {case["name"]: case for case in report["cases"]}
+        self.assertNotIn("without", by_name["codeword"])
+        self.assertEqual(by_name["file"]["without"]["old_score"], 0.5)
+        new_mixed["cases"][1]["arms"].pop("without", None)
+        self.assertEqual(score(old_mixed, new_mixed, "score")[1]["decision"], "invalid")
+
+    def test_duplicate_case_names_are_invalid(self):
+        old_dup = copy.deepcopy(OLD)
+        new_dup = copy.deepcopy(NEW)
+        for result in (old_dup, new_dup):
+            for case in result["cases"]:
+                case["name"] = "dup"
+        old_dup["cases"][0]["promptMarkdown"] = "Different prompt"
+        code, report = score(old_dup, new_dup, "turns")
+        self.assertEqual((code, report["decision"]), (2, "invalid"))
+        self.assertTrue(any("duplicate case name" in reason for reason in report["reasons"]))
 
     def test_missing_or_malformed_case_aggregates_preserve_decision(self):
         for label, mutate in (

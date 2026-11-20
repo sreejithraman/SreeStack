@@ -37,29 +37,26 @@ comparison.
    (note when a harness does not report served model separately from requested model).
    Changing the model is a separate comparison. Give every trial isolated mutable state
    and reset external state.
-3. **Choose real tasks safely.** Set up disposable fixtures first for any guarded action,
-   and never run a prohibited command against a real account or live state. Sample 10–15
-   requests from real sessions, adding cases for the motivating failure, any unexercised
-   path, reference lookups, rare constraints, and handoffs. Before authoring a task for a
-   "don't" rule, check feasibility safely—reproduce the agent's real tool conditions
-   (such as closed stdin and no TTY) inside a disposable fixture, or inspect source or a
-   dry run when live execution would be guarded; if it cannot fail on this host, drop the
-   task and treat the rule as a cut candidate. Define observable end states and mark
-   required cases before any run. When iterating across candidate fixes, hold back about
-   a third of tasks blind (at least one per failure cause) until final validation to
-   catch overfitting.
-   - **Claude Code:** write [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals)
-     cases with deterministic graders where they can decide, then run
-     [`scripts/compare.py`](../scripts/compare.py) with one declared target and the
-     required cases. Run `python3 <path-to-compare.py> --help` for flags, targets, exit
-     codes, and runner limits, and ensure CLI options include the no-skill arm and
-     repeats when required. `compare.py` passes `--trust-plugin`, and `plugin eval`
-     sandboxes shell tools, not hooks or MCP servers; it starts paid sessions, so run it
-     only for an authorized comparison. Its JSON output includes a `cases` summary
-     (old/new stats, `required`, and the `without` arm when present).
-   - **Other hosts (without `claude plugin eval`):** run dry-run trials under Run trials
-     safely and mark measured claims unverified, unless authenticated isolated behavioral
-     runs are available on that host.
+3. **Prepare real tasks safely.** Set up disposable fixtures first for any guarded
+   action, and never run a prohibited command against a real account or live state.
+   Sample 10–15 requests from real sessions, adding cases for the motivating failure, any
+   unexercised path, reference lookups, rare constraints, and handoffs. Before authoring
+   a task for a "don't" rule, check feasibility safely—reproduce the agent's real tool
+   conditions (such as closed stdin and no TTY) inside a disposable fixture, or inspect
+   source or a dry run when live execution would be guarded; if it cannot fail on this
+   host, drop the task and treat the rule as a cut candidate. Define observable end states
+   and mark required cases before any run. When iterating across candidate fixes, hold
+   back about a third of tasks blind (at least one per failure cause) until final
+   validation to catch overfitting.
+   - **Claude Code cases:** author [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals)
+     cases with deterministic graders where they can decide, and prepare options for
+     [`scripts/compare.py`](../scripts/compare.py) (`python3 <path-to-compare.py> --help`
+     lists targets, exit codes, and runner limits; ensure flags include the no-skill arm
+     and repeats when required).
+   - **Trust prerequisite before any eval launch:** confirm you trust both skill trees
+     and the eval suite, and isolate or mock hooks, MCP servers, and executable fixtures.
+     `compare.py` passes `--trust-plugin`, and `plugin eval` sandboxes shell tools, not
+     hooks, MCP servers, or scaffolds running outside the sandbox.
 4. **Isolate and calibrate.** Load the exact skill copy apart from installed skills,
    memory, and user rules in disposable profiles. Prove isolation with three probes: a
    disposable skill's unique plain token (such as `Version <random>`, not `CANARY-*`,
@@ -68,9 +65,16 @@ comparison.
    content (a blocked lookup attempt can pass; bound shell calls with a timeout, because
    some models search the disk when a skill is absent); a harmless command logs its
    expected result. Recalibrate after any runtime change.
-5. **Run repeats.** Pilot two tasks to check scoring, then run each task 3+ times per
-   variant in fresh sessions with alternating order, adding runs where results vary. When
-   using `compare.py` (which runs old before new), report sequential order as a limit.
+5. **Pilot and run repeats.** Only after passing calibration and confirming the trust
+   prerequisite, pilot two tasks to check scoring, then run each task 3+ times per
+   variant in fresh sessions with alternating order, adding runs where results vary.
+   - **Claude Code:** run `compare.py` with one declared target and the required cases
+     (paid sessions—run only for an authorized comparison). Report sequential order (old
+     suite before new) as a limit. Its JSON output includes a `cases` summary (old/new
+     stats, `required`, and the `without` arm per case when present).
+   - **Other hosts (without `claude plugin eval`):** run dry-run trials under Run trials
+     safely and mark measured claims unverified, unless authenticated isolated behavioral
+     runs are available on that host.
 6. **Record each session.** Keep task, variant, skill and fixture hashes, settings,
    versions, transcripts (`--keep-temp` on `plugin eval`), ordered tool calls, token and
    cost telemetry, and elapsed time. Treat missing telemetry as a gap, never zero. Keep
@@ -99,16 +103,20 @@ report the checks you could run and mark the broader claim unverified.
 When a skill passes less often on a target model than on a reference model, fix it with
 shared text that helps the target without hurting other models.
 
-1. **Set up matched baselines first.** Apply the controlled comparison setup above before
-   any edits: freeze `base` and `none` variants, pick matched tasks covering each gap
-   case, and split about a third blind into held-back tasks before tuning (even for a
-   single candidate). Run models on the same host when possible; if hosts differ, report
-   the result as a host-plus-model comparison, and mark behavioral outcome claims
-   unverified on any host limited to dry runs.
-2. **Check loading first.** Compare how often each model opens `SKILL.md`. If the target
-   opens it much less often, fix the trigger description before editing body rules. If
-   reads are already healthy (or rise without passes improving), move to step 3 instead
-   of pushing body procedure into the trigger description.
+1. **Measure matched baselines before editing.** Follow the controlled comparison steps
+   above: freeze `base` and `none` variants, pick matched tasks covering each gap case,
+   split about a third blind into held-back tasks before tuning (even for a single
+   candidate), calibrate, and run repeated `base` and `none` trials on the tuning tasks
+   for each model (keeping held-back tasks untouched). Confirm a repeatable gap and check
+   whether the target already performs better with `none` (which points to cutting lines
+   first). Run models on the same host when possible; if hosts differ, report the result
+   as a host-plus-model comparison, and leave model-specific outcome claims unverified
+   when served models cannot be verified or a host is limited to dry runs.
+2. **Check loading first.** Compare how often each model opens `SKILL.md` in those
+   baseline runs. If the target opens it much less often, fix the trigger description
+   before editing body rules. If reads are already healthy (or rise without passes
+   improving), move to step 3 instead of pushing body procedure into the trigger
+   description.
 3. **Diagnose side by side.** Compare each failing target run with a passing reference
    run of the same task to classify the cause:
    - Skipped, misread, or missing rule → reword, widen, or load it earlier in the body
@@ -116,12 +124,16 @@ shared text that helps the target without hurting other models.
    - Stopped early or asked unnecessarily → add a one-line `Done` condition.
    - Tool, fixture, or harness bug → fix it outside the skill.
    - Capability ceiling (still fails when the reference's steps are pasted directly into
-     the prompt) → drop that case from the target's goal and report it.
+     the prompt) → if the case is optional, drop it from that model's goal and report
+     it; if it is a required case, treat it as a blocker or unsupported model (narrow a
+     required case only by explicit user decision with revised acceptance criteria before
+     running a new comparison).
    - Scorer bug → fix the grader and rerun across every version and model.
 4. **Fix one change at a time and harm-check other models.** Because every model reads
    the same file, test kept changes together on the reference and other models as well.
    Watch for read-rate drops on other models, and report the added token cost when a
    model starts opening the skill more often.
-5. **Validate once on held-back tasks.** Ship only if the target improves on held-back
-   cases without regressing other models; if gains hold only on tuning tasks, the edits
-   overfit.
+5. **Validate once on held-back tasks.** Run paired `base` vs final candidate trials on
+   the same held-back tasks across the target and harm-check models. Ship only if the
+   target improves on held-back cases without regressing other models or failing any
+   required case; if gains hold only on tuning tasks, the edits overfit.
