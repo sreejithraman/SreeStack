@@ -1573,7 +1573,7 @@ class LifecycleMutationTests(RecordCase):
         self.assertIn(resolved["answer"], row["rationale"])
         self.assertIn("reopened: User wants to revisit", row["rationale"])
         self.assertEqual(row["blocks"], [{"id": "W1", "phase": "landing"}])
-        self.assertIn("withdraw any affected landing release", result.stdout)
+        self.assertIn("move it to --to cancelling first", result.stdout)
         self.refused("reopen", "--decision", resolved["id"], "--why", "Again", message="only a resolved or answered decision")
 
         _, after, _ = self.event("withdraw", "--decision", resolved["id"], "--why", "Superseded by W9")
@@ -1934,7 +1934,7 @@ class LifecycleMutationTests(RecordCase):
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2",
                      "--answer-source", "User", message="must name the target branch")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2 onto a new base",
-                     "--answer-source", "User", message="does not match target")
+                     "--answer-source", "User", message="ambiguous or conditional")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2 onto Main",
                      "--answer-source", "User", message="does not match target")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--option", "3",
@@ -2322,9 +2322,85 @@ class LifecycleMutationTests(RecordCase):
         self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D10", "--text", "Rebase W2",
                      "--answer-source", "User", message="multiple options match")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D10",
-                     "--text", "Please rebase W2 onto main or release", "--answer-source", "User", message="ambiguous destination")
+                     "--text", "Please rebase W2 onto main or release", "--answer-source", "User", message="ambiguous or conditional destination")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D10",
-                     "--text", "Rebase W2 onto main then rebase onto release", "--answer-source", "User", message="does not match target")
+                     "--text", "Rebase W2 onto main then rebase onto release", "--answer-source", "User", message="multiple destinations")
+
+    def test_pass8_fail_closed_free_text_status_terminal_guards_and_blocked_late_merge(self):
+        # 1. P8-01: Fail-closed unbound free-text rebase refuses lists, slash-alternatives, conditionals, and questions,
+        #    preserving HEAD unchanged on refusal while accepting unconditional single-target answers.
+        cur = self.head()
+        cur["decisions"].append({
+            "id": "W2-D11", "question": "Rebase W2 where?", "date": "2026-11-02T18:40:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Rebase W2", "effect": "Onto release", "recommended": True, "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                {"label": "Scrap W2", "effect": "Drop", "reversible": False,
+                 "action": {"type": "scrap", "work": "W2"}},
+            ],
+            "blocks": [{"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur, "2026-11-02T18:40:00Z")
+        before_head = subprocess.check_output(["git", "-C", str(self.program.folder), "rev-parse", "HEAD"], text=True).strip()
+        for phrase in (
+            "Please rebase W2 onto main, release, or staging",
+            "Please rebase W2 onto main /release",
+            "Please rebase W2 onto main, release",
+            "Rebase W2 onto main if tests pass",
+            "If CI is red, rebase W2 onto main",
+            "Could we rebase W2 onto main?",
+            "Rebase W2 onto main?",
+        ):
+            self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D11",
+                         "--text", phrase, "--answer-source", "User", message="ambiguous or conditional")
+            self.assertEqual(subprocess.check_output(["git", "-C", str(self.program.folder), "rev-parse", "HEAD"], text=True).strip(), before_head)
+        _, ok_after, _ = self.event("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D11",
+                                    "--text", "Please rebase W2 onto `main`, please.", "--answer-source", "User")
+        self.assertEqual(decision(ok_after, "W2-D11")["status"], "answered")
+
+        # 2. P8-02: Generic --status scrapped and --status landed are refused so terminal changes cannot bypass
+        #    the pending-landing fence or forge merge verification.
+        def ready_w4(state):
+            ready(state)
+            work(state, "W1")["layers"][0]["url"] = "https://github.com/org/exports/pull/401"
+            work(state, "W1")["layers"][1]["url"] = "https://github.com/org/exports/pull/402"
+            w4 = work(state, "W4")
+            w4.update(state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                      layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                               "url": "https://github.com/org/exports/pull/403", "head": "abc1234", "base": "main"}])
+        self.commit(ready_w4)
+        _, rel, _ = self.event("land", "--work", "W1", "--work", "W4", "--lander", "Retry owner")
+        lid = rel["landings"][-1]["id"]
+        before_scrap = subprocess.check_output(["git", "-C", str(self.program.folder), "rev-parse", "HEAD"], text=True).strip()
+        self.refused("work", "--id", "W4", "--status", "scrapped", message="use --scrap")
+        self.refused("work", "--id", "W4", "--status", "landed", message="not --status landed")
+        self.refused("work", "--id", "W4", "--scrap", message="pending landing")
+        self.assertEqual(subprocess.check_output(["git", "-C", str(self.program.folder), "rev-parse", "HEAD"], text=True).strip(), before_scrap)
+
+        # 3. P8-03: Partial withdrawal where fully merged work carries a direct --blocked or --blocked-by blocker
+        #    still lands the merged work, moves the obsolete blocker into a durable runnable open discovery,
+        #    and terminalizes the withdrawal cleanly.
+        self.event("work", "--id", "W1", "--blocked", "Waiting on external security sign-off")
+        self.event("land", "--landing", lid, "--to", "cancelling", "--note", "External blocker raised")
+        w1_l = work(self.head(), "W1")["layers"]
+        self.serve(prs={
+            w1_l[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_l[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            "https://github.com/org/exports/pull/403": {"state": "OPEN", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "main",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, after_w, res_w = self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "W1 merged while blocked; W4 stopped")
+        self.assertEqual(after_w["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(after_w, "W1")["state"], "landed")
+        self.assertNotIn("blocked", work(after_w, "W1"))
+        self.assertIn("moved blocker to open discovery", res_w.stdout)
+        late_disc = next(d for d in after_w.get("discoveries", []) if d.get("work") == "W1" and d.get("status") == "open")
+        self.assertIn("Waiting on external security sign-off", late_disc["text"])
+        found = assess(after_w, "2026-11-02T18:45:00Z", {})
+        self.assertEqual(found["verdict"], "runnable")
+        self.assertTrue(any(e["kind"] == "route discovery" and e["id"] == late_disc["id"] for e in found["runnable"]))
 
 
 if __name__ == "__main__":

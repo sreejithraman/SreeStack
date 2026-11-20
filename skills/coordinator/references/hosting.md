@@ -41,12 +41,21 @@ the full wake transition in one sequence:
      framework starter, package install, local server, or public audience. Wait for a confirmed
      terminal deployment URL (registration or saved version alone is not publication).
 
-Only after confirmed publication of a staged `command-center.next.html`, advance the marker (skip
-this move on a forced unchanged publish where `command-center.html` was deployed directly):
+Only after confirmed publication of a staged `command-center.next.html` on a hosted backend,
+advance the marker (skip this move on a forced unchanged publish where `command-center.html` was
+deployed directly):
 
 ```bash
 mv /absolute/path/command-center.next.html /absolute/path/command-center.html
 ```
+
+In **local-only mode** (when `grant.wake` records `"None (local only; Inbox in chat)"` and no
+hosted backend is available), do not claim external publication: verify the rendered
+`command-center.next.html` on disk, post any open Inbox items directly in chat, and run the same
+`mv` locally so `command-center.html` stays current and `status --turn-end` passes. When switching
+from a previously hosted page to local-only mode, run **Turn off** below (or delete the old webhook
+task and overwrite `grant.wake`) first and tell the user the previous hosted URL is now frozen and
+the local file plus chat Inbox are active instead.
 
 If the deployed URL changed, record it once with `record.py grant --hosting <url>` and tell the
 user the new URL and that the previous URL is now frozen (the renderer omits `hosting`, so an

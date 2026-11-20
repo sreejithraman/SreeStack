@@ -87,8 +87,9 @@ from the page (`Copy to reopen`), verify its stamped revision matches `render_da
 again if the revision is stale. For a verified reopen or direct user message, run
 `record.py reopen --decision <ID> --why "<reason>" [--block <WORK:PHASE>]`, which moves prior
 answer/basis into `rationale`, increments the decision's revision (so unread picks from earlier
-openings are rejected as stale), sets `status: "open"`, and drops `applied`. Notify affected owners
-and withdraw any affected landing release. If work already landed, create a follow-up outcome and
+openings are rejected as stale), sets `status: "open"`, and drops `applied`. Reconcile any affected pending landing under
+[landing](landing.md#withdraw-a-release) (move to `cancelling` first before notifying affected
+owners and confirming forge cancellation). If work already landed, create a follow-up outcome and
 block it on the reopened decision. A reopened decision stays with the user.
 
 ## Standing approvals

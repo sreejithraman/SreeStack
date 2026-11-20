@@ -21,8 +21,8 @@ assessment.
 [models](models.md#model-defaults). Every later pass or recheck uses a **new task** on the same
 model and effort as that reviewer (never resuming the prior reviewer thread). Preserve its prior
 report, pass the role's criteria and prior evidence, keep same-round peer content out, and record
-which reviewer it follows. Brief every pass under
-[Review evidence](../../review/references/review-evidence.md).
+which reviewer it follows. Brief every pass with the exact snapshot, criteria, and prior report
+path per the review skill's evidence rules.
 
 ## Replace an owner
 

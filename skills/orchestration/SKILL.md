@@ -13,7 +13,7 @@ inspected at a named revision, and integrated, or its gap is reported.
 ## Who does the work
 
 - **Single-outcome threads** edit their workspace directly by default. Delegate when you need
-  independent review or verification, parallel fan-out ([Swarm](../swarm/SKILL.md)), a specialized
+  independent review or verification, parallel fan-out, a specialized
   model from [models](references/models.md#choose-a-model), or the user asks to keep this thread
   free in the background.
 - **Coordinator threads** never edit project files directly; they route outcomes to owners and stay

@@ -210,7 +210,10 @@ def reopen_decision(state, at, identity, why, blocks=None):
         if landed:
             notes.append(f"dropped terminal blocks ({', '.join(landed)}); add a follow-up outcome if landed work needs changes")
     affected = ", ".join(entry["id"] for entry in row.get("blocks", []))
-    notes.append(f"notify affected owners ({affected or 'if any'}) and withdraw any affected landing release")
+    notes.append(
+        f"for any affected pending landing, move it to --to cancelling first before notifying affected owners "
+        f"({affected or 'if any'}) and confirming forge cancellation to withdraw"
+    )
     return f"{identity} reopened", notes
 
 
@@ -251,7 +254,11 @@ REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget)\b")
 NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap)\b")
 NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
 ONTO_TARGET = re.compile(r"\bonto\s+(?:`([^`]+)`|\"([^\"]+)\"|'([^']+)'|(\S+))", re.I)
-AMBIGUOUS_AFTER_TARGET = re.compile(r"^\s*(?:,\s*)?(?:or|/|versus|vs\.?)\s+\S+", re.I)
+CLEAN_AFTER_TARGET = re.compile(r"^(?:[\s,]*(?:please|thanks|thank\s+you|now))*\s*[.!]?\s*$", re.I)
+UNBOUND_AMBIGUOUS = re.compile(
+    r"\b(?:or|either|neither|vs\.?|versus|if|unless|whether|maybe|perhaps|might|could|alternatively|then)\b|[/?]",
+    re.I,
+)
 
 
 def is_base_repair_decision(row):
@@ -321,19 +328,25 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
                     f"free-text rebase {chosen!r} must name the target branch (e.g. 'onto {rebase_onto}') "
                     "or pass --option <number>"
                 )
-            for match in matches:
-                quoted_target = match[4] is None
-                raw_named = next(g for g in match.groups() if g is not None)
-                named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
-                if named not in allowed:
-                    raise Refused(
-                        f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}"
-                    )
-                if AMBIGUOUS_AFTER_TARGET.match(chosen[match.end():]):
-                    raise Refused(
-                        f"free-text rebase {chosen!r} names an ambiguous destination; "
-                        "pass --option <number> or an explicit single target"
-                    )
+            if len(matches) != 1:
+                raise Refused(
+                    f"free-text rebase {chosen!r} names multiple destinations; "
+                    "pass --option <number> or an explicit single target"
+                )
+            match = matches[0]
+            quoted_target = match[4] is None
+            raw_named = next(g for g in match.groups() if g is not None)
+            named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
+            before, after = chosen[:match.start()], chosen[match.end():]
+            if not CLEAN_AFTER_TARGET.match(after) or UNBOUND_AMBIGUOUS.search(before) or (not quoted_target and "?" in raw_named):
+                raise Refused(
+                    f"free-text rebase {chosen!r} names an ambiguous or conditional destination; "
+                    "pass --option <number> or an unconditional single target"
+                )
+            if named not in allowed:
+                raise Refused(
+                    f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}"
+                )
         elif matches:
             for match in matches:
                 quoted_target = match[4] is None
@@ -355,6 +368,10 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         raise Refused("choose either --scrap or --rebase-onto, not both")
     if stack_on is not None and rebase_onto is None:
         raise Refused("--stack-on requires --rebase-onto")
+    if work_state == "scrapped":
+        raise Refused("use --scrap (after withdrawing any pending landing) instead of --status scrapped")
+    if work_state == "landed":
+        raise Refused("record landed work through `record.py land --to landed` or `record.py status` after forge merge confirmation, not --status landed")
     existing = next((row for row in state["work"] if row["id"] == identity), None)
     notes = []
     if add:
@@ -1266,6 +1283,31 @@ def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=
                     row["state"] = "landed"
                     notes.append(f"{work_id}: {prev} -> landed")
                     reconciled.add(work_id)
+                blocked_parts = []
+                if row.get("blocked"):
+                    blocked_parts.append(f"blocked: {row.pop('blocked')}")
+                if row.get("blockedBy"):
+                    blocked_parts.append(f"blockedBy: {', '.join(row.pop('blockedBy'))}")
+                if blocked_parts:
+                    discoveries = list(state.get("discoveries", []))
+                    disc_id = next_discovery_id(discoveries)
+                    detail = "; ".join(blocked_parts)
+                    entry = {
+                        "id": disc_id,
+                        "date": at,
+                        "origin": f"Late merge on {work_id}",
+                        "work": work_id,
+                        "text": f"{work_id} merged on the forge while active blocker remained ({detail})",
+                        "impact": "shared-contract",
+                        "route": "pending",
+                        "status": "open",
+                    }
+                    discoveries.append({key: entry[key] for key in DISCOVERY_KEYS if key in entry})
+                    replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+                    notes.append(
+                        f"{work_id} already merged while blocked ({detail}); "
+                        f"moved blocker to open discovery {disc_id} for follow-up routing"
+                    )
                 for decision in state.get("decisions", []):
                     if decision["status"] == "open" and any(b["id"] == work_id for b in decision.get("blocks", [])):
                         kept = [b for b in decision["blocks"] if b["id"] != work_id]
@@ -1359,6 +1401,8 @@ def move_landing(state, at, identity, to, read_pr, note=None):
                 else:
                     state["work"] = trial["work"]
                     state["decisions"] = trial["decisions"]
+                    if "discoveries" in trial:
+                        replace_list(state, "discoveries", trial["discoveries"], PROGRAM_KEYS)
                     landed_ids |= reconciled
                     notes.extend(trial_notes)
         candidates, kept = {}, {}
@@ -1652,6 +1696,8 @@ def observe(state, at, read_pr, threads):
                 state["work"] = trial["work"]
                 state["decisions"] = trial["decisions"]
                 state["landings"] = trial["landings"]
+                if "discoveries" in trial:
+                    replace_list(state, "discoveries", trial["discoveries"], PROGRAM_KEYS)
                 reconciled_works |= reconciled
                 landing_notes.extend(trial_notes)
                 if state["landings"][landing_index]["state"] == "landed":

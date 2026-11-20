@@ -94,10 +94,10 @@ writer.
 Pick each outcome's finish line from [Implement's finish-line policy](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
 User, caller, or project holds win; adding an outcome or repo never widens landing scope. Initialize
 the record (`record.py init`, `grant`, `work --add`) before starting owners — see
-[program state](references/program-state.md). Verify publishing tools exist under
-[hosting](references/hosting.md) (report a blocker if absent; never auto-install plugins). Your
-first message gives the finish-line picks, grant, command center link, and any proposed standing
-approvals.
+[program state](references/program-state.md). Verify publishing tools exist under [hosting](references/hosting.md) (report a blocker if absent;
+never auto-install plugins). Your first message gives the finish-line picks, grant, command center
+link (or the local `command-center.html` path and Inbox items in chat when running local-only under
+[hosting](references/hosting.md)), and any proposed standing approvals.
 
 Done when every outcome has sources, scope, proof, holds, finish line, and owner/plan; running
 owners are adopted; and the grant, page, heartbeat, and answer wake are set.

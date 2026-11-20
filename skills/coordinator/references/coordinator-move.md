@@ -56,7 +56,7 @@ do not run `record.py move`. Instead:
 
 1. Run the single backend and wake transition + forced publish under [hosting](hosting.md) (which
    drains/turns off any old Claude wake, publishes once on the new backend, sets up tap-to-answer
-   once if entering Claude, and updates `grant.hosting` and `grant.wake`).
+   once if entering Claude, and updates `hosting` and `grant.wake`).
 2. Verify the existing heartbeat's `enabled` and `nextRunAt`.
 
 ## After either

@@ -78,5 +78,5 @@ Use a dedicated UI operator only for:
 
 A tier changes the model, not permissions or authorization. Pass expected and observed states,
 evidence, unresolved checks, and session/tool references in the handoff.
-[Verify](../../verify/SKILL.md) owns assertions and verdicts; a product failure goes to the
+The verification caller owns assertions and verdicts; a product failure goes to the
 implementer, not a UI operator.
