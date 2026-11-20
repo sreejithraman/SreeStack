@@ -136,7 +136,7 @@ The routine command. Steps, in order:
    environment. Under a TTY, plain `sync` asks first and defaults to yes. Pruning selects branches
    by merged PR state alone and doesn't compare their tips to the PR's merge-time heads, so a merged
    branch that later got new commits can lose its ref. Leave it off, decline that prompt, and delete
-   merged branches through [Repo Cleanup](../../repo-cleanup/SKILL.md).
+   merged branches through [Cleanup](../../cleanup/SKILL.md).
 
 Affected clean worktrees are updated automatically. Dirty/busy/unavailable owners stop unsafe
 updates, and pruning skips branches occupied elsewhere. Cascade rollback does not undo prior

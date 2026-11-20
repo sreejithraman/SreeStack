@@ -1416,12 +1416,65 @@ def show(assessment):
 
 # Command line.
 
+def programs_root(override=None):
+    """Default root for coordinator program containers outside any project repo."""
+    if override is not None:
+        return Path(override).expanduser().absolute()
+    xdg = os.environ.get("XDG_STATE_HOME", "").strip()
+    base = Path(xdg).expanduser() if xdg else Path.home() / ".local" / "state"
+    return (base / "coordinator" / "programs").absolute()
+
+
+def program_slug(value):
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:48].strip("-")
+    if not slug:
+        raise Refused("could not derive a folder slug; pass --slug with ASCII letters or digits")
+    return slug
+
+
+def default_state_path(title, slug=None, root=None, at=None):
+    """Default program.json path: <programs root>/<YYYY-MM-DD>-<slug>/record/program.json."""
+    raw = program_slug(slug or title)
+    if not re.match(r"^\d{4}-\d{2}-\d{2}-", raw):
+        day = (at or now())[:10]
+        raw = f"{day}-{raw}"
+    return programs_root(root) / raw / "record" / "program.json"
+
+
+def enclosing_git_root(folder):
+    """Return the toplevel of any git repository strictly enclosing folder, or None."""
+    ancestor = folder.absolute().parent
+    while not ancestor.exists() and ancestor != ancestor.parent:
+        ancestor = ancestor.parent
+    if not ancestor.exists():
+        return None
+    probe = subprocess.run(
+        ["git", "-C", str(ancestor), "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    return Path(probe.stdout.strip()) if probe.returncode == 0 and probe.stdout.strip() else None
+
+
+def write_git_excludes(state_file):
+    """Ignore untracked coordinator artifacts in record/.git/info/exclude."""
+    git_dir = Path(git(state_file, "rev-parse", "--absolute-git-dir").strip())
+    exclude = git_dir / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    existing = exclude.read_text(encoding="utf-8").splitlines() if exclude.exists() else []
+    additions = [entry for entry in ("reports/", "command-center.html", "command-center.next.html")
+                 if entry not in existing]
+    if additions:
+        prefix = "\n" if existing and existing[-1] != "" else ""
+        with exclude.open("a", encoding="utf-8") as handle:
+            handle.write(prefix + "\n".join(additions) + "\n")
+
+
 class Record:
     """One program folder: its state file in git, and the page rendered from HEAD."""
 
     def __init__(self, state_file, page=None):
-        self.file = state_file.absolute()
-        self.page = (page or self.file.with_name("command-center.html")).absolute()
+        self.file = state_file.expanduser().absolute()
+        self.page = (page or self.file.with_name("command-center.html")).expanduser().absolute()
 
     def git(self, *args):
         return git(self.file, *args)
@@ -1463,18 +1516,37 @@ class Record:
         """Initialize a new git-backed program record; a failure leaves no state file or staged entry."""
         if self.file.exists():
             raise Refused(f"{self.file} already exists")
+        enclosing = enclosing_git_root(self.file.parent)
+        if enclosing is not None:
+            raise Refused(
+                f"{self.file.parent} is inside git repository {enclosing}; keep program records outside "
+                f"project repos and worktrees so cleanup cannot wipe them (omit --state to use {programs_root()})"
+            )
+        git_entry = self.file.parent / ".git"
+        if git_entry.is_file():
+            raise Refused(
+                f"{self.file.parent} is a linked git worktree; keep program records outside project repos "
+                f"and worktrees (omit --state to use {programs_root()})"
+            )
         validate(state)
-        self.file.parent.mkdir(parents=True, exist_ok=True)
-        (self.file.parent / "reports").mkdir(exist_ok=True)
-        if not (self.file.parent / ".git").exists():
-            self.git("init", "-q")
-        else:
-            if self.git("ls-files", "--", self.file.name).strip():
+        if git_entry.exists():
+            tracked = [line for line in self.git("ls-files").splitlines() if line]
+            if self.file.name in tracked:
                 raise Refused(f"{self.file.name} is already tracked or staged in git")
+            if tracked:
+                raise Refused(
+                    f"{self.file.parent} is an existing git repository with tracked files; keep program "
+                    f"records in their own folder (omit --state to use {programs_root()})"
+                )
             in_head = subprocess.run(["git", "-C", str(self.file.parent), "cat-file", "-e", f"HEAD:{self.file.name}"],
                                      capture_output=True)
             if in_head.returncode == 0:
                 raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")
+        self.file.parent.mkdir(parents=True, exist_ok=True)
+        (self.file.parent / "reports").mkdir(exist_ok=True)
+        if not git_entry.exists():
+            self.git("init", "-q")
+        write_git_excludes(self.file)
         staged = False
         try:
             self.file.write_text(layout(state))
@@ -1487,6 +1559,7 @@ class Record:
                     self.git("rm", "-q", "-f", "--cached", "--ignore-unmatch", "--", self.file.name)
             self.file.unlink(missing_ok=True)
             raise
+        print(f"state: {self.file}")
         print(f"committed: {message}")
 
     def save(self, state, message, files=None):
@@ -1552,10 +1625,17 @@ def arguments():
     shared.add_argument("--state", required=True, type=Path, help="The program.json file")
     shared.add_argument("--page", type=Path, help="The last published page; default command-center.html beside the state")
     shared.add_argument("--next", help="Also set the program's next action")
+    init_shared = argparse.ArgumentParser(add_help=False)
+    init_shared.add_argument(
+        "--state", type=Path,
+        help="Override path to program.json; defaults to ${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/record/program.json",
+    )
+    init_shared.add_argument("--page", type=Path, help="The last published page; default command-center.html beside the state")
+    init_shared.add_argument("--next", help="Also set the program's next action")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    command = commands.add_parser("init", parents=[shared], help="Create and commit a new program record")
+    command = commands.add_parser("init", parents=[init_shared], help="Create and commit a new program record")
     command.add_argument("--title", required=True)
     command.add_argument("--goal", required=True)
     command.add_argument("--chief", required=True, help="The current coordinator thread link")
@@ -1563,6 +1643,12 @@ def arguments():
     command.add_argument("--request-source", action="append", help="A source reference for the request; repeatable")
     command.add_argument("--finish-line", help="Program-wide finish-line note")
     command.add_argument("--hosting", help="Initial published command center URL")
+    command.add_argument("--slug", help="Folder slug when --state is omitted (defaults to slugified --title)")
+    command.add_argument("--root", type=Path, help="Override default programs root when --state is omitted")
+
+    command = commands.add_parser("programs", help="List coordinator program folders and whether each is ready to prune")
+    command.add_argument("--root", type=Path, help="Programs root (defaults to ${XDG_STATE_HOME:-~/.local/state}/coordinator/programs)")
+    command.add_argument("--json", action="store_true", help="Print one JSON object on stdout")
 
     command = commands.add_parser("grant", parents=[shared], help="Set or update the grant, landing authority, or hosting URL")
     command.add_argument("--source", help="The user's message that authorized the grant or landing authority")
@@ -1852,18 +1938,111 @@ def heartbeat(args, record, read_pr, read_thread, at):
     return result | {"heartbeat": tick, "notes": fresh}
 
 
+def list_programs(root, as_json=False):
+    """Inventory coordinator program folders under root with deterministic prune-readiness facts."""
+    root = programs_root(root)
+    candidates = []
+    if root.is_dir():
+        for entry in sorted(root.iterdir()):
+            if not entry.is_dir():
+                continue
+            nested = entry / "record" / "program.json"
+            flat = entry / "program.json"
+            if nested.is_file():
+                candidates.append((entry, nested))
+            elif flat.is_file():
+                candidates.append((entry, flat))
+    at = now()
+    items = []
+    for container, state_file in candidates:
+        record = Record(state_file)
+        try:
+            state = validate(committed(state_file))
+            dirty = bool(record.dirty())
+            updated = record.git("log", "-1", "--format=%cI").strip()
+            assessment = assess(state, at, {})
+            all_terminal = bool(state["work"]) and all(row["state"] in TERMINAL for row in state["work"])
+            pending_landings = sum(1 for row in state.get("landings", []) if row["state"] in PENDING_LANDINGS)
+            open_decisions = sum(1 for row in state["decisions"] if row["status"] == "open")
+            open_discoveries = sum(
+                1 for row in state.get("discoveries", [])
+                if row.get("status") == "open" or row.get("reply") == "pending"
+            )
+            ready_to_prune = (
+                all_terminal and not dirty and assessment["verdict"] == "done"
+                and pending_landings == 0 and open_decisions == 0 and open_discoveries == 0
+            )
+            grant = state.get("grant", {})
+            items.append({
+                "program": str(container),
+                "state": str(state_file),
+                "title": state["title"],
+                "verdict": assessment["verdict"],
+                "workCount": len(state["work"]),
+                "allTerminal": all_terminal,
+                "dirty": dirty,
+                "pendingLandings": pending_landings,
+                "openDecisions": open_decisions,
+                "openDiscoveries": open_discoveries,
+                "hasSite": (container / "site").is_dir(),
+                "updatedAt": updated,
+                "heartbeat": grant.get("heartbeat"),
+                "wake": grant.get("wake"),
+                "readyToPrune": ready_to_prune,
+            })
+        except (OSError, ValueError) as error:
+            items.append({
+                "program": str(container),
+                "state": str(state_file),
+                "error": str(error),
+                "readyToPrune": False,
+            })
+    if as_json:
+        print(json.dumps({"root": str(root), "programs": items}, ensure_ascii=False))
+        return 0
+    if not items:
+        print(f"No programs under {root}")
+        return 0
+    for item in items:
+        if "error" in item:
+            print(f"{item['program']} | invalid: {item['error']} | prune=keep")
+            continue
+        extras = []
+        if item["dirty"]:
+            extras.append("dirty")
+        if item["hasSite"]:
+            extras.append("site")
+        if item["heartbeat"]:
+            extras.append(f"heartbeat={item['heartbeat']}")
+        if item["wake"]:
+            extras.append(f"wake={item['wake']}")
+        suffix = f" | {' | '.join(extras)}" if extras else ""
+        print(
+            f"{item['program']} | {item['title']} | verdict={item['verdict']} | "
+            f"work={item['workCount']} | updated={item['updatedAt']} | "
+            f"prune={'ready' if item['readyToPrune'] else 'keep'}{suffix}"
+        )
+    return 0
+
+
 def main():
     args = arguments().parse_args()
-    record = Record(args.state, args.page)
     try:
-        if args.command == "status":
-            return status(args, record)
+        if args.command == "programs":
+            return list_programs(args.root, args.json)
         if args.command == "init":
+            if args.state and (args.slug or args.root):
+                raise Refused("--slug and --root apply only when --state is omitted")
+            state_path = args.state or default_state_path(args.title, args.slug, args.root)
+            record = Record(state_path, args.page)
             state = build_init_state(args.title, args.goal, args.chief, args.request,
                                      args.next, args.request_source, args.finish_line, args.hosting)
             record.create(state, f"init: {args.title}")
             record.render()
             return 0
+        record = Record(args.state, args.page)
+        if args.command == "status":
+            return status(args, record)
         state = record.load()
         before = copy.deepcopy(state)
         files = {}

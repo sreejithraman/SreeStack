@@ -57,7 +57,7 @@ gh stack view --json    # merged branch reports "isMerged": true, "state": "MERG
 
 No manual action is needed when the replay succeeds. If it conflicts, follow
 [Rebase conflicts](#rebase-conflicts-exit-3), including the rollback diagnostic before retrying.
-Delete merged branches through [Repo Cleanup](../../repo-cleanup/SKILL.md). `gh stack sync --prune`
+Delete merged branches through [Cleanup](../../cleanup/SKILL.md). `gh stack sync --prune`
 alone doesn't make its checks: it skips branches occupied in another worktree, but it doesn't compare
 a branch's tip to the PR's merge-time head, so a merged branch that later got new commits can lose
 its ref.

@@ -1855,6 +1855,111 @@ class LifecycleMutationTests(RecordCase):
         self.assertEqual(decision(after_hold, "W4-D30")["blocks"], [{"id": "W4", "phase": "landing"}])
         self.assertIn("settle by hand", hold_res.stdout)
 
+    def test_init_default_layout_excludes_and_rejects_project_repos(self):
+        with tempfile.TemporaryDirectory() as sandbox:
+            root = Path(sandbox)
+            xdg = root / "xdg-state"
+            env = {**GIT_ENV, "XDG_STATE_HOME": str(xdg),
+                   "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3")}
+            created = subprocess.run([
+                sys.executable, str(SCRIPT), "init",
+                "--title", "Payments v2!", "--goal", "Ship retries",
+                "--chief", SESSION.format("chief"), "--request", "Ship retries cleanly",
+            ], capture_output=True, text=True, env=env)
+            self.assertEqual(created.returncode, 0, created.stderr)
+            state_line = next(line for line in created.stdout.splitlines() if line.startswith("state: "))
+            state_file = Path(state_line.removeprefix("state: ").strip())
+            self.assertEqual(state_file.name, "program.json")
+            self.assertEqual(state_file.parent.name, "record")
+            self.assertTrue(state_file.parent.parent.name.endswith("-payments-v2"))
+            self.assertEqual(state_file.parent.parent.parent, xdg / "coordinator" / "programs")
+            (state_file.parent / "reports" / "W1.md").write_text("report\n")
+            (state_file.parent / "command-center.html").write_text("page\n")
+            status = subprocess.run(["git", "-C", str(state_file.parent), "status", "--porcelain"],
+                                    capture_output=True, text=True, check=True, env=env).stdout.strip()
+            self.assertEqual(status, "")
+
+            # Reject program folders inside an existing project repo, its root, or a linked worktree.
+            project = root / "project"
+            project.mkdir()
+            subprocess.run(["git", "-C", str(project), "init", "-q"], check=True, env=env)
+            (project / "README.md").write_text("hi\n")
+            subprocess.run(["git", "-C", str(project), "add", "README.md"], check=True, env=env)
+            subprocess.run(["git", "-C", str(project), "commit", "-q", "-m", "init"], check=True, env=env)
+            worktree = root / "project-wt"
+            subprocess.run(["git", "-C", str(project), "worktree", "add", "-q", "-b", "wt", str(worktree)],
+                           check=True, env=env)
+            for bad, snippet in (
+                (project / "nested" / "program.json", "inside git repository"),
+                (project / "program.json", "tracked files"),
+                (worktree / "program.json", "linked git worktree"),
+                (worktree / "sub" / "program.json", "inside git repository"),
+            ):
+                refused = subprocess.run([
+                    sys.executable, str(SCRIPT), "init", "--state", str(bad),
+                    "--title", "Bad", "--goal", "Reject", "--chief", SESSION.format("chief"), "--request", "Reject",
+                ], capture_output=True, text=True, env=env)
+                self.assertEqual(refused.returncode, 1, f"expected refusal for {bad}")
+                self.assertIn(snippet, refused.stderr)
+                self.assertFalse(bad.exists())
+            self.assertFalse((project / "reports").exists())
+            conflicting = subprocess.run([
+                sys.executable, str(SCRIPT), "init", "--state", str(root / "custom" / "program.json"), "--slug", "x",
+                "--title", "Bad", "--goal", "Reject", "--chief", SESSION.format("chief"), "--request", "Reject",
+            ], capture_output=True, text=True, env=env)
+            self.assertEqual(conflicting.returncode, 1)
+            self.assertIn("only when --state is omitted", conflicting.stderr)
+
+    def test_programs_lists_containers_with_prune_readiness(self):
+        with tempfile.TemporaryDirectory() as sandbox:
+            programs = Path(sandbox) / "programs"
+            env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3")}
+            empty = subprocess.run([
+                sys.executable, str(SCRIPT), "init", "--root", str(programs), "--slug", "2026-11-18-empty",
+                "--title", "Empty", "--goal", "Fresh", "--chief", SESSION.format("chief"), "--request", "Fresh",
+            ], capture_output=True, text=True, env=env)
+            self.assertEqual(empty.returncode, 0, empty.stderr)
+
+            done_init = subprocess.run([
+                sys.executable, str(SCRIPT), "init", "--root", str(programs), "--slug", "2026-11-19-finished",
+                "--title", "Finished", "--goal", "Shipped", "--chief", SESSION.format("chief"), "--request", "Shipped",
+            ], capture_output=True, text=True, env=env)
+            self.assertEqual(done_init.returncode, 0, done_init.stderr)
+            done_state = programs / "2026-11-19-finished" / "record" / "program.json"
+            subprocess.run([
+                sys.executable, str(SCRIPT), "work", "--state", str(done_state),
+                "--id", "W1", "--add", "--title", "One", "--repo", "org/repo", "--finish-line", "land",
+            ], check=True, capture_output=True, text=True, env=env)
+            subprocess.run([
+                sys.executable, str(SCRIPT), "work", "--state", str(done_state), "--id", "W1", "--scrap",
+            ], check=True, capture_output=True, text=True, env=env)
+            subprocess.run([
+                sys.executable, str(SCRIPT), "grant", "--state", str(done_state),
+                "--source", "User msg 1", "--start", "All outcomes", "--resolve", "Reversible choices",
+                "--user", "Merges", "--heartbeat", "None (program done)", "--wake", "None (program done)",
+            ], check=True, capture_output=True, text=True, env=env)
+            (programs / "2026-11-19-finished" / "site").mkdir()
+
+            listed = subprocess.run(
+                [sys.executable, str(SCRIPT), "programs", "--root", str(programs), "--json"],
+                capture_output=True, text=True, check=True, env=env,
+            )
+            payload = json.loads(listed.stdout)
+            by_title = {item["title"]: item for item in payload["programs"]}
+            self.assertFalse(by_title["Empty"]["readyToPrune"])
+            self.assertTrue(by_title["Finished"]["readyToPrune"])
+            self.assertTrue(by_title["Finished"]["hasSite"])
+            self.assertEqual(by_title["Finished"]["heartbeat"], "None (program done)")
+
+            # Dirty record flips readyToPrune back to False.
+            done_state.write_text(done_state.read_text() + "\n")
+            listed_dirty = subprocess.run(
+                [sys.executable, str(SCRIPT), "programs", "--root", str(programs)],
+                capture_output=True, text=True, check=True, env=env,
+            )
+            self.assertIn("Finished | verdict=done | work=1 |", listed_dirty.stdout)
+            self.assertIn("prune=keep | dirty | site", listed_dirty.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -403,6 +403,33 @@ class PreparationTests(unittest.TestCase):
             self.assertEqual([path.name for path in (root / "dist/files").iterdir()], ["0123456789abcdef.png"])
             self.assertEqual((root / "dist/files/0123456789abcdef.png").read_bytes(), b"\x89PNG history")
 
+    def test_default_output_uses_sibling_site_dist_and_refuses_nested_record_repo(self):
+        with tempfile.TemporaryDirectory() as folder:
+            container = Path(folder) / "2026-11-20-exports"
+            record_dir = container / "record"
+            record_dir.mkdir(parents=True)
+            program = Program(record_dir)
+            program.write(example(), "2026-11-10T12:00:00Z")
+            marker = record_dir / "command-center.html"
+            self.assertEqual(program.run("--page", str(marker)).returncode, 0)
+            rendered = record_dir / "command-center.next.html"
+
+            default_run = subprocess.run(
+                [sys.executable, str(PREPARE), "--page", str(rendered)],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(default_run.returncode, 0, default_run.stderr)
+            self.assertTrue((container / "site" / "dist" / "index.html").is_file())
+            self.assertTrue((container / "site" / "dist" / "chief-version.json").is_file())
+
+            nested = subprocess.run(
+                [sys.executable, str(PREPARE), "--page", str(rendered), "--output", str(record_dir / "site" / "dist")],
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(nested.returncode, 0)
+            self.assertIn("must be outside the program record git repo", nested.stderr)
+            self.assertFalse((record_dir / "site").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

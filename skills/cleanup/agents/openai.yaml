@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cleanup"
+  short_description: "Clean up finished worktrees, branches, dev resources, and task folders"
+  default_prompt: "Use $cleanup to clean up finished or abandoned work and local resources."

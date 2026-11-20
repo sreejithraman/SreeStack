@@ -42,7 +42,9 @@ explicitly asks for a program, coordinator, or dashboard**. Everything below app
 ## Keep moving
 
 Run every record command from this skill's folder as
-`python3 scripts/record.py <command> --state /absolute/path/program.json`.
+`python3 scripts/record.py <command> --state /absolute/path/record/program.json` (`init` creates
+`${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/record/program.json`
+when `--state` is omitted; `programs` lists program folders).
 
 The `status` verdict decides how every program turn ends:
 
@@ -219,11 +221,19 @@ Done when the published page matches `HEAD` and shows every result and open Inbo
 On **Program done**: delete the heartbeat (`delete_scheduled_task` in T3) and turn off tap-to-answer
 under [hosting](references/hosting.md). Keep acceptance evidence, tradeoffs, resolved decisions,
 follow-ups, and remaining gaps (in [finding schema](../review-sweep/references/finding-schema.md))
-in the record. Lead the final handoff with open Inbox items if action is needed, otherwise usable
-outcomes and links, naming coordinator-resolved decisions so the user can reopen them. Clean up via
-[Repo Cleanup](../repo-cleanup/SKILL.md) once active dependents no longer need resources, record
-each retained owner's successor route in `owner.route` and a one-line final disposition in `next`,
-and settle the thread (`t3_thread_organize` with `action: "settle"`).
+in the record. Delete transient staging files (`command-center.next.html`, stored-pick scratch
+files, and any temporary Sites archives in `$TMPDIR`), and keep the program container (`record/`
+plus any sibling `site/` checkout) intact for audit and resume until the user asks to prune old
+programs (`record.py programs`). Lead the final handoff with open Inbox items if action is needed,
+otherwise usable outcomes and links, naming coordinator-resolved decisions so the user can reopen
+them. Clean up owner worktrees, branches, processes, and simulators via
+[Cleanup](../cleanup/SKILL.md) once active dependents no longer need resources, record each
+retained owner's successor route in `owner.route` and a one-line final disposition in `next`, and
+settle the thread (`t3_thread_organize` with `action: "settle"`).
+
+When asked to prune old finished or abandoned program folders, run `record.py programs` first,
+confirm each candidate shows `prune=ready` (or explicit user abandonment) and cleared
+`heartbeat`/`wake`, and pass only those verified container paths to [Cleanup](../cleanup/SKILL.md).
 
 For **pause, resume, move, takeover, or Chief-of-Staff migration**, follow
 [lifecycle](references/lifecycle.md) and [coordinator move](references/coordinator-move.md).

@@ -24,5 +24,5 @@ not provisional.
 - **Decision answered another way:** rebuild on the answer, or offer the work for scrap.
 - **Base scrapped:** stop work on the scrapped base and offer this outcome its own scrap or rebase
   choice. An explicit user scrap of this outcome authorizes only its scoped cleanup through
-  [Repo Cleanup](../../repo-cleanup/SKILL.md) (branch, PR, worktree); downstream dependents still
+  [Cleanup](../../cleanup/SKILL.md) (branch, PR, worktree); downstream dependents still
   get their own choice.

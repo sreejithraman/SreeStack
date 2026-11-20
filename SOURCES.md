@@ -476,10 +476,16 @@ only in the owner-only page database (`config/wake`), verified via `get_artifact
 and `db_rules_get`, and deleted before the final pick read on done, pause, move,
 takeover, or leaving the artifact. Sites pages keep Copy answer alone.
 
-**Record, scripts, and hosting.** The program folder is a git repo whose `HEAD`
-is authoritative (`program.json` keeps the `chief` key for compatibility).
+**Record, scripts, and hosting.** Each program lives in its own container at
+`${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/`
+with a standalone git repo in `record/` (`program.json` keeps the `chief` key
+for compatibility; `HEAD` is authoritative) and, when publishing via Codex
+Sites, a separate sibling `site/` git checkout so `.git` repos never nest.
 `scripts/record.py` owns event writes with its own clock, validation, commit,
-and render: `init`, `grant`, `work` (add, update, scrap, and atomic
+and render: `init` (defaults to the container's `record/program.json`, rejects
+paths inside existing project repos or worktrees, and configures
+`.git/info/exclude`), `programs` (inventories program containers with
+deterministic prune-readiness facts), `grant`, `work` (add, update, scrap, and atomic
 dead-base scrap/rebase with `--decision`), `start`, `report` (ingesting
 structured owner `followups` into `discoveries` as open items that keep
 `status` runnable until routed), `discovery` (add or route discoveries), `answer`
@@ -492,7 +498,8 @@ rejects unknown keys, provisional landings and Land-ready states (allowing `read
 work only for requested `pr-draft` or `pr-review`), cross-repo stack edges, PRs on Try, terminal
 rows with blockers, dead bases without halting decisions, and missing or unhashed pictures. Claude coordinators publish private Claude artifacts (linking
 with `#no_universal_links`); Codex coordinators publish private buildless
-ChatGPT Sites via `sites:sites` and `scripts/prepare_sites.py` (which inlines
+ChatGPT Sites via `sites:sites` and `scripts/prepare_sites.py` (defaults to
+sibling `../site/dist`, refuses outputs inside `record/.git`, and inlines
 20-second visible live refresh with `chief-version.json`, verified by Chrome
 tests); other providers delegate static publishing to a one-shot Codex/Claude
 helper or run local-only with Inbox in chat. Both thread moves and same-thread
@@ -561,7 +568,7 @@ after a restack, clean disjoint rebases carry forward coverage while edits or in
 changes run a repair pass.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
-on request, to match `pr`. Branch deletion after a merge goes through `repo-cleanup`
+on request, to match `pr`. Branch deletion after a merge goes through `cleanup`
 rather than `sync --prune`, which doesn't check merge-time heads. Layers split only
 for dependency order and reviewability, and can emerge as the work takes shape;
 tests and docs stay with the behavior they prove, and independent outcomes get
@@ -800,19 +807,22 @@ retention is proportional. Missing schema limits are distinguished from verified
 unbounded input. Emulation and unavailable hardware checks carry explicit
 evidence limits. Greetings and attribution instructions are omitted.
 
-## repo-cleanup
+## cleanup
 
 - Local source: `~/.agents/skills/post-merge-cleanup`; upstream origin unrecorded.
 
-Accepts merge completion handoffs from `merge`. Cleanup includes verified
-task-owned development processes, simulator/emulator installs, disposable test
-data, the Xcode DerivedData of removed or missing worktrees, and temporary devices
-created solely for the task.
+Automatically discoverable in both hosts. Accepts merge completion handoffs from
+`merge` and explicit cleanup or housekeeping requests across git worktrees,
+branches, disposable task folders, and local development resources. Cleanup
+includes verified task-owned development processes, simulator/emulator installs,
+disposable test data, the Xcode DerivedData of removed or missing worktrees, and
+temporary devices created solely for the task.
 Reused devices are preserved and shut down only when the task booted them and no
 consumer remains.
 Cleanup reconstructs process, device, and install ownership from available
 session history and tool results, with logs, current state, and optional handoffs
-as supporting evidence. Discovery and cleanup rules live together in
+as supporting evidence. Discovery and cleanup rules for macOS/Xcode DerivedData,
+Mac apps, processes, and simulators/emulators live in
 `references/development-resources.md`. SimLock resources route through
 `simulator-lifecycle`: release the acquiring lease and leave device reclamation
 to its manager. Run receipts support recovery and host-output cleanup; legacy

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 
 from render_dashboard import page_files
 
@@ -29,7 +30,31 @@ VIEW_SCOPE = """<script>
 </script>"""
 
 
-def prepare(page_file: Path, output: Path) -> str:
+def default_output(page_file: Path) -> Path:
+    resolved = page_file.expanduser().resolve()
+    if resolved.parent.name == "record":
+        return resolved.parent.parent / "site" / "dist"
+    raise ValueError("--output is required unless --page is inside a program's record/ folder")
+
+
+def record_git_root(page_file: Path) -> Path | None:
+    folder = page_file.expanduser().resolve().parent
+    probe = subprocess.run(
+        ["git", "-C", str(folder), "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    return Path(probe.stdout.strip()).resolve() if probe.returncode == 0 and probe.stdout.strip() else None
+
+
+def prepare(page_file: Path, output: Path | None = None) -> str:
+    page_file = page_file.expanduser()
+    output = default_output(page_file) if output is None else output.expanduser()
+    repo_root = record_git_root(page_file)
+    if repo_root is not None and output.resolve().is_relative_to(repo_root):
+        raise ValueError(
+            f"--output ({output}) must be outside the program record git repo ({repo_root}) "
+            "so Codex Sites does not nest .git inside it; use a sibling site/dist directory"
+        )
     page = page_file.read_text(encoding="utf-8")
     if "</head>" not in page or "</body>" not in page or 'name="chief-version"' in page:
         raise ValueError("--page must be the renderer's HTML, before Sites preparation")
@@ -56,7 +81,8 @@ def prepare(page_file: Path, output: Path) -> str:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--page", required=True, type=Path, help="Already rendered HTML selected for publication")
-    parser.add_argument("--output", required=True, type=Path, help="Static output directory in the durable Site source, normally dist")
+    parser.add_argument("--output", type=Path,
+                        help="Static output directory in the sibling Site checkout (defaults to ../site/dist when --page is in record/)")
     args = parser.parse_args()
     try:
         print(prepare(args.page, args.output))
