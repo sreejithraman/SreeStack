@@ -1534,11 +1534,13 @@ class LifecycleMutationTests(RecordCase):
         self.refused("answer", "--stored", str(picks_file), message="W2")
         _, after_rebase, _ = self.event(
             "work", "--id", "W2", "--rebase-onto", "feat/w9", "--stack-on", "W9-L1",
+            "--provisional-clears", "W9 lands and canary passes",
             "--decision", "W2-D8", "--option", "1", "--answer-source", "Stored page pick",
         )
         w2 = work(after_rebase, "W2")
         self.assertEqual(w2["provisional"]["on"], ["W9"])
         self.assertIn("W9", w2["provisional"]["basis"])
+        self.assertEqual(w2["provisional"]["clears"], "W9 lands and canary passes")
         self.assertNotIn("W1", w2["provisional"]["clears"])
         self.assertEqual(decision(after_rebase, "W2-D8")["status"], "answered")
         _, _, cleanup_res = self.event("answer", "--stored", str(picks_file))
@@ -1768,27 +1770,40 @@ class LifecycleMutationTests(RecordCase):
         self.serve(prs={**base_prs, "https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "isInMergeQueue": True}})
         self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Queued", message="merge-queue")
 
-        # Partial merge: W1 merged, W4 stopped cleanly -> W1 lands, W4 stays ready, landing withdraws, move unblocks!
+        # Partial merge: W1 merged (at updated head), W4 closed without merge -> W1 lands with observed head,
+        # W4 lapses out of ready (blocking stale re-release), landing withdraws, and move unblocks!
+        merged_head = "9999999" + "a" * 33
         partial_prs = {
             **base_prs,
-            w1_l[0]["url"]: {**base_prs[w1_l[0]["url"]], "state": "MERGED"},
+            w1_l[0]["url"]: {**base_prs[w1_l[0]["url"]], "state": "MERGED", "headRefOid": merged_head},
             w1_l[1]["url"]: {**base_prs[w1_l[1]["url"]], "state": "MERGED"},
+            "https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "CLOSED"},
         }
         self.serve(prs=partial_prs)
-        _, after_partial, partial_res = self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "W1 merged, W4 stopped")
+        _, after_partial, partial_res = self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "W1 merged, W4 closed")
         self.assertEqual(after_partial["landings"][-1]["state"], "withdrawn")
         self.assertEqual(work(after_partial, "W1")["state"], "landed")
-        self.assertEqual(work(after_partial, "W4")["state"], "ready")
+        self.assertEqual(work(after_partial, "W1")["layers"][0]["head"], merged_head)
+        self.assertEqual(work(after_partial, "W4")["state"], "in-review")
+        self.assertEqual(work(after_partial, "W4")["layers"][0]["status"], "closed")
         self.assertIn("partially merged before cancellation", partial_res.stdout)
+        self.refused("land", "--work", "W4", message="not ready to land")
         self.event("move", "--chief", SESSION.format("chief-2"))
 
-        # 3. land --to landed clears unknownReason; open landing hold after withdrawal stays held (settle by hand).
+        # 3. land --to landed records observed merged head and clears unknownReason; open landing hold stays held.
+        self.commit(lambda s: work(s, "W4").update(
+            state="ready", layers=[{**work(s, "W4")["layers"][0], "status": "ready"}],
+        ))
         _, rel_w4, _ = self.event("land", "--work", "W4")
         lid_w4 = rel_w4["landings"][-1]["id"]
         self.event("work", "--id", "W4", "--status", "unknown", "--unknown-reason", "Forge read failed")
-        self.serve(prs={"https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "MERGED"}})
+        w4_merged_head = "8888888" + "b" * 33
+        self.serve(prs={"https://github.com/org/exports/pull/103": {
+            **base_prs["https://github.com/org/exports/pull/103"], "state": "MERGED", "headRefOid": w4_merged_head,
+        }})
         _, landed_w4, _ = self.event("land", "--landing", lid_w4, "--to", "landed")
         self.assertEqual(work(landed_w4, "W4")["state"], "landed")
+        self.assertEqual(work(landed_w4, "W4")["layers"][0]["head"], w4_merged_head)
         self.assertNotIn("unknownReason", work(landed_w4, "W4"))
         self.assertEqual(landed_w4["landings"][-1]["state"], "landed")
 

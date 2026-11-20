@@ -88,6 +88,28 @@ class ConvergenceTests(unittest.TestCase):
         self.assertEqual(data["mode"], "DEFER_AND_FINISH")
         self.assertEqual(data["post_cut_repeated"][0]["file"], "app.py")
 
+    def test_premise_cut_at_head_allows_verification_pass(self):
+        self.write("app.py", "x = 1\n")
+        pass1 = self.commit("pass 1")
+        for idx in range(2, 7):
+            self.write("app.py", f"x = {idx}\n")
+            self.commit(f"repair {idx}")
+        self.write("app.py", "x = 0\n")
+        cut = self.commit("premise cut")
+        # Without --premise-cut-at, 5+ repeated commits trigger DEFER_AND_FINISH;
+        # passing --premise-cut-at HEAD allows verifying the cut itself first.
+        self.assertEqual(analyze(self.repo, self.base, pass1, cut)["mode"], "DEFER_AND_FINISH")
+        data = analyze(self.repo, self.base, pass1, cut, premise_cut_at=cut)
+        self.assertEqual(data["mode"], "CONVERGING")
+        self.assertIn("Premise cut landed", data["action"])
+        # One bounded post-cut fix stays CONVERGING; a second hit on app.py flips to DEFER_AND_FINISH.
+        self.write("app.py", "x = -1\n")
+        after1 = self.commit("post-cut 1")
+        self.assertEqual(analyze(self.repo, self.base, pass1, after1, premise_cut_at=cut)["mode"], "CONVERGING")
+        self.write("app.py", "x = -2\n")
+        after2 = self.commit("post-cut 2")
+        self.assertEqual(analyze(self.repo, self.base, pass1, after2, premise_cut_at=cut)["mode"], "DEFER_AND_FINISH")
+
     def test_test_only_file_repeats_do_not_trigger_premise_cut(self):
         self.write("app.py", "x = 1\n")
         self.write("test_app.py", "t = 1\n")

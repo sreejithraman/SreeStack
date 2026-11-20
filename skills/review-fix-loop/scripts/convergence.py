@@ -109,7 +109,27 @@ def analyze(repo: Path, base: str, pass1: str, head: str = "HEAD", premise_cut_a
     if not repairs:
         mode = "CONVERGING"
         action = "No repairs since Pass 1; proceed normally."
-    elif (premise_cut_at and (post_cut_repeated or post_cut_commits >= 4)) or (len(repairs) >= 5 and repeated):
+    elif premise_cut_at:
+        if post_cut_commits == 0:
+            mode = "CONVERGING"
+            action = (
+                f"Premise cut landed at {cut_sha[:8]}; run one tightly scoped verification pass on the cut "
+                "before deciding next steps."
+            )
+        elif post_cut_repeated or post_cut_commits >= 4:
+            mode = "DEFER_AND_FINISH"
+            action = (
+                "Loop is still oscillating after premise cut. Stop adding complexity: narrow or fail closed on "
+                "remaining edge cases, Defer non-critical/synthetic items with 1-line factual premises, run one "
+                "final scoped check, and finish."
+            )
+        else:
+            mode = "CONVERGING"
+            action = (
+                "Post-cut repair is bounded; run one tightly scoped Pass 2+ verification "
+                "(repairs, regressions, cumulative coherence; no fresh red-team fuzzing)."
+            )
+    elif len(repairs) >= 5 and repeated:
         mode = "DEFER_AND_FINISH"
         action = (
             "Loop is still oscillating. Stop adding complexity: narrow or fail closed on remaining edge cases, "

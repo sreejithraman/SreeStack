@@ -381,7 +381,7 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             kept_on = [item for item in provisional.get("on", []) if item not in dead_ids and item != unmerged_parent["id"]]
             new_on = [*kept_on, unmerged_parent["id"]]
             put(provisional, "basis", prov_basis or f"Stacked on {unmerged_parent['id']} ({stack_on})", ("basis", "clears", "on"))
-            put(provisional, "clears", prov_clears or f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands",
+            put(provisional, "clears", prov_clears or (f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands"),
                 ("basis", "clears", "on"))
             put(provisional, "on", new_on, ("basis", "clears", "on"))
             put(row, "provisional", provisional, WORK_KEYS)
@@ -1060,12 +1060,13 @@ def move_landing(state, at, identity, to, read_pr, note=None):
         )
     notes = []
     if to == "withdrawn":
-        merged_urls, stopped_urls = [], []
+        merged_urls, stopped_urls, observed = [], [], {}
         for pr in landing["prs"]:
             url = pr["url"]
             forge_pr = read_pr(url)
             if not isinstance(forge_pr, dict) or forge_pr.get("state") not in {"OPEN", "CLOSED", "MERGED"}:
                 raise Refused(f"{url} returned incomplete forge state; confirm on GitHub before withdrawing")
+            observed[url] = forge_pr
             if forge_pr["state"] == "MERGED":
                 merged_urls.append(url)
                 continue
@@ -1078,35 +1079,61 @@ def move_landing(state, at, identity, to, read_pr, note=None):
             stopped_urls.append(url)
         if not stopped_urls:
             raise Refused(f"all PRs in {identity} already merged on the forge; record --to landed instead")
+        for wid in landing["work"]:
+            row = work_row(state, wid)
+            for layer in row.get("layers", []):
+                forge_pr = observed.get(layer.get("url"))
+                if not forge_pr:
+                    continue
+                if forge_pr["state"] == "MERGED":
+                    apply_forge_layer(layer, forge_pr, wid, notes)
+                else:
+                    moved = False
+                    head = forge_pr.get("headRefOid", "")
+                    if head and not (layer.get("head") and head.startswith(layer["head"])):
+                        put(layer, "head", head, LAYER_KEYS)
+                        moved = True
+                        notes.append(f"{wid}: {layer['id']} head moved to {head[:7]}")
+                    base = forge_pr.get("baseRefName", "")
+                    if base and layer.get("base") and base != layer["base"]:
+                        moved = True
+                        notes.append(f"{wid}: {layer['id']} base moved to {base}")
+                    status = "closed" if forge_pr["state"] == "CLOSED" else "draft" if forge_pr.get("isDraft") else (
+                        "open" if layer["status"] == "ready" and moved else layer["status"]
+                    )
+                    if status != layer["status"]:
+                        if status == "closed":
+                            notes.append(f"{wid}: {layer['id']} closed without merge")
+                        layer["status"] = status
+            if (row["state"] == "ready"
+                    and any(layer["status"] not in READY_LAYERS[effective_finish(row)][0] for layer in row.get("layers", []))):
+                row["state"] = "in-review"
+                row.pop("acceptance", None)
+            if (merged_urls and row.get("layers") and all(layer["status"] == "merged" for layer in row["layers"])
+                    and effective_finish(row) == "land" and not open_blocks(state, wid)
+                    and not row.get("blocked") and not row.get("blockedBy")):
+                row["state"] = "landed"
+                row.pop("unknownReason", None)
+            row["checkedAt"] = at
         if merged_urls:
-            merged_set = set(merged_urls)
-            for wid in landing["work"]:
-                row = work_row(state, wid)
-                for layer in row.get("layers", []):
-                    if layer.get("url") in merged_set:
-                        layer["status"] = "merged"
-                if (row.get("layers") and all(layer["status"] == "merged" for layer in row["layers"])
-                        and effective_finish(row) == "land" and not open_blocks(state, wid)
-                        and not row.get("blocked") and not row.get("blockedBy")):
-                    row["state"] = "landed"
-                    row.pop("unknownReason", None)
-                row["checkedAt"] = at
             notes.append(
                 f"{identity} partially merged before cancellation: merged {', '.join(merged_urls)}; "
                 f"confirmed stopped {', '.join(stopped_urls)} (fresh release required for remaining work)"
             )
     if to == "landed":
+        observed = {}
         for pr in landing["prs"]:
             forge_pr = read_pr(pr["url"])
             if not isinstance(forge_pr, dict) or forge_pr.get("state") != "MERGED":
                 raise Refused(f"{pr['url']} is not merged on the forge")
+            observed[pr["url"]] = forge_pr
         for wid in landing["work"]:
             row = work_row(state, wid)
             if effective_finish(row) != "land":
                 raise Refused(f"{wid} has finish line {effective_finish(row)}, not land; reconcile it before recording {identity} landed")
             for layer in row.get("layers", []):
-                if any(pr["url"] == layer.get("url") for pr in landing["prs"]):
-                    layer["status"] = "merged"
+                if layer.get("url") in observed:
+                    apply_forge_layer(layer, observed[layer["url"]], wid, notes)
             if all(layer["status"] == "merged" for layer in row.get("layers", [])):
                 row["state"] = "landed"
                 row.pop("unknownReason", None)

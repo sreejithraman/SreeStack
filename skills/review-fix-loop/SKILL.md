@@ -116,11 +116,13 @@ evidence, and report stalled disputes rather than repeating equivalent passes.
 
 ## Route repairs
 
-Before every Pass 2+ repair or dispatch, run the deterministic convergence check
-from this skill's folder and paste its output block at the top of the pass brief:
+Before every Pass 2+ repair or dispatch on a committed head, run the
+deterministic convergence check against the reviewed workspace and paste its
+output block at the top of the pass brief (uncommitted local-diff reviews apply
+the same Pass 2+ scoped verification and premise-cut discipline directly):
 
 ```sh
-python3 scripts/convergence.py --base <base sha> --pass1 <pass1 sha> --head HEAD [--premise-cut-at <sha>]
+python3 <review-fix-loop skill dir>/scripts/convergence.py --repo <workspace> --base <base sha> --pass1 <pass1 sha> --head HEAD [--premise-cut-at <sha>]
 ```
 
 Act on its mode autonomously (no HITL unless a genuine product/scope decision or

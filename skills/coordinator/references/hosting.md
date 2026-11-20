@@ -106,11 +106,12 @@ Run on every answer wake, heartbeat tick, resume, and before settling any decisi
    `python3 scripts/record.py answer --stored <file> --state /absolute/path/program.json` (adding
    any user-message answer flags and `--source` in the same command so the message supersedes prior
    picks).
-4. If `answer --stored` refuses a dead-base decision because its work must scrap or rebase in the
-   same commit, apply that choice first via
+4. For any dead-base scrap-or-rebase pick (or if `answer --stored` refuses a dead-base decision
+   because its work must scrap or rebase in the same commit), apply that choice first via
    `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --option <N> --answer-source "<pick or newer user message>"`,
-   then re-run `answer --stored <file>` so remaining picks record and every applied pick prints its
-   `delete:` line.
+   then run `answer --stored <file>` for any remaining picks and `delete:` lines. If a newer user
+   message superseded an older conflicting stored pick on that dead-base decision, delete that
+   superseded pick document directly rather than reopening the decision.
 5. Delete ONLY the DB documents listed on a `note: delete:` line from a command that exited 0
    (including a validated `unchanged:` replay of an already-recorded pick after an earlier delete
    failure; never delete documents from a refused command) via `db_write` `delete` with their
