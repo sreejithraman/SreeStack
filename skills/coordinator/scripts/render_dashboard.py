@@ -1012,18 +1012,34 @@ def tradeoff_label(row):
 def need_card(row, state, selected=False):
     classes = "card need" + (" quick" if row["status"] == "open" and row.get("weight") == "quick" else "") + (" selected" if selected else "")
     content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{prose(row["question"])}</h3>'
+    context = ""
     if row.get("context"):
-        content += '<ul class="context">' + "".join(f"<li>{prose(item)}</li>" for item in row["context"]) + "</ul>"
-    content += pictures_view(row) + stale_pick_note(row)
+        context = '<ul class="context">' + "".join(f"<li>{prose(item)}</li>" for item in row["context"]) + "</ul>"
+    if row["status"] in {"answered", "resolved"}:
+        label = "Your answer" if row["status"] == "answered" else "Coordinator's call"
+        if row.get("rationale"):
+            content += f'<p class="decision-lead">{prose(row["rationale"])}</p>'
+        # Show short original answers without deriving a summary from technical text.
+        if len(row["answer"]) <= 240 and max(map(len, row["answer"].split()), default=0) <= 60:
+            content += f'<div class="answer"><p class="answer-label">{label}</p><p class="decision-text">{prose(row["answer"])}</p></div>'
+        content += (
+            '<details class="decision-details"><summary>Technical details'
+            f'<span class="sr-only"> for {e(row["id"])}</span></summary><div class="decision-body">'
+            f'<p class="answer-label">{label}</p><p class="decision-text">{prose(row["answer"])}</p>'
+        )
+        if row["status"] == "resolved":
+            content += f'<p class="answer-label">Basis</p><p class="decision-text">{prose(row["basis"])}</p>'
+        if context:
+            content += '<p class="answer-label">Context</p>' + context
+        content += pictures_view(row) + link_list(row.get("links", [])) + '</div></details>' + stale_pick_note(row)
+        if row["status"] == "resolved":
+            reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
+            content += f'<div class="reopen">{reopen}</div>'
+        return content + "</article>"
+    content += context + pictures_view(row) + stale_pick_note(row)
     if row["status"] == "open" and row.get("meanwhile"):
         content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {prose(row["meanwhile"])}</p>'
-    if row["status"] == "answered":
-        content += f'<div class="answer"><p class="answer-label">Your answer</p><p>{prose(row["answer"])}</p></div>'
-    elif row["status"] == "resolved":
-        content += f'<div class="answer"><p class="answer-label">Coordinator\'s call</p><p>{prose(row["answer"])}</p><p class="answer-label">Basis</p><p>{prose(row["basis"])}</p></div>'
-        reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
-        content += f'<div class="reopen">{reopen}</div>'
-    elif row.get("options"):
+    if row.get("options"):
         content += picks(row, state)
     elif row.get("recommendation"):
         content += f'<div class="suggested-answer"><p class="answer-label">Suggested answer</p><p>{prose(row["recommendation"])}</p></div>'
@@ -1061,7 +1077,7 @@ def needs_view(state, judgment, quick, resolved, answered):
     cards = (
         "".join(need_card(row, state, selected=row is selected) for row in judgment) + batch
         + "".join(need_card(row, state, selected=row is selected) for row in quick)
-    ) or empty
+    )
     groups = ""
     for heading_id, title, rows in (("judgment-list", "Judgment calls", judgment), ("quick-list", "Quick picks", quick)):
         if rows:
@@ -1075,7 +1091,7 @@ def needs_view(state, judgment, quick, resolved, answered):
     if answered:
         groups += inbox_group("answered-list", "Answered decisions", "answered", [inbox_row(card_id("decision", row), row["id"], row["question"]) for row in answered])
         cards += collapsible("answered-heading", "Answered decisions", len(answered), f'<div class="section-body">{"".join(need_card(row, state) for row in answered)}</div>', closed=True)
-    return f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
+    return (empty if not open_needs else "") + f'<div class="inbox"><div class="inbox-list" role="listbox" aria-label="Decisions">{groups}</div><div class="inbox-detail">{cards}</div></div>'
 
 
 class Program:
