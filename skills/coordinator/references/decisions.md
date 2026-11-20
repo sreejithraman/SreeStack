@@ -28,7 +28,10 @@ Ensure every open decision has:
 
 - `id` (prefixed with its outcome), `question`, `context`, and `date` (stamped by `record.py`).
 - Two or more `options`, each with `effect` and reversal cost (`reversible: true` only when undoing
-  costs only rework). This includes `access` requests: state the exact 1-line action the user takes
+  costs only rework). For scrap-or-rebase base-repair options, attach an explicit typed `action`
+  (`{"type": "scrap", "work": "<ID>"}` or `{"type": "rebase", "work": "<ID>", "onto": "<branch>",
+  "stackOn": "<layer>"}`) so `record.py work --decision` enforces the exact transition and target.
+  This includes `access` requests: state the exact 1-line action the user takes
   (such as signing in through T3's terminal drawer) and provide tappable options (such as
   `"Done — access is ready"` and `"Defer this outcome"`), never an optionless card.
 - Exactly one `recommended` option with `recommendation` rationale.

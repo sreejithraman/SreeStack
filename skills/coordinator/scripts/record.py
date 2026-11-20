@@ -250,7 +250,7 @@ SCRAP_VERBS = re.compile(r"\bscrap(?:ping|ped)?\b")
 REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget)\b")
 NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap)\b")
 NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
-ONTO_TARGET = re.compile(r"\bonto\s+[`\"']?([A-Za-z0-9._/@:-]+)[`\"']?", re.I)
+ONTO_TARGET = re.compile(r"\bonto\s+(?:`([^`]+)`|\"([^\"]+)\"|'([^']+)'|(\S+))", re.I)
 
 
 def is_base_repair_decision(row):
@@ -309,7 +309,8 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
             raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
         match = ONTO_TARGET.search(chosen)
         if match:
-            named = match[1].rstrip(".,;:)")
+            raw_named = next(g for g in match.groups() if g is not None)
+            named = raw_named.rstrip(".,;:)") if match[4] is not None else raw_named
             allowed = {rebase_onto} | ({stack_on} if stack_on else set())
             if named not in allowed and named.lower() not in {"a", "an", "the", "new", "another"}:
                 raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
@@ -362,6 +363,12 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             raise Refused(f"{decision_id} is {target_decision['status']}; work --decision only answers an open decision")
         if not any(entry["id"] == identity for entry in target_decision.get("blocks", [])):
             raise Refused(f"{decision_id} does not block {identity}")
+        if not scrap and rebase_onto is None and atomic_halting_work(state, decision_id):
+            raise Refused(
+                f"{decision_id} authorizes a base repair on {identity}; pass --scrap or --rebase-onto in the same command"
+            )
+        options = target_decision.get("options", [])
+        extra_receipt, extra_delete = None, None
         if pasted_text is not None:
             if not answer_source:
                 raise Refused("--decision with --pasted needs --answer-source")
@@ -369,31 +376,22 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             if not choices:
                 raise Refused(f"pasted text contains no choice for {decision_id}")
             _, digest, number, label = choices[-1]
-            options = target_decision.get("options", [])
             if (revision(target_decision) != digest or not 1 <= number <= len(options)
                     or quoted(options[number - 1]["label"]) != quoted(label)):
                 raise Refused(f"{decision_id} changed since the page showed it; ask again")
             opt_obj = options[number - 1]
-            chosen = opt_obj["label"]
-            check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
-            _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
-            notes.extend(answer_notes)
-            if stored_documents is not None:
-                _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id])
-                notes.extend(stored_notes)
+            chosen, source_used = opt_obj["label"], answer_source
         elif decision_option is not None or decision_text is not None:
             if not answer_source:
                 raise Refused("--decision with --option or --text needs --answer-source")
-            opt_obj = target_decision.get("options", [])[decision_option - 1] if (
-                decision_option is not None and 1 <= decision_option <= len(target_decision.get("options", []))
-            ) else None
-            chosen = option_label(target_decision, decision_option) if decision_option is not None else decision_text
-            check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
-            _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
-            notes.extend(answer_notes)
-            if stored_documents is not None:
-                _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id])
-                notes.extend(stored_notes)
+            if decision_option is not None:
+                chosen = option_label(target_decision, decision_option)
+                opt_obj = options[decision_option - 1]
+            else:
+                chosen = decision_text
+                matches = [opt for opt in options if quoted(opt["label"]) == quoted(chosen)]
+                opt_obj = matches[0] if len(matches) == 1 else None
+            source_used = answer_source
         elif stored_documents is not None:
             matched = []
             for document in stored_documents:
@@ -410,22 +408,27 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                 receipt = f"{name} {document['updatedAt']}"
                 if receipt in target_decision.get("picksRead", []):
                     continue
-                options = target_decision.get("options", [])
                 if (revision(target_decision) == digest and 1 <= number <= len(options)
                         and quoted(options[number - 1]["label"]) == quoted(label)):
                     matched.append((name, options[number - 1], receipt))
             if not matched:
                 raise Refused(f"no current-revision stored pick for {decision_id}")
-            name, opt_obj, receipt = matched[-1]
+            name, opt_obj, extra_receipt = matched[-1]
             chosen = opt_obj["label"]
-            check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
-            _, answer_notes = settle(state, at, decision_id, chosen, "answered",
-                                     source=f"The user's pick on the command center, stored at {name}")
-            put(target_decision, "picksRead", target_decision.get("picksRead", []) + [receipt], DECISION_KEYS)
-            notes.extend(answer_notes)
-            notes.append(f"delete: {name}")
+            source_used = f"The user's pick on the command center, stored at {name}"
+            extra_delete = f"delete: {name}"
         else:
             raise Refused("--decision on work needs --option, --text, --pasted (with --answer-source), or --stored")
+        check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
+        _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=source_used, allow_atomic=True)
+        if extra_receipt:
+            put(target_decision, "picksRead", target_decision.get("picksRead", []) + [extra_receipt], DECISION_KEYS)
+        notes.extend(answer_notes)
+        if extra_delete:
+            notes.append(extra_delete)
+        elif stored_documents is not None:
+            _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id])
+            notes.extend(stored_notes)
 
     for key, value in (
         ("title", title if not add else None), ("repo", repo if not add else None),
@@ -504,28 +507,41 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                 and layers_by_id[stack_on][0]["status"] != "merged")
             else None
         )
+        remaining_unmerged_stack_owners = {
+            layers_by_id[layer["stackedOn"]][1]["id"]
+            for layer in live_layers
+            if "stackedOn" in layer and layer["stackedOn"] in layers_by_id
+            and layers_by_id[layer["stackedOn"]][1]["id"] != identity
+            and layers_by_id[layer["stackedOn"]][0]["status"] != "merged"
+        }
+        detached_owners = {
+            layers_by_id[lid][1]["id"]
+            for lid in removed_layer_ids
+            if lid in layers_by_id and layers_by_id[lid][1]["id"] not in remaining_unmerged_stack_owners
+        }
+        drop_ids = dead_ids | detached_owners
         if unmerged_parent is not None:
             provisional = copy.deepcopy(row.get("provisional", {}))
             old_on = provisional.get("on", [])
-            removed_tokens = [item for item in old_on if item in dead_ids] + removed_layer_ids
-            kept_on = [item for item in old_on if item not in dead_ids and item != unmerged_parent["id"]]
+            removed_tokens = [item for item in old_on if item in drop_ids] + removed_layer_ids
+            kept_on = [item for item in old_on if item not in drop_ids and item != unmerged_parent["id"]]
             new_on = [*kept_on, unmerged_parent["id"]]
             stale_basis = any(re.search(rf"\b{re.escape(tok)}\b", provisional.get("basis", "")) for tok in removed_tokens)
             stale_clears = any(re.search(rf"\b{re.escape(tok)}\b", provisional.get("clears", "")) for tok in removed_tokens)
-            only_dead = bool(old_on) and not kept_on
+            only_dropped = bool(old_on) and not kept_on
             default_basis = (f"Stacked on {unmerged_parent['id']} ({stack_on})" if not kept_on
                              else f"Rested on {', '.join(new_on)} (stacked on {stack_on})")
             default_clears = f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands"
-            basis_val = prov_basis or (default_basis if (only_dead or stale_basis) else provisional.get("basis")) or default_basis
-            clears_val = prov_clears or (default_clears if (only_dead or stale_clears) else provisional.get("clears")) or default_clears
+            basis_val = prov_basis or (default_basis if (only_dropped or stale_basis) else provisional.get("basis")) or default_basis
+            clears_val = prov_clears or (default_clears if (only_dropped or stale_clears) else provisional.get("clears")) or default_clears
             put(provisional, "basis", basis_val, ("basis", "clears", "on"))
             put(provisional, "clears", clears_val, ("basis", "clears", "on"))
             put(provisional, "on", new_on, ("basis", "clears", "on"))
             put(row, "provisional", provisional, WORK_KEYS)
         elif "provisional" in row and not clear_provisional:
             old_on = row["provisional"].get("on", [])
-            removed_tokens = [item for item in old_on if item in dead_ids] + removed_layer_ids
-            kept_on = [item for item in old_on if item not in dead_ids]
+            removed_tokens = [item for item in old_on if item in drop_ids] + removed_layer_ids
+            kept_on = [item for item in old_on if item not in drop_ids]
             if kept_on:
                 row["provisional"]["on"] = kept_on
                 if prov_basis is None and any(re.search(rf"\b{re.escape(tok)}\b", row["provisional"].get("basis", "")) for tok in removed_tokens):
@@ -743,6 +759,9 @@ def report(state, at, work, block, source, files):
                 if key in entry and entry[key] != existing_entry.get(key):
                     put(existing_entry, key, entry[key], DISCOVERY_KEYS)
                     changed.append(key)
+            if "thread" in entry and existing_entry.get("reply") is None:
+                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+                changed.append("reply")
             if not changed:
                 notes.append(f"followup {entry['id']} is already recorded; left as it is")
                 continue
@@ -752,6 +771,8 @@ def report(state, at, work, block, source, files):
                 prior = existing_entry["route"]
                 existing_entry["route"] = "pending"
                 put(existing_entry, "status", "open", DISCOVERY_KEYS)
+                if existing_entry.get("thread"):
+                    put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
                 notes.append(f"followup {entry['id']} impact changed ({existing_entry['impact']}); reopened from {prior!r} for re-routing")
                 to_route.append(entry["id"])
             elif existing_entry.get("status") == "routed" and existing_entry.get("reply") == "pending":
@@ -801,13 +822,20 @@ def replace_list(row, key, value, order=WORK_KEYS):
         row.pop(key, None)
 
 
-def settle(state, at, identity, answer, status, source=None, basis=None):
+def settle(state, at, identity, answer, status, source=None, basis=None, allow_atomic=False):
     """Record an answer: answered when it is the user's, resolved when it is the coordinator's call."""
     row = decision_row(state, identity)
     if row["status"] == "withdrawn":
         raise Refused(f"{identity} was withdrawn")
     if status == "resolved" and row["status"] != "open":
         raise Refused(f"{identity} is {row['status']}; only an open decision can be resolved")
+    if not allow_atomic and row["status"] == "open":
+        broken = atomic_halting_work(state, identity)
+        if broken:
+            raise Refused(
+                f"atomic work transition needed for {identity} (invalid base on {', '.join(broken)}): "
+                f"run work --id {broken[0]} --scrap|--rebase-onto <branch> --decision {identity} ..."
+            )
     if row["status"] != "open":
         earlier = f"{at}: replaced the earlier {row['status']} answer {json.dumps(row['answer'], ensure_ascii=False)}"
         earlier += f" (basis: {row.pop('basis')})." if "basis" in row else f" (source: {row.pop('answerSource')})."
@@ -1098,11 +1126,11 @@ def record_discovery(state, at, identity=None, add=False, origin=None, work=None
     target["route"] = route.strip()
     put(target, "status", "routed", DISCOVERY_KEYS)
     notes = []
-    if reply_sent and target.get("reply") == "pending":
-        put(target, "reply", "sent", DISCOVERY_KEYS)
-    elif target.get("reply") == "pending":
-        notes.append(f"send recorded route ({target['route']}) to {target.get('work') or 'PR owner'} "
-                     f"for thread {target['thread']}, then run `discovery --id {identity} --reply-sent`")
+    if target.get("thread"):
+        put(target, "reply", "sent" if reply_sent else "pending", DISCOVERY_KEYS)
+        if not reply_sent:
+            notes.append(f"send recorded route ({target['route']}) to {target.get('work') or 'PR owner'} "
+                         f"for thread {target['thread']}, then run `discovery --id {identity} --reply-sent`")
     replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
     return f"discovery {identity} routed: {target['route']}", notes
 
@@ -1174,8 +1202,8 @@ def move_landing(state, at, identity, to, read_pr, note=None):
         raise Refused(f"no landing {identity}")
     if landing["state"] in {"landed", "withdrawn"}:
         raise Refused(f"{identity} is already {landing['state']}")
-    if to == "withdrawn" and not note:
-        raise Refused("a withdrawal needs --note: why")
+    if to in {"withdrawn", "cancelling"} and not note:
+        raise Refused(f"moving a landing to {to} needs --note: why")
     if to == "landed":
         for pr in landing["prs"]:
             if read_pr(pr["url"]).get("state") != "MERGED":
@@ -1667,7 +1695,7 @@ def arguments():
     command.add_argument("--target")
     command.add_argument("--keep")
     command.add_argument("--landing", help="Move this landing instead")
-    command.add_argument("--to", choices=("submitted", "landed", "withdrawn"))
+    command.add_argument("--to", choices=("submitted", "cancelling", "landed", "withdrawn"))
     command.add_argument("--note")
 
     command = commands.add_parser("wait", parents=[shared], help="Record or clear a wait")

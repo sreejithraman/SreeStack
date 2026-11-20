@@ -94,7 +94,9 @@ code-caused failure remains, feedback handling is complete, and you've recorded 
 draft policy skipped.
 
 A requested **provisional review-ready PR** (non-draft carrying `## Provisional`) is finished when
-`## Provisional` is the only blocker `pr_state` reports — passing `review-fix-loop` status on the
-current head, terminal passing checks, every `to_settle` item decided, and feedback handling
-complete. Keep `## Provisional` in the body so Merge stays blocked until the provisional condition
-clears.
+`## Provisional` is the only blocker `pr_state` reports **and** `pr_state`'s `pending` list has no
+active checks, queued merge, or auto-merge — passing `review-fix-loop` status on the current head,
+terminal passing checks, every `to_settle` item decided, and feedback handling complete (ordinary
+human review waits still follow the rule above; if an incompatible auto-merge or merge-queue entry
+is armed on a provisional PR, cancel it and confirm cancellation first). Keep `## Provisional` in
+the body so Merge stays blocked until the provisional condition clears.

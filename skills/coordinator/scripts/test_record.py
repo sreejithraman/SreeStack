@@ -1755,6 +1755,90 @@ class LifecycleMutationTests(RecordCase):
         found_done = assess(sent, "2026-11-02T18:05:00Z", {})
         self.assertFalse(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F10" for e in found_done["runnable"]))
 
+    def test_pass4_shared_atomic_guard_text_binding_merged_sibling_cancelling_and_escalated_reply(self):
+        # 1. P4-01 & P4-02: Direct answer, resolve, and transition-free work --decision all enforce atomic guard;
+        #    --text resolves typed option and quoted legacy ref parses full target.
+        self.commit(lambda s: (
+            work(s, "W1")["layers"][1].update(status="closed"),
+            s["decisions"].append({
+                "id": "W2-D4", "question": "W1-L2 closed. How should W2 proceed?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase W2", "effect": "Rebase onto release", "recommended": True, "reversible": True,
+                     "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                    {"label": "Rebase W2 onto `release+hotfix`", "effect": "Plus target", "reversible": True},
+                    {"label": "Scrap W2", "effect": "Drop W2", "reversible": False,
+                     "action": {"type": "scrap", "work": "W2"}},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+            s["decisions"].append({
+                "id": "W2-D3", "question": "Access ready?",
+                "date": "2026-11-02T17:11:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Done — access is ready", "effect": "Unblock", "recommended": True, "reversible": True},
+                    {"label": "Defer", "effect": "Wait", "reversible": True},
+                ],
+                "blocks": [{"id": "W2", "phase": "access"}],
+            }),
+        ))
+        self.refused("answer", "--decision", "W2-D4", "--option", "1", "--source", "User", message="atomic work transition needed")
+        self.refused("resolve", "--decision", "W2-D4", "--option", "1", "--basis", "Policy", message="atomic work transition needed")
+        self.refused("work", "--id", "W2", "--decision", "W2-D4", "--option", "1", "--answer-source", "User",
+                     message="pass --scrap or --rebase-onto")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D4", "--text", "Rebase W2",
+                     "--answer-source", "User", message="does not match typed option target")
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D4", "--option", "2",
+                     "--answer-source", "User", message="release+hotfix")
+        # Unrelated access decision still settles independently!
+        _, after_acc, _ = self.event("answer", "--decision", "W2-D3", "--option", "1", "--source", "User")
+        self.assertEqual(decision(after_acc, "W2-D3")["status"], "answered")
+
+        # 2. P4-03: Rebasing W2 off closed W1-L2 onto merged W1-L1 clears stale W1 from provisional.on!
+        self.commit(lambda s: (
+            work(s, "W1")["layers"][0].update(status="merged"),
+            decision(s, "W2-D4")["options"].append({
+                "label": "Rebase onto merged W1-L1", "effect": "Use merged anchor", "reversible": True,
+                "action": {"type": "rebase", "work": "W2", "onto": work(s, "W1")["layers"][0]["branch"], "stackOn": "W1-L1"},
+            }),
+        ))
+        w1_l1_branch = work(self.head(), "W1")["layers"][0]["branch"]
+        _, after_merged, _ = self.event(
+            "work", "--id", "W2", "--rebase-onto", w1_l1_branch, "--stack-on", "W1-L1",
+            "--decision", "W2-D4", "--option", "4", "--answer-source", "User",
+        )
+        self.assertNotIn("provisional", work(after_merged, "W2"))
+
+        # 3. P4-04: Landing moved to cancelling still blocks move until withdrawn or landed!
+        self.commit(ready)
+        _, rel, _ = self.event("land", "--work", "W1")
+        lid = rel["landings"][-1]["id"]
+        self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Cancelling before takeover")
+        self.refused("move", "--chief", SESSION.format("new-chief"), message="pending landing")
+        self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "Forge cancellation confirmed")
+        self.event("move", "--chief", SESSION.format("new-chief"))
+
+        # 4. P4-05: Escalating an already-acknowledged discovery with a held thread resets reply to pending!
+        rep = self.program.folder / "reports" / "W1.md"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F11", "text": "Timeout bug", "impact": "unrelated", "thread": "PRRT_11"}],
+        }) + "\n```\n")
+        self.event("report", "--work", "W1")
+        self.event("discovery", "--id", "W1-F11", "--route", "Snip #11", "--reply-sent")
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F11", "text": "Timeout bug", "impact": "shared-contract", "thread": "PRRT_11"}],
+        }) + "\n```\n")
+        self.event("report", "--work", "W1")
+        _, rerouted, reroute_res = self.event("discovery", "--id", "W1-F11", "--route", "W4")
+        f11 = next(r for r in rerouted["discoveries"] if r.get("id") == "W1-F11")
+        self.assertEqual(f11["reply"], "pending")
+        self.assertIn("--reply-sent", reroute_res.stdout)
+        found_esc = assess(rerouted, "2026-11-02T18:10:00Z", {})
+        self.assertTrue(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F11" for e in found_esc["runnable"]))
+
     def test_report_followups_trigger_runnable_until_routed_by_discovery(self):
         report_file = self.program.folder / "reports" / "W1.md"
         report_file.parent.mkdir(parents=True, exist_ok=True)

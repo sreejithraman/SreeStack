@@ -42,7 +42,8 @@ not land).
 ## Withdraw a release
 
 Whenever a release's head, base, coordinator, lander, finish line, provisional state, decision, or
-hold changes, withdraw it first (`record.py land --landing <ID> --to withdrawn --note "<why>"`)
-before notifying its owner. Cancel any pending auto-merge or queue entry through Merge's controls
-and confirm it stopped before releasing another set or lander. Report anything already merged or
+hold changes, first move it to `cancelling` (`record.py land --landing <ID> --to cancelling --note "<why>"`)
+to fence the lander while keeping `move` and conflicting releases blocked, then notify its owner,
+cancel any pending auto-merge or queue entry through Merge's controls, and once confirmed stopped
+mark it `withdrawn` (or `landed` if it already merged). Report anything already merged or
 unconfirmed. Only the user can lift a human hold.

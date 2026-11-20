@@ -26,7 +26,7 @@ to update `next` in the same commit; run `<command> --help` for full flags):
 | Reopen a settled decision | `reopen --decision W6-D2 --why "<reason>" [--block W1:landing]` |
 | Withdraw a decision | `withdraw --decision W6-D2 --why "<reason>"` |
 | Passed answer to affected owners | `applied --decision W6-D1` |
-| Release or update a landing | `land --work W1` or `land --landing L2 --to submitted\|landed\|withdrawn [--note "<why>"]` |
+| Release or update a landing | `land --work W1` or `land --landing L2 --to submitted\|cancelling\|landed\|withdrawn [--note "<why>"]` |
 | Record or clear a wait | `wait --on "<what>" --event "<ends it>" [--work W1] [--clear]` |
 | Add or route a discovery / deferred follow-up | `discovery --id W1-F1 --route "<work ID \| snip ID \| issue \| declined>" [--reply-sent]` (or `--add ...`, or `--id W1-F1 --reply-sent`) |
 | Transfer coordinator ownership | `move --chief <new thread link>` (does not prompt to publish) |
@@ -93,7 +93,7 @@ type ReportBlock = {
       images: { image: string; caption?: string }[] };
     meanwhile?: string; recommendation?: string;
     options?: { label: string; effect: string; image?: string; recommended?: boolean;
-      reversible?: boolean }[];
+      reversible?: boolean; action?: { type: "scrap"|"rebase"; work?: string; onto?: string; stackOn?: string } }[];
     weight?: "quick"|"judgment"; links?: { label: string; url: string }[] }[];
   followups?: { id: string; text: string; evidence?: string;
     impact?: "unrelated"|"shared-contract"|"requested-scope"; thread?: string }[];

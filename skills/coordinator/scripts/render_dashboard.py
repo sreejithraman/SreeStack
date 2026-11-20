@@ -33,7 +33,7 @@ HALTING = {"start", "access", "proof"}  # The others let building continue.
 DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
-LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
+LANDING_STATES = ("released", "submitted", "cancelling", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
 DISCOVERY_STATUSES = ("open", "routed")
 DISCOVERY_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
@@ -566,7 +566,7 @@ def validate(state):
 # Program verdict: what status prints, derived from the record and each owner thread's facts.
 
 SATISFIED = {"landed", "done"}
-PENDING_LANDINGS = {"released", "submitted"}
+PENDING_LANDINGS = {"released", "submitted", "cancelling"}
 LIVE_THREADS = {"running", "waiting"}  # waiting: on its own helpers
 STALE_HOURS = 2
 
