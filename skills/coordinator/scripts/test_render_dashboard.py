@@ -14,7 +14,8 @@ import unittest
 
 from unittest import mock
 
-from render_dashboard import ISO_TIME, content_name, place, render, revision, url, validate
+from record import reopen_decision, settle
+from render_dashboard import ISO_TIME, content_name, need_card, needs_view, place, render, revision, url, validate
 
 
 SCRIPT = Path(__file__).with_name("render_dashboard.py")
@@ -96,6 +97,34 @@ class Text(HTMLParser):
 
 def text_of(html):
     return Text(html).value
+
+
+class DisclosureText(HTMLParser):
+    """Separate ordinary card text from text inside initially closed disclosures."""
+
+    def __init__(self, html):
+        super().__init__()
+        self.closed, self.disclosures, self.visible, self.hidden = [], [], [], []
+        self.in_summary = False
+        self.feed(html)
+
+    def handle_starttag(self, tag, attributes):
+        if tag == "details":
+            attrs = dict(attributes)
+            self.disclosures.append(attrs)
+            self.closed.append("open" not in attrs)
+        elif tag == "summary":
+            self.in_summary = True
+
+    def handle_endtag(self, tag):
+        if tag == "details":
+            self.closed.pop()
+        elif tag == "summary":
+            self.in_summary = False
+
+    def handle_data(self, data):
+        ancestors = self.closed[:-1] if self.in_summary else self.closed
+        (self.hidden if any(ancestors) else self.visible).append(data)
 
 
 class OutsideTimes(HTMLParser):
@@ -546,6 +575,75 @@ class PageTests(unittest.TestCase):
             self.assertIn(f'aria-labelledby="{heading}"><details><summary', html)
         self.assertIn('Asked <time datetime="2026-11-02T16:40:00Z" data-relative>', html)
         self.assertIn('<span class="inbox-row-id">W6-D1 · <time datetime="2026-11-02" data-relative>', html)
+
+    def test_settled_decision_leads_with_authored_rationale_and_preserves_full_details(self):
+        row = copy.deepcopy(decision(self.state, "W1-D2"))
+        row.update(status="resolved", rationale="Keep the existing policy. Check its evidence before release.",
+                   answer='EXACT<&> ' + '0123456789abcdef' * 40 + '\nSecond original line.',
+                   basis='Original basis & limits.\nNo additional authority.',
+                   context=['Exact context <one>.', 'Recorded 2026-11-02T17:00:00Z.'])
+        before = copy.deepcopy(row)
+        html = need_card(row, self.state)
+        parsed = DisclosureText(html)
+        visible, hidden = "".join(parsed.visible), "".join(parsed.hidden)
+        self.assertIn(row["rationale"], visible)
+        self.assertEqual(parsed.disclosures, [{"class": "decision-details"}])
+        for original in (row["answer"], row["basis"], *row["context"]):
+            self.assertIn(original, hidden)
+            self.assertNotIn(original, visible)
+        self.assertIn("Technical details", visible)
+        self.assertIn("Copy to reopen", visible)
+        self.assertEqual(row, before, "rendering must not rewrite the authoritative decision")
+        self.assertEqual(revision(row), revision({key: value for key, value in row.items() if key != "rationale"}))
+        self.assertIn('aria-label="Copy prompt to reopen W1-D2"', html)
+
+    def test_prior_answers_remain_inside_technical_details(self):
+        for transition in ("reopen", "replace"):
+            with self.subTest(transition=transition):
+                state = example()
+                identity = "W1-D2"
+                at = "2026-11-03T12:00:00Z"
+                settle(state, at, identity, "Never retry failures.", "resolved", basis="The original API could not retry.")
+                if transition == "reopen":
+                    reopen_decision(state, at, identity, "The API now supports retries.")
+                settle(state, at, identity, "Retry three times.", "answered", source="User message")
+                parsed = DisclosureText(need_card(decision(state, identity), state))
+                self.assertIn("Retry three times.", "".join(parsed.visible))
+                self.assertNotIn("Never retry failures.", "".join(parsed.visible))
+                self.assertIn("Never retry failures.", "".join(parsed.hidden))
+
+    def test_short_settled_answers_stay_readable_without_inventing_a_summary(self):
+        row = copy.deepcopy(decision(self.state, "W0-D1"))
+        row.update(answer="Keep the existing behavior.")
+        parsed = DisclosureText(need_card(row, self.state))
+        self.assertIn(row["answer"], "".join(parsed.visible))
+        self.assertIn(row["answer"], "".join(parsed.hidden))
+        row["answer"] = "a" * 120
+        parsed = DisclosureText(need_card(row, self.state))
+        self.assertNotIn(row["answer"], "".join(parsed.visible))
+        self.assertIn(row["answer"], "".join(parsed.hidden))
+
+    def test_open_question_context_options_and_copy_prompt_remain_visible_and_exact(self):
+        row = copy.deepcopy(decision(self.state, "W1-D2"))
+        row.update(context=['Original question context & constraints.'], meanwhile="Continue the existing work.")
+        html = need_card(row, self.state)
+        parsed = DisclosureText(html)
+        visible = "".join(parsed.visible)
+        self.assertEqual(parsed.disclosures, [])
+        for original in (row["question"], *row["context"], row["meanwhile"], *(o["effect"] for o in row["options"])):
+            self.assertIn(original, visible)
+        self.assertEqual(html.count('type="radio"'), len(row["options"]))
+        self.assertIn(f'data-revision="{revision(row)}"', html)
+        self.assertIn("Copy answer", visible)
+
+    def test_no_open_inbox_message_precedes_settled_history_with_separate_counts(self):
+        resolved = [dict(decision(self.state, "W1-D2"), id=f"CALL-{i}", status="resolved",
+                         answer="Exact technical answer " * 40, basis="Original basis.") for i in range(174)]
+        html = needs_view(self.state, [], [], resolved, [])
+        self.assertTrue(html.startswith('<p class="empty">Your Inbox is empty.</p>'))
+        self.assertIn('Coordinator decided <span class="count-pill">174</span>', html)
+        self.assertIn('aria-labelledby="resolved-heading"><details><summary', html)
+        self.assertEqual(html.count('<details class="decision-details">'), 174)
 
     def test_options_are_one_pick_list_with_one_answer_action(self):
         html = render(self.state)

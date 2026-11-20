@@ -671,6 +671,31 @@ class ViewTests(CommandCenterCase):
         page.click("#work-tab")
         self.assertEqual(page.visible_panels(), ["work-panel"])
 
+    def test_settled_details_stay_open_across_republish_on_desktop_and_phone(self):
+        rationale = "The shared table already has the required controls."
+        basis = "The shared component supports every export history column."
+        state = self.changed(lambda state: state.update(
+            decisions=[row for row in state["decisions"] if row["status"] in {"answered", "resolved"}]))
+        decision(state, "W5-D2").update(rationale=rationale, basis=basis)
+        self.publish(state)
+        target = "decision-" + "W5-D2".encode().hex()
+        summary = f"#{target} .decision-details > summary"
+        for size, selector in ((DESKTOP, f"#row-{target}"), (PHONE, "#toggle-resolved-heading")):
+            with self.subTest(size=size):
+                page = self.open_page(size)
+                self.assertIn("Your Inbox is empty", page.text())
+                page.click(selector)
+                self.assertIn(rationale, page.text())
+                self.assertNotIn(basis, page.text())
+                self.assertTrue(page.run(f"document.querySelector('{summary}').checkVisibility()"))
+                self.assertIn("Technical details", page.run(f"document.querySelector('{summary}').innerText"))
+                page.click(summary)
+                self.assertIn(basis, page.text())
+                self.republish(page, state | {"title": "Republished decisions"})
+                self.assertIn("Republished decisions", page.text())
+                self.assertIn(basis, page.text())
+                self.publish(state)
+
     def test_resolved_selection_stays_selected_in_its_new_group(self):
         page = self.open_page()
         target = "decision-" + "W1-D2".encode().hex()
@@ -844,6 +869,27 @@ class ScrollTests(CommandCenterCase):
         self.republish(page, self.changed(add_above))
         self.assertIn("A newer decision", page.text())
         self.assertAlmostEqual(page.top_of(row), before, delta=1)
+
+    def test_settled_history_keeps_its_row_when_a_decision_is_added_above_it(self):
+        for identity, heading in (("W5-D2", "resolved-list"), ("W0-D1", "answered-list")):
+            with self.subTest(group=heading):
+                original = decision(self.state, identity)
+                state = self.changed(lambda state: state["decisions"].extend(
+                    [dict(original, id=f"HISTORY-{i}", question=f"History decision {i}?") for i in range(24)]))
+                self.publish(state)
+                page = self.open_page(DESKTOP)
+                target = "decision-" + "HISTORY-15".encode().hex()
+                row = f"#row-{target}"
+                page.run(f"document.querySelector('{row}').scrollIntoView({{block: 'center'}})")
+                page.click(row)
+                before = page.top_of(row) - page.top_of(f"#{heading}")
+                self.assertLess(before, 300)
+
+                state["decisions"].insert(0, dict(original, id="HISTORY-NEW", question="New history decision?"))
+                self.republish(page, state)
+                self.assertIn("New history decision?", page.text())
+                self.assertEqual(page.selected_decision(), target)
+                self.assertAlmostEqual(page.top_of(row) - page.top_of(f"#{heading}"), before, delta=1)
 
     def test_desktop_page_stays_put_when_a_card_moves_to_another_lane(self):
         self.long_state()
