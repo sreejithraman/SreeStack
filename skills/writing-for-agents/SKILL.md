@@ -1,24 +1,42 @@
 ---
 name: writing-for-agents
-description: Use before adding to or changing AGENTS.md, CLAUDE.md, or other documents agents consume, and when creating, revising, or auditing skills, checking their tool guidance, or evaluating skill effectiveness or context use.
+description: Write, edit, audit, or rewrite skills, AGENTS.md, CLAUDE.md, tool guides, or agent docs, evaluate whether instructions change agent behavior or context use, or fix cross-model skill gaps.
 ---
 
 # Writing for Agents
 
-Write only what changes what an agent does. These rules apply to skills,
-`AGENTS.md`, `CLAUDE.md`, and any doc reached by a link. Read them, then read
-[the guide for what you are writing](#go-to-what-you-are-writing) before you write
-anything.
+Make every line in an agent-facing document earn its context by changing what the agent
+does. Start from the document or skill to create, edit, audit, or evaluate and the goal
+or failure behind it. Leave the guidance in the strongest home that can hold it—code,
+tool help, or the document—with proof matching the change's risk. You are done when the
+matching guide's `Done` condition holds: for edits, every covered line passes the line
+test, is a protected guardrail, or was supplied or kept explicitly by the user, project
+checks pass, and required proof succeeded or has its gap stated; for a read-only audit,
+every finding cites evidence.
 
-**The test for every line:** would removing it change the agent's behavior? If
-not, cut it.
+## Go to the matching guides first
 
-**The exception is a guardrail:** a line against data loss, data leaving the machine,
-a security failure, unauthorized or irreversible action, unplanned spending, a false
-pass, lost review independence, or colliding writers. Keep a guardrail even when the
-model follows it unprompted, until
-[Settle what changed](references/working-on-skills.md#settle-what-changed) clears it.
-When unsure whether to remove a line, treat it as a guardrail.
+Read every guide that matches the work in front of you before starting:
+
+- `AGENTS.md`, `CLAUDE.md`, or repo docs: [agent instructions](references/agent-instructions.md).
+- Creating, editing, auditing, or rewriting a skill: [working on skills](references/working-on-skills.md).
+- Documenting a CLI, API, SDK, native tool, MCP tool, or bundled script: [tool guidance](references/tool-guidance.md).
+- Sampling session logs, running trials, closing a cross-model gap, or running a controlled comparison: [controlled comparison](references/controlled-comparison.md).
+- Moving a prose reminder into code, tests, hooks, or types: [Show Don't Tell](../show-dont-tell/SKILL.md).
+
+## Guardrails
+
+**The line test:** would removing this line change what the agent does? If not, cut it.
+
+**The exception is a guardrail:** a rule against data loss, data leaving the machine, a
+security failure, unauthorized or irreversible action, unplanned spending, a false pass,
+lost review independence, or colliding writers. Keep a guardrail even when the model
+follows it unprompted, until code enforces it on every host or a controlled comparison
+exercising its condition clears it. When unsure whether a line is a guardrail, treat it
+as one.
+
+**Exact user wording:** if the user supplies a rule word for word, add it as given,
+report any stronger home, and skip behavioral trials.
 
 ## Choose the home
 
@@ -29,26 +47,42 @@ Give each piece of guidance the strongest home that can hold it:
 | Something that must always happen | Code: a script, test, hook, or gate |
 | How to call a tool | The tool's help, errors, and schema |
 | A fact the agent can look up | Scripts, config, and the directory layout |
-| What the model or harness does unprompted, such as compaction and waiting | Nothing |
-| History, credits, and measurements only a person reads | The README, commit message, or project record |
-| The goal, the proof bar, the user's standards, who decides what, and reasons looking cannot show | The document |
+| What the model or harness does unprompted (compaction, waiting, standard style) | Nothing |
+| History, credits, paper stats, and measurements only people read | `README.md`, `SOURCES.md`, or commit messages |
+| The goal, proof bar, user standards, ownership, and traps looking cannot show | The document |
 
-Copy a fact into a document only when looking it up is costly.
+Copy a repo fact into prose only when looking it up is costly. Remove a prose reminder
+only after code exists, rejects a violation, and runs on every host that reads the
+document.
 
-To move a reminder into code, use [Show Don't Tell](../show-dont-tell/SKILL.md).
-Remove the prose only after the code exists, rejects a violation, and runs on every
-host that reads the document.
+## Write rules agents follow
 
-## Write plainly
-
-Write for a capable reader who is new to this repo.
-
-- **Lead with the action.** State what to do, then its condition.
-- **Give each instruction its own sentence.**
-- **Use everyday words.** Keep technical terms and names exact.
-- **Name the thing.** Write "the model", not "the applicable selection".
-- **Use one term for one thing.** Define a coined term once, where it first
-  matters.
+- **State outcome, constraints, and falsifiable `Done` conditions.** End the job—and
+  each stage where rushing would skip required work—with a condition that proves it is
+  done. Number steps only when order changes the result; express other required work as
+  conditions the result must meet. Ask for coverage (*"every modified model accounted
+  for"*) rather than vague completion (*"understanding reached"*). Sharpen an early
+  stage's condition first; if an agent still rushes past it, hide later stages behind a
+  subagent or handoff.
+- **Write the normal path first.** Give a rare case one line, or move it behind a
+  pointer if it needs more.
+- **Keep each instruction unambiguous.** Give each instruction its own sentence, and use
+  one term for one thing.
+- **Replace judgment words with a test.** Swap *small*, *big*, *relevant*, *appropriate*,
+  *tight*, or *as needed* for how to decide. Prefer one test over a list of cases, and
+  sort rules by outcome rather than source.
+- **Set precedence when rules can collide.** Reserve absolute words for real guardrails;
+  where local priorities can conflict, state which wins—for example, an explicit
+  instruction from an authorized user > project rule > skill default—while keeping
+  non-waivable policy, host permissions, and safety guardrails above local overrides.
+- **Pair prohibitions with the replacement path.** State the action you want directly;
+  when forbidding an action, name what the agent should do instead.
+- **Give a one-clause *why* for counterintuitive rules.** Skip rationale for obvious
+  rules, but explain surprising traps (*"Run `gh` outside the sandbox; its token lives in
+  macOS Keychain"*) so agents neither rationalize around them nor misapply them when
+  conditions change.
+- **Calibrate with a few concrete examples.** Use a short before/after or boundary
+  example whenever prose alone leaves format, scope, or tone open:
 
 | Before | After |
 | --- | --- |
@@ -56,117 +90,50 @@ Write for a capable reader who is new to this repo.
 | A result is only accepted subject to inspection of its artifact. | Inspect the artifact before you accept a result. |
 | Verification should be proportional to scope. | Check the changed behavior and the workflows that depend on it. |
 
-If you have to read a sentence twice, rewrite it.
+- **Place end-of-task gates where attention is fresh.** Put final checks at the end of a
+  workflow or in code, not buried in an opening paragraph.
 
-## Write rules agents can apply
+## Load as late as possible
 
-- **Replace judgment words with a test.** _Small_, _big_, _relevant_,
-  _appropriate_, and _as needed_ leave the decision open. Say how to decide.
-- **Prefer one test to a list of cases.** A test covers cases you did not foresee.
-- **Sort by outcome, not source.** Two events that lead to the same outcome get
-  the same rule, wherever they came from.
-- **Write the normal path first.** Give a rare case one line, or a reference file
-  if it needs more.
-- **State what to do.** A ban brings the banned behavior to mind, so write "keep
-  comments to one line". Keep a prohibition only for a hard guardrail, and pair it
-  with the behavior you want.
+From earliest to latest loaded: always-loaded root files → skill descriptions → skill
+body → references and docs behind a pointer. Always-loaded text costs context on every
+turn, so prune root files and descriptions hardest. Keep what every path needs early;
+move branch-specific detail behind a request-shaped pointer placed at the step that needs
+it (`Read docs/release.md when cutting a release`). Leave the target's content to the
+target. If a must-have pointer gets missed, sharpen its wording first; inline the target
+only if sharpening fails.
 
-## Add a rule
+- **One home per meaning.** Keep a concept's definition, rules, and caveats under one
+  heading, and link to the owner instead of repeating it.
+- **Keep references flat and independent.** Link every reference directly from
+  `SKILL.md`, because agents often read nested files only in part, and never
+  cross-reference another document by step number.
+- **Link only to unread material the agent needs to act.** Keep links for unread
+  references, scripts, handoff skills, and external specs the agent must look up (such as
+  an experimental CLI format). Skip same-file `#anchor` jump-links, back-links to an
+  already-loaded `SKILL.md`, repeated links to the same target in one file, and
+  background or citation URLs (put those in `SOURCES.md` or `README.md`).
+- **Keep script outputs compact.** When a skill ships a helper script, emit a compact
+  verdict or structured summary to stdout and diagnostics to stderr so callers do not burn
+  context parsing verbose logs.
+- **Keep docs alive.** Move a reference back in if most runs read it. Rewrite silted
+  documents fresh from their purpose instead of patching around dead structure, and
+  retest assumptions after major model releases.
 
-Name the failure the rule prevents, then stop at the first step that handles it. If
-the user gives a rule's exact wording, skip these steps, add it as given, and report any
-stronger home.
+## Proof ladder
 
-1. **Fix it below the document.** Use a [stronger home](#choose-the-home), such as a
-   check or a clearer error.
-2. **Check the model needs it.** [Reproduce the case](references/working-on-skills.md#run-trials-safely)
-   three times on each model that reads the document, including any model that failed.
-   If every run reaches the failure's condition and gets it right, add nothing and report
-   that. Guardrails skip this step.
-3. **Edit the rule that covers it.** Change that line instead of appending one.
-4. **Add one rule.** Cover the class of failure, and put the incident in the commit
-   message. [Place it](#disclose-progressively) on the lowest level that works.
+Before adding a rule, name the failure it prevents and stop at the first home that
+handles it: enforce it in code or tool errors first, edit an existing rule that covers
+the class before appending a new line, and put incident details in the commit message.
 
-## Give a job a goal and an end
+| Change | Minimum proof |
+| --- | --- |
+| Factual or command fix, link spelling fix, exact user wording, or rule moved into passing code | Prove the command safely or verify against source, and run project checks. |
+| Adding or editing a behavioral rule, trigger, or handoff | Confirm the failure (session log or reproduction; new guardrails skip this step), apply the edit, and run fresh-session trials on affected requests on each model that uses it (plus a near-miss for triggers). |
+| Removing, weakening, moving, or rewriting guidance | Capture affected survival items and requests before editing, run [Settle what changed](references/working-on-skills.md#settle-what-changed), and verify affected paths on each model that uses it. |
+| Claiming measurable improvement (cost, turns, pass rate) or clearing a guardrail | Run a controlled comparison. |
 
-Apply this when a document tells an agent to do a job, such as a skill or runbook.
-
-State the outcome, the context the agent lacks, and how the result will be
-judged. A list of steps caps the agent at your solution, so number steps only
-where their order changes the result. State other required work as a condition
-the result must meet.
-
-End the job, and each stage in it, with a condition that shows it is done. A vague
-condition such as "understanding reached" invites the agent to stop early.
-
-- Sharpen the condition first.
-- Ask for coverage: "every modified model accounted for" drives more digging than
-  "produce a change list".
-- If the condition cannot be sharp and you see the agent rush, hide later steps
-  behind a subagent or hand-off. An inline call leaves them in context.
-
-## Write pointers that fire
-
-A **context pointer** names material outside the agent's context and says when
-to reach it. A skill description and a line in `AGENTS.md` are both pointers. Its
-wording decides how reliably the agent reaches the material. If a must-have
-target gets missed, sharpen the pointer first. Inline the target only if that
-fails.
-
-- Phrase each case that should load it as a request or situation: `Read
-  docs/release.md when cutting a release`.
-- Leave the target's content to the target.
-
-Always-loaded text costs context on every turn, so prune pointers hardest.
-
-## Disclose progressively
-
-Put each fact on the lowest level that still reaches the agent before it needs it.
-From first loaded to last, the levels are always-loaded files, a skill's description,
-its body, then references and docs behind a pointer. Keep what every path needs high,
-and move what only some paths need behind a pointer.
-
-Use real reads to check the cut: move a reference back in if most tasks read it.
-
-Put each pointer at the step that needs it.
-
-Keep a concept's definition, rules, and caveats under one heading. A long
-document fails even when every line is true, because attention thins. Split a document
-only to move what some paths skip, or to hide later steps from an agent that rushes.
-
-## Use leading words
-
-A **leading word** is a compact term the model already knows and the agent thinks
-with, such as _tracer bullet_ or _fog of war_. Use one in place of a repeated
-explanation: "fast, deterministic, low-overhead" becomes _tight_.
-
-Repeat the word, not its explanation. Prefer an existing word, because a coined
-word costs its definition. A word too weak to change behavior needs a stronger
-one: _relentless_ beats _thorough_.
-
-## Keep it alive
-
-- **One home per meaning.** Link to the owner, so a change is a one-place edit.
-- **Cut no-ops.** A no-op tells the model what it would do anyway. Delete the whole
-  sentence. Defaults differ by model, so settle a disagreement with the runs in
-  [Settle what changed](references/working-on-skills.md#settle-what-changed).
-- **Rewrite silted documents.** Patches preserve a structure that stopped fitting.
-  Write them again from their purpose.
-- **Retest after major model releases.** Documents silt up because adding feels
-  safe, and every rule assumes something the model cannot do alone. Remove rules
-  that stopped changing behavior, using
-  [Settle what changed](references/working-on-skills.md#settle-what-changed). A run
-  that never reaches a rule's condition says nothing about it.
-
-## Go to what you are writing
-
-Before you write anything, read each guide that matches, even for a one-line change:
-
-- A skill, including changing, auditing, or rewriting one:
-  [working on skills](references/working-on-skills.md).
-- `AGENTS.md`, `CLAUDE.md`, or docs agents read:
-  [agent instructions](references/agent-instructions.md).
-- Instructions for a CLI, API, or other tool:
-  [tool guidance](references/tool-guidance.md).
-- A claim that a change helps, keeps behavior equal, or saves context:
-  [controlled comparison](references/controlled-comparison.md).
+**Proving a command safely:** run a command live only if it risks nothing a guardrail
+covers or the request authorizes it. Otherwise use a documented dry run, disposable
+fixture, or real-schema stub (which proves call construction, not live effects), or cite
+the exact source, and report live effects as unproven.

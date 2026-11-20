@@ -2,181 +2,166 @@
 
 ## Give each skill one job
 
-Write the contract first, and open the skill with it in plain prose:
+Write the contract first, and open `SKILL.md` with it in plain prose:
 
 - **Job:** one sentence naming one outcome.
 - **Input:** what it needs to start.
 - **Output:** what it leaves behind.
-- **Done:** the check that ends it.
+- **Done:** the falsifiable check that ends it.
 
 A skill is one of two kinds:
 
-- A **capability** does one job and can run without a workflow.
-- A **workflow** chains capabilities. It owns their order, the handoffs, and the
-  finish line. It links to each capability and holds none of their procedure.
+- A **capability** does one job and can run standalone.
+- A **workflow** chains capabilities. It owns their order, handoffs, and finish line,
+  links to each capability, and holds none of their procedure.
 
 For example, `review` assesses a change, `review-sweep` settles findings, and
 `review-fix-loop` chains them.
 
-Link every reference [directly from `SKILL.md`](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices),
-because agents can read nested files only in part.
-
 ## Write the description
 
-A model-invoked description is only a trigger. Leave what the skill is, its
-capabilities, and its procedure to the body.
+A model-invoked description is only a trigger; leave capabilities and procedure to the
+body.
 
-- Phrase each case as a request: `Use when the user asks to clean up a finished task
-  or unused worktree`.
-- Give each case one trigger. Synonyms for one case are one case.
-- Put the strongest trigger word first.
-
-## New skill
-
-Follow [Rewrite](#rewrite), skipping steps 1 and 5. Take the contract and requests
-from the user's request, and [choose who invokes it](#choose-who-invokes-it).
-
-## Change an existing skill
-
-Read its project record, such as its `SOURCES.md` entry. Keep its local adaptations
-and invocation choice unless the user asks to change them. Edit the source of truth,
-not an installed copy.
-
-For a whole-skill change, use [Rewrite](#rewrite). Otherwise, make a **targeted
-change**:
-
-1. Find what depends on the changed text. If the reported problem does not hold, stop
-   and report that.
-2. If the edit removes, weakens, or moves guidance, or changes a trigger or handoff,
-   first run [Rewrite](#rewrite) steps 1 and 2 on the affected paths.
-3. Make the edit. To add guidance, use [Add a rule](../SKILL.md#add-a-rule).
-4. Prove the change works. Run a command only if it risks nothing a
-   [guardrail](../SKILL.md#writing-for-agents) covers, or the request authorizes it.
-   Otherwise use a documented dry run, a disposable fixture, or a real-schema stub, or cite the exact
-   source, and report the live effect as unproven.
-5. For an edit under step 2, run Rewrite steps 4 through 7 on the affected paths,
-   and keep the rest of the file.
-6. For any other edit, run the project checks. If it changes what an agent does, also
-   [try](#run-trials-safely) the affected requests in a fresh session. A line the user
-   gave word for word skips the trial.
-
-Done: the proof passed, or you reported that the problem does not hold, and each step
-that applies has a result.
-
-## Audit
-
-An audit asks whether we would write the skill this way today. It reports findings
-and changes no files. Apply its cuts only if the user asks, and treat them as removals.
-
-To choose a target, rank skills by `SKILL.md` size and by lines added against lines
-removed in `git log --numstat`.
-
-1. Read the skill, its references, its record, and its
-   [real runs](#learn-from-real-runs). For a skill that teaches a
-   tool, add [tool guidance](tool-guidance.md).
-2. Apply the line test. A skill is bloated when lines fail it: no-ops, duplicates,
-   facts the environment holds, and stale or obsolete rules.
-3. Check the skill's job, contract, finish condition, and invocation choice.
-4. Report each failing line with its evidence. Label no-ops as predictions, because
-   only a fresh-session run proves one.
-
-Done: every line and reference was checked, and each finding has evidence.
-
-## Rewrite
-
-Use this when the user asks for a rewrite, or when a skill's structure no longer fits
-its job.
-
-1. **Record what must survive.** List the [invocation choice](#choose-who-invokes-it),
-   local adaptations, supported hosts, legal notices, paths and anchors other files link to, tests that
-   assert its text, consumers, and decisions the user has made. Done: the original can
-   be recovered, and each source for the list was checked.
-2. **Collect real requests.** Use its description, consumers, session history, and
-   the rare cases its rules name. Done: each path has a request.
-3. **Write fresh.** Write the contract, then the skill, from the requests and the
-   survival list. Start a new file, because editing old text keeps its structure.
-4. **Try it.** Run the requests in fresh sessions on each model that uses the
-   skill. Include the old text when behavior must stay the same. If fresh sessions
-   are unavailable, report the gap. Done: every request has a result or a stated gap.
-5. **[Settle what changed](#settle-what-changed).**
-6. **Check it.** Update the project record and any host metadata, such as
-   `agents/openai.yaml`. Run the project checks. Verify new factual claims against
-   sources.
-7. **Report.** Give what changed, each dropped or moved group and why, where the settled
-   list is, each request's result against the final text, and remaining gaps. Mark any
-   result from an earlier draft as stale.
-
-Claims of equal outcomes or context savings need a
-[controlled comparison](controlled-comparison.md).
-
-### Settle what changed
-
-List each old rule the new text lacks, weakens, or moves, grouped by meaning. Use `git log -S`
-or [Why](../../why/SKILL.md) when a reason is not obvious. A user's explicit decision
-to remove or move a rule they named stands, so record it and report any risk you see. Approving
-an audit's list is not that decision. Decide every other group in this order:
-
-1. **Restore** anything on the survival list.
-2. **Restore** a [guardrail](../SKILL.md#writing-for-agents). Skip it only if the new
-   text states it as strongly before the action it constrains, code enforces it on
-   every host that uses the skill, or a
-   [controlled comparison](controlled-comparison.md) that exercises its condition shows the
-   model no longer needs it.
-3. **Drop** a no-op, a duplicate, a fact the environment holds, or a rule whose reason
-   is obsolete. Name the evidence. A weaker version is not a duplicate. A no-op needs
-   three runs without the line on each model that uses the skill, each reaching the
-   line's condition and behaving correctly.
-4. **Restore** a rule when a request failed without it, or when you can name the
-   failure it still prevents.
-5. **Otherwise** get the evidence or restore the rule.
-
-A restored rule can sit in any home that reaches the agent before it needs the rule.
-Write it in that home's voice, and rerun the affected requests. Done: every old rule is
-in a group, and every group has a decision and a reason.
-
-## Run trials safely
-
-- Make each fresh session load the edited copy, and confirm it from a logged read. A
-  worktree edit does not reach installed skills, so an unconfirmed trial is a gap.
-- For a new or changed description or link, load the copy through the host's skill
-  listing in a disposable profile, leave its path out of the prompt, and include near
-  misses that must not fire it. If you cannot, report that firing is untested.
-- Use disposable fixtures and profiles for any request that risks something a
-  [guardrail](../SKILL.md#writing-for-agents) covers. Leave real configuration and
-  logins untouched.
-- "Each model" means the default model on each host that uses the skill.
+- Put the strongest trigger words first.
+- Phrase each case as a request or situation, and merge synonyms into one case.
+- Name scope exclusions when sibling skills overlap (for example, *"Excludes local
+  Simulator debugging"*) so near-misses do not false-trigger.
 
 ## Choose who invokes it
 
-Make the same choice in both hosts. [Claude Code reads
-`disable-model-invocation` from `SKILL.md`](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
-[Codex reads `policy.allow_implicit_invocation` from `agents/openai.yaml`](https://developers.openai.com/codex/build-skills#optional-metadata).
+Keep the same choice in both hosts: Claude Code reads `disable-model-invocation` from
+`SKILL.md`, and Codex reads `policy.allow_implicit_invocation` from `agents/openai.yaml`.
+In repos with automated skill checks (such as SreeStack's `scripts/check_skills.py`), let
+the check enforce host alignment.
 
 | | Model-invoked | User-invoked |
 | --- | --- | --- |
-| Use when | The agent must reach it on its own | Only a person ever starts it |
+| Use when | The agent must reach it on its own | Only a person starts it |
 | Claude Code | Omit `disable-model-invocation` | `disable-model-invocation: true` |
 | Codex | Omit `policy.allow_implicit_invocation` | `policy.allow_implicit_invocation: false` |
-| Description | Only its triggers, written for the model | One line for a person, with no triggers |
-| Cost | Its description loads on every turn | The person must remember it exists |
+| Description | Triggers and exclusions for the model | One line for a person, without triggers |
+| Cost | Description loads on every turn | Person must remember it exists |
 
-A person can type the name of either kind. A link lets an agent read a user-invoked
-skill, but it grants nothing the choice withholds. Link one only behind a user's
-request or a user-started workflow, and only when that request names its actions or
-their effects.
-Put content that workflows share in a reference or a model-invoked skill.
-
-Every skill a person must remember costs their attention, so spend that only where
-their judgment matters.
+A person can invoke either kind by name. Do not record test notes in `model:` or
+`effort:` frontmatter—Claude Code switches to those settings when the skill runs; keep
+test notes in `SOURCES.md` or commit messages instead. Linking to a user-invoked skill
+lets an agent read it, but grants nothing the choice withholds: link one only behind a
+user request or user-started workflow that names its actions or effects. Put logic shared
+across workflows in a reference or a model-invoked skill. Spend user-invoked slots only
+where human judgment matters.
 
 ### Split by invocation
 
-Split off a model-invoked skill only when it has a distinct trigger word you
-actually use, or the agent must reach it alone.
+Split off a model-invoked skill only when it has a distinct trigger the user actually
+uses, or when an agent must reach it independently.
 
-## Learn from real runs
+## Create a skill
 
-Read session logs for user corrections, skipped rules, repeated failures, tool
-errors, and references that agents read or missed. Count actual uses, because a
-session that mentions a skill did not necessarily use it. State the sample window and
-denominator.
+1. Define the contract, invocation choice, and a set of real requests covering every path
+   (plus near-misses for a model-invoked description).
+2. Write `SKILL.md` and only the references that some paths skip.
+3. Update host metadata (`agents/openai.yaml`) and the project record (`SOURCES.md`).
+4. Run project checks and prove the new skill on each model that uses it per the Proof
+   ladder in `SKILL.md`, running trials per
+   [controlled comparison](controlled-comparison.md#run-trials-safely).
+
+Done: the contract is explicit, metadata and records are updated, checks pass, and each
+request has a result or stated gap.
+
+## Change an existing skill
+
+Read the skill's project record (such as `SOURCES.md`) first. Preserve local adaptations
+and its invocation choice unless the user asks to change them. Edit the source of truth,
+not an installed copy. If the change touches a CLI, API, SDK, MCP tool, or bundled
+script, also read [tool guidance](tool-guidance.md).
+
+For a whole-skill overhaul, use Rewrite below. For a **targeted change**:
+
+1. Inspect consumers, links, and tests that depend on the changed text. If the reported
+   problem does not hold, stop and report that.
+2. When the edit adds or changes a behavioral rule, trigger, or handoff, confirm the
+   failure first per the Proof ladder in `SKILL.md` (new guardrails skip this step).
+   When it removes, weakens, or moves guidance, or changes a trigger or handoff, also
+   record the affected survival items and collect representative requests (including
+   near-misses for triggers) before editing.
+3. Apply the edit. Update the project record and host metadata (`agents/openai.yaml`) if
+   local differences or metadata changed.
+4. Prove the change per the Proof ladder in `SKILL.md`. When step 2 applies, run the
+   affected requests in fresh sessions on each model that uses the skill against the
+   final text (including the old text where behavior must stay equal), report
+   unavailable trials as gaps, and run Settle what changed on any reduced or moved
+   guidance.
+5. Run project checks and report final-text results and any remaining gaps.
+
+Done: the required proof passed or has its gap stated (or the problem was reported
+invalid), any reduced or moved guidance is settled, and project checks pass.
+
+## Audit
+
+An audit asks whether we would write the skill this way today. It reports findings and
+edits no files; apply cuts only when the user asks, and treat them as removals.
+
+To pick a target, rank skills by `SKILL.md` size and lines added vs removed in
+`git log --numstat`.
+
+- Read `SKILL.md`, every reference, its project record, and its real runs (see Learn from
+  real runs in controlled comparison); add tool guidance if it teaches a tool.
+- Check the contract, `Done` condition, invocation choice, description triggers and
+  exclusions, and every line against the line test (flagging no-ops, duplicates,
+  environment-held facts, and stale rules).
+- Report each failing line with evidence. Label suspected no-ops as predictions until a
+  fresh-session trial proves them.
+
+Done: every file in the skill was inspected and each finding cites evidence.
+
+## Rewrite
+
+Use when the user asks for a rewrite, or when the current structure no longer fits the
+job.
+
+1. **Record the survival list:** check each source and list the invocation choice, local
+   adaptations, supported hosts, legal notices, paths and anchors other files link to,
+   tests asserting text, consumers, and prior user decisions. Confirm the original is
+   recoverable in git.
+2. **Collect real requests:** pull from the description, consumers, session history, and
+   rare rules so every path has a concrete request.
+3. **Write fresh:** draft the contract and skill in a clean file from the requests and
+   survival list so old structure does not carry over.
+4. **Try it:** run the collected requests in fresh sessions on each model that uses the
+   skill (Run trials safely in controlled comparison), comparing against the old text
+   where behavior must stay equal; report unavailable trials as gaps.
+5. **Settle what changed** against the original text.
+6. **Finalize:** update `SOURCES.md` and host metadata (`agents/openai.yaml`), verify new
+   factual claims against sources, and run project checks.
+7. **Report:** state what changed, each dropped or moved group and why, where the settled
+   list lives, each request's result against the final text (marking earlier-draft
+   results stale), and remaining gaps.
+
+Claims of equal outcomes or context savings require a controlled comparison.
+
+### Settle what changed
+
+List every old rule the new text lacks, weakens, or moves, grouped by meaning. Use
+`git log -S` or [Why](../../why/SKILL.md) when a rule's reason is not obvious. A user's
+explicit decision to drop or move a specific rule stands—record it and report any risk
+you see. Approving a whole audit list is not that decision. Decide every other group in
+this order:
+
+1. **Restore** anything on the survival list.
+2. **Restore** any guardrail. Skip it only if the new text states it just as strongly
+   before the action it constrains, code enforces it on every host that uses the skill,
+   or a controlled comparison exercising its condition shows the model no longer needs
+   it.
+3. **Drop** a duplicate, a fact the environment holds, or a rule whose reason is obsolete,
+   citing the evidence. A weaker wording is not a duplicate. Drop a suspected no-op only
+   when fresh-session trials without the line exercise its condition and behave correctly
+   on each model (three runs per model for an isolated removal; for a rewrite, batched
+   candidate runs that exercise each dropped rule's condition).
+4. **Restore** a rule when a request failed without it, or when you can name a concrete
+   failure it still prevents.
+5. **Otherwise** gather the evidence or restore the rule.
+
+A restored rule may live in any home that reaches the agent before the action. Write it
+in that home's voice and rerun affected requests on each affected model. Done: every old
+rule is in a group with a recorded decision and reason.

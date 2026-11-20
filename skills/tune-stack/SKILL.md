@@ -98,15 +98,18 @@ Choose the cheapest proof that settles the claim:
 - **A routing or handoff question:** a dry-run trial. Freeze the tree, write the
   expected handoffs first, and have fresh sessions trace the scenario without
   running it, under
-  [Run trials safely](../writing-for-agents/references/working-on-skills.md#run-trials-safely).
+  [Run trials safely](../writing-for-agents/references/controlled-comparison.md#run-trials-safely).
   It proves routing only, not tool effects, discovery, or cost.
 - **A deterministic check:** Correct's guard proof, historical rejection plus
   valid-path success. Add a model run only when you also claim agent behavior
   improves.
-- **Any other claim:** a measured run on Claude Code with the
+- **Any other claim:** follow
+  [Controlled Comparison](../writing-for-agents/references/controlled-comparison.md)
+  (confirm suite trust and isolation, calibrate, and pilot before running the
   [comparison runner](../writing-for-agents/scripts/compare.py) on
-  `claude plugin eval`, calibrated before the first task. On Codex, only
-  dry-run trials exist; mark the measured claim unverified.
+  `claude plugin eval`). On hosts without `claude plugin eval`, run dry-run trials
+  and mark the measured claim unverified unless authenticated isolated behavioral runs
+  are available.
 
 Done when the old version, cases, expectations, target, and a passing
 calibration exist, or each missing one is named with what it blocks.

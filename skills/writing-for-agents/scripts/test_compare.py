@@ -105,6 +105,93 @@ class DecideTest(unittest.TestCase):
                 self.assertEqual((code, report["decision"]), (2, "invalid"), report)
         self.assertEqual(score(OLD, NEW, "score", "absent")[1]["decision"], "invalid")
 
+    def test_report_includes_compact_per_case_summary_and_baseline(self):
+        new_diff = copy.deepcopy(NEW)
+        new_diff["cases"][1]["aggregates"]["scoreWithout"] = 0.25
+        new_diff["cases"][1]["aggregates"]["passRateWithout"] = 0.5
+        code, report = score(OLD, new_diff, "score", "file")
+        self.assertEqual((code, report["decision"]), (1, "rejected"))
+        by_name = {case["name"]: case for case in report["cases"]}
+        self.assertEqual(set(by_name), {"codeword", "file"})
+        self.assertFalse(by_name["codeword"]["required"])
+        self.assertTrue(by_name["file"]["required"])
+        self.assertEqual(by_name["file"]["old"]["score"], 1)
+        self.assertEqual(by_name["file"]["old"]["pass_rate"], 1)
+        self.assertEqual(by_name["file"]["old"]["passed"], 2)
+        self.assertEqual(by_name["file"]["old"]["turns"], 4.0)
+        self.assertAlmostEqual(by_name["file"]["old"]["cost_usd"], (0.0019222 + 0.00188562) / 2)
+        self.assertEqual(by_name["file"]["new"]["score"], 0.5)
+        self.assertEqual(by_name["file"]["new"]["pass_rate"], 0.5)
+        self.assertEqual(by_name["file"]["new"]["passed"], 1)
+        self.assertEqual(by_name["file"]["new"]["runs"], 2)
+        self.assertEqual(by_name["file"]["new"]["turns"], 4.0)
+        self.assertAlmostEqual(by_name["file"]["new"]["cost_usd"], (0.00196633 + 0.00216384) / 2)
+        self.assertEqual(
+            by_name["file"]["without"],
+            {"old_score": 0.5, "new_score": 0.25, "old_pass_rate": 0, "new_pass_rate": 0.5},
+        )
+
+    def test_without_baseline_is_omitted_when_without_runs_are_absent(self):
+        for ablation in ("none", None):
+            with self.subTest(ablation=ablation):
+                old_with = copy.deepcopy(OLD)
+                new_with = copy.deepcopy(NEW)
+                for result in (old_with, new_with):
+                    if ablation is None:
+                        result["suite"].pop("ablation", None)
+                    else:
+                        result["suite"]["ablation"] = ablation
+                    for case in result["cases"]:
+                        case["arms"].pop("without", None)
+                _, report = score(old_with, new_with, "score")
+                for case in report["cases"]:
+                    self.assertNotIn("without", case)
+
+    def test_mixed_arm_cases_report_without_only_where_present(self):
+        old_mixed = copy.deepcopy(OLD)
+        new_mixed = copy.deepcopy(NEW)
+        for result in (old_mixed, new_mixed):
+            result["suite"].pop("ablation", None)
+            result["cases"][0]["arms"].pop("without", None)
+            result["cases"][0]["aggregates"].pop("scoreWithout", None)
+            result["cases"][0]["aggregates"].pop("passRateWithout", None)
+        code, report = score(old_mixed, new_mixed, "score", "file")
+        self.assertEqual((code, report["decision"]), (1, "rejected"))
+        by_name = {case["name"]: case for case in report["cases"]}
+        self.assertNotIn("without", by_name["codeword"])
+        self.assertEqual(by_name["file"]["without"]["old_score"], 0.5)
+        new_mixed["cases"][1]["arms"].pop("without", None)
+        self.assertEqual(score(old_mixed, new_mixed, "score")[1]["decision"], "invalid")
+
+    def test_duplicate_case_names_are_invalid(self):
+        old_dup = copy.deepcopy(OLD)
+        new_dup = copy.deepcopy(NEW)
+        for result in (old_dup, new_dup):
+            for case in result["cases"]:
+                case["name"] = "dup"
+        old_dup["cases"][0]["promptMarkdown"] = "Different prompt"
+        code, report = score(old_dup, new_dup, "turns")
+        self.assertEqual((code, report["decision"]), (2, "invalid"))
+        self.assertTrue(any("duplicate case name" in reason for reason in report["reasons"]))
+
+    def test_missing_or_malformed_case_aggregates_preserve_decision(self):
+        for label, mutate in (
+            ("missing", lambda c: c.pop("aggregates")),
+            ("null", lambda c: c.__setitem__("aggregates", None)),
+            ("list", lambda c: c.__setitem__("aggregates", [])),
+        ):
+            with self.subTest(label):
+                candidate = copy.deepcopy(NEW)
+                mutate(candidate["cases"][1])
+                code, report = score(OLD, candidate, "score", "file")
+                self.assertEqual((code, report["decision"]), (1, "rejected"))
+                file_case = next(c for c in report["cases"] if c["name"] == "file")
+                self.assertIsNone(file_case["new"]["score"])
+                self.assertIsNone(file_case["new"]["pass_rate"])
+                self.assertEqual((file_case["new"]["passed"], file_case["new"]["runs"]), (1, 2))
+                self.assertIsNone(file_case["without"]["new_score"])
+                self.assertEqual(file_case["without"]["old_score"], 0.5)
+
 
 class RunTest(unittest.TestCase):
     def setUp(self):
