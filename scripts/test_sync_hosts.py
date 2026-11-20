@@ -467,10 +467,10 @@ class InstructionTests(Fixture):
         self.assertEqual(os.readlink(claude), str(self.repo / "claude/CLAUDE.md"))
 
     def test_relinks_chained_alias_across_symlinked_host_directories(self):
-        # Intermediate directory symlink before `..` resolves physically to another host's instruction path.
+        # Intermediate directory symlink before `..` resolves physically to another host's retired link.
         (self.home / ".claude/sub").mkdir(parents=True)
         claude = self.home / ".claude/CLAUDE.md"
-        os.symlink(self.repo / "codex/AGENTS.md", claude)
+        os.symlink(self.repo / "global/AGENTS.md", claude)
         codex_dir = self.home / ".codex"
         codex_dir.mkdir()
         os.symlink("../.claude/sub", codex_dir / "ref")
@@ -479,6 +479,57 @@ class InstructionTests(Fixture):
 
         self.run_sync()
 
+        self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
+        self.assertFalse(os.path.lexists(claude))
+
+    def test_preserves_user_alias_from_no_source_host_to_active_host_across_syncs(self):
+        claude = self.home / ".claude/CLAUDE.md"
+        claude.parent.mkdir()
+        os.symlink("../.codex/AGENTS.md", claude)
+
+        self.run_sync()
+        self.assertEqual(os.readlink(self.home / ".codex/AGENTS.md"), str(self.repo / "codex/AGENTS.md"))
+        self.assertEqual(os.readlink(claude), "../.codex/AGENTS.md")
+
+        # A second sync stays up to date and never removes the user-created alias.
+        self.assertIn("up to date", self.run_sync("--check").stdout)
+        self.assertIn("up to date", self.run_sync().stdout)
+        self.assertEqual(os.readlink(claude), "../.codex/AGENTS.md")
+
+    def test_rejects_overlapping_physical_instruction_destinations(self):
+        (self.home / ".codex").mkdir()
+        (self.home / ".claude").mkdir()
+        os.symlink("../.codex", self.home / ".claude/codex-alias")
+        self.write(
+            "claude/setup.json",
+            json.dumps({**HOSTS["claude"], "instructions": ".claude/codex-alias/AGENTS.md"}),
+        )
+
+        # Rejected both before and after the target link exists.
+        self.assertIn("hosts share a instructions path", self.run_sync(code=1).stderr)
+        os.symlink(self.repo / "codex/AGENTS.md", self.home / ".codex/AGENTS.md")
+        self.assertIn("hosts share a instructions path", self.run_sync(code=1).stderr)
+
+    def test_handles_case_variant_alias_on_case_insensitive_volume(self):
+        claude = self.home / ".claude/CLAUDE.md"
+        claude.parent.mkdir()
+        os.symlink(self.repo / "global/AGENTS.md", claude)
+        if not os.path.lexists(self.home / ".claude/claude.md"):
+            self.skipTest("filesystem is case-sensitive")
+        codex_dir = self.home / ".codex"
+        codex_dir.mkdir()
+        codex = codex_dir / "AGENTS.md"
+        os.symlink("../.claude/claude.md", codex)
+
+        codex_dir.chmod(0o555)
+        try:
+            result = self.run_sync(code=1)
+        finally:
+            codex_dir.chmod(0o755)
+        self.assertIn("kept because a dependent link update failed", result.stderr)
+        self.assertTrue(os.path.lexists(claude))
+
+        self.run_sync()
         self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
         self.assertFalse(os.path.lexists(claude))
 

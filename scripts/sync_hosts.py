@@ -170,7 +170,11 @@ def load_hosts(home: Path) -> list:
             exclude=frozenset(exclude),
         ))
     for key in ("skills", "instructions"):
-        paths = [getattr(host, key) for host in hosts if getattr(host, key) is not None]
+        paths = [
+            destination_key(getattr(host, key))
+            for host in hosts
+            if getattr(host, key) is not None
+        ]
         if len(paths) != len(set(paths)):
             raise SetupError(f"hosts share a {key} path; give each host its own destination")
     if not hosts:
@@ -188,35 +192,47 @@ def owned_skill_link(entry: Path) -> bool:
 
 
 def owned_instruction_link(entry: Path, managed_targets: set) -> bool:
-    """A link is ours only when it resolves to a configured or retired instruction source."""
+    """A link is ours only when it resolves to a recognized instruction source."""
     return entry.is_symlink() and os.path.realpath(entry) in managed_targets
 
 
-def path_key(path: Path) -> tuple:
-    return (os.path.realpath(path.parent), path.name)
+def link_identity(path: Path) -> tuple | None:
+    """Filesystem identity of path itself without following a final symlink."""
+    try:
+        stat = os.lstat(path)
+    except OSError:
+        return None
+    return (stat.st_dev, stat.st_ino)
 
 
-def chains_through(entry: Path, targets: set) -> bool:
-    """Return True if resolving entry passes through any (parent_realpath, name) in targets."""
-    if not targets:
+def destination_key(path: Path) -> tuple:
+    identity = link_identity(path)
+    if identity is not None:
+        return ("inode", identity)
+    return ("path", os.path.realpath(path.parent), path.name)
+
+
+def chains_through(entry: Path, target_identities: set) -> bool:
+    """Return True if resolving entry passes through any link in target_identities."""
+    if not target_identities:
         return False
     current = entry
     seen = set()
     while current.is_symlink():
-        parent_real = os.path.realpath(current.parent)
-        key = (parent_real, current.name)
-        if key in seen:
+        ident = link_identity(current)
+        if ident is None or ident in seen:
             return False
-        seen.add(key)
+        seen.add(ident)
+        parent_real = os.path.realpath(current.parent)
         raw = os.readlink(current)
         if raw in (".", "..") or raw.endswith(("/", "/.", "/..")):
             return False
         candidate = Path(raw) if os.path.isabs(raw) else Path(parent_real) / raw
-        next_parent = os.path.realpath(candidate.parent)
-        next_key = (next_parent, candidate.name)
-        if next_key in targets:
+        next_path = Path(os.path.realpath(candidate.parent)) / candidate.name
+        next_ident = link_identity(next_path)
+        if next_ident in target_identities:
             return True
-        current = Path(next_parent) / candidate.name
+        current = next_path
     return False
 
 
@@ -258,24 +274,25 @@ def plan_skills(host: Host, names: list, plan: Plan) -> None:
 def plan_instructions(
     host: Host,
     plan: Plan,
+    retired_targets: set,
     managed_targets: set,
-    other_host_paths: set,
-    same_source_direct_paths: set,
+    other_host_ids: set,
+    same_source_direct_ids: set,
 ) -> None:
     path = host.instructions
     if path is None:
         return
     source = host.instructions_source
     if source is None:
-        if owned_instruction_link(path, managed_targets):
+        if owned_instruction_link(path, retired_targets):
             plan.changes.append(Change("remove", path))
         return
     if not os.path.lexists(path):
         plan.changes.append(Change("link", path, source))
-    elif resolves_to(path, source) and not chains_through(path, other_host_paths):
+    elif resolves_to(path, source) and not chains_through(path, other_host_ids):
         return
     elif owned_instruction_link(path, managed_targets):
-        if chains_through(path, same_source_direct_paths) and not chains_through(path, other_host_paths):
+        if chains_through(path, same_source_direct_ids) and not chains_through(path, other_host_ids):
             return
         plan.changes.append(Change("relink", path, source))
     elif path.is_file() and path.read_bytes() == source.read_bytes():
@@ -293,13 +310,14 @@ def make_plan(home: Path) -> Plan:
     plan = Plan([], [])
     for host in hosts:
         plan_skills(host, names, plan)
-    managed_targets = {os.path.realpath(path) for path in RETIRED_INSTRUCTIONS} | {
-        os.path.realpath(host.instructions_source)
-        for host in hosts
-        if host.instructions_source is not None
-    }
+    retired_targets = {os.path.realpath(path) for path in RETIRED_INSTRUCTIONS}
     source_real = {
         host: (os.path.realpath(host.instructions_source) if host.instructions_source is not None else None)
+        for host in hosts
+    }
+    managed_targets = retired_targets | {target for target in source_real.values() if target is not None}
+    host_identities = {
+        host: (link_identity(host.instructions) if host.instructions is not None else None)
         for host in hosts
     }
     # Plan active instruction updates before removals so an active link repoints before a retired target unlinks.
@@ -307,29 +325,36 @@ def make_plan(home: Path) -> Plan:
         h for h in hosts if h.instructions_source is None
     ]
     for host in ordered_hosts:
-        other_host_paths = {
-            path_key(other.instructions)
+        other_host_ids = {
+            host_identities[other]
             for other in hosts
             if other is not host
-            and other.instructions is not None
+            and host_identities[other] is not None
             and source_real[other] != source_real[host]
         }
-        same_source_direct_paths = set()
+        same_source_direct_ids = set()
         if host.instructions is not None and source_real[host] is not None:
-            host_key = {path_key(host.instructions)}
+            host_ids = {host_identities[host]} if host_identities[host] is not None else set()
             for other in hosts:
                 if (
                     other is not host
-                    and other.instructions is not None
+                    and host_identities[other] is not None
                     and source_real[other] == source_real[host]
                     and (
                         resolves_to(other.instructions, other.instructions_source)
                         or owned_instruction_link(other.instructions, managed_targets)
                     )
-                    and not chains_through(other.instructions, host_key | other_host_paths)
+                    and not chains_through(other.instructions, host_ids | other_host_ids)
                 ):
-                    same_source_direct_paths.add(path_key(other.instructions))
-        plan_instructions(host, plan, managed_targets, other_host_paths, same_source_direct_paths)
+                    same_source_direct_ids.add(host_identities[other])
+        plan_instructions(
+            host,
+            plan,
+            retired_targets,
+            managed_targets,
+            other_host_ids,
+            same_source_direct_ids,
+        )
     return plan
 
 
@@ -464,8 +489,9 @@ def sync(home: Path, check: bool, quiet: bool = False) -> int:
         else:
             failed_paths = []
             for change in plan.changes:
-                if change.action == "remove" and any(
-                    chains_through(failed, {path_key(change.path)}) for failed in failed_paths
+                target_id = link_identity(change.path) if change.action == "remove" else None
+                if target_id is not None and any(
+                    chains_through(failed, {target_id}) for failed in failed_paths
                 ):
                     plan.conflicts.append(
                         f"{change.path}: kept because a dependent link update failed"
