@@ -2352,7 +2352,7 @@ class LifecycleMutationTests(RecordCase):
             "Rebase W2 onto main?",
         ):
             self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D11",
-                         "--text", phrase, "--answer-source", "User", message="unconditional affirmative single-target")
+                         "--text", phrase, "--answer-source", "User", message="unconditional affirmative")
             self.assertEqual(subprocess.check_output(["git", "-C", str(self.program.folder), "rev-parse", "HEAD"], text=True).strip(), before_head)
         _, ok_after, _ = self.event("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D11",
                                     "--text", "Please rebase W2 onto `main`, please.", "--answer-source", "User")
@@ -2427,7 +2427,7 @@ class LifecycleMutationTests(RecordCase):
         for phrase, msg in (
             ("Never scrap W2", "unconditional affirmative scrap"),
             ("Scrap W2 if the tests fail", "unconditional affirmative scrap"),
-            ("Scrap W2?", "unconditional affirmative scrap"),
+            ("Scrap W2?", "question-form text"),
             ("Scrap W99", "targets W99, not W2"),
         ):
             self.refused("work", "--id", "W2", "--scrap", "--decision", "W2-D12",
@@ -2523,6 +2523,147 @@ class LifecycleMutationTests(RecordCase):
         rep.parent.mkdir(parents=True, exist_ok=True)
         rep.write_text('```json\n{"outcome": "W1", "state": "building"}\n```\n')
         self.refused("report", "--work", "W1", message="already landed")
+
+    def test_pass10_batch_pasted_precedence_typed_literal_ref_post_withdraw_merge_and_delayed_followup(self):
+        # 1. P10-01: Two-decision pasted+stored batch never resurfaces the second decision's older stored Scrap pick
+        #    while applying the first combined work command.
+        cur = self.head()
+        work(cur, "W1")["layers"][1]["status"] = "closed"
+        w4 = work(cur, "W4")
+        w4.update(
+            state="building", finishLine="land",
+            owner=copy.deepcopy(work(cur, "W2")["owner"]),
+            provisional={"basis": "W1-L2", "clears": "W1 lands", "on": ["W1"]},
+            layers=[{"id": "W4-L1", "branch": "feat/w4", "status": "open",
+                     "url": "https://github.com/org/exports/pull/604", "head": "4444444",
+                     "base": work(cur, "W1")["layers"][1]["branch"], "stackedOn": "W1-L2"}],
+        )
+        cur["decisions"].extend([
+            {
+                "id": "W2-D20", "question": "Base repair for W2?", "date": "2026-11-02T19:00:00Z",
+                "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase W2 onto release", "effect": "Onto release", "recommended": True, "reversible": True,
+                     "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                    {"label": "Scrap W2?", "effect": "Drop W2", "reversible": False,
+                     "action": {"type": "scrap", "work": "W2"}},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            },
+            {
+                "id": "W4-D20", "question": "Base repair for W4?", "date": "2026-11-02T19:01:00Z",
+                "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase W4 onto release", "effect": "Onto release", "recommended": True, "reversible": True,
+                     "action": {"type": "rebase", "work": "W4", "onto": "release"}},
+                    {"label": "Scrap W4", "effect": "Drop W4", "reversible": False,
+                     "action": {"type": "scrap", "work": "W4"}},
+                ],
+                "blocks": [{"id": "W4", "phase": "proof"}],
+            },
+        ])
+        self.program.write(cur, "2026-11-02T19:01:00Z")
+
+        # P10-02: Typed option label matching still enforces literal ref case/punctuation and rejects question-form --text.
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D20",
+                     "--text", "Rebase W2 onto release!", "--answer-source", "User", message="does not match")
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D20",
+                     "--text", "Rebase W2 onto RELEASE", "--answer-source", "User", message="does not match literal target")
+        self.refused("work", "--id", "W2", "--scrap", "--decision", "W2-D20",
+                     "--text", "Scrap W2?", "--answer-source", "User", message="question-form text")
+
+        # Now run the two-decision pasted+stored batch!
+        st = self.head()
+        d2, d4 = decision(st, "W2-D20"), decision(st, "W4-D20")
+        rev2, rev4 = revision(d2), revision(d4)
+        pasted_both = (
+            decision_prompt(d2, st, f'I choose option 1: {quoted(d2["options"][0]["label"])}')
+            + "\n\n"
+            + decision_prompt(d4, st, f'I choose option 1: {quoted(d4["options"][0]["label"])}')
+        )
+        doc2 = f"{'W2-D20'.encode().hex()}-{rev2}"
+        doc4 = f"{'W4-D20'.encode().hex()}-{rev4}"
+        stored_batch = self.program.folder.parent / "stored-p10-batch.jsonl"
+        stored_batch.write_text(
+            json.dumps({"id": doc2, "version": 1, "updatedAt": "2026-11-02T19:02:00Z",
+                        "data": {"decision": "W2-D20", "revision": rev2, "option": 2, "label": "Scrap W2?"}}) + "\n"
+            + json.dumps({"id": doc4, "version": 1, "updatedAt": "2026-11-02T19:02:01Z",
+                          "data": {"decision": "W4-D20", "revision": rev4, "option": 2, "label": "Scrap W4"}}) + "\n"
+            + json.dumps({"count": 2}) + "\n"
+        )
+        res_ans = self.run_record("answer", "--pasted", "--source", "User pasted batch", "--stored", str(stored_batch), stdin=pasted_both)
+        self.assertEqual(res_ans.returncode, 0, res_ans.stderr)
+        self.assertNotIn('user picked "Scrap W4"', res_ans.stdout)
+        # First combined work command for W2 must NOT resurface W4's older stored Scrap pick or mark W4's pick read/deleted!
+        _, after_w2, res_w2 = self.event(
+            "work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D20",
+            "--pasted", "--answer-source", "User pasted batch", "--stored", str(stored_batch),
+            stdin=pasted_both,
+        )
+        self.assertEqual(decision(after_w2, "W2-D20")["answer"], "Rebase W2 onto release")
+        self.assertIn(f"delete: picks/{doc2} (version 1)", res_w2.stdout)
+        self.assertNotIn('user picked "Scrap W4"', res_w2.stdout)
+        self.assertNotIn(f"delete: picks/{doc4}", res_w2.stdout)
+        self.assertNotIn("picksRead", decision(after_w2, "W4-D20"))
+        # Second combined work command for W4 now rebases W4 and supersedes W4's stored pick!
+        _, after_w4, res_w4 = self.event(
+            "work", "--id", "W4", "--rebase-onto", "release", "--decision", "W4-D20",
+            "--pasted", "--answer-source", "User pasted batch", "--stored", str(stored_batch),
+            stdin=pasted_both,
+        )
+        self.assertEqual(decision(after_w4, "W4-D20")["answer"], "Rebase W4 onto release")
+        self.assertIn(f"delete: picks/{doc4} (version 1)", res_w4.stdout)
+
+        # 2. P10-03 & P10-04: Late merge AFTER confirmed withdrawal reconciles blocked unknown work in status,
+        #    keeps withdrawn release as history, and a delayed report on landed work ingests followups cleanly.
+        def setup_post_withdraw(state):
+            ready(state)
+            work(state, "W1")["layers"][0]["url"] = "https://github.com/org/exports/pull/701"
+            work(state, "W1")["layers"][1]["url"] = "https://github.com/org/exports/pull/702"
+            state["landings"] = [row for row in state["landings"] if row["id"] == "L1"]
+            state["discoveries"] = []
+        self.commit(setup_post_withdraw)
+        _, rel, _ = self.event("land", "--work", "W1")
+        lid = rel["landings"][-1]["id"]
+        self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Pause before merge")
+        self.event("work", "--id", "W1", "--status", "unknown", "--unknown-reason", "Forge timeout",
+                   "--blocked", "Security check pending")
+        w1_l = work(self.head(), "W1")["layers"]
+        self.serve(prs={
+            w1_l[0]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_l[1]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "Confirmed unarmed")
+        # Both PRs later merge on GitHub!
+        self.serve(prs={
+            w1_l[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_l[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, after_st, _ = self.event("status")
+        w1_done = work(after_st, "W1")
+        self.assertEqual(w1_done["state"], "landed")
+        self.assertNotIn("unknownReason", w1_done)
+        self.assertNotIn("blocked", w1_done)
+        self.assertEqual(after_st["landings"][-1]["state"], "withdrawn")
+        disc = next(d for d in after_st.get("discoveries", []) if d.get("work") == "W1" and d.get("status") == "open")
+        self.assertIn("Security check pending", disc["text"])
+
+        # P10-04: Delayed owner report arriving after status landed W1 keeps W1 landed & ingests structured followups!
+        rep = self.program.folder / "reports" / "W1.md"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "ready",
+            "followups": [{"id": "W1-F77", "text": "Shared header retry timeout", "impact": "shared-contract", "thread": "PRRT_77"}],
+        }) + "\n```\n")
+        _, after_rep, rep_res = self.event("report", "--work", "W1")
+        self.assertEqual(work(after_rep, "W1")["state"], "landed")
+        self.assertIn("ingested delayed followups only", rep_res.stdout)
+        f77 = next(d for d in after_rep.get("discoveries", []) if d.get("id") == "W1-F77")
+        self.assertEqual((f77["status"], f77["reply"], f77["thread"]), ("open", "pending", "PRRT_77"))
 
 
 if __name__ == "__main__":

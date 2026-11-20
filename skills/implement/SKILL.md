@@ -110,12 +110,10 @@ at readiness when landing requires caller release, and land only on that release
 
 ## Keep scope and decisions
 
-**Scope only shrinks.** You or your caller may split, defer, or create a follow-up without asking.
-Nobody grows a PR's scope or asks the user to. Fix defects and real-use edge cases in the requested
-change in place (including bugs in earlier repairs); edge cases impossible in real use need no fix.
-Findings outside the requested change — new guarantees or pre-existing base code — become
-follow-ups even when labeled security or correctness, **unless** your change exposes or worsens a
-security hole, data-loss risk, or breakage in base code (fix that in place).
+**Scope only shrinks.** You or your caller may split, defer, or create a follow-up without asking;
+nobody grows a PR's scope or asks the user to. Apply
+[Review Sweep's scope boundary](../review-sweep/references/classification.md#scope-boundary) to
+decide what fixes in place versus defers.
 
 Route every deferred finding or out-of-scope discovery returned by review, PR feedback, or building
 to a real durable home before finishing — never leave a deferral as unbacked prose:

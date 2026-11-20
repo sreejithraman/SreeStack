@@ -268,7 +268,7 @@ def extract_onto_target(match):
     quoted_target = bare is None
     raw_named = bare if bare is not None else (match.group("bt") or match.group("dq") or match.group("sq"))
     # Git forbids branch names ending with '.', so only a sentence period is stripped on unquoted refs;
-    # punctuation legal in Git refs (such as ';', ':', ',') stays literal.
+    # punctuation legal in Git refs (such as ';', ',', '!') stays literal.
     named = raw_named if quoted_target else (raw_named[:-1] if raw_named.endswith(".") else raw_named)
     return named, quoted_target
 
@@ -301,11 +301,11 @@ def atomic_halting_work(state, decision_id):
 
 
 def normalized_choice(value):
-    """Case- and declarative-punctuation-insensitive option label key; keeps '?' so questions never bind."""
-    return quoted(value.strip().rstrip(".!")).casefold()
+    """Case- and trailing-period-insensitive option label key; keeps '?' and Git-legal '!' literal."""
+    return quoted(value.strip().rstrip(".")).casefold()
 
 
-def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_id=None, option=None):
+def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_id=None, option=None, raw_text=None):
     """Verify the chosen option or affirmative free text unambiguously authorizes --scrap or --rebase-onto."""
     action = option.get("action") if isinstance(option, dict) else None
     if isinstance(action, dict):
@@ -322,6 +322,14 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
                 raise Refused(f"--rebase-onto {rebase_onto!r} does not match typed option target {action.get('onto')!r}")
             if action.get("stackOn") != stack_on:
                 raise Refused(f"--stack-on {stack_on!r} does not match typed option stackOn {action.get('stackOn')!r}")
+            if raw_text is not None:
+                allowed = {rebase_onto} | ({stack_on} if stack_on else set())
+                for match in ONTO_TARGET.finditer(raw_text):
+                    named, _ = extract_onto_target(match)
+                    if named not in allowed:
+                        raise Refused(
+                            f"--rebase-onto {rebase_onto!r} does not match literal target {named!r} in text {raw_text!r}"
+                        )
             return
     if option is None:
         if scrap:
@@ -437,11 +445,12 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                 f"{decision_id} authorizes a base repair on {identity}; pass --scrap or --rebase-onto in the same command"
             )
         options = target_decision.get("options", [])
-        extra_receipt, extra_delete = None, None
+        extra_receipt, extra_delete, all_pasted, raw_decision_text = None, None, None, None
         if pasted_text is not None:
             if not answer_source:
                 raise Refused("--decision with --pasted needs --answer-source")
-            choices = [c for c in pasted_choices(pasted_text, state) if c[0] == decision_id]
+            all_pasted = pasted_choices(pasted_text, state)
+            choices = [c for c in all_pasted if c[0] == decision_id]
             if not choices:
                 raise Refused(f"pasted text contains no choice for {decision_id}")
             _, digest, number, label = choices[-1]
@@ -457,7 +466,13 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                 chosen = option_label(target_decision, decision_option)
                 opt_obj = options[decision_option - 1]
             else:
+                if (scrap or rebase_onto is not None) and "?" in decision_text:
+                    raise Refused(
+                        f"question-form text {decision_text!r} cannot authorize a base repair; "
+                        "pass --option <number> or an unconditional affirmative answer"
+                    )
                 chosen = decision_text
+                raw_decision_text = decision_text
                 matches = [opt for opt in options if normalized_choice(opt["label"]) == normalized_choice(chosen)]
                 if len(matches) > 1:
                     raise Refused(f"multiple options match {chosen!r}; pass --option <number>")
@@ -490,7 +505,7 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             extra_delete = f"delete: {name}"
         else:
             raise Refused("--decision on work needs --option, --text, --pasted (with --answer-source), or --stored")
-        check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj)
+        check_work_decision_action(chosen, scrap, rebase_onto, stack_on, identity, opt_obj, raw_text=raw_decision_text)
         _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=source_used, allow_atomic=True)
         if extra_receipt:
             put(target_decision, "picksRead", target_decision.get("picksRead", []) + [extra_receipt], DECISION_KEYS)
@@ -498,7 +513,12 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         if extra_delete:
             notes.append(extra_delete)
         elif stored_documents is not None:
-            _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id])
+            remaining_atomic = (
+                [cid for cid in current_pasted_atomic_ids(state, all_pasted) if cid != decision_id]
+                if all_pasted is not None else []
+            )
+            _, stored_notes = answer_stored(state, at, stored_documents, answered=[decision_id],
+                                            deferred_atomic=remaining_atomic)
             notes.extend(stored_notes)
 
     for key, value in (
@@ -730,6 +750,75 @@ def ask_pictures(ask, number, files):
             option["image"] = adopt_picture(option["image"], f"report asks[{number}].options[{index}].image", files)
 
 
+def ingest_followups(state, at, work, block, source, notes):
+    """Record or update structured owner followups as discoveries; return (followed_ids, to_route, to_reply)."""
+    followed, to_route, to_reply = [], [], []
+    discoveries = list(state.get("discoveries", []))
+    existing_by_id = {entry["id"]: entry for entry in discoveries if entry.get("id")}
+    for index, entry in enumerate(objects(block.get("followups", []), "followups")):
+        only(entry, FOLLOWUP_KEYS, f"followups[{index}]")
+        fields(entry, f"followups[{index}]", ("id", "text"), ("evidence", "impact", "thread"))
+        if "impact" in entry and entry["impact"] not in DISCOVERY_IMPACTS:
+            raise Refused(f"followups[{index}].impact must be one of {', '.join(DISCOVERY_IMPACTS)}")
+        existing_entry = existing_by_id.get(entry["id"])
+        if existing_entry is not None:
+            if existing_entry.get("work") != work or existing_entry.get("text") != entry["text"]:
+                raise Refused(
+                    f"followup ID {entry['id']!r} already belongs to another discovery "
+                    f"({existing_entry.get('work') or existing_entry.get('origin')}); prefix owner followup IDs with {work}-"
+                )
+            changed = []
+            for key in ("impact", "evidence", "thread"):
+                if key in entry and entry[key] != existing_entry.get(key):
+                    put(existing_entry, key, entry[key], DISCOVERY_KEYS)
+                    changed.append(key)
+            if "thread" in entry and existing_entry.get("reply") is None:
+                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+                changed.append("reply")
+            if not changed:
+                notes.append(f"followup {entry['id']} is already recorded; left as it is")
+                continue
+            if "thread" in changed:
+                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+            if "impact" in changed and existing_entry.get("status") == "routed":
+                prior = existing_entry["route"]
+                existing_entry["route"] = "pending"
+                put(existing_entry, "status", "open", DISCOVERY_KEYS)
+                if existing_entry.get("thread"):
+                    put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+                notes.append(f"followup {entry['id']} impact changed ({existing_entry['impact']}); reopened from {prior!r} for re-routing")
+                to_route.append(entry["id"])
+            elif existing_entry.get("status") == "routed" and existing_entry.get("reply") == "pending":
+                notes.append(
+                    f"followup {entry['id']} attached thread {existing_entry['thread']} to routed home "
+                    f"({existing_entry['route']}); send it to {work} and run `discovery --id {entry['id']} --reply-sent`"
+                )
+                to_reply.append(entry["id"])
+            else:
+                notes.append(f"followup {entry['id']} updated ({', '.join(changed)})")
+                if existing_entry.get("status") == "open":
+                    to_route.append(entry["id"])
+            followed.append(entry["id"])
+            continue
+        item_row = {
+            "id": entry["id"], "date": at, "origin": f"{work} report ({source})",
+            "work": work, "text": entry["text"], "route": "pending", "status": "open",
+        }
+        for key in ("impact", "evidence", "thread"):
+            if key in entry:
+                item_row[key] = entry[key]
+        if "thread" in entry:
+            item_row["reply"] = "pending"
+        ordered = {key: item_row[key] for key in DISCOVERY_KEYS if key in item_row}
+        existing_by_id[entry["id"]] = ordered
+        discoveries.append(ordered)
+        followed.append(entry["id"])
+        to_route.append(entry["id"])
+    if followed:
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+    return followed, to_route, to_reply
+
+
 def report(state, at, work, block, source, files):
     """Apply an owner report block: each field it names replaces that part of the record.
 
@@ -737,8 +826,6 @@ def report(state, at, work, block, source, files):
     """
     only(block, REPORT_KEYS, "block")
     row = work_row(state, work)
-    if row["state"] == "landed":
-        raise Refused(f"{work} is already landed; create a follow-up outcome for post-merge work instead of overwriting landed state")
     if block.get("outcome") != work:
         raise Refused(f"the report block names outcome {block.get('outcome')!r}, not {work}")
     if block.get("state") not in STATES:
@@ -746,6 +833,17 @@ def report(state, at, work, block, source, files):
     if block["state"] in TERMINAL:
         raise Refused(f"a report cannot record {block['state']}: run status, which reads merges at the forge, "
                       "or record a scrap by hand")
+    if row["state"] == "landed":
+        if not block.get("followups"):
+            raise Refused(f"{work} is already landed; create a follow-up outcome for post-merge work instead of overwriting landed state")
+        notes = [f"{work} is already landed; kept landed state and layers intact and ingested delayed followups only"]
+        if block.get("asks"):
+            notes.append(f"ignored asks on already-landed {work}; create a follow-up outcome if post-merge work needs a decision")
+        followed, to_route, _ = ingest_followups(state, at, work, block, source, notes)
+        if to_route:
+            notes.append(f"route {', '.join(to_route)} with `discovery --id <ID> --route ...`")
+        label = f", followups {', '.join(followed)}" if followed else " (followups already recorded)"
+        return f"{work} delayed report{label}", notes
     merged = {layer["id"]: layer for layer in row.get("layers", []) if layer["status"] == "merged"}
     if "layers" in block:
         reported = {layer.get("id"): layer for layer in objects(block["layers"], "layers")}
@@ -812,70 +910,7 @@ def report(state, at, work, block, source, files):
             decision["links"] = ask["links"]
         state["decisions"].append({key: decision[key] for key in DECISION_KEYS if key in decision})
         asked.append(ask.get("id"))
-    followed, to_route, to_reply = [], [], []
-    discoveries = list(state.get("discoveries", []))
-    existing_by_id = {entry["id"]: entry for entry in discoveries if entry.get("id")}
-    for index, entry in enumerate(objects(block.get("followups", []), "followups")):
-        only(entry, FOLLOWUP_KEYS, f"followups[{index}]")
-        fields(entry, f"followups[{index}]", ("id", "text"), ("evidence", "impact", "thread"))
-        if "impact" in entry and entry["impact"] not in DISCOVERY_IMPACTS:
-            raise Refused(f"followups[{index}].impact must be one of {', '.join(DISCOVERY_IMPACTS)}")
-        existing_entry = existing_by_id.get(entry["id"])
-        if existing_entry is not None:
-            if existing_entry.get("work") != work or existing_entry.get("text") != entry["text"]:
-                raise Refused(
-                    f"followup ID {entry['id']!r} already belongs to another discovery "
-                    f"({existing_entry.get('work') or existing_entry.get('origin')}); prefix owner followup IDs with {work}-"
-                )
-            changed = []
-            for key in ("impact", "evidence", "thread"):
-                if key in entry and entry[key] != existing_entry.get(key):
-                    put(existing_entry, key, entry[key], DISCOVERY_KEYS)
-                    changed.append(key)
-            if "thread" in entry and existing_entry.get("reply") is None:
-                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
-                changed.append("reply")
-            if not changed:
-                notes.append(f"followup {entry['id']} is already recorded; left as it is")
-                continue
-            if "thread" in changed:
-                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
-            if "impact" in changed and existing_entry.get("status") == "routed":
-                prior = existing_entry["route"]
-                existing_entry["route"] = "pending"
-                put(existing_entry, "status", "open", DISCOVERY_KEYS)
-                if existing_entry.get("thread"):
-                    put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
-                notes.append(f"followup {entry['id']} impact changed ({existing_entry['impact']}); reopened from {prior!r} for re-routing")
-                to_route.append(entry["id"])
-            elif existing_entry.get("status") == "routed" and existing_entry.get("reply") == "pending":
-                notes.append(
-                    f"followup {entry['id']} attached thread {existing_entry['thread']} to routed home "
-                    f"({existing_entry['route']}); send it to {work} and run `discovery --id {entry['id']} --reply-sent`"
-                )
-                to_reply.append(entry["id"])
-            else:
-                notes.append(f"followup {entry['id']} updated ({', '.join(changed)})")
-                if existing_entry.get("status") == "open":
-                    to_route.append(entry["id"])
-            followed.append(entry["id"])
-            continue
-        item_row = {
-            "id": entry["id"], "date": at, "origin": f"{work} report ({source})",
-            "work": work, "text": entry["text"], "route": "pending", "status": "open",
-        }
-        for key in ("impact", "evidence", "thread"):
-            if key in entry:
-                item_row[key] = entry[key]
-        if "thread" in entry:
-            item_row["reply"] = "pending"
-        ordered = {key: item_row[key] for key in DISCOVERY_KEYS if key in item_row}
-        existing_by_id[entry["id"]] = ordered
-        discoveries.append(ordered)
-        followed.append(entry["id"])
-        to_route.append(entry["id"])
-    if followed:
-        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+    followed, to_route, _ = ingest_followups(state, at, work, block, source, notes)
     row["checkedAt"] = at
     message = f"{work} report: {block['state']}"
     if asked:
@@ -960,6 +995,19 @@ def pasted_choices(text, state=None):
     if not choices:
         raise Refused("no decision choice found in the pasted text")
     return choices
+
+
+def current_pasted_atomic_ids(state, choices):
+    """Decision IDs in parsed pasted choices matching an open decision's current revision that require atomic handling."""
+    found = []
+    for identity, digest, number, label in choices:
+        row = next((r for r in state["decisions"] if r["id"] == identity), None)
+        options = row.get("options", []) if row else []
+        if (row is not None and row["status"] == "open" and revision(row) == digest
+                and 1 <= number <= len(options) and quoted(options[number - 1]["label"]) == quoted(label)
+                and atomic_halting_work(state, identity) and identity not in found):
+            found.append(identity)
+    return found
 
 
 def answer_pasted(state, at, text, source, allow_atomic_only=False):
@@ -1690,6 +1738,8 @@ def observe(state, at, read_pr, threads):
         if reads and not failed:
             facts["checkedAt"] = at
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
+        if derived["state"] != "unknown":
+            derived.pop("unknownReason", None)
         if derived != row:
             labels = ((derived, None), (facts, "its forge facts"), (lapsed(row, facts), "that its readiness lapsed"),
                       (row, "nothing"))
@@ -1752,6 +1802,32 @@ def observe(state, at, read_pr, threads):
                     f"{landing['lander']} and confirm forge cancellation before withdrawing"
                 )
                 break
+    withdrawn_work = {
+        wid for landing in state.get("landings", [])
+        if landing["state"] == "withdrawn"
+        for wid in landing["work"]
+    }
+    standalone_merged = [
+        row["id"] for row in state["work"]
+        if row["state"] not in TERMINAL and row.get("layers") and effective_finish(row) == "land"
+        and all(layer.get("url") in merged or layer["status"] == "merged" for layer in row["layers"])
+        and (row["id"] in withdrawn_work or not open_blocks(state, row["id"]))
+    ]
+    for wid in standalone_merged:
+        trial = copy.deepcopy(state)
+        trial_notes = []
+        reconciled = reconcile_landed_work(trial, at, [wid], merged, trial_notes, forge)
+        try:
+            validate(trial)
+        except ValueError as error:
+            landing_notes.append(f"{wid}: could not reconcile merged work automatically; settle by hand: {error}")
+        else:
+            state["work"] = trial["work"]
+            state["decisions"] = trial["decisions"]
+            if "discoveries" in trial:
+                replace_list(state, "discoveries", trial["discoveries"], PROGRAM_KEYS)
+            reconciled_works |= reconciled
+            landing_notes.extend(trial_notes)
     for index, (*_, original) in candidates.items():
         row = state["work"][index]
         if row["id"] in reconciled_works:
