@@ -14,6 +14,7 @@ import unittest
 
 from unittest import mock
 
+from record import reopen_decision, settle
 from render_dashboard import ISO_TIME, content_name, need_card, needs_view, place, render, revision, url, validate
 
 
@@ -104,6 +105,7 @@ class DisclosureText(HTMLParser):
     def __init__(self, html):
         super().__init__()
         self.closed, self.disclosures, self.visible, self.hidden = [], [], [], []
+        self.in_summary = False
         self.feed(html)
 
     def handle_starttag(self, tag, attributes):
@@ -111,13 +113,18 @@ class DisclosureText(HTMLParser):
             attrs = dict(attributes)
             self.disclosures.append(attrs)
             self.closed.append("open" not in attrs)
+        elif tag == "summary":
+            self.in_summary = True
 
     def handle_endtag(self, tag):
         if tag == "details":
             self.closed.pop()
+        elif tag == "summary":
+            self.in_summary = False
 
     def handle_data(self, data):
-        (self.hidden if any(self.closed) else self.visible).append(data)
+        ancestors = self.closed[:-1] if self.in_summary else self.closed
+        (self.hidden if any(ancestors) else self.visible).append(data)
 
 
 class OutsideTimes(HTMLParser):
@@ -584,11 +591,26 @@ class PageTests(unittest.TestCase):
         for original in (row["answer"], row["basis"], *row["context"]):
             self.assertIn(original, hidden)
             self.assertNotIn(original, visible)
-        self.assertIn("Technical details", hidden)
+        self.assertIn("Technical details", visible)
         self.assertIn("Copy to reopen", visible)
         self.assertEqual(row, before, "rendering must not rewrite the authoritative decision")
         self.assertEqual(revision(row), revision({key: value for key, value in row.items() if key != "rationale"}))
         self.assertIn('aria-label="Copy prompt to reopen W1-D2"', html)
+
+    def test_prior_answers_remain_inside_technical_details(self):
+        for transition in ("reopen", "replace"):
+            with self.subTest(transition=transition):
+                state = example()
+                identity = "W1-D2"
+                at = "2026-11-03T12:00:00Z"
+                settle(state, at, identity, "Never retry failures.", "resolved", basis="The original API could not retry.")
+                if transition == "reopen":
+                    reopen_decision(state, at, identity, "The API now supports retries.")
+                settle(state, at, identity, "Retry three times.", "answered", source="User message")
+                parsed = DisclosureText(need_card(decision(state, identity), state))
+                self.assertIn("Retry three times.", "".join(parsed.visible))
+                self.assertNotIn("Never retry failures.", "".join(parsed.visible))
+                self.assertIn("Never retry failures.", "".join(parsed.hidden))
 
     def test_short_settled_answers_stay_readable_without_inventing_a_summary(self):
         row = copy.deepcopy(decision(self.state, "W0-D1"))
@@ -622,7 +644,6 @@ class PageTests(unittest.TestCase):
         self.assertIn('Coordinator decided <span class="count-pill">174</span>', html)
         self.assertIn('aria-labelledby="resolved-heading"><details><summary', html)
         self.assertEqual(html.count('<details class="decision-details">'), 174)
-        self.assertNotIn("Exact technical answer", "".join(DisclosureText(html.split('<div class="inbox-detail">')[1]).visible))
 
     def test_options_are_one_pick_list_with_one_answer_action(self):
         html = render(self.state)

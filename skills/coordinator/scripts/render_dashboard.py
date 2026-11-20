@@ -58,6 +58,8 @@ TEMPLATE = Path(__file__).resolve().parents[1] / "assets" / "command-center.html
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif")
 IMAGE = re.compile(r"files/[0-9a-f]{16}(?:%s)" % "|".join(re.escape(suffix) for suffix in IMAGE_SUFFIXES))
 ISO_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)")
+# Reopening and replacing answers append these audit entries to rationale.
+DECISION_HISTORY_ENTRY = re.compile(rf'{ISO_TIME.pattern}: (?:prior|replaced the earlier) (?:answered|resolved) answer "')
 
 
 def text(value, path):
@@ -1009,6 +1011,34 @@ def tradeoff_label(row):
     return content
 
 
+def settled_decision(row, state, context):
+    resolved = row["status"] == "resolved"
+    label = "Coordinator's call" if resolved else "Your answer"
+    answer = row["answer"]
+    answer_text = f'<p class="answer-label">{label}</p><p class="decision-text">{prose(answer)}</p>'
+    rationale = row.get("rationale", "")
+    has_history = bool(DECISION_HISTORY_ENTRY.search(rationale))
+    content = f'<p class="decision-lead">{prose(rationale)}</p>' if rationale and not has_history else ""
+    short_answer = len(answer) <= 240 and all(len(word) <= 60 for word in answer.split())
+    if short_answer:
+        content += f'<div class="answer">{answer_text}</div>'
+    content += (
+        f'<details class="decision-details"><summary id="details-{card_id("decision", row)}">Technical details'
+        f'<span class="sr-only"> for {e(row["id"])}</span></summary><div class="decision-body">{answer_text}'
+    )
+    if resolved:
+        content += f'<p class="answer-label">Basis</p><p class="decision-text">{prose(row["basis"])}</p>'
+    if has_history:
+        content += f'<p class="answer-label">Decision history</p><p class="decision-text">{prose(rationale)}</p>'
+    if context:
+        content += '<p class="answer-label">Context</p>' + context
+    content += pictures_view(row) + link_list(row.get("links", [])) + '</div></details>' + stale_pick_note(row)
+    if resolved:
+        reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
+        content += f'<div class="reopen">{reopen}</div>'
+    return content
+
+
 def need_card(row, state, selected=False):
     classes = "card need" + (" quick" if row["status"] == "open" and row.get("weight") == "quick" else "") + (" selected" if selected else "")
     content = f'<article id="{card_id("decision", row)}" class="{classes}"><p class="need-meta">{decision_label(row)}</p><h3>{prose(row["question"])}</h3>'
@@ -1016,26 +1046,7 @@ def need_card(row, state, selected=False):
     if row.get("context"):
         context = '<ul class="context">' + "".join(f"<li>{prose(item)}</li>" for item in row["context"]) + "</ul>"
     if row["status"] in {"answered", "resolved"}:
-        label = "Your answer" if row["status"] == "answered" else "Coordinator's call"
-        if row.get("rationale"):
-            content += f'<p class="decision-lead">{prose(row["rationale"])}</p>'
-        # Show short original answers without deriving a summary from technical text.
-        if len(row["answer"]) <= 240 and max(map(len, row["answer"].split()), default=0) <= 60:
-            content += f'<div class="answer"><p class="answer-label">{label}</p><p class="decision-text">{prose(row["answer"])}</p></div>'
-        content += (
-            '<details class="decision-details"><summary>Technical details'
-            f'<span class="sr-only"> for {e(row["id"])}</span></summary><div class="decision-body">'
-            f'<p class="answer-label">{label}</p><p class="decision-text">{prose(row["answer"])}</p>'
-        )
-        if row["status"] == "resolved":
-            content += f'<p class="answer-label">Basis</p><p class="decision-text">{prose(row["basis"])}</p>'
-        if context:
-            content += '<p class="answer-label">Context</p>' + context
-        content += pictures_view(row) + link_list(row.get("links", [])) + '</div></details>' + stale_pick_note(row)
-        if row["status"] == "resolved":
-            reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
-            content += f'<div class="reopen">{reopen}</div>'
-        return content + "</article>"
+        return content + settled_decision(row, state, context) + "</article>"
     content += context + pictures_view(row) + stale_pick_note(row)
     if row["status"] == "open" and row.get("meanwhile"):
         content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {prose(row["meanwhile"])}</p>'
@@ -1060,8 +1071,9 @@ def inbox_row(target, identity, title, selected=False, asked=None):
 
 def inbox_group(heading_id, title, tone, rows):
     return (
-        f'<div class="inbox-group {tone}" role="group" aria-labelledby="{heading_id}"><span id="{heading_id}" class="inbox-group-title">{e(title)} <span class="count-pill{" attention" if tone == "open" else ""}">{len(rows)}</span></span>'
-        + "".join(rows) + "</div>"
+        f'<div id="group-{heading_id}" class="inbox-group {tone}" role="group" aria-labelledby="{heading_id}">'
+        f'<span id="{heading_id}" class="inbox-group-title">{e(title)} <span class="count-pill{" attention" if tone == "open" else ""}">{len(rows)}</span></span>'
+        f'<div class="inbox-group-rows">{"".join(rows)}</div></div>'
     )
 
 
