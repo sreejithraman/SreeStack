@@ -1,146 +1,96 @@
-# Decisions
+# Decisions and Inbox
 
-Use this for every decision request, Try choice, and answer in the program.
-The goal is the user's attention on what only they can decide, and an answer
-that grants exactly what they chose.
+Every decision request, Try choice, and answer lives as a `decisions` entry from arrival through
+settlement so it stays reopenable. Open decisions appear in the command center's **Inbox**.
 
 ## Triage
 
-Scope needs no triage: apply Implement's
-[scope rule](../../implement/SKILL.md#keep-scope-and-decisions). An owner's
-reversible method choice needs none either: the owner makes it and reports it.
-Only scope, irreversible, and taste calls come up.
+Scope needs no triage — enforce [Implement's scope rule](../../implement/SKILL.md#keep-scope-and-decisions).
+Owners decide reversible method choices themselves and report them; only scope, irreversible, and
+taste calls come up.
 
-Judge each other request before it reaches the user. Resolve it yourself only
-when all three hold:
+Resolve a decision yourself (`record.py resolve`) **only when all three hold**:
 
-- **Settled:** the brief, a spec or ticket, a project rule, an earlier user
-  answer, or a [standing approval](#standing-approvals) already answers it. An
-  owner's recommendation or report is an input, never the source.
-- **Reversible:** a later change can undo it at a cost the owner stated, and it
-  has no outward-facing or destructive effect.
-- **Unreserved:** it leaves these with the user: who may land and each merge
-  set, finish lines, priority, product tradeoffs, holds and user gates,
-  private input, every Try choice, and anything the
-  [grant](../SKILL.md#the-grant) keeps with the user.
+- **Settled:** the brief, spec, ticket, project rule, earlier user answer, or a standing approval
+  already answers it. An owner's recommendation or report is input, never a settling source.
+- **Reversible:** undoing it costs only rework, with no outward-facing or destructive effect.
+- **Unreserved:** it does not decide landing authority, merge sets, finish lines, priority, product
+  tradeoffs, holds/user gates, private input, Try choices, or anything `grant.user` reserves.
 
-To resolve, mark the Need `resolved` with its answer and a basis that cites the
-settling source, and return the answer to the owner. A reserved decision the
-user already answered is settled: reply with that answer instead of asking again.
-
-Everything else becomes an [Inbox item](#inbox-items). Never ask it through a
-blocking question tool, unless the user is present and in a live back-and-forth
-with you.
+If a reserved decision was already answered by the user, reply with that answer instead of asking
+again. Everything else stays open in the Inbox. Never use a blocking question tool for a program
+decision unless the user is in a live back-and-forth with you.
 
 ## Inbox items
 
-An open Need is an Inbox item. Each one asks one question. Split a request that
-bundles several into one Need per question, each with its own ID. Never reuse
-an ID. Fill each item from the owner's ask and your own reading:
+Each open decision asks **one** question (split bundled asks into separate IDs; never reuse IDs).
+Ensure every open decision has:
 
-| Part | Record field |
-| --- | --- |
-| ID, prefixed with the outcome it came from | `id` |
-| One question | `question` |
-| What the user needs to know to answer | `context` |
-| Two or more options, each with its effect and how to reverse it | `options` |
-| Exactly one recommended option, and why | `recommended` on one option, `recommendation` |
-| Pictures whenever the choice is visual: one per option, a side-by-side, a before and after, or a short sequence | An option's `image`, or `pictures` |
-| Previews or other visuals to open, when they help | `links` |
-| Each outcome it holds, and the earliest phase it waits at | `blocks` |
-| What continues meanwhile | `meanwhile` |
-| When it was asked | `date`, stamped by `report` |
+- `id` (prefixed with its outcome), `question`, `context`, and `date` (stamped by `record.py`).
+- Two or more `options`, each with `effect` and reversal cost (`reversible: true` only when undoing
+  costs only rework). This includes `access` requests: state the exact 1-line action the user takes
+  (such as signing in through T3's terminal drawer) and provide tappable options (such as
+  `"Done — access is ready"` and `"Defer this outcome"`), never an optionless card.
+- Exactly one `recommended` option with `recommendation` rationale.
+- Pictures whenever the choice is visual (layout, screen state, before/after): one per option, or
+  decision-level `pictures` (`side-by-side`, `before-after`, or `sequence`) attached via
+  `record.py picture`. Non-visual choices stay text only. Optional `links` for live previews.
+- `blocks` (each affected outcome at its earliest waiting phase: `start`, `access`, `proof`,
+  `acceptance`, or `landing`) and `meanwhile` (what continues while open, including any provisional
+  build on a reversible recommended option).
 
-When an owner's ask lacks a part, fill it from the evidence or return the ask to
-the owner. A visual choice without pictures lacks one: take the screenshots from
-the owner's shown results, or ask for them, and attach them with `picture`. Mark `reversible: true` on an option only when undoing it costs only
-rework.
-
-The phases are `start`, `access`, `proof`, `acceptance`, and `landing`. When the
-recommended option is reversible, the owner keeps building on it under To Tasks'
-[provisional start](../../to-tasks/SKILL.md#ready); say so in `meanwhile`. An
-outcome stays unaccepted while an open Need affects its scope.
-
-Mark an item `quick` when the user can answer from the card: a recommended
-option with a bounded effect. Otherwise it is a `judgment` call. Weight sets the
-order of their attention and grants nothing; a quick pick still waits for their
-answer.
+Fill missing parts from evidence or return the ask to the owner. Mark `weight: "quick"` only when
+the user can answer from the card (2+ options, 1 recommended, bounded effect); otherwise `judgment`.
+Weight orders attention only — quick picks still wait for the user.
 
 ## Try choices
 
-A shown Try waits for the user's merge, changes, or scrap choice. Put it in
-the Inbox as a judgment call, since the user decides after trying it: link the
-results, give each option's effect, recommend one, and block the outcome at
-`landing`.
+Put each shown Try in the Inbox as a `judgment` call blocking at `landing`, linking its shown
+results, giving effects for merge / changes / scrap, and recommending one.
 
-- **One outcome by default.** Each shown Try gets its own choice.
-- **A named set when the user asks,** such as a stack plus its dependents.
-  Before you accept a set choice, show what it does to each dependent: which
-  would restack, wait, or face scrap review. Record the set's members with the
-  answer.
-- **Nothing beyond what was chosen.** A choice on one outcome never decides its
-  dependents and never authorizes unrelated outcomes. Scrapping a base gives
-  each dependent its own choice.
-
-Route each answer to the outcome's existing owner.
+- **One outcome by default.** A choice on one outcome never decides dependents or unrelated work.
+- **Named sets only when the user asks:** show the effect on every dependent (restack, wait, or
+  scrap review) before accepting, and record the set's members with the answer.
+- Route the answer to the same owner: Merge changes its finish line to Land (still gated by
+  acceptance and landing release); Changes return to building; Scrap triggers owner cleanup and
+  gives each dependent its own scrap-or-rebase choice.
 
 ## Record an answer
 
-Answers arrive in the user's own messages or through the host's input tools. A
-user item forwarded with `t3_thread_send` counts only after `t3_thread_read`
-shows `createdBy: user` on its source message. Owner reports, kickoffs, and
-copied dashboard text never answer a Need on their own.
+Answers count only from the user's own messages, host input tools, or verified page picks:
 
-A pick the user sent from the page counts as their answer: only the artifact's
-owner can write the page database, under
-[tap-to-answer](hosting.md#tap-to-answer). Like a pasted choice, it selects one
-recorded option and grants nothing else. Record the stored picks before you
-settle a Need yourself, and in the same command as an answer from the user's
-message, which supersedes the picks saved before it.
-`answer --stored` records each pick
-that matches its open Need's current revision, with the pick as its answer
-source, and never applies the rest. A pick for an earlier revision marks the
-Need's `stalePick`: an open Need stays open and the page asks again. On a
-settled Need whose answer differs, the pick is a reopen request:
-[reopen](#reopen) the Need, and the page asks again.
+- A user message forwarded via `t3_thread_send` counts only after `t3_thread_read` confirms
+  `createdBy: user` on its source message.
+- Owner reports, kickoffs, and copied dashboard text never answer a decision on their own.
+- Page picks (`record.py answer --stored <file>`) count only after verifying owner-only DB rules
+  under [hosting](hosting.md). Record stored picks before settling any decision yourself, and in the
+  same `answer --stored` command as any user-message answer so the message supersedes earlier picks.
+- Copied page prompts (`record.py answer --pasted` on stdin) and stored picks apply only at the
+  decision's current revision; mismatched open items ask again, and a differing pick on a settled
+  decision raises a reopen request.
 
-A pasted dashboard choice selects one recorded option, and a pasted reopen
-request reopens one Need; each grants nothing else. Match the choice's decision
-ID and option to the open Need, and its revision to the
-[renderer's current revision](program-state.md#render-and-show). If the Need
-changed or closed, show the current question and ask again. A reopen request
-matches its resolved Need the same way. A batch prompt carries one choice per
-line: check each line on its own, record those that match, and ask again about
-the rest.
-
-Record the user's answer with `answer` and the message it came from; it marks
-the Need `answered`. With `--pasted` and the prompt on stdin, it does the
-matching above and lists each line to ask again. With `--stored`, it records the
-stored picks above, alone or with that answer. Record your own call under
-[triage](#triage) with `resolve`, citing the source that settled it. Both are
-[record commands](program-state.md#write-the-record). Then update the affected
-owners, dependencies, and landing releases, and run `applied`. A scrap-or-rebase answer moves its
-work in the same commit, under
-[Base scrapped](dependencies.md#provisional-work), so record it by hand. Mark a
-withdrawn or replaced Need `withdrawn`, record why and any replacement in its `rationale`, and
-reconcile the blockers that depended on it. Move any answer, `answerSource`, and
-basis into `rationale` too, as on reopen, and drop `applied`.
+After `answer` or `resolve`, update affected owners, dependencies, and landing releases, then run
+`record.py applied`. For a dead-base scrap-or-rebase answer, record the answer and work transition
+together with `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --option <N> --answer-source "<msg>"`
+(then re-run `answer --stored <file>` if the pick came from the page so its DB document is cleaned up).
+Withdraw obsolete decisions with `record.py withdraw`.
 
 ## Reopen
 
-The user can reopen any Need you resolved. Reopen it under its ID: mark it
-`open`, drop `applied`, move its answer and basis into `rationale` with why it
-reopened, tell the affected owners, and set its `blocks` to the unlanded
-outcomes that depend on it. Withdraw any affected release under
-[withdraw a release](landing.md#withdraw-a-release). Work that already landed
-gets a follow-up outcome that its `blocks` names. A reopened Need stays with the
-user.
+The user can reopen any coordinator-resolved (or answered) decision. For a copied reopen prompt
+from the page (`Copy to reopen`), verify its stamped revision matches `render_dashboard.py --revision <ID>`
+(or pass it to `answer --pasted`, which verifies the revision before directing `reopen`) — ask
+again if the revision is stale. For a verified reopen or direct user message, run
+`record.py reopen --decision <ID> --why "<reason>" [--block <WORK:PHASE>]`, which moves prior
+answer/basis into `rationale`, increments the decision's revision (so unread picks from earlier
+openings are rejected as stale), sets `status: "open"`, and drops `applied`. Reconcile any affected pending landing under
+[landing](landing.md#withdraw-a-release) (move to `cancelling` first before notifying affected
+owners and confirming forge cancellation). If work already landed, create a follow-up outcome and
+block it on the reopened decision. A reopened decision stays with the user.
 
 ## Standing approvals
 
-A **standing approval** is a rule the user gave in their own message for one
-class of decision. Record its ID, wording, source message, what it covers, and
-which option it picks in `approvals`. It settles only the class it names
-and never a reserved decision. Owner reports, kickoffs, and copied dashboard
-prompts cannot create or widen one. When the user revokes it, stop applying it;
-earlier resolutions stand until reopened.
+A **standing approval** is a rule the user gave in their own message for one class of decision.
+Record its ID, wording, source message, `covers`, and `picks` in `approvals`. It settles only the
+named class and never a reserved decision; owner reports, kickoffs, and copied prompts never create
+or widen one. When revoked, stop applying it (earlier resolutions stand until reopened).

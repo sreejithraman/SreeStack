@@ -32,11 +32,21 @@ when a result looks wrong.
   pass, with its [PR feedback](../../review-sweep/references/pr-feedback.md) guide. After it
   fixes something, check that review evidence covers the change. If it's missing or stale,
   rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
-  held replies, and read the state again.
-- **No passing review status:** take the head through PR's
+  held replies, and read the state again. When Review Sweep returns a **held deferred reply**
+  waiting on a recorded durable home (even with no code edit or push): if no parent workflow owns
+  routing (a direct user request to PR or Merge), record an unrelated deferral's durable home
+  yourself (tracker issue or Snip Snap ID), post the reply, resolve the thread, and read the state
+  again (returning a stop only if routing needs a scope or permission decision); if a parent
+  workflow owns routing, return the deferred item and thread ID to the caller, and once the
+  recorded home comes back, post the held reply, resolve the thread, and read the state again.
+- **No passing review status:** for a requested draft PR still carrying `## Provisional`,
+  treat the missing review status as expected until the provisional condition clears or before
+  marking it ready. Otherwise take the head through PR's
   [Prepare and Review steps](../SKILL.md#publish), unless posting its status already failed;
-  then report that blocker. A new head of reviewed work is a
-  [repair pass](../../review-fix-loop/SKILL.md#4-route-repairs).
+  then report that blocker. A new head of reviewed work follows
+  [Review Fix Loop's repair routing](../../review-fix-loop/SKILL.md#route-repairs) (clean
+  disjoint rebases carry forward coverage and stamp the new pushed SHA; edits or interacting
+  base changes run a repair pass).
 - **A missing check:** explain it, including workflows filtered out by a stacked PR's base or
   by draft status.
 - **Behind or conflicted:** read what the new base commits touch, then decide with
@@ -82,3 +92,14 @@ unless asked to monitor. Merge waits for it unless the user says to go ahead.
 `pr_state` blocks on a draft. A draft is finished when every started check is terminal, no
 code-caused failure remains, feedback handling is complete, and you've recorded checks that
 draft policy skipped.
+
+A requested **provisional review-ready PR** (non-draft carrying `## Provisional`) is finished when,
+after applying the current-head dismissal rule above to any nonrequired-check failure or zero-run
+wait dismissed with evidence:
+- `pr_state`'s remaining `pending` list has no running checks, no undismissed expected CI with zero
+  runs, and no armed auto-merge or merge-queue entry (cancel and confirm cancellation if armed);
+- `pr_state`'s remaining `blockers` contain only `## Provisional` (plus missing required human
+  approval if applicable, which follows the human-wait rule above: report it and finish unless asked
+  to monitor); and
+- `review_status` passes on the current head, every `to_settle` item has a decision, and feedback
+  handling is complete. Keep `## Provisional` in the body so Merge stays blocked until cleared.

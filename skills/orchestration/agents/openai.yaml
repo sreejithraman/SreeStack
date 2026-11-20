@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orchestration"
+  short_description: "Assign work to agents, pick models, and accept verified results"
+  default_prompt: "Use $orchestration to assign this work, pick its model, and verify the returned result."

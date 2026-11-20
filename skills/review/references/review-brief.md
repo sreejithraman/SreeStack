@@ -41,19 +41,20 @@ For delegated assessments, also apply [Review evidence](review-evidence.md).
 
 ## Round inputs
 
-First-round reviewers, including a later wave that stays first discovery, receive
-no earlier verdicts or author defenses. [Review Fix Loop](../../review-fix-loop/SKILL.md)
-makes the Adversarial wave first discovery. Mark such a wave "first discovery" in its
-brief, because the peer-read boundary depends on that mark. Reviewers within a round
-receive no peer findings or verdicts from that round, even when concurrency requires
-serial dispatch.
+First-round reviewers, including any later wave the caller marks `first discovery`,
+receive no earlier verdicts or author defenses. Mark such a wave `first discovery` in
+its brief, because the peer-read boundary depends on that mark. Reviewers within a
+round receive no peer findings or verdicts from that round, even when concurrency
+requires serial dispatch.
 
 Later rounds include:
 
+- convergence check output (`convergence.py` mode, pass count, per-file repair
+  churn vs Pass 1, and any repeated files)
 - original scope
-- prior findings, their evidence and dispositions, stable issue IDs and first-seen
-  passes, responses, and unresolved objections, marked as prior inputs rather than
-  new discoveries
+- prior findings as a compact disposition table (`ID | Disposition | 1-line
+  factual premise`, with stable issue IDs and first-seen passes — factual claims
+  and rationales only, no defensive essays)
 - the prior reviewed snapshot identity
 - all changes since that snapshot, including untracked inputs
 - affected behavior and dependencies, and relevant checks
@@ -61,14 +62,15 @@ Later rounds include:
 - the complete scope assigned for this pass, with the original diff kept as context
 
 Copy needed earlier-round findings and evidence into the common inputs. Ask reviewers
-to verify prior claims against the updated work and assess the complete assigned
-scope, including regressions from fixes. Earlier acceptance or rejection is not proof.
+to treat claimed `Fixed` / `Narrowed` items as unverified until checked against the
+updated code, diff, and tests (including regressions from fixes), and to treat settled
+`Defer` / `Won't do` dispositions as closed unless concrete new evidence falsifies
+their stated premise (do not reopen on severity or preference alone).
 
 ## Review request
 
 Read the assigned references and apply Review to the full scope. Follow
-[Delegated reviews](../SKILL.md#delegated-reviews), and return its coverage receipt.
-Do not read same-round peer reports, coverage receipts, summaries, or task
-conversations, including completion archives. Work read-only, and leave edits,
-commits, external actions, delegation, and acceptance to the caller. Return findings
-in the references' requested format.
+[Delegated reviews](../SKILL.md#delegated-reviews), and return its coverage block.
+Do not read same-round peer reports, summaries, or task conversations. Work
+read-only, and leave edits, commits, external actions, delegation, and acceptance
+to the caller. Return findings in the references' requested format.

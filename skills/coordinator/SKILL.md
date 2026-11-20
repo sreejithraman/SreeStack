@@ -1,422 +1,229 @@
 ---
 name: coordinator
-description: Use when asked to coordinate work across several threads or owners, carry several outcomes, tickets, or PRs to their finish lines, or act as coordinator or chief of staff.
+description: Use when asked to coordinate work across several threads or owners, carry several outcomes, tickets, or PRs to their finish lines, or act as coordinator or chief of staff. Excludes single-outcome implementation (implement) and one-shot subagent delegation (orchestration).
 ---
 
 # Coordinator
 
-Route work across threads and keep it moving until it reaches its finish line.
-Each outcome is carried by one [Implement](../implement/SKILL.md) owner. You
-own the user-facing loop: who carries what, supervision, decisions, acceptance,
-landing releases, and what the user hears. [Orchestration](../orchestration/SKILL.md)
-owns the handoff mechanics: briefs, models, dispatch, and accepting a result.
-Each linked skill owns its own procedure.
+Route work across threads and keep outcomes moving to their finish lines. Start from a request,
+tickets, spec, or active threads. Leave every outcome landed, stopped for the user at its finish
+line, or blocked with a recorded decision, and every follow-up routed.
 
-You are done when every outcome has landed, stopped for the user, or is blocked
-with a recorded need, and every follow-up has a route.
+**Turn-end done:** for a program, `record.py status --turn-end` passes (nothing runnable, clean
+record, live owner states recorded, published page current).
+**Program done:** every outcome landed, stopped at a shown Try or requested PR state, or blocked
+with a recorded decision; integrated behavior verified (or gap recorded); every follow-up routed;
+heartbeat deleted; tap-to-answer turned off; thread settled.
+
+Never edit project files directly. Each outcome is carried by one [Implement](../implement/SKILL.md)
+owner; [Orchestration](../orchestration/SKILL.md) owns model choice, briefs, recovery, and
+acceptance.
 
 ## Light by default
 
-Only a program's current coordinator acts on its items and writes its record.
-Before you act on a request, direction, report, event, or pasted answer, check
-whether it touches a program's work, including its owners. If it does and this
-thread is not that program's coordinator, forward the item under
-[move the coordinator](references/coordinator-move.md).
+Before acting on any request, direction, report, event, or pasted answer, check whether it touches
+an existing program's work or owners. Only a program's current coordinator acts on its items and
+writes its record; otherwise forward it under [coordinator move](references/coordinator-move.md).
 
-For other requests that span threads, take the lightest route that settles it:
+For other cross-thread work, take the lightest route:
 
-- **Answer it yourself** when you can, such as a status question you can read
-  from the threads and forge.
-- **Reuse an owner** already carrying related work: send it the request (in
-  T3, `t3_thread_send`).
-- **Start one** for new work: an Implement owner launched as in
-  [start owners](#2-start-owners), with an Orchestration
-  [brief](../orchestration/SKILL.md#assign) in place of the program kickoff. The
-  brief carries the request, finish line, holds, workspace, proof, and return
-  route. The owner lands on its own finish line, with no landing release.
+- **Answer yourself** when reading threads and forge state settles it.
+- **Reuse an existing owner** already carrying related work (`t3_thread_send` in T3).
+- **Light delegation** for 1–2 simple independent outcomes with no cross-owner dependencies: launch
+  bounded `delegate_task` subagents (with `isolation: "worktree"` for writers) using an
+  Orchestration brief. No program record, hosted page, Inbox, grant, or heartbeat; owners land on
+  their own finish lines, and you ask the user in chat while independent work continues. Use
+  `t3_thread_launch` in Light mode only if the user explicitly asks for separate threads.
 
-This needs no record, page, Inbox, grant, or heartbeat. Ask the user in chat,
-and keep going on what doesn't depend on the answer.
-
-**Start a program** when you carry two or more outcomes to finish lines, or the
-user asks for one. The rest of this skill applies to programs. A program has one
-[program record](references/program-state.md), a published command center with
-its **Inbox**, a grant, and a heartbeat.
+**Start a program** when carrying **3+ outcomes**, outcomes with **cross-owner dependencies or
+provisional stacks**, **async multi-turn work the user is stepping away from**, or when the **user
+explicitly asks for a program, coordinator, or dashboard**. Everything below applies to programs.
 
 ## Keep moving
 
-The program's `status` verdict decides how a turn ends. Run every record
-command from this skill's folder as
+Run every record command from this skill's folder as
 `python3 scripts/record.py <command> --state /absolute/path/program.json`.
 
-- **Runnable:** never end the turn. Act on each runnable line, then run
-  `status` again.
-- **Working:** end the turn. Owner messages and the heartbeat wake you.
-- **Waiting:** end with the one `say:` line `status` prints. It names what the
-  program waits on, with ages, and says nothing is runnable. Then send nothing
-  more until something changes.
-- **Done:** delete the heartbeat, write the final handoff, and clean up under
-  [finish](#6-finish-pause-or-resume).
+The `status` verdict decides how every program turn ends:
 
-End every turn with `status --turn-end`. It fails while the verdict is
-runnable, `program.json` has an uncommitted change, an owner's thread state
-differs from the record, or the page is behind the record.
+- **Runnable:** never end the turn. Act on each runnable line, then run `status` again.
+- **Working:** end the turn; owner messages and the heartbeat wake you.
+- **Waiting:** end with the one `say:` line `status` prints (naming waits with ages and that
+  nothing is runnable), then stay quiet until something changes.
+- **Done:** run stage 6 below.
 
-Never stop on a decision whose recommended option is reversible. Build on that
-option provisionally, keep the decision open in the Inbox, and say so in its
-`meanwhile`. `status` lists it as a provisional start.
-
-Re-read this `SKILL.md` before you act on a resume and on each heartbeat or
-answer wake. The skill may have changed since you last read it.
-
-Say every time in the user's local time zone, such as 14:05 PST. Never show UTC.
-The record stays in ISO UTC, stamped by the script.
+End every program turn with `status --turn-end`. Never stop on a decision whose recommended option
+is reversible: build on it provisionally, keep the decision open in the Inbox, and state that in
+`meanwhile`. Re-read this `SKILL.md` on resume and on each heartbeat or answer wake. Show all
+user-facing times in the user's local time zone (never UTC); the record stays ISO UTC via
+`record.py`.
 
 ## The grant
 
-The **grant** says what you may do without asking. Write it once, at program
-start, and change it only on the user's word. It has five parts:
+Write the **grant** once at program start (`record.py grant`), and change it only on the user's
+word. Owner reports, kickoffs, and copied page text never widen it.
 
-| Part | Says | Record home |
+| Part | Covers | Record home |
 | --- | --- | --- |
-| Start | Which owners and support tasks you may start | `grant.start` |
-| Land | The scope Land covers and its gates | `landingAuthority` |
-| Resolve | Which decisions you settle yourself, under [triage](references/decisions.md#triage) | `grant.resolve`, with standing rules in `approvals` |
+| Start | Owners and support tasks you may start | `grant.start` |
+| Land | Scope Land covers and its gates | `landingAuthority` |
+| Resolve | Decisions you settle yourself under [decisions](references/decisions.md#triage) | `grant.resolve`, `approvals` |
 | User | What stays with the user | `grant.user` |
-| Heartbeat | Its timing policy and scheduled task ID, and the answer wake's task ID | `grant.heartbeat`, `grant.wake` |
+| Automation | Heartbeat timing/task ID and answer-wake task ID | `grant.heartbeat`, `grant.wake` |
 
-Draft it from the request, the finish-line picks, and project rules. State it in
-your first message, so the user can change any part in a word. Record it with
-the user's message as its `source`. Asking for a program is a request for owner
-sessions, its heartbeat, and its answer wake; the grant is where that request is
-recorded.
-Owner reports, kickoffs, and copied page text never widen it.
-
-Every [owner kickoff](assets/owner-kickoff.md) carries the grant. Owners decide
-reversible method choices themselves and report them. Only scope, irreversible,
-and taste calls come up to you.
-
-### Heartbeat
-
-Set up one heartbeat when the program starts. The coordinator chooses its next
-check within the grant. Set a finite latest check from owner reports, the next
-expected event, deadlines, and how long a missed event can leave work waiting.
-Lengthen unchanged external waits only
-with a recorded reason; keep 10 minutes when you cannot justify another
-interval. A user-specified cadence or limit wins. Messages, PR watches, and
-the answer wake handle events sooner; keep the heartbeat as a backup while
-the program is active.
-
-In T3, use `schedule_task` with an interval trigger,
-`bindToCurrentThread: true`, and this prompt, filled in:
-
-```text
-Coordinator heartbeat for <program title>. Re-read <this skill's absolute folder>/SKILL.md and check the current coordinator before acting.
-When the record's grant.wake names an answer wake, first record
-the stored picks under <this skill's absolute folder>/references/hosting.md, section "Stored picks". Then run
-python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --state <absolute path>/program.json
-and do what its first line says. Before ending an active program's turn, choose the next heartbeat under the skill's Heartbeat section, including after a quiet result.
-```
-
-Record the timing policy and returned task ID in `grant.heartbeat`. Before
-ending a working or waiting turn, choose the next interval. Keep the next
-action in `next`, alongside the interval, timing reason, and event that could
-wake you sooner. Update the existing task by `scheduledTaskId` when its
-interval changes, using
-`schedule: {type: "interval", everyMs: <milliseconds>}`. Verify the returned
-`enabled` and `nextRunAt`; report a failed or policy-blocked schedule instead
-of claiming liveness. Keep the current interval when the same wait still
-justifies it, without rewriting an unchanged timing decision. When resuming
-an older 10-minute schedule, update that task and its prompt rather than
-creating another.
-
-Every scheduled tick invokes the model. `status --heartbeat` decides whether
-further supervision is needed: a quiet result means no user message, not that
-the model never ran. Timing choices use the existing heartbeat authorization;
-they do not widen the grant.
-
-When the host has no scheduled tasks, say so in the grant. Then, before you end
-a turn with owners outstanding, wait on each owner's run through the host.
-
-### Answer wake
-
-A Claude command center lets the user answer an Inbox item from the page: it
-saves the pick in the page's database, then a link wakes you to record it. Set
-it up with the heartbeat, after the page's first publish, under
-[tap-to-answer](references/hosting.md#tap-to-answer), and record its task ID in
-`grant.wake`. A heartbeat whose saved prompt predates the stored-picks line
-gets the prompt above (in T3, `schedule_task` with its task ID). A Sites page
-has no database; its Inbox keeps Copy answer alone, so record that in
-`grant.wake`.
+Draft the grant from the request, finish-line picks, and project rules, and state it in your first
+message so the user can adjust any part in one word. Keep model slugs out of `grant.start` unless
+the user explicitly pinned one (defer to `orchestration`'s model table so multi-week programs follow
+updates). Asking for a program authorizes its owner sessions, heartbeat, and answer wake. Read
+[lifecycle](references/lifecycle.md) to configure, adjust, pause, resume, or migrate the heartbeat
+and answer wake.
 
 ## 1. Set up the program
 
-Read the request and accepted corrections, every source it names, project
-conventions, and the current forge and thread state. Keep each source's ID. A
-saved snip stays Not Done under Snip Snap's
-[complete saved work](../snip-snap/SKILL.md#complete-saved-work) until its
-outcome is verified. Use [Reframe](../reframe/SKILL.md) only for what is
-unsettled, and reuse a settled brief. A spec is one input, not a requirement.
-When the direction is too rough to cut into outcomes, offer the user
-[Shape](../shape/SKILL.md).
+Read the request, accepted corrections, named sources, project rules, and live forge/thread state.
+Keep source IDs; saved snips stay Not Done under [Snip Snap](../snip-snap/SKILL.md#complete-saved-work)
+until verified. Use [Reframe](../reframe/SKILL.md) only for unsettled parts, or offer
+[Shape](../shape/SKILL.md) if too rough to cut.
 
-Cut the work into outcomes. When one body of work holds several, split it with
-[To Tasks](../to-tasks/SKILL.md) and keep each task's outcome, proof, inputs,
-and finish line on its outcome. One outcome ships as one PR or a planned stack
-from one owner. Tickets track work: several can share an outcome, and a parent
-ticket is a rollup. Never split to manage context.
+Cut work into outcomes using [To Tasks](../to-tasks/SKILL.md). One outcome ships as one PR or
+planned stack from one owner; never split to manage context. Check running sessions and open PRs
+first: **adopt** an Implement session already carrying an outcome by sending the kickoff's program,
+grant, landing, report, and route lines (recording any armed landing) instead of starting a second
+writer.
 
-Find running owners and existing PRs before you assign anything. **Adopt** an
-Implement session already carrying an outcome: send it the kickoff's program,
-grant, landing, report, and route lines, and let it keep running with its
-writer, evidence, holds, watchers, and helpers. Record any landing it already
-armed as its target's pending landing. Never start a second writer beside it.
-Replace an owner only under Orchestration's
-[replace an owner](../orchestration/references/reuse-and-recovery.md#replace-an-owner),
-after reconciling. When the stopped owner's worktree still holds its branch,
-reuse that worktree through the host (in T3, `existing_worktree`) once it is
-clean and holds no unique commits, or start the replacement on a new branch.
+Pick each outcome's finish line from [Implement's finish-line policy](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
+User, caller, or project holds win; adding an outcome or repo never widens landing scope. Initialize
+the record (`record.py init`, `grant`, `work --add`) before starting owners — see
+[program state](references/program-state.md). Verify publishing tools exist under [hosting](references/hosting.md) (report a blocker if absent;
+never auto-install plugins). Your first message gives the finish-line picks, grant, command center
+link (or the local `command-center.html` path and Inbox items in chat when running local-only under
+[hosting](references/hosting.md)), and any proposed standing approvals.
 
-Pick each outcome's finish line from Implement's
-[table](../implement/SKILL.md#2-state-the-finish-line-and-prepare). Land picked
-under that policy authorizes merging that outcome within the agreed program
-scope, and your [landing release](references/landing.md) still gates it. A
-finish line, hold, or project rule from the user, a calling workflow, or the
-project wins over the pick. One that reserves merges, such as "I decide each
-merge", makes each landing wait on an Inbox item. Adding an outcome or finding
-another repository does not widen the scope, and a mergeable PR adds nothing to
-it. A stack is a delivery shape, not a finish line. A later change applies to
-all unmerged work: update the record and owners, then reconcile pending
-landings under [withdraw a release](references/landing.md#withdraw-a-release).
-
-Write the [program record](references/program-state.md) before you start or
-adopt owners, so another coordinator could resume from it. Work items stay in
-the project's tracker, and a coordination request needs no new one. Your first
-message gives the finish-line picks, the grant, and the command center's link.
-When a small choice will recur, propose a
-[standing approval](references/decisions.md#standing-approvals) with them;
-owners start without waiting for the answer.
-
-You must have your session's [publishing tools](references/hosting.md): Claude
-artifact tools for Claude, or the available Sites plugin for Codex. If they are
-unavailable, report the blocker and ask the user to use a session with them. Do
-not install plugins automatically.
-
-Done when each outcome has its sources, scope and covered code, proof, holds,
-finish line, and owner or planned start; every running owner is adopted; and
-the grant and heartbeat are set.
+Done when every outcome has sources, scope, proof, holds, finish line, and owner/plan; running
+owners are adopted; and the grant, page, heartbeat, and answer wake are set.
 
 ## 2. Start owners
 
-Start an outcome when it is [ready](../to-tasks/SKILL.md#ready), including To
-Tasks' provisional start, and schedule by the
-[dependency rules](references/dependencies.md). An outcome that waits never
-holds up unrelated ones.
+Start ready outcomes per [dependencies](references/dependencies.md) and
+[To Tasks' ready rule](../to-tasks/SKILL.md#ready) (including provisional starts). Unrelated
+outcomes never wait on blocked ones. When starting **3+ homogeneous outcomes**, run one canary
+unit through kickoff and proof first so kickoff or environment flaws cost one owner instead of all:
+hold the remaining planned rows with `record.py work --id <W> --blocked "Waiting on canary <W1> kickoff and proof"`,
+and clear them with `--clear-blocked` once the canary proves the kickoff (so `status --turn-end`
+does not treat held rows as runnable).
 
-Fill the [owner kickoff](assets/owner-kickoff.md) and start the owner with it,
-writing `$implement` in place of `/implement` for a Codex owner. Implement picks
-the method and runs its helpers as its own subagents.
+Fill [owner kickoff](assets/owner-kickoff.md) — starting with `/implement` (Claude), `$implement`
+(Codex), or a plain instruction to follow the `implement` skill (other providers) — and launch each
+program outcome owner as its own **top-level session** bound to a host worktree (in T3,
+`t3_thread_launch` with `worktree` `workspaceStrategy`, titled `<ID> <short title>`, e.g.,
+`W3 Retry status`), so it edits its worktree directly, watches its own PR, and runs its own
+review loop. Fall back to a delegated worktree child only when the host cannot launch top-level
+sessions. Run **support, research, and findings-only tasks** as `delegate_task` subagents, not
+top-level threads. Record each owner with `record.py start`. Only you start program owners.
 
-Start each owner as its own top-level session, so the user can open and steer
-it. Bind its workspace through the host, never in the shell: in T3,
-`t3_thread_launch` with a `worktree` `workspaceStrategy` for the owner's branch.
-Start the thread title with the outcome ID, such as `W3 Retry status`. When the
-host cannot launch top-level sessions, start a delegated owner in its own
-host-managed worktree instead. Use Orchestration for model choice and
-concurrency. Give each branch one writer, and serialize stack operations and
-shared resources. Record each owner with `start`. Only you start program owners.
+Keep blocked work moving safely: build on another owner's unmerged branch or a reversible
+recommended option provisionally ([provisional work](../implement/references/provisional.md));
+race two close options with [Swarm](../swarm/SKILL.md) when cheaper than waiting; deduplicate
+shared environment/tooling problems into one support task; put missing logins/secrets in the Inbox
+and route secrets only through host private input or [Agent Login](../agent-login/SKILL.md), never
+chat.
 
-Each owner checks its access and proof before work runs unattended, under
-Implement's [prepare](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
-When work is blocked, keep it moving safely:
-
-| Blocked on | Do |
-| --- | --- |
-| Another owner's unmerged work | Build on that branch as a [provisional base](references/dependencies.md#provisional-work) |
-| A decision whose recommended option is reversible | Build on that option provisionally and keep the decision open |
-| Two close options | Build both on separate branches when that costs less than waiting |
-| A shared environment or tooling problem | Start one support task for the cause |
-| A login or secret | Record an `access` item in the Inbox and move to other work |
-
-Secrets reach owners through the host's private input or
-[Agent Login](../agent-login/SKILL.md), never chat.
-
-Done when every ready outcome is running and every other outcome waits on a
-recorded dependency, Inbox item, or block.
+Done when every ready outcome is running (or canary-gated) and every other outcome waits on a
+recorded dependency, Inbox decision, or blocker.
 
 ## 3. Supervise
 
-On each owner report, user direction, or wake, read the linked artifacts and
-the current tracker and forge state before you change the plan. Record the
-report with `report`, under
-[owner reports](references/program-state.md#owner-reports), then run `status`.
-It checks heads at the forge and lists owners that went idle while they owe
-work. Read an idle owner's thread. Handle a report or request it sent. Recover
-a run that failed, was interrupted, or went idle without a report under
-Orchestration's
-[recover work](../orchestration/references/reuse-and-recovery.md#recover-work),
-or record the outcome blocked with what is missing.
+On each report, user direction, or wake, read linked artifacts and live tracker/forge state, run
+`record.py report`, then `record.py status`. Read any idle owner that owes work and recover or
+record its blocker under [Orchestration recovery](../orchestration/references/reuse-and-recovery.md#recover-work).
+Judge whether a running owner is stalled by commits, pushes, PR activity, or report updates across
+wakes — not status prose alone.
 
-[Triage each decision request](references/decisions.md#triage). Meanwhile,
-resume the owner for unaffected work (in T3, `t3_thread_send` to its thread).
-
-Give every discovery a disposition:
+Triage decision requests under [decisions](references/decisions.md#triage) and resume owners for
+unaffected work. Give every incoming discovery or deferred owner `followups` item a concrete
+disposition via `record.py discovery` (open discoveries and pending held deferred PR replies keep
+`status` runnable until routed and acknowledged with `--reply-sent`; when a followup carries a
+`thread` ID, send the recorded destination back to that PR's owner so it can post the reply and
+resolve the thread):
 
 | Discovery | Action |
 | --- | --- |
-| A defect in the requested change, or a fix it needs to land safely | Return it to that owner with the requirement and evidence |
-| Related work its owner's context helps | That owner's follow-up outcome, with its own finish line |
-| Separate work the program needs | A new outcome with its origin, sequenced by dependency |
-| Shared environment, tooling, or cross-repo blocker | One support task; a repository change gets its own outcome |
-| Useful work outside the program | Save it through [Snip Snap](../snip-snap/SKILL.md) and keep the ID |
-| A decision someone must make | [Triage it](references/decisions.md#triage) |
-| Duplicate, obsolete, or declined work | Record why and link the existing disposition |
+| Defect in requested change, or fix required to land safely | Return to that slice's owner with requirement and evidence |
+| Related work helped by that owner's context | Follow-up outcome for that owner with its own finish line |
+| Separate work the program needs | New outcome sequenced by dependency |
+| Shared environment, tooling, or cross-repo blocker | One deduplicated support task (repo code changes get an outcome) |
+| Useful work outside the program | Save via [Snip Snap](../snip-snap/SKILL.md) and keep its ID |
+| Decision someone must make | Triage under [decisions](references/decisions.md#triage) |
+| Duplicate, obsolete, or declined | Record why and link existing disposition |
 
-Scope only shrinks, under Implement's
-[scope rule](../implement/SKILL.md#keep-scope-and-decisions). A required fix
-stays required when it becomes its own outcome, and its dependent waits under
-the [dependency rule](references/dependencies.md#dependencies). When an owner
-reports a split, replan the affected outcomes.
+Enforce [Implement's shrink-only scope rule](../implement/SKILL.md#keep-scope-and-decisions).
+Let converging review passes finish inside scope, even across several rounds, but stop approving
+repairs onto a PR when it **diverges** — repairs pull in new subsystems outside `scope`, roughly
+double the first working draft's diff, or keep introducing regressions / reopening the same
+invariant across consecutive passes. Ship or split the settled core, spin the rest into a follow-up
+outcome, or put the split-vs-keep choice in the Inbox. Never bury a blocker that only the user can
+lift in `work.blocked` with an empty Inbox — open an Inbox decision instead.
 
-Repairs go to the slice's owner under Orchestration's
-[who does the work](../orchestration/SKILL.md#who-does-the-work). Keep product
-changes with owners. Send findings-only investigation to a bounded task through
-[Research](../research/SKILL.md), [How](../how/SKILL.md), or
-[Diagnosing Bugs](../diagnosing-bugs/SKILL.md), and parallel coverage or
-comparison through [Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md).
-Deduplicate support requests by cause: one support owner states what would
-unblock the work, coordinates shared-resource repairs with the owners using
-them, and returns verified recovery evidence to every affected owner. Simulator
-work uses [Simulator Lifecycle](../simulator-lifecycle/SKILL.md). Routine
-recoverable problems stay with the responsible agent; the Inbox holds only what
-agents cannot resolve within their grant. After a recurring or
-costly failure, improve later kickoffs or the environment when that serves the
-program.
+Keep product changes with owners; send read-only investigation to [Research](../research/SKILL.md),
+[How](../how/SKILL.md), or [Diagnosing Bugs](../diagnosing-bugs/SKILL.md), parallel work to
+[Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md), and simulator work to
+[Simulator Lifecycle](../simulator-lifecycle/SKILL.md). Settle finished (`landed`, `done`,
+`scrapped`) or parked owner threads (`t3_thread_organize` with `action: "settle"`) so the user's
+sidebar shows only active work; settling preserves their worktree and repair ownership. After a
+recurring or costly failure, improve later kickoffs or the environment when it serves the program.
+Reconcile any direct user steering in an owner thread before dispatching dependent work.
 
-Check integration as results arrive, and have dependents restack and recheck
-when a base changes, under [integration](references/dependencies.md#integration).
-After each accepted result, landing, answer, or dependency change, start what
-became ready; `status` lists it.
-
-A top-level owner watches its own PR and sends its reports, decision requests,
-and blockers through the [current coordinator check](references/coordinator-move.md#check-the-coordinator).
-For a delegated owner, this
-thread is the watching parent under PR's [wait](../pr/references/watch.md#wait);
-keep watching while Inbox items are open.
-The user can enter an owner's session directly; reconcile their new direction
-before you dispatch work that depends on it.
-
-Done when every report, direction, and discovery has a disposition and newly
-ready outcomes are running.
+Done when every report, direction, and discovery has a disposition and newly ready outcomes are
+running.
 
 ## 4. Accept and release
 
-Accept each outcome under Orchestration's
-[accept](../orchestration/SKILL.md#accept), against the current head and base of
-every layer. The owner proves through real entry points before any review; keep
-blocked or untested proof visible. An outcome stays unaccepted while an open
-decision affects its scope. Try stops before review. The owner runs review when
-PR publishes, or through [Review Fix Loop](../review-fix-loop/SKILL.md) only
-when the user asks.
+Accept each outcome under [Orchestration accept](../orchestration/SKILL.md#accept) at the current
+head and base of every layer. Required proof must pass before review; open decisions affecting scope
+block acceptance.
 
-Answer each stop in the same pass:
-
+Handle each stop in the same pass:
 - **Shown Try:** put its merge, changes, or scrap choice in the Inbox under
-  [Try choices](references/decisions.md#try-choices), and route the answer to
-  the same owner. Merge makes its finish line Land, still gated by acceptance
-  and release. Changes go back to the owner. Scrap goes to the owner's cleanup,
-  and each dependent gets its own choice.
-- **Requested PR state:** the outcome stops there for the user.
-- **Ready to land:** accept it and [release its landing](references/landing.md),
-  return a repair to its owner, or record the dependency, decision, hold, or
-  earlier landing it waits on and act when that clears.
+  [Try choices](references/decisions.md#try-choices) and route the answer to the same owner.
+- **Requested PR state or held draft:** stop there for the user; if a verified draft or PR is
+  waiting only on user authorization to land, open an Inbox decision instead of leaving it idle
+  with an empty Inbox.
+- **Ready to land:** accept and release landing under [landing](references/landing.md), return a
+  repair to its owner, or record what it waits on. Provisional work never lands.
 
-Provisional work never lands. Its owner keeps the PR body's `## Provisional`
-section until the condition clears and the affected proof is refreshed, and
-Merge stops on it.
-
-Done when every outcome at a stop has a released landing, an open Inbox item,
-its requested PR state, or a repair with its owner.
+Done when every stopped outcome has a released landing, open Inbox decision, requested PR state,
+or repair with its owner.
 
 ## 5. Inbox and page
 
-The **Inbox** is how the program asks the user. It is asynchronous: the user
-answers when they can, and work that doesn't depend on the answer continues.
-Never use a blocking question tool for a program ask, unless the user is
-present and in a live back-and-forth with you. Each item asks one question and
-carries its options, its recommendation, what it blocks, and what continues
-meanwhile, under [Inbox items](references/decisions.md#inbox-items).
+The **Inbox** is the program's asynchronous user queue (never use a blocking question tool unless in
+a live back-and-forth with the user). Format items, attach visuals for visual choices (`record.py
+picture`), and record answers (`record.py answer`) under [decisions](references/decisions.md).
 
-Attach pictures whenever a choice is visual, such as a layout, a screen state,
-or a before and after: one screenshot per option, or the item's own pictures
-side by side, as a before and after, or as a short sequence. Ask owners for them
-in their asks, or attach them with `picture`. The user taps one to see it
-larger in the page. An item whose choice isn't visual stays text only.
+Publish the command center after record changes under [hosting](references/hosting.md) and share its
+link (never an inline render). Write `next`, `description`, and Inbox copy for a person scanning on
+a phone — replace `next` with one short line (at most 280 characters, enforced by `record.py`),
+never an append-only history log; see [page copy](references/program-state.md#page-copy). Record
+stored page picks on every answer wake, heartbeat tick, and resume — and in the same
+`answer --stored` command as any user-message answer so the message supersedes earlier picks.
 
-[Publish the command center](references/hosting.md) after each record write and
-give the user its link, never an inline render. It opens with the program's
-health: the `status` verdict and counts, the oldest Inbox item's age, and
-`next`. It shows every outcome once, with what is happening now, its owner's
-last observed state, its finish line, results and how to open them,
-provisional condition, owner, layers, and what each Inbox item blocks. Results
-come from owners' Shown reports: link what they showed, say what opening it
-needs, and name the gaps. A shown picture becomes the result's thumbnail. Keep
-each row's observation time honest.
+Send chat updates only for what the user can now use, try, decide, or unblock; keep routine checks
+and recovery in the record. When woken by an owner report or page publish that adds nothing new for
+the user to use, try, decide, or unblock, record it, publish, and end the turn silently (no chat
+message), just like a quiet heartbeat.
 
-Answers arrive as picks the user sent from the page, as prompts copied from it,
-or in the user's own words. Record the
-[stored picks](references/hosting.md#stored-picks) on every answer wake,
-heartbeat tick, and resume, and before you settle any Need yourself. Record an
-answer from the user's message in the same command as the stored picks, so it
-supersedes the picks saved before it rather than raising a reopen request.
-Record each answer under
-[record an answer](references/decisions.md#record-an-answer), then update the
-affected owners, dependencies, and releases before work resumes.
-
-Choose user updates from the owner reports: what the user can now use, try,
-decide, or unblock. Keep routine checks, recovery, and unchanged milestones in
-the record, and answer direct questions in the detail asked.
-
-Done when the published page matches the last commit and shows every result
-and open Inbox item.
+Done when the published page matches `HEAD` and shows every result and open Inbox decision.
 
 ## 6. Finish, pause, or resume
 
-The program is done when every outcome has landed, stopped for the user at a
-shown Try or requested PR state, or is blocked with a recorded need; integrated
-behavior is verified where outcomes interact, or the gap is recorded; and every
-discovery and follow-up has a route. Keep acceptance evidence, tradeoffs,
-resolved decisions, follow-ups, and remaining gaps in the record, with findings
-in Review Sweep's
-[claim, repair, and check states](../review-sweep/references/finding-schema.md).
+On **Program done**: delete the heartbeat (`delete_scheduled_task` in T3) and turn off tap-to-answer
+under [hosting](references/hosting.md). Keep acceptance evidence, tradeoffs, resolved decisions,
+follow-ups, and remaining gaps (in [finding schema](../review-sweep/references/finding-schema.md))
+in the record. Lead the final handoff with open Inbox items if action is needed, otherwise usable
+outcomes and links, naming coordinator-resolved decisions so the user can reopen them. Clean up via
+[Repo Cleanup](../repo-cleanup/SKILL.md) once active dependents no longer need resources, record
+each retained owner's successor route in `owner.route` and a one-line final disposition in `next`,
+and settle the thread (`t3_thread_organize` with `action: "settle"`).
 
-On done, delete the heartbeat (in T3, `delete_scheduled_task`) and
-[turn off](references/hosting.md#turn-off) tap-to-answer. Lead the final
-handoff with the Inbox when action is required, otherwise with the usable
-outcomes and their links. Name the decisions you resolved so the user can
-reopen them. Clean up through [Repo Cleanup](../repo-cleanup/SKILL.md) once
-retained work and active dependents no longer need the resources.
-Apply Orchestration's [completion rule](../orchestration/SKILL.md#communicate):
-leave the responsibility dispositions and any successor routes in `next`, with
-each retained owner's route in `owner.route`. Once this thread's obligations
-are complete, settle it through the host (in T3, `t3_thread_organize` with
-`action: "settle"`).
-
-**Pause:** bring the record current, pause the heartbeat (in T3,
-`schedule_task` with `enabled: false`), and
-[turn off](references/hosting.md#turn-off) tap-to-answer. **Move:** follow
-[move the coordinator](references/coordinator-move.md).
-
-**Resume:** re-read this skill, start from the record's `next`, and run
-`status`. Reconcile the record with current files, threads, and forge state, and
-[publish the page](references/hosting.md) before you dispatch. Turn the
-existing paused heartbeat back on. If it was deleted or is confirmed missing,
-create one under [Heartbeat](#heartbeat) and record its new task ID in
-`grant.heartbeat`. Verify `enabled` and `nextRunAt` before leaving active work
-waiting. Restore the [answer wake](#answer-wake) under its setup procedure.
-
-**A program started under Chief of Staff** migrates once. Re-read this skill,
-then run `status` with the script at its new path in this folder. Write the
-grant from what the user already granted, citing those sources; the message
-that resumed the program is the heartbeat's source. Set up the heartbeat and the
-answer wake, and publish the page so it shows the Inbox.
+For **pause, resume, move, takeover, or Chief-of-Staff migration**, follow
+[lifecycle](references/lifecycle.md) and [coordinator move](references/coordinator-move.md).

@@ -35,8 +35,10 @@ limits.
    `pr_state` blocks a head without a passing `review-fix-loop` status, including after a base
    update or restack. A caller with its own repair owner gets the gap back. Without one, take
    the head through PR's [Prepare and Review steps](../pr/SKILL.md#publish), publish any fixes,
-   and read the state again. A new head of reviewed work is a
-   [repair pass](../review-fix-loop/SKILL.md#4-route-repairs).
+   and read the state again. A new head of reviewed work follows
+   [Review Fix Loop's repair routing](../review-fix-loop/SKILL.md#route-repairs) (clean
+   disjoint rebases carry forward coverage onto the new pushed SHA; edits or interacting base
+   changes run a repair pass).
 
    A caller that keeps its own repair owner gets each failure, comment, and stop back, and resumes
    that owner. You repair nothing.
@@ -86,5 +88,6 @@ limits.
    resources, including device installs. Name resources that remaining stack layers still need.
    A failed issue update doesn't stop eligible cleanup.
 
-Report merged and pending PRs, the fixes made along the way, issue results, cleanup results, and
-blockers, and show the result. The report ends at what landed.
+Report merged and pending PRs, the fixes made along the way, any `Deferred` findings and `Stops`
+returned by PR or review steps, issue results, cleanup results, and blockers, and show the result.
+The report ends at what landed.

@@ -9,7 +9,7 @@ import tempfile
 import textwrap
 import unittest
 
-from record import Refused, answer_stored, observe, stored_picks
+from record import Refused, answer_stored, gh_pr, observe, stored_picks
 from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, now_line, work
 
@@ -17,11 +17,53 @@ from test_render_dashboard import GIT_ENV, Program, decision, example, now_line,
 SCRIPT = Path(__file__).with_name("record.py")
 FAKE = textwrap.dedent("""\
     import json, os, sys
+    GH_PR_VIEW_ALLOWED = {
+        "additions", "assignees", "author", "autoMergeRequest", "baseRefName", "baseRefOid", "body",
+        "changedFiles", "closed", "closedAt", "closingIssuesReferences", "comments", "commits", "createdAt",
+        "deletions", "files", "fullDatabaseId", "headRefName", "headRefOid", "headRepository",
+        "headRepositoryOwner", "id", "isCrossRepository", "isDraft", "labels", "latestReviews",
+        "maintainerCanModify", "mergeCommit", "mergeStateStatus", "mergeable", "mergedAt", "mergedBy",
+        "milestone", "number", "potentialMergeCommit", "projectCards", "projectItems", "reactionGroups",
+        "reviewDecision", "reviewRequests", "reviews", "state", "statusCheckRollup", "title", "updatedAt", "url",
+    }
     fixtures = json.load(open(os.environ["RECORD_FIXTURES"]))
-    kind, key = ("prs", sys.argv[3]) if sys.argv[1] == "pr" else ("threads", sys.argv[-1])
-    if key not in fixtures[kind]:
+    if sys.argv[1:3] == ["api", "graphql"]:
+        host = None
+        variables = {}
+        index = 3
+        while index < len(sys.argv):
+            arg = sys.argv[index]
+            if arg == "--hostname":
+                host = sys.argv[index + 1]
+                index += 2
+            elif arg in {"-f", "-F"}:
+                key, value = sys.argv[index + 1].split("=", 1)
+                variables[key] = value
+                index += 2
+            else:
+                index += 1
+        if not host or "query" not in variables or not {"owner", "name", "number"} <= set(variables):
+            sys.exit("invalid graphql invocation: missing --hostname or required variables")
+        url = f"https://{host}/{variables['owner']}/{variables['name']}/pull/{variables['number']}"
+        if url not in fixtures["prs"]:
+            sys.exit(f"{url} not found")
+        print(json.dumps({"data": {"repository": {"pullRequest": fixtures["prs"][url]}}}))
+        sys.exit(0)
+    if sys.argv[1] == "pr":
+        if "--json" in sys.argv:
+            requested = sys.argv[sys.argv.index("--json") + 1].split(",")
+            unknown = [field for field in requested if field not in GH_PR_VIEW_ALLOWED]
+            if unknown:
+                sys.exit(f'Unknown JSON field: "{unknown[0]}"')
+        key = sys.argv[3]
+        if key not in fixtures["prs"]:
+            sys.exit(f"{key} not found")
+        print(json.dumps(fixtures["prs"][key]))
+        sys.exit(0)
+    key = sys.argv[-1]
+    if key not in fixtures["threads"]:
         sys.exit(f"{key} not found")
-    print(json.dumps(fixtures[kind][key] if kind == "prs" else {"thread": fixtures[kind][key], "messages": []}))
+    print(json.dumps({"thread": fixtures["threads"][key], "messages": []}))
 """)
 SESSION = "https://app.t3.codes/threads/env/thread%3A{}"
 
@@ -240,6 +282,8 @@ class EventTests(RecordCase):
         changed, after, _ = self.event("wait", "--on", "CI", "--event", "Done", "--next", "Check CI")
         self.assertEqual(changed, {"waits", "next"})
         self.assertEqual(after["next"], "Check CI")
+        self.refused("wait", "--on", "CI2", "--event", "Done", "--next", "x" * 281, message="at most 280 characters")
+        self.refused("wait", "--on", "CI2", "--event", "Done", "--next", "Line 1\nLine 2", message="one short line")
 
 
 class ReportTests(RecordCase):
@@ -394,6 +438,14 @@ class LandingTests(RecordCase):
         self.assertIn("resume Retry owner with landing L2", result.stdout)
         self.refused("land", "--work", "W1", message="already has pending landing L2")
         self.refused("land", "--landing", "L2", "--to", "withdrawn", message="needs --note")
+        self.refused("land", "--landing", "L2", "--to", "withdrawn", "--note", "Head moved",
+                     message="move it to --to cancelling first")
+        self.event("land", "--landing", "L2", "--to", "cancelling", "--note", "Head moved")
+        self.serve(prs={
+            layer["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": layer["head"], "baseRefName": layer["base"],
+                           "autoMergeRequest": None, "isInMergeQueue": False}
+            for layer in work(after, "W1")["layers"]
+        })
         _, after, _ = self.event("land", "--landing", "L2", "--to", "withdrawn", "--note", "Head moved")
         self.assertEqual(after["landings"][-1]["state"], "withdrawn")
 
@@ -504,7 +556,7 @@ class StatusTests(RecordCase):
         _, after, result = self.event("status")
         self.assertEqual((work(after, "W1")["state"], work(after, "W1")["layers"][0]["base"]), ("in-review", "release"))
         self.assertIn("W1-L1 base moved to release", result.stdout)
-        self.assertIn("L2: a released head or base moved; withdraw the release", result.stdout)
+        self.assertIn("L2: a released head or base moved; move it to --to cancelling before notifying", result.stdout)
 
     def test_related_forge_facts_apply_whatever_the_row_order(self):
         def stack(order):
@@ -1292,6 +1344,516 @@ class TurnEndTests(RecordCase):
                          ["W1 (ready): ready with no landing release"])
         work(landing, "W1")["finishLine"] = "pr-review"
         self.assertEqual(orphans(landing, {"W2": {"status": "running"}, "W6": {"status": "running"}}), [], "a requested PR state is a stop for the user")
+
+
+class LifecycleMutationTests(RecordCase):
+    def test_init_creates_git_repo_and_initial_commit(self):
+        fresh = self.program.folder.parent / "fresh-program" / "program.json"
+        env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3"),
+               "RECORD_FIXTURES": str(self.fixtures)}
+        result = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(fresh),
+            "--title", "Payments", "--goal", "Ship retries", "--chief", SESSION.format("chief"),
+            "--request", "Ship retries cleanly", "--request-source", "User msg 1", "--next", "Add outcomes",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((fresh.parent / "reports").is_dir())
+        state = json.loads(fresh.read_text())
+        committed_state = json.loads(subprocess.run(
+            ["git", "-C", str(fresh.parent), "show", "HEAD:program.json"],
+            capture_output=True, text=True, check=True,
+        ).stdout)
+        self.assertEqual(state, committed_state)
+        self.assertEqual((state["title"], state["next"], state["work"], state["decisions"]),
+                         ("Payments", "Add outcomes", [], []))
+        self.assertEqual(state["request"], {"text": "Ship retries cleanly", "sources": ["User msg 1"]})
+        again = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(fresh),
+            "--title", "Payments", "--goal", "Ship retries", "--chief", SESSION.format("chief"),
+            "--request", "Ship retries cleanly",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(again.returncode, 1)
+        self.assertIn("already exists", again.stderr)
+
+        # Failed commit during init leaves neither file nor staged index entry.
+        broken = self.program.folder.parent / "broken-init" / "program.json"
+        broken.parent.mkdir()
+        subprocess.run(["git", "-C", str(broken.parent), "init", "-q"], check=True, env=env)
+        hook = broken.parent / ".git" / "hooks" / "pre-commit"
+        hook.write_text("#!/bin/sh\nexit 1\n")
+        hook.chmod(0o755)
+        failed = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(broken),
+            "--title", "Broken", "--goal", "Fail commit", "--chief", SESSION.format("chief"),
+            "--request", "Fail commit",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(failed.returncode, 1)
+        self.assertFalse(broken.exists())
+        staged = subprocess.run(["git", "-C", str(broken.parent), "ls-files"],
+                                capture_output=True, text=True, check=True, env=env).stdout.strip()
+        self.assertEqual(staged, "")
+
+    def test_grant_updates_grant_landing_authority_and_hosting(self):
+        _, after, _ = self.event(
+            "grant", "--source", "User msg 2", "--start", "All program outcomes",
+            "--resolve", "Settled reversible choices", "--user", "Merges and scope",
+            "--heartbeat", "10m task T1", "--wake", "Webhook task T2",
+            "--landing", "Scoped PRs once green", "--hosting", "https://claude.ai/artifacts/abc",
+        )
+        self.assertEqual(after["grant"]["start"], "All program outcomes")
+        self.assertEqual(after["grant"]["heartbeat"], "10m task T1")
+        self.assertEqual(after["grant"]["wake"], "Webhook task T2")
+        self.assertEqual(after["landingAuthority"]["text"], "Scoped PRs once green")
+        self.assertEqual(after["hosting"], "https://claude.ai/artifacts/abc")
+
+        _, after, _ = self.event("grant", "--heartbeat", "20m task T1")
+        self.assertEqual(after["grant"]["heartbeat"], "20m task T1")
+        self.assertEqual(after["grant"]["start"], "All program outcomes")
+        self.refused("grant", "--landing", "Need source", message="needs --source")
+        self.refused("grant", "--start", "Widen without source", message="needs --source")
+        self.refused("grant", "--resolve", "Widen without source", message="needs --source")
+        self.refused("grant", "--next", "line1\u2028line2", "--heartbeat", "10m", message="one short line")
+        self.refused("grant", message="at least one field")
+
+    def test_work_add_and_update(self):
+        _, after, _ = self.event(
+            "work", "--id", "W9", "--add", "--title", "Add webhook", "--repo", "acme/app",
+            "--finish-line", "land", "--finish-line-reason", "Settled and reversible",
+            "--description", "Emit signed webhooks", "--scope", "src/webhooks/**",
+            "--blocked-by", "W1", "--source", "Issue #9", "--optional",
+        )
+        row = work(after, "W9")
+        self.assertEqual((row["state"], row["finishLine"], row["required"], row["blockedBy"]),
+                         ("planned", "land", False, ["W1"]))
+        self.refused("work", "--id", "W9", "--add", "--title", "Dup", "--repo", "acme/app", message="already exists")
+
+        _, after, _ = self.event("work", "--id", "W9", "--required", "--clear-blocked-by",
+                                 "--provisional-basis", "Waiting on W1", "--provisional-clears", "W1 lands",
+                                 "--provisional-on", "W1")
+        row = work(after, "W9")
+        self.assertNotIn("required", row)
+        self.assertNotIn("blockedBy", row)
+        self.assertEqual(row["provisional"]["on"], ["W1"])
+        self.refused("work", "--id", "W9", message="at least one field")
+
+    def test_work_scrap_and_rebase_answer_decision_atomically(self):
+        # W2 stacks on W1-L2 and is provisional on W1; scrap W1, then resolve W2's dead-base decision atomically.
+        self.commit(lambda s: (
+            work(s, "W1").update(state="scrapped"),
+            work(s, "W1").pop("blocked", None),
+            s["decisions"].append({
+                "id": "W2-D9", "question": "W1 was scrapped. Scrap or rebase W2?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase onto main", "effect": "Drop W1 layer", "recommended": True, "reversible": True},
+                    {"label": "Scrap W2", "effect": "Close W2", "reversible": False},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+        ))
+        _, after, _ = self.event(
+            "work", "--id", "W2", "--rebase-onto", "main",
+            "--decision", "W2-D9", "--option", "1", "--answer-source", "User msg 10",
+        )
+        w2 = work(after, "W2")
+        self.assertEqual(w2["layers"][0]["base"], "main")
+        self.assertNotIn("stackedOn", w2["layers"][0])
+        self.assertNotIn("provisional", w2)
+        self.assertEqual(decision(after, "W2-D9")["status"], "answered")
+
+    def test_work_scrap_clears_blockers_and_answers_decision(self):
+        self.commit(lambda s: decision(s, "W6-D1").update(
+            question="Keep or scrap W6?",
+            options=[
+                {"label": "Rebase W6 onto main", "effect": "Keep W6", "recommended": True, "reversible": True},
+                {"label": "Scrap W6", "effect": "Close W6", "reversible": False},
+            ],
+        ))
+        self.refused(
+            "work", "--id", "W1", "--scrap",
+            "--decision", "W6-D1", "--option", "2", "--answer-source", "User msg 11",
+            message="does not block W1",
+        )
+        _, after, _ = self.event(
+            "work", "--id", "W6", "--scrap",
+            "--decision", "W6-D1", "--option", "2", "--answer-source", "User msg 11",
+        )
+        self.assertEqual(work(after, "W6")["state"], "scrapped")
+        self.assertNotIn("blocked", work(after, "W6"))
+        self.assertEqual(decision(after, "W6-D1")["status"], "answered")
+
+    def test_work_rebase_guards_next_limits_reopen_revision_and_provisional_draft(self):
+        # 1. Rebasing ready work demotes readiness; --stack-on requires --rebase-onto and matching repo.
+        self.commit(ready)
+        self.refused("work", "--id", "W1", "--stack-on", "W2-L1", "--scope", "x", message="--stack-on requires --rebase-onto")
+        self.refused("work", "--id", "W2", "--repo", "other/repo", "--rebase-onto", "feat/exports-schema",
+                     "--stack-on", "W1-L1", message="cannot stack W2 (other/repo)")
+        _, rebased, _ = self.event("work", "--id", "W1", "--rebase-onto", "release")
+        self.assertEqual(work(rebased, "W1")["state"], "in-review")
+        self.assertTrue(all(layer["status"] != "ready" for layer in work(rebased, "W1")["layers"]))
+
+        # 2. Terminal --status guards and pending-landing fence on work.
+        self.refused("work", "--id", "W4", "--status", "scrapped", message="use --scrap")
+        self.refused("work", "--id", "W4", "--status", "landed", message="not --status landed")
+        self.commit(ready)
+        self.event("land", "--work", "W1")
+        self.refused("work", "--id", "W1", "--scrap", message="pending landing")
+
+        # 3. Rebasing off dead base onto an unmerged parent refreshes provisional; onto merged parent clears it.
+        self.commit(lambda s: (
+            work(s, "W1").update(state="scrapped"),
+            work(s, "W1").pop("blocked", None),
+            s["work"].append({
+                "id": "W9", "title": "Alt parent", "repo": "example/exports", "kind": "outcome",
+                "state": "in-review", "finishLine": "land", "checkedAt": "2026-11-02T17:00:00Z",
+                "owner": {"name": "Alt owner", "start": "top-level", "route": "t3"},
+                "layers": [{"id": "W9-L1", "branch": "feat/w9", "status": "open",
+                            "url": "https://github.com/example/exports/pull/99", "base": "main"}],
+            }),
+            s["decisions"].append({
+                "id": "W2-D8", "question": "W1 scrapped. Rebase or scrap W2?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase onto feat/w9", "effect": "Stack on W9", "recommended": True, "reversible": True},
+                    {"label": "Scrap W2", "effect": "Close W2", "reversible": False},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+        ))
+        cur = self.head()
+        d8 = decision(cur, "W2-D8")
+        picks_file = self.program.folder.parent / "dead-base.jsonl"
+        doc_id = f"{d8['id'].encode().hex()}-{revision(d8)}"
+        picks_file.write_text("\n".join([
+            json.dumps({"id": doc_id, "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+                        "data": {"decision": "W2-D8", "revision": revision(d8), "option": 1, "label": "Rebase onto feat/w9"}}),
+            json.dumps({"count": 1}),
+        ]) + "\n")
+        # Standalone answer fails validation while W2 still rests on dead W1; work --rebase-onto --decision succeeds,
+        # and re-running answer --stored emits the delete receipt for the already-recorded pick.
+        self.refused("answer", "--stored", str(picks_file), message="W2")
+        _, after_rebase, _ = self.event(
+            "work", "--id", "W2", "--rebase-onto", "feat/w9", "--stack-on", "W9-L1",
+            "--provisional-clears", "W9 lands and canary passes",
+            "--decision", "W2-D8", "--option", "1", "--answer-source", "Stored page pick",
+        )
+        w2 = work(after_rebase, "W2")
+        self.assertEqual(w2["provisional"]["on"], ["W9"])
+        self.assertIn("W9", w2["provisional"]["basis"])
+        self.assertEqual(w2["provisional"]["clears"], "W9 lands and canary passes")
+        self.assertNotIn("W1", w2["provisional"]["clears"])
+        self.assertEqual(decision(after_rebase, "W2-D8")["status"], "answered")
+        _, _, cleanup_res = self.event("answer", "--stored", str(picks_file))
+        self.assertIn(f"delete: picks/{doc_id} (version 1)", cleanup_res.stdout)
+
+        # 4. Empty / multiline --next refused; init refuses staged deletion of program.json.
+        self.refused("grant", "--heartbeat", "10m", "--next", "", message="one short line")
+        self.refused("grant", "--heartbeat", "10m", "--next", "hello\n", message="one short line")
+        deleted_repo = self.program.folder.parent / "staged-del" / "program.json"
+        deleted_repo.parent.mkdir()
+        env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}",
+               "T3CODE_CLI_PATH": str(self.bin / "t3"), "RECORD_FIXTURES": str(self.fixtures)}
+        subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(deleted_repo),
+            "--title", "Keep", "--goal", "Keep", "--chief", SESSION.format("chief"), "--request", "Keep",
+        ], capture_output=True, text=True, check=True, env=env)
+        subprocess.run(["git", "-C", str(deleted_repo.parent), "rm", "-q", "program.json"], check=True, env=env)
+        reinit = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(deleted_repo),
+            "--title", "Overwrite", "--goal", "No", "--chief", SESSION.format("chief"), "--request", "No",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(reinit.returncode, 1)
+        self.assertIn("HEAD", reinit.stderr)
+
+        # 5. Requested provisional pr-draft stops cleanly when ready; copied reopen prompt checks revision.
+        self.commit(lambda s: work(s, "W2").update(
+            finishLine="pr-draft", state="ready",
+            provisional={"basis": "Waiting on W1", "clears": "W1 lands", "on": ["W1"]},
+            layers=[dict(work(s, "W2")["layers"][0], status="draft", url="https://github.com/example/exports/pull/22")],
+        ))
+        found_draft = assess(self.head(), "2026-11-02T18:00:00Z", {})
+        self.assertFalse(any(e["id"] == "W2" and e["kind"] in {"idle owner", "release"} for e in found_draft["runnable"]))
+        resolved = next(r for r in self.head()["decisions"] if r["status"] == "resolved")
+        good_reopen = decision_prompt(resolved, self.head(), "Reopen this decision.")
+        self.refused("answer", "--pasted", "--source", "Copy",
+                     stdin=good_reopen.replace(revision(resolved), "0000000000"), message="stale reopen prompt")
+        self.refused("answer", "--pasted", "--source", "Copy", stdin=good_reopen, message="verified reopen request")
+
+    def test_reopen_bumps_revision_rejecting_prior_opening_picks(self):
+        d6 = decision(self.head(), "W6-D1")
+        old_rev = revision(d6)
+        _, _, _ = self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "User msg 1")
+        _, reopened, _ = self.event("reopen", "--decision", "W6-D1", "--why", "Reconsider")
+        new_d6 = decision(reopened, "W6-D1")
+        self.assertEqual(new_d6["reopened"], 1)
+        self.assertNotEqual(old_rev, revision(new_d6))
+        stale_prompt = f'Decision "W6-D1" (revision {old_rev}): I choose option 1: {quoted(d6["options"][0]["label"])}\n'
+        self.refused("answer", "--pasted", "--source", "Old copy", stdin=stale_prompt, message="ask again")
+
+    def test_reopen_and_withdraw_preserve_history(self):
+        resolved = next(row for row in self.state["decisions"] if row["status"] == "resolved")
+        _, after, result = self.event("reopen", "--decision", resolved["id"], "--why", "User wants to revisit",
+                                      "--block", "W1:landing")
+        row = decision(after, resolved["id"])
+        self.assertEqual(row["status"], "open")
+        self.assertNotIn("basis", row)
+        self.assertNotIn("answer", row)
+        self.assertNotIn("applied", row)
+        self.assertIn(resolved["answer"], row["rationale"])
+        self.assertIn("reopened: User wants to revisit", row["rationale"])
+        self.assertEqual(row["blocks"], [{"id": "W1", "phase": "landing"}])
+        self.assertIn("move it to --to cancelling first", result.stdout)
+        self.refused("reopen", "--decision", resolved["id"], "--why", "Again", message="only a resolved or answered decision")
+
+        _, after, _ = self.event("withdraw", "--decision", resolved["id"], "--why", "Superseded by W9")
+        row = decision(after, resolved["id"])
+        self.assertEqual(row["status"], "withdrawn")
+        self.assertIn("withdrawn: Superseded by W9", row["rationale"])
+        self.refused("withdraw", "--decision", resolved["id"], "--why", "Again", message="already withdrawn")
+
+    def test_move_transfers_chief_and_live_owner_routes_without_publish_prompt(self):
+        new_chief = SESSION.format("new-chief")
+        _, after, result = self.event("move", "--chief", new_chief)
+        self.assertEqual(after["chief"], new_chief)
+        for row in after["work"]:
+            if row["state"] not in {"landed", "done", "scrapped"} and "owner" in row:
+                self.assertEqual(row["owner"]["route"], "`t3_thread_send` to the coordinator")
+        self.assertIn("do not publish from this thread", result.stdout)
+        self.assertNotIn("Publish ", result.stdout)
+
+    def test_move_refuses_pending_landing_release(self):
+        self.commit(ready)
+        _, _, _ = self.event("land", "--work", "W1")
+        self.refused("move", "--chief", SESSION.format("new-chief"), message="pending landing")
+
+    def test_report_followups_trigger_runnable_until_routed_by_discovery(self):
+        report_file = self.program.folder / "reports" / "W1.md"
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(
+            "```json\n"
+            + json.dumps({
+                "outcome": "W1",
+                "state": "in-review",
+                "followups": [
+                    {
+                        "id": "W1-F1",
+                        "text": "Shared retry helper also swallows timeout errors in W2",
+                        "evidence": "retry.py:42",
+                        "impact": "unrelated",
+                    }
+                ],
+            })
+            + "\n```\n\nDeferred out-of-scope finding.\n"
+        )
+        _, after, result = self.event("report", "--work", "W1")
+        self.assertIn("followups W1-F1", result.stdout)
+        entry = next(row for row in after["discoveries"] if row.get("id") == "W1-F1")
+        self.assertEqual((entry["status"], entry["route"], entry["impact"]), ("open", "pending", "unrelated"))
+        found = assess(after, "2026-11-02T18:00:00Z", {})
+        self.assertEqual(found["verdict"], "runnable")
+        self.assertTrue(any(e["kind"] == "route discovery" and e["id"] == "W1-F1" for e in found["runnable"]))
+
+        # Idempotent re-report, then route, then escalate impact with a held PR thread -> reopens + pending reply.
+        _, _, repeat_res = self.event("report", "--work", "W1")
+        self.assertIn("already recorded", repeat_res.stdout)
+        self.refused("discovery", "--id", "W1-F1", "--route", "pending", message="concrete destination")
+        _, routed, _ = self.event("discovery", "--id", "W1-F1", "--route", "Snip #1")
+        self.assertEqual(next(r for r in routed["discoveries"] if r.get("id") == "W1-F1")["status"], "routed")
+        self.refused("discovery", "--id", "W1-F1", "--route", "Again", message="already routed")
+
+        report_file.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "in-review",
+            "followups": [{"id": "W1-F1", "text": "Shared retry helper also swallows timeout errors in W2",
+                           "impact": "shared-contract", "thread": "PRRT_1"}],
+        }) + "\n```\n")
+        _, esc, esc_res = self.event("report", "--work", "W1")
+        f1 = next(r for r in esc["discoveries"] if r.get("id") == "W1-F1")
+        self.assertEqual((f1["status"], f1["impact"], f1["thread"], f1["reply"]), ("open", "shared-contract", "PRRT_1", "pending"))
+        self.assertIn("reopened", esc_res.stdout)
+        _, rerouted, reroute_res = self.event("discovery", "--id", "W1-F1", "--route", "Sent to W2 owner")
+        self.assertIn("--reply-sent", reroute_res.stdout)
+        self.assertTrue(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F1"
+                            for e in assess(rerouted, "2026-11-02T18:05:00Z", {})["runnable"]))
+        _, sent, _ = self.event("discovery", "--id", "W1-F1", "--reply-sent")
+        self.assertFalse(any(e["kind"] == "send deferred reply" and e["id"] == "W1-F1"
+                             for e in assess(sent, "2026-11-02T18:06:00Z", {})["runnable"]))
+
+        # Conflicting followup ID from another owner is refused; coordinator --add works both open and routed.
+        w2_report = self.program.folder / "reports" / "W2.md"
+        w2_report.write_text("```json\n" + json.dumps({
+            "outcome": "W2", "state": "in-review",
+            "followups": [{"id": "W1-F1", "text": "Different finding colliding on ID"}],
+        }) + "\n```\n")
+        self.refused("report", "--work", "W2", message="already belongs to another discovery")
+        _, opened, _ = self.event("discovery", "--add", "--origin", "PR #10 review", "--text", "Needs routing", "--impact", "unrelated")
+        auto_d = next(r for r in opened["discoveries"] if r["text"] == "Needs routing")
+        self.assertTrue(auto_d["id"].startswith("D"))
+        _, added, _ = self.event("discovery", "--add", "--id", "D99", "--origin", "PR #10 review",
+                                 "--text", "Clean up flag", "--impact", "unrelated", "--route", "Snip #42")
+        self.assertEqual(next(r for r in added["discoveries"] if r.get("id") == "D99")["status"], "routed")
+
+        # Delayed owner report on landed work keeps work landed while ingesting followups; direct mutations refuse.
+        self.commit(lambda s: (
+            work(s, "W1").update(state="landed"),
+            [layer.update(status="merged") for layer in work(s, "W1")["layers"]],
+        ))
+        self.refused("work", "--id", "W1", "--scrap", message="already landed")
+        self.refused("work", "--id", "W1", "--status", "building", message="already landed")
+        self.refused("work", "--id", "W1", "--rebase-onto", "main", message="already landed")
+        report_file.write_text("```json\n" + json.dumps({"outcome": "W1", "state": "building"}) + "\n```\n")
+        self.refused("report", "--work", "W1", message="already landed")
+        report_file.write_text("```json\n" + json.dumps({
+            "outcome": "W1", "state": "ready",
+            "followups": [{"id": "W1-F77", "text": "Delayed retry timeout", "impact": "shared-contract", "thread": "PRRT_77"}],
+        }) + "\n```\n")
+        _, delayed, delayed_res = self.event("report", "--work", "W1")
+        self.assertEqual(work(delayed, "W1")["state"], "landed")
+        self.assertIn("ingested delayed followups only", delayed_res.stdout)
+        f77 = next(r for r in delayed["discoveries"] if r.get("id") == "W1-F77")
+        self.assertEqual((f77["status"], f77["reply"], f77["thread"]), ("open", "pending", "PRRT_77"))
+
+    def test_gh_pr_graphql_and_cancelling_withdrawal_fence(self):
+        # 1. gh_pr uses GraphQL with explicit --hostname for github.com (even under GH_HOST) and GHE.
+        gh_url = "https://github.com/org/repo/pull/42"
+        ghe_url = "https://ghe.example.com/org/repo/pull/7"
+        self.serve(prs={
+            gh_url: {"state": "OPEN", "isDraft": False, "headRefOid": "a" * 40, "baseRefName": "main",
+                     "autoMergeRequest": None, "isInMergeQueue": False},
+            ghe_url: {"state": "OPEN", "isDraft": False, "headRefOid": "b" * 40, "baseRefName": "main",
+                      "autoMergeRequest": None, "isInMergeQueue": True},
+        })
+        old_env = {key: os.environ.get(key) for key in ("PATH", "RECORD_FIXTURES", "GH_HOST")}
+        try:
+            os.environ["PATH"] = f"{self.bin}{os.pathsep}{old_env['PATH'] or ''}"
+            os.environ["RECORD_FIXTURES"] = str(self.fixtures)
+            os.environ["GH_HOST"] = "example.invalid"
+            pr_gh = gh_pr(gh_url)
+            self.assertEqual((pr_gh["state"], pr_gh["isInMergeQueue"], pr_gh["autoMergeRequest"]), ("OPEN", False, None))
+            self.assertIs(gh_pr(ghe_url)["isInMergeQueue"], True)
+        finally:
+            for key, val in old_env.items():
+                os.environ.pop(key, None) if val is None else os.environ.__setitem__(key, val)
+
+        # 2. Monotonic cancelling fence + definite forge verification + partial-merge withdrawal.
+        def two_ready(state):
+            ready(state)
+            work(state, "W1")["layers"][0]["url"] = "https://github.com/org/exports/pull/101"
+            work(state, "W1")["layers"][1]["url"] = "https://github.com/org/exports/pull/102"
+            work(state, "W4").update(
+                state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                         "url": "https://github.com/org/exports/pull/103", "head": "abc1234", "base": "main"}],
+            )
+        self.commit(two_ready)
+        _, rel, _ = self.event("land", "--work", "W1", "--work", "W4", "--lander", "Retry owner")
+        lid = rel["landings"][-1]["id"]
+        self.event("land", "--landing", lid, "--to", "submitted")
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Skip fence", message="move it to --to cancelling first")
+        self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Cancel release")
+        self.refused("land", "--landing", lid, "--to", "submitted", message="is cancelling")
+        self.refused("move", "--chief", SESSION.format("chief-2"), message="pending landing")
+
+        w1_l = work(self.head(), "W1")["layers"]
+        base_prs = {
+            w1_l[0]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_l[1]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            "https://github.com/org/exports/pull/103": {"state": "OPEN", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "main",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        }
+        # Missing facts, armed auto-merge (including empty dict {}), or merge queue all block withdrawal.
+        self.serve(prs={u: {k: v for k, v in p.items() if k != "isInMergeQueue"} for u, p in base_prs.items()})
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Incomplete", message="missing definite auto-merge")
+        self.serve(prs={**base_prs, "https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "autoMergeRequest": {}}})
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Empty dict armed", message="auto-merge")
+        self.serve(prs={**base_prs, "https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "isInMergeQueue": True}})
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Queued", message="merge-queue")
+
+        # Partial merge: W1 merged (at updated head), W4 closed without merge -> W1 lands with observed head,
+        # W4 lapses out of ready (blocking stale re-release), landing withdraws, and move unblocks!
+        merged_head = "9999999" + "a" * 33
+        partial_prs = {
+            **base_prs,
+            w1_l[0]["url"]: {**base_prs[w1_l[0]["url"]], "state": "MERGED", "headRefOid": merged_head},
+            w1_l[1]["url"]: {**base_prs[w1_l[1]["url"]], "state": "MERGED"},
+            "https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "CLOSED"},
+        }
+        self.serve(prs=partial_prs)
+        _, after_partial, partial_res = self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "W1 merged, W4 closed")
+        self.assertEqual(after_partial["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(after_partial, "W1")["state"], "landed")
+        self.assertEqual(work(after_partial, "W1")["layers"][0]["head"], merged_head)
+        self.assertEqual(work(after_partial, "W4")["state"], "in-review")
+        self.assertEqual(work(after_partial, "W4")["layers"][0]["status"], "closed")
+        self.assertIn("partially merged before cancellation", partial_res.stdout)
+        self.refused("land", "--work", "W4", message="not ready to land")
+        self.event("move", "--chief", SESSION.format("chief-2"))
+
+        # 3. Withdrawing a two-layer stack with a closed parent + open child withdraws cleanly (lapsing readiness)
+        #    and withdrawing a reopened PR updates status from closed back to open (without restoring readiness).
+        self.commit(two_ready)
+        _, rel_stack, _ = self.event("land", "--work", "W1")
+        lid_stack = rel_stack["landings"][-1]["id"]
+        self.event("land", "--landing", lid_stack, "--to", "cancelling", "--note", "Parent PR closed")
+        w1_s = work(self.head(), "W1")["layers"]
+        self.serve(prs={
+            w1_s[0]["url"]: {"state": "CLOSED", "isDraft": False, "headRefOid": w1_s[0]["head"], "baseRefName": w1_s[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_s[1]["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": w1_s[1]["head"], "baseRefName": w1_s[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, stack_after, stack_res = self.event("land", "--landing", lid_stack, "--to", "withdrawn", "--note", "Stopped stack")
+        self.assertEqual(stack_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(stack_after, "W1")["state"], "in-review")
+        self.assertIn("settle by hand", stack_res.stdout)
+        self.event("move", "--chief", SESSION.format("chief-3"))
+
+        _, rel_reopen, _ = self.event("land", "--work", "W4")
+        lid_reopen = rel_reopen["landings"][-1]["id"]
+        self.event("land", "--landing", lid_reopen, "--to", "cancelling", "--note", "Closed then reopened")
+        self.serve(prs={"https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "CLOSED"}})
+        self.event("status")
+        self.assertEqual(work(self.head(), "W4")["layers"][0]["status"], "closed")
+        self.serve(prs={"https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "OPEN"}})
+        _, reopened_after, _ = self.event("land", "--landing", lid_reopen, "--to", "withdrawn", "--note", "Reopened PR stopped")
+        self.assertEqual(reopened_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(reopened_after, "W4")["layers"][0]["status"], "open")
+        self.assertEqual(work(reopened_after, "W4")["state"], "in-review")
+
+        # 4. land --to landed records observed merged head and clears unknownReason; open landing hold stays held.
+        self.commit(lambda s: work(s, "W4").update(
+            state="ready", layers=[{**work(s, "W4")["layers"][0], "status": "ready"}],
+        ))
+        _, rel_w4, _ = self.event("land", "--work", "W4")
+        lid_w4 = rel_w4["landings"][-1]["id"]
+        self.event("work", "--id", "W4", "--status", "unknown", "--unknown-reason", "Forge read failed")
+        w4_merged_head = "8888888" + "b" * 33
+        self.serve(prs={"https://github.com/org/exports/pull/103": {
+            **base_prs["https://github.com/org/exports/pull/103"], "state": "MERGED", "headRefOid": w4_merged_head,
+        }})
+        _, landed_w4, _ = self.event("land", "--landing", lid_w4, "--to", "landed")
+        self.assertEqual(work(landed_w4, "W4")["state"], "landed")
+        self.assertEqual(work(landed_w4, "W4")["layers"][0]["head"], w4_merged_head)
+        self.assertNotIn("unknownReason", work(landed_w4, "W4"))
+        self.assertEqual(landed_w4["landings"][-1]["state"], "landed")
+
+        # Open landing hold fails closed on status (does not auto-detach the hold).
+        self.commit(two_ready)
+        cur_hold = self.head()
+        cur_hold["decisions"].append({
+            "id": "W4-D30", "question": "Compliance sign-off?", "date": "2026-11-02T19:10:00Z",
+            "source": "Coordinator", "status": "open",
+            "options": [{"label": "Approve", "effect": "Land", "recommended": True, "reversible": True},
+                        {"label": "Hold", "effect": "Wait", "reversible": True}],
+            "blocks": [{"id": "W4", "phase": "landing"}],
+        })
+        self.program.write(cur_hold, "2026-11-02T19:10:00Z")
+        self.serve(prs={"https://github.com/org/exports/pull/103": {**base_prs["https://github.com/org/exports/pull/103"], "state": "MERGED"}})
+        _, after_hold, hold_res = self.event("status")
+        self.assertEqual(work(after_hold, "W4")["state"], "ready")
+        self.assertEqual(decision(after_hold, "W4-D30")["blocks"], [{"id": "W4", "phase": "landing"}])
+        self.assertIn("settle by hand", hold_res.stdout)
 
 
 if __name__ == "__main__":

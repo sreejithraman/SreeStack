@@ -55,6 +55,13 @@ Copy a repo fact into prose only when looking it up is costly. Remove a prose re
 only after code exists, rejects a violation, and runs on every host that reads the
 document.
 
+**Keep the code/LLM boundary crisp:** scripts and CLIs enforce deterministic checks on
+*structured* inputs (schemas, state transitions, exact IDs, git/forge facts), while the
+agent owns interpreting free-form human text and mapping it onto a structured flag or
+option (recording the raw quote as provenance). If a script starts growing regexes for
+English phrasing, negation, or synonyms, narrow the CLI to structured inputs instead of
+building a parser.
+
 ## Write rules agents follow
 
 - **State outcome, constraints, and falsifiable `Done` conditions.** End the job—and

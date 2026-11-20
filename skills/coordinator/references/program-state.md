@@ -1,386 +1,130 @@
-# Program record and command center
+# Program record and CLI
 
-Specs, tickets, snips, PRs, and user decisions stay where the project already
-keeps them. The **program record** is one file, `program.json`, that links those
-sources and holds the program's coordination state, organized by topic. The
-**command center** renders it; the renderer picks what the page shows. Each fact
-has one home in the file.
+Specs, tickets, snips, PRs, and user decisions stay in their existing tools. `program.json` is the
+program's single coordination record, kept in a task-owned git folder that survives worktree
+cleanup (with a `reports/` subfolder). `HEAD` is authoritative; the git log is its history.
 
-## Program record
+**One writer:** owners write only `reports/<ID>.md`. Only the current coordinator writes
+`program.json`, after checking `chief` in `HEAD:program.json`.
 
-Keep `program.json` and a `reports/` folder in a task-owned directory that the
-coordinator and its owners can read and that survives worktree cleanup. Adopt an
-existing program's folder rather than starting another. Put the folder's
-absolute path in the coordinator's handoff and every owner kickoff.
+## Record commands
 
-The program folder is a git repository. Its last commit is the record: the
-command center and every reader use `HEAD`, and the log is its history. The
-working `program.json` is only the coordinator's edit buffer. A new program starts
-from a new `program.json`: run `git -C /absolute/path init`, then add and
-commit `program.json` once it passes the check.
-
-**One writer:** owners write only their own `reports/<outcome ID>.md`. The
-current coordinator alone writes `program.json`, after it
-[checks the coordinator](coordinator-move.md#check-the-coordinator).
-
-### Write the record
-
-Record each owner report, answer, direction, and decision in one write, before
-you reply or move on. Run the event's command from this skill's folder as
-`python3 scripts/record.py <command> --state /absolute/path/program.json ...`:
+Run from this skill's folder as
+`python3 scripts/record.py <command> --state /absolute/path/program.json ...` (add `--next "<action>"`
+to update `next` in the same commit; run `<command> --help` for full flags):
 
 | Event | Command |
 | --- | --- |
-| An owner starts or is adopted | `start --work W1 --owner "Retry owner" --session <thread link>` |
-| An owner report arrives | `report --work W1` |
-| The user answers a Need | `answer --decision W6-D1 --option 1 --source "<the user's message>"` |
-| The user pastes a page prompt | `answer --pasted --source "<the user's message>"`, with the prompt on stdin |
-| The page stored picks | `answer --stored <saved db_query output>`, under [stored picks](hosting.md#stored-picks); with an answer's flags when the user's message answers too |
-| You attach pictures to an open Need | `picture --decision W6-D1 --shape before-after --image /abs/before.png --image /abs/after.png --caption "After"`; `--option 2 --image /abs/shot.png` gives one option its picture |
-| You settle a Need under [triage](decisions.md#triage) | `resolve --decision W6-D2 --option 1 --basis "<settling source; why it is reversible>"` |
-| You release a landing | `land --work W1` |
-| A landing moves | `land --landing L2 --to submitted`, `landed`, or `withdrawn --note "<why>"` |
-| You passed an answer to the owners it affects | `applied --decision W6-D1` |
-| A wait starts or ends | `wait --on "PR 44 checks" --event "Required checks finish" --work W1`; add `--clear` to end it |
-| A wake or resume | `status` |
-| A heartbeat tick | `status --heartbeat` |
-| The end of every turn | `status --turn-end` |
+| Create a new program | `init --title "<t>" --goal "<g>" --chief <thread link> --request "<text>"` |
+| Set/update grant, landing scope, heartbeat/wake IDs, or page URL | `grant [--source "<msg>"] [--start "..."] [--resolve "..."] [--user "..."] [--heartbeat "..."] [--wake "..."] [--landing "..."] [--hosting <url>]` |
+| Add, update, scrap, or rebase a work row | `work --id W1 [--add --title "<t>" --repo "<r>" --finish-line land] [--blocked-by W0] [--provisional-basis "..." --provisional-clears "..." --provisional-on W0] [--scrap \| --rebase-onto main [--stack-on L1]] [--decision D1 --option 1 --answer-source "<msg>"]` |
+| Owner started or adopted | `start --work W1 --owner "Retry owner" --session <thread link> [--mode top-level\|delegated\|adopted] [--replace]` |
+| Owner report arrived | `report --work W1` |
+| User answered a decision | `answer --decision W6-D1 --option 1 --source "<msg>"` (or `--text`, `--pasted` on stdin, `--stored <db_query file>`) |
+| Attach pictures to an open decision | `picture --decision W6-D1 --shape before-after --image /abs/a.png --image /abs/b.png --caption "After"` (or `--option 2 --image /abs/shot.png`) |
+| Coordinator settled a decision under triage | `resolve --decision W6-D2 --option 1 --basis "<source; why reversible>"` |
+| Reopen a settled decision | `reopen --decision W6-D2 --why "<reason>" [--block W1:landing]` |
+| Withdraw a decision | `withdraw --decision W6-D2 --why "<reason>"` |
+| Passed answer to affected owners | `applied --decision W6-D1` |
+| Release or update a landing | `land --work W1` or `land --landing L2 --to submitted\|cancelling\|landed\|withdrawn [--note "<why>"]` |
+| Record or clear a wait | `wait --on "<what>" --event "<ends it>" [--work W1] [--clear]` |
+| Add or route a discovery / deferred follow-up | `discovery --id W1-F1 --route "<work ID \| snip ID \| issue \| declined>" [--reply-sent]` (or `--add ...`, or `--id W1-F1 --reply-sent`) |
+| Transfer coordinator ownership | `move --chief <new thread link>` (does not prompt to publish) |
+| Check forge/threads and verdict | `status` (also `--heartbeat`, `--turn-end`, `--json`, `--exit-code`) |
 
-Add `--next "<action>"` to set the program's `next` in the same commit. Run
-`--help` on a command for its other options.
+Each command stamps ISO UTC times from its own clock, validates through `render_dashboard.py`,
+commits, and stages `command-center.next.html`. A refusal changes nothing. If it refuses over an
+uncommitted `program.json` change, show the printed diff to the user and settle it before building
+on it (`render_dashboard.py --check` + commit to keep, or `git checkout HEAD -- program.json` to
+discard).
 
-Each command stamps times from its own clock, fills defaults, changes only what
-its event changes, validates, commits with a message naming the event, and
-renders. A refusal changes nothing: fix the input and run it again. When it
-refuses over an uncommitted `program.json` change, show the user the diff it
-prints and settle it with them before you build on it. If they keep it, check
-it with step 3 below and commit it; otherwise run
-`git -C /absolute/path checkout HEAD -- program.json`.
+**Never reuse IDs** (even withdrawn or scrapped ones). Store returned T3 thread links verbatim.
 
-To add a picture by hand, copy it into the program folder's `files/` under its
-content name: the first 16 hex digits of its sha256 (from `shasum -a 256`), then
-its lowercase extension. Commit it with the `program.json` change that names it.
-The check and every command refuse a record that names a missing picture.
+## Page copy
 
-For a change no command covers, such as a new work row, the grant, a
-correction, a reopen, a withdrawal, a scrap-or-rebase answer, or a
-[coordinator move](coordinator-move.md), edit by hand:
+The command center is written for a human scanning on a phone, **not** as coordinator memory or a
+compaction scratchpad:
 
-1. Run `git -C /absolute/path status --porcelain -- program.json`. Settle any
-   output with the user, as above.
-2. Edit `program.json` in place, changing only what the event changed. Never
-   regenerate the whole file; that silently drops history. Take each time from
-   `date -u +%Y-%m-%dT%H:%M:%SZ`, never from memory.
-3. Check it, and fix every error it reports:
+- **`next`:** replace on every update — never append. Write **one short line (at most 280
+  characters, enforced by `record.py`)** naming only what happens next (plus cadence/wake trigger
+  when waiting). Put commit SHAs, CI run IDs, test counts, and play-by-play history in git commits,
+  `work` rows, and `reports/`, never in `next`.
+  - Good: `Waiting on PR #412 review and W6-D1 in Inbox (10m heartbeat; PR watch wakes sooner).`
+  - Bad: appending landed SHAs, CI run numbers, or multi-paragraph forensic recaps into `next`.
+- **`goal` and `finishLine`:** 1–2 plain sentences of user outcome and landing policy.
+- **`work[].description`:** 1–2 plain sentences of what the outcome delivers for the user — not its
+  title, current status, or implementation internals.
+- **Inbox (`question`, `context`, `options`):** short, scannable choices the user can answer on a
+  phone — concrete effects and brief reversal costs; omit raw file paths or commit SHAs unless the
+  decision is specifically about them.
 
-   ```bash
-   python3 scripts/render_dashboard.py --state /absolute/path/program.json --check
-   ```
+## Rare hand edits
 
-4. Read `git -C /absolute/path diff -- program.json`. Restore any removed or
-   changed line the event didn't call for. Mark a change to a history entry in
-   place instead of deleting it.
-5. Commit with a message naming the event, then render under
-   [render and publish](hosting.md#render-and-publish).
+For fields with no CLI flag yet (`corrections`, `requirements`, `approvals`, `directions`,
+`revisits`, `tickets`, `owner.resources`/`handled`/`tasks`), edit `program.json` in
+place — never regenerate the whole file — using `date -u +%Y-%m-%dT%H:%M:%SZ` for timestamps:
 
-A write is done when its commit lands and the published page matches the
-record: publish whenever the output says `page: behind record`, except after a
-[coordinator move](coordinator-move.md), where the new coordinator publishes. Hosting-link
-commits follow [publication bookkeeping](hosting.md#render-and-publish). On a
-git or publish error, stop and report it to the user.
+1. Check `git -C /absolute/path status --porcelain -- program.json` is clean.
+2. Edit in place; check with `python3 scripts/render_dashboard.py --state /absolute/path/program.json --check`
+   (which enforces all keys, enums, state/layer invariants, and picture hashes).
+3. Review `git -C /absolute/path diff -- program.json`, commit naming the event, then render with
+   `python3 scripts/render_dashboard.py --state /absolute/path/program.json --page /absolute/path/command-center.html`.
 
-### File format
+To add a picture by hand, copy it into `files/<first 16 hex of sha256>.<ext>` and commit it with
+`program.json`. Print a decision's current revision at `HEAD` with
+`python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>`.
 
-`program.json` is one JSON object. Fields without `?` are required, and
-`--check` rejects fields the sketch doesn't name. Times are ISO timestamps with
-a timezone, such as `2026-11-02T17:00:00Z`; dates are `YYYY-MM-DD` or
-timestamps. Prose is markdown. Omit absent optional fields rather than sending
-empty strings. IDs are unique within each collection, and layer IDs
-are unique across the program. Never reuse an ID, even one whose row was
-withdrawn or scrapped; take the next number. The [example file](../assets/example-state.json)
-uses fictional work.
+## Owner reports
 
-```ts
-type Program = {
-  title: string; goal: string;
-  finishLine?: string; // a program-wide note, such as who decides merges
-  demo?: boolean; // true only for an illustrative example
-  chief: string; // the current coordinator thread; the key keeps its first name so older records validate
-  hosting?: string; // the current published command center's URL
-  next: string; // the next useful action
-  request: { text: string; sources?: string[] }; // the original request and its message sources
-  grant?: { // what the coordinator may do without asking; changes only on the user's word
-    date: string; source: string; // the user's message that set it
-    start: string; // which owners and support tasks it may start
-    resolve: string; // which decisions it settles itself
-    user: string; // what stays with the user
-    heartbeat?: string; // its timing policy and scheduled task ID, or why there is none
-    wake?: string; // the answer wake's scheduled task ID, or why there is none
-  };
-  corrections?: Entry[]; // accepted corrections
-  requirements?: Entry[]; // preserved requirements
-  approvals?: (Entry & { id: string; covers: string; picks: string })[]; // standing approvals, part of the grant's resolve
-  directions?: (Entry & { until?: string })[]; // standing directions; until: what releases a hold
-  landingAuthority?: Entry; // the grant's landing part: the agreed scope Land covers, and its gates
-  decisions: Decision[];
-  work: Work[];
-  revisits?: Revisit[];
-  discoveries?: { date: string; origin: string; text: string; route: string }[];
-  landings?: Landing[];
-  waits?: { date: string; on: string; event: string; work?: string }[];
-};
-type Entry = { date: string; source: string; text: string };
-type Link = { label: string; url: string };
-type Picture = { image: string; caption?: string }; // image: files/<content name> in the program folder
-type Phase = "start" | "access" | "proof" | "acceptance" | "landing";
-
-type Decision = {
-  id: string; question: string;
-  date: string; source: string; // when it arrived, and the report or message that raised it
-  status: "open" | "answered" | "resolved" | "withdrawn"; // resolved: the coordinator settled it
-  context?: string[];
-  pictures?: { shape?: "side-by-side" | "before-after" | "sequence"; images: Picture[] };
-    // 1 to 8 images; side by side takes 2 or 3, before and after exactly 2, a sequence 2 to 8.
-    // Without a shape, one image stands alone, two or three sit side by side, and more form a sequence.
-  meanwhile?: string; // what continues while it is open
-  recommendation?: string; // rationale for the recommended option, or a suggestion when there are no options
-  options?: { label: string; effect: string; image?: string; recommended?: boolean;
-    reversible?: boolean }[]; // image: files/<content name>; at most one recommended;
-    // reversible: undoing it costs only rework
-  weight?: "quick" | "judgment"; // default judgment; quick needs two or more options and a recommended one
-  blocks?: { id: string; phase: Phase }[]; // one entry per outcome, at the earliest phase it waits
-  links?: Link[];
-  answer?: string; // required when answered or resolved
-  answerSource?: string; // required when answered: the user's message that answered it
-  basis?: string; // required when resolved: what settled it and why it is reversible
-  rationale?: string; // dated reasoning the page omits, such as why it reopened; when withdrawn, why and any replacement
-  applied?: false; // set by answer and resolve; cleared by applied once the affected owners have the answer
-  stalePick?: { label: string; revision: string; at: string }; // a page pick for an earlier revision, never applied;
-    // an answer clears it
-  picksRead?: string[]; // each stored pick answer --stored read for this Need, as "picks/<id> (version N) <saved time>"
-};
-
-type Work = {
-  id: string; title: string; repo: string;
-  kind: "outcome" | "follow-up" | "support";
-  state: "planned" | "building" | "shown" | "in-review" | "ready"
-    | "landed" | "done" | "scrapped" | "unknown";
-  description?: string; // the result it delivers, in one or two sentences
-  scope?: string; // the code it covers, its proof, and what it leaves to other outcomes
-  sources?: string[]; // snip and message sources
-  tickets?: Link[];
-  finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // required unless support
-  finishLineReason?: string;
-  owner?: Owner; // required while building, shown, in review, or ready
-  provisional?: { basis: string; clears: string; on?: string[] }; // on: outcome IDs it rests on
-  layers?: Layer[]; // bottom first; not on support
-  results?: (Link & { access?: string; image?: string })[]; // what the owner showed, what opening it needs,
-    // and image: a picture committed in the program folder as files/<content name>, shown as its thumbnail
-  evidence?: Link[]; // acceptance evidence
-  acceptance?: string; // blocked or untested assertions in its proof
-  blockedBy?: string[]; // logical inputs not yet satisfied
-  blocked?: string; // another active blocker, with what is missing and who can supply it
-  unknownReason?: string; // why the state could not be read; unknown rows only
-  checkedAt: string; // when its state was last observed
-  required?: boolean; // false marks proposed work outside committed scope
-  origin?: string; // the outcome or discovery it came from
-};
-type Owner = {
-  name: string; session?: string; // session: the owner's thread link
-  start: "top-level" | "delegated" | "adopted"; route: string;
-  tasks?: string[]; workspace?: string;
-  resources?: string; // servers, ports, and databases, with their stop actions
-  handled?: string[]; // follow-up messages already handled
-  seen?: { state: "running" | "idle" | "unknown"; at: string; // set by status: its thread when last read;
-    approvals?: number }; // unknown: unreadable since at. approvals: requests waiting for the user in its thread
-};
-type Layer = {
-  id: string; branch: string;
-  status: "local" | "draft" | "open" | "ready" | "merged" | "closed"; // closed: without merge
-  url?: string; // the PR; required unless local
-  head?: string; base?: string;
-  stackedOn?: string; // the layer below, in this or another outcome
-};
-type Revisit = { // an accepted tradeoff
-  id: string; title: string; tradeoff: string; revisit: string;
-  source?: string; // decision ID or source reference
-};
-type Landing = {
-  id: string; date: string; chief: string; lander: string; target: string;
-  work: string[]; prs: { url: string; head: string; base: string }[]; // accepted head and base per PR
-  state: "released" | "submitted" | "landed" | "withdrawn";
-  keep?: string; // resources dependents still need
-  note?: string; // such as the queue state, or why it was withdrawn
-};
-```
-
-Each decision request is a **Need**: one `decisions` entry from arrival to
-answer, kept after it settles so it stays reopenable. An open Need is an
-[Inbox item](decisions.md#inbox-items). Some facts have a less
-obvious home:
-
-| Fact | Home |
-| --- | --- |
-| A stop for the user, including a Try choice | An open Need |
-| A coordinator call on the plan with no question for the user | A `resolved` decision |
-| A discovery that became work | That row's `origin` and `description` |
-| Support work, and the outcomes it unblocks | A `support` row, named in their `blockedBy` or `blocked` |
-| Branch order | Each layer's `stackedOn`, apart from `blockedBy` |
-| What provisional work continues meanwhile | `provisional`, or the Need's `meanwhile` |
-
-Date entries and cite their sources. Code claims name the repository and
-revision they describe. Recheck current facts at their source before acting on
-them. [Decisions](decisions.md) say when a Need is answered, resolved, reopened,
-or withdrawn.
-
-### Owner reports
-
-Each owner starts `reports/<outcome ID>.md` with a fenced `json` block, then
-writes Implement's [report](../../implement/SKILL.md#report) in prose below it.
-The [kickoff](../assets/owner-kickoff.md) asks for it. `report` reads the block:
+Each owner starts `reports/<ID>.md` with a fenced `json` block (`record.py report` reads it), then
+writes prose per [Implement's caller report](../../implement/references/caller-report.md):
 
 ```ts
 type ReportBlock = {
-  outcome: string; // the work ID
-  state: Work["state"]; // not landed, done, or scrapped
-  finishLine?: Work["finishLine"]; // recorded only when the row has none
-  layers?: Layer[]; // bottom first, each with its head and base
-  proof?: { assertion: string; verdict: "pass" | "fail" | "blocked" | "untested"; url?: string }[];
-  shown?: (Link & { access?: string; image?: string })[]; // becomes results; image: an absolute path
-  asks?: { id: string; question: string; phase?: Phase; // phase defaults to acceptance
-    context?: string[]; pictures?: Decision["pictures"]; meanwhile?: string; recommendation?: string;
-    options?: Decision["options"]; weight?: Decision["weight"]; links?: Link[] }[]; // picture paths are absolute
+  outcome: string; // work ID
+  state: "planned" | "building" | "shown" | "in-review" | "ready" | "unknown"; // never terminal
+  finishLine?: "land" | "try" | "pr-review" | "pr-draft"; // recorded only when row has none
+  layers?: { id: string; branch: string; status: "local"|"draft"|"open"|"ready"|"merged"|"closed";
+    url?: string; head?: string; base?: string; stackedOn?: string }[]; // bottom first; repeat merged layers unchanged
+  proof?: { assertion: string; verdict: "pass"|"fail"|"blocked"|"untested"; url?: string }[];
+  shown?: { label: string; url: string; access?: string; image?: string }[]; // image: abs path
+  asks?: { id: string; question: string; phase?: "start"|"access"|"proof"|"acceptance"|"landing";
+    context?: string[]; pictures?: { shape?: "side-by-side"|"before-after"|"sequence";
+      images: { image: string; caption?: string }[] };
+    meanwhile?: string; recommendation?: string;
+    options?: { label: string; effect: string; image?: string; recommended?: boolean;
+      reversible?: boolean }[];
+    weight?: "quick"|"judgment"; links?: { label: string; url: string }[] }[];
+  followups?: { id: string; text: string; evidence?: string;
+    impact?: "unrelated"|"shared-contract"|"requested-scope"; thread?: string }[];
   waits?: { on: string; event: string }[];
-  blocked?: string | null; // a missing prerequisite; null clears it
+  blocked?: string | null; // null clears it
 };
 ```
 
-Each field in the block replaces that part of the row. An absent field leaves it
-as it was, and an empty list clears it. Proof with a `url` becomes `evidence`,
-and every verdict other than `pass` goes into `acceptance`. Each new ask becomes
-an open Need dated by the command; [triage](decisions.md#triage) it. Each
-picture the block names, shown or in an ask, is copied into the program folder's
-`files/`, named by its content, and committed with the report. A wait the
-owner still reports keeps its first date. A report cannot mark a layer merged;
-after `report`, run `status`, which checks each layer's head, base, and merge at
-the forge.
+Each present field replaces that part of the row; an empty list clears it; absent leaves it alone.
+`report` copies referenced absolute picture paths into `files/` by content hash and commits them,
+and ingests new `followups` into `discoveries` with `status: "open"` (`route: "pending"`), which
+makes `status` return `runnable` until routed via `record.py discovery`.
+`report` cannot mark a layer merged — run `status` afterward to read merges from GitHub. Record
+prose-only report fields (`owner.resources`, `owner.handled`, `owner.tasks`, `provisional`) when
+present.
 
-Record the prose parts by hand:
+## Status verdicts and invariants
 
-| Report field | Record it under |
-| --- | --- |
-| Servers and stop actions under Shown | `owner.resources` |
-| Provisional assumptions under Decisions | `provisional` |
-| Follow-ups | A work row or `discoveries`, each with its disposition |
-| Sources | `owner.handled`, so no message is answered twice |
-| Task IDs an owner returns when it resumes | `owner.tasks` |
+`status` reads PRs via `gh` and owner threads via the T3 CLI, updates `owner.seen` and `checkedAt`,
+and returns one verdict (`runnable`, `working`, `waiting`, `done`) with a digest. Key rules
+enforced by `record.py` and `render_dashboard.py`:
 
-## Command center
-
-Before each write, read the relevant owner reports, user direction, tickets,
-and live forge state. `status` reads each PR through `gh` and each owner's
-thread through the T3 CLI, records what they show, including each owner's
-thread state in `owner.seen`, and sets `checkedAt` on each row it fully read. An unread row keeps its old time. Settle by hand each forge
-fact it reports the rules reject. Use `unknown` with `unknownReason` when a
-row's state cannot be read.
-
-`status` ends with one verdict: `runnable` when you must act now, `working`
-while an owner runs, `waiting` when everything left waits on a Need, a
-dependency, a blocker, or an external wait, or `done`. It prints a digest of the facts behind the verdict,
-which changes only when they do. `--json` prints them as one object, and
-`--exit-code` gives each verdict its own exit code. A Need whose recommended
-option is marked `reversible` and halts startable work that is not provisional
-on it is runnable: build on that option provisionally under
-[dependencies](dependencies.md#provisional-work).
-
-A settled Need with a `stalePick` is runnable too: the user picked from a page
-older than its answer, so reopen it under [reopen](decisions.md#reopen).
-
-When the verdict is `waiting`, `status` also prints the `say:` line that ends a
-waiting turn. `status --heartbeat` runs each [heartbeat](../SKILL.md#heartbeat)
-tick.
-
-`status --turn-end` commits nothing. It fails while the verdict is `runnable`.
-An open row with no running owner, recorded wait, blocker, or open Need that
-holds it is runnable. A Need holds a row
-when it halts the row's work, or when the row waits on it as a shown Try or
-ready work; a landing release alone holds nothing. It also fails while
-`program.json` has an uncommitted change or the published page is behind the
-record, or while an owner's thread state differs from its `owner.seen`, so the
-page shows the state the turn ended on. Right after a [coordinator move](coordinator-move.md), leave the page to the new
-coordinator.
-
-A row is an outcome, a follow-up (an outcome that came from another one, with
-its own finish line), or a support task. Count an outcome once whatever its
-layers. Outcome states:
-
-- `planned`: not started. `building`: building and proving.
-- `shown`: a Try result built, proved, and shown, waiting for the user's merge,
-  changes, or scrap choice. It needs `results`.
-- `in-review`: a PR is open while review or CI continues.
-- `ready`: every layer at readiness for its finish line: ready or merged for
-  Land or a review-ready PR, a draft or merged for a draft PR. Provisional work
-  is never ready, on any finish line: one that reaches its requested PR state
-  stays `in-review` with its Provisional badge. Shown under In review with a
-  readiness badge.
-- `landed`: every layer confirmed merged. `scrapped`: the user scrapped it, or it
-  was declined or made obsolete.
-- `done`: completed support work. An outcome never uses `done`.
-
-`blockedBy` lists logical inputs not yet satisfied under the
-[dependency rule](dependencies.md#dependencies); drop an edge once it is. A
-layer's `stackedOn` names the layer below it. When that layer belongs to another
-owner's outcome and is unmerged, the dependent is provisional on that outcome.
-An outcome that was published before it became provisional, through a later
-decision or adoption onto another owner's PR, keeps its PR layers; only a Try
-finish line forbids them.
-
-A base is the outcome that work rests on through `provisional.on` or a live
-layer's `stackedOn`. A base is **dead** when it was scrapped, or when it has not
-landed and every one of its layers is closed; one closed layer beside a live or
-merged one does not count. Active work on a dead base, whether provisional or
-the same owner's stack, needs an open Need that halts it at `start`, `access`,
-or `proof`, such as its scrap-or-rebase choice. Its answer moves the work off the
-dead base in the same commit, under [Base scrapped](dependencies.md#provisional-work).
-The card shows the base once, as a Scrapped base or Closed base blocker. A live
-layer stacked on a closed layer of a base that is still alive needs the same
-Need, or a restack.
-Before marking a row terminal, clear its active blockers and open Needs; history
-stays in the record. Unresolved work stays visible even after its owner failed
-or its PR was abandoned.
-
-Each Need's `blocks` names the outcomes it holds and the earliest phase each
-waits at: `start`, `access`, `proof`, `acceptance`, or `landing`. The first three
-halt that outcome's work. `acceptance` and `landing` let building and proof
-continue, so a shown Try waiting for its choice or a provisional build carries
-an open Need without being blocked. Put what continues meanwhile in
-`meanwhile`. If work lands while a Need about it is open, keep the landed row and
-point the Need's `blocks` at a follow-up row for any change the answer requires.
-
-The page opens with a health strip: the verdict and counts `status` would
-print for the rendered record, from each owner's `seen` state, the oldest open
-Inbox item's age, and `next`. Each work card says what is happening now and
-its owner's last observed state. The page shows open, answered, and resolved
-Needs, work, and tradeoffs, and collapses landed, done, and scrapped work. It
-leaves out withdrawn Needs, decision history, owner plumbing, and program
-facts other than the title, goal, finish line, and `next`. Its Record line
-names the commit that last changed it and that commit's time, so a page behind
-the record shows an older commit. Every time on the page reads in the viewer's time
-zone.
-
-Write each `description` from the outcome's scope, not its title or the owner's
-next step. Store returned T3 thread links verbatim and use only real ticket, PR,
-result, and artifact links.
-
-### Render and show
-
-The scripts need Python 3 and no third-party packages. They make no tracker,
-forge, or session changes.
-
-Each copied choice, sent pick, or reopen request names its decision's revision,
-a digest of what the page shows for that Need, its pictures included. Two or more open quick picks add a batch
-prompt that takes every recommendation. Print a Need's revision at `HEAD` with:
-
-```bash
-python3 scripts/render_dashboard.py --state /absolute/path/program.json --revision <decision ID>
-```
+- **Halting vs. non-halting phases:** `start`, `access`, and `proof` halt work; `acceptance` and
+  `landing` let building/proof continue (and cover a shown Try or ready stop).
+- **Runnable triggers:** unstarted ready rows, idle owners with no wait/blocker/halting decision,
+  unapplied answers, unrouted open discoveries (`followups`), routed discoveries with a pending
+  held deferred PR reply (`reply: "pending"`), a reversible recommended decision halting startable
+  work (provisional start), or a settled decision with a `stalePick` (reopen request).
+- **Dead base:** an outcome that was `scrapped` or whose layers are all `closed` without landing.
+  Active dependents resting on it require a halting scrap-or-rebase decision, resolved atomically
+  with `record.py work --scrap` or `--rebase-onto` plus `--decision`.
+- **Outcome states:** `planned`, `building`, `shown` (Try with `results`), `in-review`, `ready`
+  (provisional allowed only for requested `pr-draft` or `pr-review`, never `land`), `landed`,
+  `scrapped`, `unknown`. Support rows use `planned`, `building`, `done`, `scrapped`, `unknown`.

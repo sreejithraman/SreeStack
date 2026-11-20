@@ -33,14 +33,17 @@ HALTING = {"start", "access", "proof"}  # The others let building continue.
 DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
-LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
+LANDING_STATES = ("released", "submitted", "cancelling", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
+DISCOVERY_STATUSES = ("open", "routed")
+DISCOVERY_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
+DISCOVERY_REPLIES = ("pending", "sent")
 HISTORY = {"date", "source", "answerSource", "rationale", "applied", "stalePick", "picksRead"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
 GRANT = ("date", "source", "start", "resolve", "user")
-DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "pictures", "meanwhile", "recommendation",
+DECISION_KEYS = ("id", "question", "date", "source", "status", "reopened", "context", "pictures", "meanwhile", "recommendation",
                  "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied", "stalePick", "picksRead")
 OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible")
 PICTURE_SHAPES = {"side-by-side": (2, 3), "before-after": (2, 2), "sequence": (2, 8)}  # shape: (fewest, most) images
@@ -258,7 +261,7 @@ def validate_work(row, layers):
     if finish == "try" and published:
         raise ValueError(f"{path}: Try stops before the PR; a published layer needs a PR or Land finish line")
     if state == "ready":
-        if "provisional" in row:
+        if "provisional" in row and effective not in {"pr-draft", "pr-review"}:
             raise ValueError(f"{path}: provisional work is never ready; keep it in review until its condition clears")
         allowed, wording = READY_LAYERS[effective]
         if not row.get("layers") or any(layer["status"] not in allowed for layer in row["layers"]):
@@ -301,6 +304,33 @@ def bases(row, layers):
     return [identity for identity in dict.fromkeys(found) if identity != row["id"]]
 
 
+def invalid_base_work(work, by_id, layers):
+    """Non-terminal work IDs resting on a dead base or an individually closed parent layer: {work_id: message}."""
+    broken = {}
+    for identity, (layer, row) in layers.items():
+        if row["state"] in TERMINAL or "stackedOn" not in layer:
+            continue
+        parent, parent_row = layers[layer["stackedOn"]]
+        if layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row):
+            broken.setdefault(
+                row["id"],
+                f"work[{row['id']}].layers[{identity}].stackedOn names closed {parent['id']}; "
+                "record the restack or halt it with its decision",
+            )
+    for row in work:
+        if row["state"] in TERMINAL:
+            continue
+        for identity in bases(row, layers):
+            reason = dead_base(by_id[identity])
+            if reason:
+                broken.setdefault(
+                    row["id"],
+                    f"work[{row['id']}] rests on {reason} {identity}; "
+                    "halt it with its scrap-or-rebase decision or record its new base",
+                )
+    return broken
+
+
 def validate_edges(work, by_id, layers, halted):
     for row in work:
         path = f"work[{row['id']}]"
@@ -323,18 +353,15 @@ def validate_edges(work, by_id, layers, halted):
         if "stackedOn" not in layer:
             continue
         parent, parent_row = layers[layer["stackedOn"]]
-        if (layer["status"] in LIVE_LAYERS and parent["status"] == "closed" and not dead_base(parent_row)
-                and row["id"] not in halted):
-            raise ValueError(f"{where} names closed {parent['id']}; record the restack or halt it with its decision")
+        if row["state"] not in TERMINAL and parent_row["repo"] != row["repo"]:
+            raise ValueError(f"{where}: cannot stack {row['id']} ({row['repo']}) on {parent['id']} in {parent_row['repo']}")
         if (parent_row is not row and parent["status"] != "merged" and row["state"] not in TERMINAL
                 and owned_by_another(row, parent_row)
                 and parent_row["id"] not in row.get("provisional", {}).get("on", [])):
             raise ValueError(f"{where}: {parent['id']} is another owner's unmerged layer; mark this outcome provisional on {parent_row['id']}")
-    for row in work:
-        for identity in bases(row, layers):
-            reason = dead_base(by_id[identity])
-            if reason and row["id"] not in halted:
-                raise ValueError(f"work[{row['id']}] rests on {reason} {identity}; halt it with its scrap-or-rebase decision or record its new base")
+    for identity, message in invalid_base_work(work, by_id, layers).items():
+        if identity not in halted:
+            raise ValueError(message)
 
     def depends_on(row):
         found = list(row.get("blockedBy", []))
@@ -380,6 +407,8 @@ def validate_decision(row, by_id):
         text(row.get("rationale"), f"{path}.rationale")
     if "applied" in row and (row["applied"] is not False or status not in {"answered", "resolved"}):
         raise ValueError(f"{path}.applied is false on an answer not yet passed to its owners, and absent otherwise")
+    if "reopened" in row and (type(row["reopened"]) is not int or row["reopened"] < 1):
+        raise ValueError(f"{path}.reopened must be a positive integer")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
         raise ValueError(f"{path}.weight must be quick or judgment")
     strings(row.get("context", []), f"{path}.context")
@@ -494,13 +523,28 @@ def validate(state):
         ("corrections", ENTRY, ()), ("requirements", ENTRY, ()),
         ("approvals", (*ENTRY, "id", "covers", "picks"), ()), ("directions", ENTRY, ("until",)),
         ("waits", ("date", "on", "event"), ("work",)),
-        ("discoveries", ("date", "origin", "text", "route"), ()),
+        ("discoveries", ("date", "origin", "text", "route"), ("id", "work", "impact", "evidence", "thread", "reply", "status")),
     ):
         for index, row in enumerate(records(state.get(name, []), name)):
             known_keys(row, f"{name}[{index}]", (*required, *optional))
             fields(row, f"{name}[{index}]", required, optional)
             if "work" in row:
                 known(row["work"], f"{name}[{index}].work", by_id)
+            if name == "discoveries":
+                if "status" in row:
+                    one_of(row["status"], DISCOVERY_STATUSES, f"discoveries[{index}].status")
+                    if row["status"] == "open":
+                        text(row.get("id"), f"discoveries[{index}].id")
+                if "impact" in row:
+                    one_of(row["impact"], DISCOVERY_IMPACTS, f"discoveries[{index}].impact")
+                if "reply" in row:
+                    one_of(row["reply"], DISCOVERY_REPLIES, f"discoveries[{index}].reply")
+                    if row["reply"] == "pending":
+                        text(row.get("id"), f"discoveries[{index}].id")
+                        text(row.get("thread"), f"discoveries[{index}].thread")
+    discovery_ids = [row["id"] for row in state.get("discoveries", []) if "id" in row]
+    if len(discovery_ids) != len(set(discovery_ids)):
+        raise ValueError("discoveries contain duplicate ids")
     for row in state.get("landings", []):
         validate_landing(row, by_id)
     return state
@@ -509,7 +553,7 @@ def validate(state):
 # Program verdict: what status prints, derived from the record and each owner thread's facts.
 
 SATISFIED = {"landed", "done"}
-PENDING_LANDINGS = {"released", "submitted"}
+PENDING_LANDINGS = {"released", "submitted", "cancelling"}
 LIVE_THREADS = {"running", "waiting"}  # waiting: on its own helpers
 STALE_HOURS = 2
 
@@ -697,6 +741,17 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
         elif decision.get("applied") is False:
             affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
             runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
+    for discovery in state.get("discoveries", []):
+        if discovery.get("status") == "open":
+            impact = f"[{discovery['impact']}] " if discovery.get("impact") else ""
+            runnable.append(item("route discovery", discovery["id"], f"{impact}{discovery['text']}", discovery["date"]))
+        elif discovery.get("status") == "routed" and discovery.get("reply") == "pending":
+            target = discovery.get("work") or "PR owner"
+            runnable.append(item(
+                "send deferred reply", discovery["id"],
+                f"send recorded route ({discovery['route']}) to {target} for thread {discovery['thread']}, then run discovery --reply-sent",
+                discovery["date"],
+            ))
     open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
     for wait in state.get("waits", []):
         if wait.get("work", "program") in open_rows | {"program"}:

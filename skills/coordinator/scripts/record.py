@@ -22,16 +22,19 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
-from render_dashboard import (ACTIVE, DECISION_KEYS, HALTING, IMAGE_SUFFIXES, LAYER_KEYS, OWNER_KEYS,
-                              OPTION_KEYS, PENDING_LANDINGS, PICTURE_SHAPES, PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES,
-                              TERMINAL, WORK_KEYS, assess, check_pictures, committed, content_name, effective_finish,
-                              fields, git, hexed, known_keys, layout, now, observation, open_blocks, page_files,
+from render_dashboard import (ACTIVE, DECISION_KEYS, DISCOVERY_IMPACTS, FINISH_LINES, GRANT, HALTING, IMAGE_SUFFIXES, LAYER_KEYS,
+                              LIVE_LAYERS, OWNER_KEYS, OPTION_KEYS, PENDING_LANDINGS, PHASES, PICTURE_SHAPES,
+                              PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
+                              check_pictures, committed, content_name, dead_base, effective_finish, fields, git,
+                              hexed, known_keys, layout, now, observation, open_blocks, page_files,
                               pending_landing, place, quoted, records, revision, stage_page, unsatisfied, validate)
 
 
 VERDICTS = ("pass", "fail", "blocked", "untested")
-REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "waits", "blocked")
+REPORT_KEYS = ("outcome", "state", "finishLine", "layers", "proof", "shown", "asks", "followups", "waits", "blocked")
 ASK_KEYS = ("id", "question", "context", "pictures", "meanwhile", "recommendation", "options", "weight", "phase", "links")
+FOLLOWUP_KEYS = ("id", "text", "evidence", "impact", "thread")
+DISCOVERY_KEYS = ("id", "date", "origin", "work", "impact", "text", "evidence", "thread", "reply", "route", "status")
 ROUTES = {
     "top-level": "`t3_thread_send` to the coordinator",
     "adopted": "`t3_thread_send` to the coordinator",
@@ -77,9 +80,329 @@ def decision_row(state, identity):
 
 
 
+MAX_NEXT_CHARS = 280
+
+
+LINE_SEPARATORS = ("\n", "\r", "\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029")
+
+
+def check_next(value):
+    stripped = value.strip()
+    if not stripped or any(sep in value for sep in LINE_SEPARATORS) or len(stripped) > MAX_NEXT_CHARS:
+        raise Refused(
+            f"next must be one short line (at most {MAX_NEXT_CHARS} characters) stating what happens next, "
+            "not a history log; keep history in git commits, work rows, or reports"
+        )
+    return stripped
+
+
 def set_next(state, value):
-    if value:
-        state["next"] = value
+    if value is not None:
+        state["next"] = check_next(value)
+
+
+def build_init_state(title, goal, chief, request_text, next_action=None, request_sources=None, finish_line=None, hosting=None):
+    """Build a fresh, validated program record."""
+    request = {"text": request_text}
+    if request_sources:
+        request["sources"] = list(request_sources)
+    state = {"title": title, "goal": goal}
+    if finish_line:
+        state["finishLine"] = finish_line
+    state["chief"] = chief
+    if hosting:
+        state["hosting"] = hosting
+    state["next"] = check_next(next_action) if next_action is not None else "Start ready outcomes"
+    state["request"] = request
+    state["decisions"] = []
+    state["work"] = []
+    return validate(state)
+
+
+def update_grant(state, at, source=None, start_rule=None, resolve_rule=None, user_rule=None,
+                 heartbeat_rule=None, wake_rule=None, landing_rule=None, hosting=None, finish_line=None):
+    """Set or update program grant, landing authority, hosting URL, or program finish line."""
+    authority_values = (("start", start_rule), ("resolve", resolve_rule), ("user", user_rule))
+    grant_values = (*authority_values, ("heartbeat", heartbeat_rule), ("wake", wake_rule))
+    touched_authority = any(value is not None for _, value in authority_values) or finish_line is not None
+    touched_grant = any(value is not None for _, value in grant_values) or (source is not None and landing_rule is None)
+    if not (touched_grant or landing_rule is not None or hosting is not None or finish_line is not None):
+        raise Refused("grant needs at least one field to set (--start, --resolve, --user, --heartbeat, --wake, --landing, --hosting, or --finish-line)")
+    if (touched_authority or landing_rule is not None) and not source:
+        raise Refused("changing grant authority (--start, --resolve, --user, --landing, or --finish-line) needs --source: the user's message that authorized it")
+    parts = []
+    if touched_grant:
+        grant = copy.deepcopy(state.get("grant", {}))
+        order = (*GRANT, "heartbeat", "wake")
+        if "date" not in grant or source is not None:
+            put(grant, "date", at, order)
+        if source is not None:
+            put(grant, "source", source, order)
+        for key, value in grant_values:
+            if value is not None:
+                put(grant, key, value, order)
+        put(state, "grant", grant, PROGRAM_KEYS)
+        parts.append("grant")
+    if landing_rule is not None:
+        put(state, "landingAuthority", {"date": at, "source": source, "text": landing_rule}, PROGRAM_KEYS)
+        parts.append("landingAuthority")
+    if hosting is not None:
+        put(state, "hosting", hosting, PROGRAM_KEYS)
+        parts.append("hosting")
+    if finish_line is not None:
+        put(state, "finishLine", finish_line, PROGRAM_KEYS)
+        parts.append("finishLine")
+    return f"update {', '.join(parts)}", []
+
+
+def parse_blocks(entries):
+    blocks = []
+    for raw in entries:
+        if ":" not in raw:
+            raise Refused(f"--block {raw!r} must be WORK_ID:PHASE (phase: {', '.join(PHASES)})")
+        work_id, phase = raw.rsplit(":", 1)
+        blocks.append({"id": work_id, "phase": phase})
+    return blocks
+
+
+def archive_decision_history(row, at, note):
+    """Move any settled answer and basis/source into rationale with the new note."""
+    pieces = []
+    if row.get("rationale"):
+        pieces.append(row["rationale"])
+    if "answer" in row:
+        earlier = f"{at}: prior {row['status']} answer {json.dumps(row.pop('answer'), ensure_ascii=False)}"
+        if "basis" in row:
+            earlier += f" (basis: {row.pop('basis')})."
+        elif "answerSource" in row:
+            earlier += f" (source: {row.pop('answerSource')})."
+        else:
+            earlier += "."
+        pieces.append(earlier)
+    else:
+        row.pop("basis", None)
+        row.pop("answerSource", None)
+    pieces.append(f"{at}: {note}")
+    put(row, "rationale", " ".join(pieces), DECISION_KEYS)
+
+
+def reopen_decision(state, at, identity, why, blocks=None):
+    """Reopen a resolved or answered decision; keep its prior answer in rationale."""
+    row = decision_row(state, identity)
+    if row["status"] not in {"resolved", "answered"}:
+        raise Refused(f"{identity} is {row['status']}; only a resolved or answered decision can be reopened")
+    archive_decision_history(row, at, f"reopened: {why}")
+    row["status"] = "open"
+    put(row, "reopened", row.get("reopened", 0) + 1, DECISION_KEYS)
+    row.pop("applied", None)
+    row.pop("stalePick", None)
+    by_id = {item["id"]: item for item in state["work"]}
+    notes = []
+    if blocks is not None:
+        put(row, "blocks", parse_blocks(blocks), DECISION_KEYS)
+    elif "blocks" in row:
+        landed = [entry["id"] for entry in row["blocks"] if by_id.get(entry["id"], {}).get("state") in TERMINAL]
+        kept = [entry for entry in row["blocks"] if entry["id"] not in landed]
+        if kept:
+            row["blocks"] = kept
+        else:
+            row.pop("blocks", None)
+        if landed:
+            notes.append(f"dropped terminal blocks ({', '.join(landed)}); add a follow-up outcome if landed work needs changes")
+    affected = ", ".join(entry["id"] for entry in row.get("blocks", []))
+    notes.append(
+        f"for any affected pending landing, move it to --to cancelling first before notifying affected owners "
+        f"({affected or 'if any'}) and confirming forge cancellation to withdraw"
+    )
+    return f"{identity} reopened", notes
+
+
+def withdraw_decision(state, at, identity, why):
+    """Withdraw a decision and preserve its history in rationale."""
+    row = decision_row(state, identity)
+    if row["status"] == "withdrawn":
+        raise Refused(f"{identity} is already withdrawn")
+    archive_decision_history(row, at, f"withdrawn: {why}")
+    row["status"] = "withdrawn"
+    row.pop("applied", None)
+    row.pop("stalePick", None)
+    return f"{identity} withdrawn", ["reconcile any blockers or work that depended on this decision"]
+
+
+def move_coordinator(state, chief):
+    """Transfer program ownership to a new coordinator thread and update live owner routes."""
+    pending = [row["id"] for row in state.get("landings", []) if row["state"] in PENDING_LANDINGS]
+    if pending:
+        raise Refused(
+            f"pending landing(s) {', '.join(pending)} are still active under the current coordinator; "
+            "withdraw each release and confirm forge cancellation (or record merged) before moving"
+        )
+    state["chief"] = chief
+    updated = []
+    for row in state["work"]:
+        if row["state"] not in TERMINAL and "owner" in row:
+            put(row["owner"], "route", ROUTES["top-level"], OWNER_KEYS)
+            updated.append(row["id"])
+    notes = ["do not publish from this thread; delete your heartbeat and send the handoff to the new coordinator"]
+    if updated:
+        notes.append(f"updated owner.route for {', '.join(updated)}")
+    return f"move coordinator to {chief}", notes
+
+
+def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
+                unknown_reason=None, description=None, scope=None, finish_line=None, finish_line_reason=None,
+                origin=None, blocked=None, clear_blocked=False, blocked_by=None, clear_blocked_by=False,
+                sources=None, optional=False, required=False, prov_basis=None, prov_clears=None, prov_on=None,
+                clear_provisional=False, scrap=False, rebase_onto=None, stack_on=None,
+                decision_id=None, decision_option=None, answer_source=None):
+    """Add, update, scrap, or rebase a work row, optionally answering its open decision in the same commit."""
+    if scrap and rebase_onto is not None:
+        raise Refused("choose either --scrap or --rebase-onto, not both")
+    if stack_on is not None and rebase_onto is None:
+        raise Refused("--stack-on requires --rebase-onto")
+    if work_state == "scrapped":
+        raise Refused("use --scrap (after withdrawing any pending landing) instead of --status scrapped")
+    if work_state == "landed":
+        raise Refused("record landed work through `record.py land --to landed` or `record.py status` after forge merge confirmation, not --status landed")
+    existing = next((row for row in state["work"] if row["id"] == identity), None)
+    notes = []
+    if add:
+        if existing is not None:
+            raise Refused(f"work {identity} already exists; omit --add to update it")
+        if not title or not repo:
+            raise Refused("work --add needs --title and --repo")
+        row = {"id": identity, "title": title, "repo": repo, "kind": kind or "outcome",
+               "state": work_state or "planned", "checkedAt": at}
+        state["work"].append(row)
+        action = f"{identity} add: {title}"
+    else:
+        if existing is None:
+            raise Refused(f"no work {identity}; pass --add to create it")
+        row = existing
+        if row["state"] == "landed":
+            raise Refused(f"{identity} is already landed; create a follow-up outcome instead of mutating landed work")
+        action = f"{identity} update"
+
+    layers_by_id = {layer["id"]: (layer, owner_row) for owner_row in state["work"]
+                    for layer in owner_row.get("layers", [])}
+    effective_repo = repo if (repo is not None and not add) else row["repo"]
+    if stack_on is not None:
+        if stack_on not in layers_by_id:
+            raise Refused(f"no layer {stack_on} to stack on")
+        parent_layer, parent_row = layers_by_id[stack_on]
+        if parent_row["repo"] != effective_repo:
+            raise Refused(f"cannot stack {identity} ({effective_repo}) on {stack_on} in {parent_row['repo']}")
+        if parent_layer["branch"] != rebase_onto:
+            raise Refused(f"--rebase-onto {rebase_onto!r} does not match {stack_on}'s branch {parent_layer['branch']!r}")
+
+    if decision_id is not None:
+        target_decision = decision_row(state, decision_id)
+        if target_decision["status"] != "open":
+            raise Refused(f"{decision_id} is {target_decision['status']}; work --decision only answers an open decision")
+        if not any(entry["id"] == identity for entry in target_decision.get("blocks", [])):
+            raise Refused(f"{decision_id} does not block {identity}")
+        if decision_option is None or not answer_source:
+            raise Refused("work --decision needs --option <number> and --answer-source <msg>")
+        chosen = option_label(target_decision, decision_option)
+        _, answer_notes = settle(state, at, decision_id, chosen, "answered", source=answer_source)
+        notes.extend(answer_notes)
+
+    for key, value in (
+        ("title", title if not add else None), ("repo", repo if not add else None),
+        ("kind", kind if not add else None), ("description", description), ("scope", scope),
+        ("finishLine", finish_line), ("finishLineReason", finish_line_reason), ("origin", origin),
+        ("unknownReason", unknown_reason),
+    ):
+        if value is not None:
+            put(row, key, value, WORK_KEYS)
+    if work_state is not None and not add:
+        row["state"] = work_state
+        if work_state != "unknown":
+            row.pop("unknownReason", None)
+    if sources is not None:
+        replace_list(row, "sources", sources)
+    if clear_blocked:
+        row.pop("blocked", None)
+    elif blocked is not None:
+        put(row, "blocked", blocked, WORK_KEYS)
+    if clear_blocked_by:
+        row.pop("blockedBy", None)
+    elif blocked_by is not None:
+        replace_list(row, "blockedBy", blocked_by)
+    if optional:
+        put(row, "required", False, WORK_KEYS)
+    elif required:
+        row.pop("required", None)
+
+    if clear_provisional:
+        row.pop("provisional", None)
+    elif prov_basis is not None or prov_clears is not None or prov_on is not None:
+        provisional = copy.deepcopy(row.get("provisional", {}))
+        for key, value in (("basis", prov_basis), ("clears", prov_clears), ("on", prov_on)):
+            if value is not None:
+                put(provisional, key, value, ("basis", "clears", "on"))
+        put(row, "provisional", provisional, WORK_KEYS)
+
+    if scrap:
+        if pending_landing(state, identity):
+            raise Refused(f"{identity} has pending landing {pending_landing(state, identity)['id']}; withdraw it before scrapping")
+        row["state"] = "scrapped"
+        for key in ("blockedBy", "blocked", "unknownReason"):
+            row.pop(key, None)
+        action = f"{identity} scrapped"
+
+    if rebase_onto is not None:
+        if pending_landing(state, identity):
+            raise Refused(f"{identity} has pending landing {pending_landing(state, identity)['id']}; withdraw it before rebasing")
+        live_layers = [layer for layer in row.get("layers", []) if layer["status"] in LIVE_LAYERS]
+        bottom_layers = [layer for layer in live_layers
+                         if "stackedOn" not in layer or layers_by_id.get(layer["stackedOn"], (None, {}))[1].get("id") != identity]
+        for layer in bottom_layers or live_layers[:1]:
+            put(layer, "base", rebase_onto, LAYER_KEYS)
+            if stack_on is not None:
+                put(layer, "stackedOn", stack_on, LAYER_KEYS)
+            else:
+                layer.pop("stackedOn", None)
+        if row["state"] == "ready":
+            row["state"] = "in-review"
+            row.pop("acceptance", None)
+        for layer in live_layers:
+            if layer["status"] == "ready":
+                layer["status"] = "open" if layer.get("url") else "local"
+        dead_ids = {item["id"] for item in state["work"] if dead_base(item)}
+        unmerged_parent = (
+            layers_by_id[stack_on][1]
+            if (stack_on is not None and layers_by_id[stack_on][1]["id"] != identity
+                and layers_by_id[stack_on][0]["status"] != "merged")
+            else None
+        )
+        if unmerged_parent is not None:
+            provisional = copy.deepcopy(row.get("provisional", {}))
+            kept_on = [item for item in provisional.get("on", []) if item not in dead_ids and item != unmerged_parent["id"]]
+            new_on = [*kept_on, unmerged_parent["id"]]
+            put(provisional, "basis", prov_basis or f"Stacked on {unmerged_parent['id']} ({stack_on})", ("basis", "clears", "on"))
+            put(provisional, "clears", prov_clears or (f"{', '.join(new_on)} land" if len(new_on) > 1 else f"{unmerged_parent['id']} lands"),
+                ("basis", "clears", "on"))
+            put(provisional, "on", new_on, ("basis", "clears", "on"))
+            put(row, "provisional", provisional, WORK_KEYS)
+        elif "provisional" in row and not clear_provisional:
+            kept_on = [item for item in row["provisional"].get("on", []) if item not in dead_ids]
+            if kept_on:
+                row["provisional"]["on"] = kept_on
+            elif "on" in row["provisional"] and prov_basis is None and prov_clears is None:
+                row.pop("provisional", None)
+            elif "on" in row["provisional"]:
+                row["provisional"].pop("on", None)
+        action = f"{identity} rebased onto {rebase_onto}"
+
+    if not add and not any((
+        title, repo, kind, work_state, unknown_reason, description, scope, finish_line, finish_line_reason,
+        origin, blocked, clear_blocked, blocked_by, clear_blocked_by, sources, optional, required,
+        prov_basis, prov_clears, prov_on, clear_provisional, scrap, rebase_onto, decision_id,
+    )):
+        raise Refused("work needs at least one field to update, or --add to create a row")
+    row["checkedAt"] = at
+    return action, notes
 
 
 # Events. Each takes the committed program and returns the commit message and notes to print.
@@ -176,6 +499,75 @@ def ask_pictures(ask, number, files):
             option["image"] = adopt_picture(option["image"], f"report asks[{number}].options[{index}].image", files)
 
 
+def ingest_followups(state, at, work, block, source, notes):
+    """Record or update structured owner followups as discoveries; return (followed_ids, to_route, to_reply)."""
+    followed, to_route, to_reply = [], [], []
+    discoveries = list(state.get("discoveries", []))
+    existing_by_id = {entry["id"]: entry for entry in discoveries if entry.get("id")}
+    for index, entry in enumerate(objects(block.get("followups", []), "followups")):
+        only(entry, FOLLOWUP_KEYS, f"followups[{index}]")
+        fields(entry, f"followups[{index}]", ("id", "text"), ("evidence", "impact", "thread"))
+        if "impact" in entry and entry["impact"] not in DISCOVERY_IMPACTS:
+            raise Refused(f"followups[{index}].impact must be one of {', '.join(DISCOVERY_IMPACTS)}")
+        existing_entry = existing_by_id.get(entry["id"])
+        if existing_entry is not None:
+            if existing_entry.get("work") != work or existing_entry.get("text") != entry["text"]:
+                raise Refused(
+                    f"followup ID {entry['id']!r} already belongs to another discovery "
+                    f"({existing_entry.get('work') or existing_entry.get('origin')}); prefix owner followup IDs with {work}-"
+                )
+            changed = []
+            for key in ("impact", "evidence", "thread"):
+                if key in entry and entry[key] != existing_entry.get(key):
+                    put(existing_entry, key, entry[key], DISCOVERY_KEYS)
+                    changed.append(key)
+            if "thread" in entry and existing_entry.get("reply") is None:
+                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+                changed.append("reply")
+            if not changed:
+                notes.append(f"followup {entry['id']} is already recorded; left as it is")
+                continue
+            if "thread" in changed:
+                put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+            if "impact" in changed and existing_entry.get("status") == "routed":
+                prior = existing_entry["route"]
+                existing_entry["route"] = "pending"
+                put(existing_entry, "status", "open", DISCOVERY_KEYS)
+                if existing_entry.get("thread"):
+                    put(existing_entry, "reply", "pending", DISCOVERY_KEYS)
+                notes.append(f"followup {entry['id']} impact changed ({existing_entry['impact']}); reopened from {prior!r} for re-routing")
+                to_route.append(entry["id"])
+            elif existing_entry.get("status") == "routed" and existing_entry.get("reply") == "pending":
+                notes.append(
+                    f"followup {entry['id']} attached thread {existing_entry['thread']} to routed home "
+                    f"({existing_entry['route']}); send it to {work} and run `discovery --id {entry['id']} --reply-sent`"
+                )
+                to_reply.append(entry["id"])
+            else:
+                notes.append(f"followup {entry['id']} updated ({', '.join(changed)})")
+                if existing_entry.get("status") == "open":
+                    to_route.append(entry["id"])
+            followed.append(entry["id"])
+            continue
+        item_row = {
+            "id": entry["id"], "date": at, "origin": f"{work} report ({source})",
+            "work": work, "text": entry["text"], "route": "pending", "status": "open",
+        }
+        for key in ("impact", "evidence", "thread"):
+            if key in entry:
+                item_row[key] = entry[key]
+        if "thread" in entry:
+            item_row["reply"] = "pending"
+        ordered = {key: item_row[key] for key in DISCOVERY_KEYS if key in item_row}
+        existing_by_id[entry["id"]] = ordered
+        discoveries.append(ordered)
+        followed.append(entry["id"])
+        to_route.append(entry["id"])
+    if followed:
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+    return followed, to_route, to_reply
+
+
 def report(state, at, work, block, source, files):
     """Apply an owner report block: each field it names replaces that part of the record.
 
@@ -190,6 +582,17 @@ def report(state, at, work, block, source, files):
     if block["state"] in TERMINAL:
         raise Refused(f"a report cannot record {block['state']}: run status, which reads merges at the forge, "
                       "or record a scrap by hand")
+    if row["state"] == "landed":
+        if not block.get("followups"):
+            raise Refused(f"{work} is already landed; create a follow-up outcome for post-merge work instead of overwriting landed state")
+        notes = [f"{work} is already landed; kept landed state and layers intact and ingested delayed followups only"]
+        if block.get("asks"):
+            notes.append(f"ignored asks on already-landed {work}; create a follow-up outcome if post-merge work needs a decision")
+        followed, to_route, _ = ingest_followups(state, at, work, block, source, notes)
+        if to_route:
+            notes.append(f"route {', '.join(to_route)} with `discovery --id <ID> --route ...`")
+        label = f", followups {', '.join(followed)}" if followed else " (followups already recorded)"
+        return f"{work} delayed report{label}", notes
     merged = {layer["id"]: layer for layer in row.get("layers", []) if layer["status"] == "merged"}
     if "layers" in block:
         reported = {layer.get("id"): layer for layer in objects(block["layers"], "layers")}
@@ -256,11 +659,16 @@ def report(state, at, work, block, source, files):
             decision["links"] = ask["links"]
         state["decisions"].append({key: decision[key] for key in DECISION_KEYS if key in decision})
         asked.append(ask.get("id"))
+    followed, to_route, _ = ingest_followups(state, at, work, block, source, notes)
     row["checkedAt"] = at
     message = f"{work} report: {block['state']}"
     if asked:
         message += f", asks {', '.join(asked)}"
         notes.append(f"triage {', '.join(asked)}: resolve it with `resolve`, or ask the user")
+    if followed:
+        message += f", followups {', '.join(followed)}"
+        if to_route:
+            notes.append(f"route {', '.join(to_route)} with `discovery --id <ID> --route ...`")
     return message, notes
 
 
@@ -301,7 +709,7 @@ def option_label(row, number):
     return options[number - 1]["label"]
 
 
-def pasted_choices(text):
+def pasted_choices(text, state=None):
     """(decision ID, revision, option number, label) for each choice in a pasted page prompt."""
     choices, pending = [], None
     for line in (line.strip() for line in text.splitlines()):
@@ -320,7 +728,12 @@ def pasted_choices(text):
             choices.append((*pending, int(choice[1]), json.loads(choice[2])))
             pending = None
         elif line == "Reopen this decision." and pending:
-            raise Refused(f"{pending[0]}: a reopen request; reopen it under references/decisions.md#reopen")
+            identity, digest = pending
+            if state is not None:
+                row = next((r for r in state["decisions"] if r["id"] == identity), None)
+                if row is None or row["status"] not in {"resolved", "answered"} or revision(row) != digest:
+                    raise Refused(f"{identity}: stale reopen prompt (revision {digest} does not match current settled revision); ask again")
+            raise Refused(f"{identity}: verified reopen request (revision {digest}); run record.py reopen --decision {identity} --why \"...\"")
     if not choices:
         raise Refused("no decision choice found in the pasted text")
     return choices
@@ -329,7 +742,7 @@ def pasted_choices(text):
 def answer_pasted(state, at, text, source):
     """Record each pasted choice that matches its open decision's current revision; return the rest to ask again."""
     recorded, stale = [], []
-    for identity, digest, number, label in pasted_choices(text):
+    for identity, digest, number, label in pasted_choices(text, state):
         row = next((row for row in state["decisions"] if row["id"] == identity), None)
         options = row.get("options", []) if row else []
         if (row is None or row["status"] != "open" or revision(row) != digest
@@ -481,6 +894,75 @@ def applied(state, identities):
     return f"{', '.join(identities)} applied", []
 
 
+def next_discovery_id(discoveries):
+    numbers = [int(m[1]) for row in discoveries if (m := re.fullmatch(r"D(\d+)", row.get("id", "")))]
+    return f"D{max(numbers, default=0) + 1}"
+
+
+def record_discovery(state, at, identity=None, add=False, origin=None, work=None, text=None,
+                     evidence=None, impact=None, route=None, reply_sent=False):
+    """Add a discovery, record its disposition route, or mark a held deferred PR reply sent."""
+    discoveries = list(state.get("discoveries", []))
+    if work:
+        work_row(state, work)
+    if add:
+        if not origin or not text:
+            raise Refused("discovery --add needs --origin and --text")
+        if identity and any(row.get("id") == identity for row in discoveries):
+            raise Refused(f"discovery {identity} already exists")
+        routed = bool(route and route.strip() and route.strip().lower() != "pending")
+        assigned_id = identity or (None if routed else next_discovery_id(discoveries))
+        entry = {
+            "date": at, "origin": origin, "text": text,
+            "route": route.strip() if routed else "pending",
+            "status": "routed" if routed else "open",
+        }
+        if assigned_id:
+            entry["id"] = assigned_id
+        if work:
+            entry["work"] = work
+        if impact:
+            entry["impact"] = impact
+        if evidence:
+            entry["evidence"] = evidence
+        discoveries.append({key: entry[key] for key in DISCOVERY_KEYS if key in entry})
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+        label = assigned_id or origin
+        return f"discovery {label}: {entry['route']}", []
+    if reply_sent and not route:
+        if not identity:
+            raise Refused("discovery --reply-sent needs --id")
+        target = next((row for row in discoveries if row.get("id") == identity), None)
+        if target is None:
+            raise Refused(f"no discovery {identity}")
+        if target.get("status") != "routed":
+            raise Refused(f"discovery {identity} must be routed before marking its deferred reply sent")
+        if target.get("reply") != "pending":
+            raise Refused(f"discovery {identity} has no pending deferred PR reply")
+        put(target, "reply", "sent", DISCOVERY_KEYS)
+        replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+        return f"discovery {identity} reply sent", []
+    if not identity or not route or not route.strip():
+        raise Refused("discovery needs --id and --route (or --reply-sent, or --add with --origin and --text)")
+    target = next((row for row in discoveries if row.get("id") == identity), None)
+    if target is None:
+        raise Refused(f"no discovery {identity}")
+    if target.get("status") == "routed":
+        raise Refused(f"discovery {identity} is already routed ({target['route']})")
+    if route.strip().lower() == "pending":
+        raise Refused("routing a discovery needs a concrete destination, not 'pending'")
+    target["route"] = route.strip()
+    put(target, "status", "routed", DISCOVERY_KEYS)
+    notes = []
+    if target.get("thread"):
+        put(target, "reply", "sent" if reply_sent else "pending", DISCOVERY_KEYS)
+        if not reply_sent:
+            notes.append(f"send recorded route ({target['route']}) to {target.get('work') or 'PR owner'} "
+                         f"for thread {target['thread']}, then run `discovery --id {identity} --reply-sent`")
+    replace_list(state, "discoveries", discoveries, PROGRAM_KEYS)
+    return f"discovery {identity} routed: {target['route']}", notes
+
+
 def wait(state, at, on, event=None, work=None, clear=False):
     if work:
         work_row(state, work)
@@ -542,43 +1024,199 @@ def release(state, at, works, lander=None, target=None, keep=None, note=None):
     return f"{identity} released: {', '.join(works)} to {target}", [f"resume {lander} with landing {identity}"]
 
 
+def apply_forge_layer(layer, pr, work_id=None, notes=None):
+    """Apply observed forge PR facts to one layer dict in place; return True if head or base moved."""
+    moved = False
+    for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
+        recorded = layer.get(key, "")
+        if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
+            put(layer, key, value, LAYER_KEYS)
+            moved = True
+            if recorded and notes is not None and work_id is not None:
+                notes.append(f"{work_id}: {layer['id']} {key} moved to {value[:7] if key == 'head' else value}")
+    status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
+    status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
+    if status != layer["status"]:
+        if status == "closed" and notes is not None and work_id is not None:
+            notes.append(f"{work_id}: {layer['id']} closed without merge")
+        layer["status"] = status
+    return moved
+
+
 def move_landing(state, at, identity, to, read_pr, note=None):
     landing = next((row for row in state.get("landings", []) if row["id"] == identity), None)
     if landing is None:
         raise Refused(f"no landing {identity}")
     if landing["state"] in {"landed", "withdrawn"}:
         raise Refused(f"{identity} is already {landing['state']}")
-    if to == "withdrawn" and not note:
-        raise Refused("a withdrawal needs --note: why")
-    if to == "landed":
+    if landing["state"] == "cancelling" and to == "submitted":
+        raise Refused(f"{identity} is cancelling; confirm stopped (--to withdrawn) or merged (--to landed)")
+    if to in {"withdrawn", "cancelling"} and not note:
+        raise Refused(f"moving a landing to {to} needs --note: why")
+    if to == "withdrawn" and landing["state"] != "cancelling":
+        raise Refused(
+            f"{identity} is {landing['state']}; move it to --to cancelling first to fence its lander, "
+            "then confirm forge state before withdrawing"
+        )
+    notes = []
+    if to == "withdrawn":
+        merged_urls, stopped_urls, observed = [], [], {}
         for pr in landing["prs"]:
-            if read_pr(pr["url"]).get("state") != "MERGED":
+            url = pr["url"]
+            forge_pr = read_pr(url)
+            if not isinstance(forge_pr, dict) or forge_pr.get("state") not in {"OPEN", "CLOSED", "MERGED"}:
+                raise Refused(f"{url} returned incomplete forge state; confirm on GitHub before withdrawing")
+            observed[url] = forge_pr
+            if forge_pr["state"] == "MERGED":
+                merged_urls.append(url)
+                continue
+            if "autoMergeRequest" not in forge_pr or not isinstance(forge_pr.get("isInMergeQueue"), bool):
+                raise Refused(
+                    f"{url} is missing definite auto-merge or merge-queue facts; confirm on GitHub before withdrawing"
+                )
+            if forge_pr["autoMergeRequest"] is not None or forge_pr["isInMergeQueue"]:
+                raise Refused(f"{url} still has auto-merge or merge-queue armed on the forge; cancel it first")
+            stopped_urls.append(url)
+        if not stopped_urls:
+            raise Refused(f"all PRs in {identity} already merged on the forge; record --to landed instead")
+        landing["state"] = to
+        if note:
+            put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
+        candidates = {}
+        for wid in landing["work"]:
+            index = next(i for i, item in enumerate(state["work"]) if item["id"] == wid)
+            original = state["work"][index]
+            updated = copy.deepcopy(original)
+            for layer in updated.get("layers", []):
+                forge_pr = observed.get(layer.get("url"))
+                if not forge_pr:
+                    continue
+                if forge_pr["state"] == "MERGED":
+                    apply_forge_layer(layer, forge_pr, wid, notes)
+                else:
+                    moved = False
+                    head = forge_pr.get("headRefOid", "")
+                    if head and not (layer.get("head") and head.startswith(layer["head"])):
+                        put(layer, "head", head, LAYER_KEYS)
+                        moved = True
+                        notes.append(f"{wid}: {layer['id']} head moved to {head[:7]}")
+                    base = forge_pr.get("baseRefName", "")
+                    if base and layer.get("base") and base != layer["base"]:
+                        moved = True
+                        notes.append(f"{wid}: {layer['id']} base moved to {base}")
+                    status = "closed" if forge_pr["state"] == "CLOSED" else (
+                        "draft" if forge_pr.get("isDraft") else ("ready" if layer["status"] == "ready" and not moved else "open")
+                    )
+                    if status != layer["status"]:
+                        if status == "closed":
+                            notes.append(f"{wid}: {layer['id']} closed without merge")
+                        layer["status"] = status
+            if (updated["state"] == "ready"
+                    and any(layer["status"] not in READY_LAYERS[effective_finish(updated)][0] for layer in updated.get("layers", []))):
+                updated["state"] = "in-review"
+                updated.pop("acceptance", None)
+            if (merged_urls and updated.get("layers") and all(layer["status"] == "merged" for layer in updated["layers"])
+                    and effective_finish(updated) == "land" and not open_blocks(state, wid)
+                    and not updated.get("blocked") and not updated.get("blockedBy")):
+                updated["state"] = "landed"
+                updated.pop("unknownReason", None)
+            updated["checkedAt"] = at
+            fallback = lapsed(original, updated)
+            fallback.pop("acceptance", None) if fallback["state"] != "ready" else None
+            fallback["checkedAt"] = at
+            options = [updated]
+            if fallback != updated:
+                options.append(fallback)
+            if original not in options:
+                options.append(original)
+            candidates[index] = options
+        for index, reason in first_valid(state, candidates).items():
+            notes.append(f"{state['work'][index]['id']}: withdrew landing with partial forge state; settle by hand: {reason}")
+        if merged_urls:
+            notes.append(
+                f"{identity} partially merged before cancellation: merged {', '.join(merged_urls)}; "
+                f"confirmed stopped {', '.join(stopped_urls)} (fresh release required for remaining work)"
+            )
+        return f"{identity} {to}", notes
+    if to == "landed":
+        observed = {}
+        for pr in landing["prs"]:
+            forge_pr = read_pr(pr["url"])
+            if not isinstance(forge_pr, dict) or forge_pr.get("state") != "MERGED":
                 raise Refused(f"{pr['url']} is not merged on the forge")
-        for work in landing["work"]:
-            row = work_row(state, work)
+            observed[pr["url"]] = forge_pr
+        for wid in landing["work"]:
+            row = work_row(state, wid)
+            if effective_finish(row) != "land":
+                raise Refused(f"{wid} has finish line {effective_finish(row)}, not land; reconcile it before recording {identity} landed")
             for layer in row.get("layers", []):
-                if any(pr["url"] == layer.get("url") for pr in landing["prs"]):
-                    layer["status"] = "merged"
+                if layer.get("url") in observed:
+                    apply_forge_layer(layer, observed[layer["url"]], wid, notes)
             if all(layer["status"] == "merged" for layer in row.get("layers", [])):
                 row["state"] = "landed"
+                row.pop("unknownReason", None)
             row["checkedAt"] = at
     landing["state"] = to
     if note:
         put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
-    return f"{identity} {to}", []
+    return f"{identity} {to}", notes
 
 
 # Status: facts from the forge and the host.
+
+PR_URL_RE = re.compile(r"^https?://([^/]+)/([^/]+)/([^/]+)/pull/(\d+)(?:[/?#].*)?$")
+PR_GRAPHQL_QUERY = """
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      state isDraft headRefOid baseRefName isInMergeQueue
+      autoMergeRequest { enabledAt }
+    }
+  }
+}
+"""
+GH_PR_VIEW_FIELDS = "url,state,isDraft,headRefOid,baseRefName,autoMergeRequest"
+
+
+def gh_pr_graphql(gh, host, owner, name, number):
+    cmd = [
+        gh, "api", "graphql", "--hostname", host,
+        "-f", f"query={PR_GRAPHQL_QUERY}",
+        "-f", f"owner={owner}",
+        "-f", f"name={name}",
+        "-F", f"number={int(number)}",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    if result.returncode:
+        raise OSError(result.stderr.strip() or f"gh exited with status {result.returncode}")
+    payload = json.loads(result.stdout)
+    if payload.get("errors"):
+        messages = "; ".join(err.get("message", str(err)) for err in payload["errors"])
+        raise OSError(f"GitHub GraphQL error: {messages}")
+    pr = ((payload.get("data") or {}).get("repository") or {}).get("pullRequest")
+    if not isinstance(pr, dict):
+        raise OSError(f"pull request {owner}/{name}#{number} not found")
+    return pr
+
 
 def gh_pr(target):
     gh = shutil.which("gh")
     if not gh:
         raise OSError("gh is not installed")
-    result = subprocess.run([gh, "pr", "view", target, "--json", "state,isDraft,headRefOid,baseRefName"],
-                            capture_output=True, text=True, timeout=60)
+    match = PR_URL_RE.match(target)
+    if match:
+        return gh_pr_graphql(gh, *match.groups())
+    result = subprocess.run(
+        [gh, "pr", "view", target, "--json", GH_PR_VIEW_FIELDS],
+        capture_output=True, text=True, timeout=60,
+    )
     if result.returncode:
         raise OSError(result.stderr.strip() or f"gh exited with status {result.returncode}")
-    return json.loads(result.stdout)
+    pr = json.loads(result.stdout)
+    url_match = PR_URL_RE.match(pr.get("url", "")) if isinstance(pr, dict) else None
+    if url_match:
+        return gh_pr_graphql(gh, *url_match.groups())
+    return pr
 
 
 def t3_thread(identity):
@@ -628,20 +1266,7 @@ def read_layers(row, read_pr, forge, notes):
             failed += 1
             notes.append(f"{row['id']}: could not read {layer['url']}: {error}")
             continue
-        moved = False
-        for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
-            recorded = layer.get(key, "")
-            if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
-                put(layer, key, value, LAYER_KEYS)
-                moved = True
-                if recorded:
-                    notes.append(f"{row['id']}: {layer['id']} {key} moved to {value[:7] if key == 'head' else value}")
-        status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
-        status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
-        if status != layer["status"]:
-            if status == "closed":
-                notes.append(f"{row['id']}: {layer['id']} closed without merge")
-            layer["status"] = status
+        apply_forge_layer(layer, pr, row["id"], notes)
     return facts, reads, failed
 
 
@@ -724,6 +1349,8 @@ def observe(state, at, read_pr, threads):
         if reads and not failed:
             facts["checkedAt"] = at
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
+        if derived["state"] != "unknown":
+            derived.pop("unknownReason", None)
         if derived != row:
             labels = ((derived, None), (facts, "its forge facts"), (lapsed(row, facts), "that its readiness lapsed"),
                       (row, "nothing"))
@@ -746,7 +1373,8 @@ def observe(state, at, read_pr, threads):
     for landing in state.get("landings", []):
         if landing["state"] not in PENDING_LANDINGS:
             continue
-        if all(entry["url"] in merged or forge.get(entry["url"], {}).get("state") == "MERGED" for entry in landing["prs"]):
+        all_merged = all(entry["url"] in merged or forge.get(entry["url"], {}).get("state") == "MERGED" for entry in landing["prs"])
+        if all_merged and all(work_row(state, wid)["state"] == "landed" for wid in landing["work"]):
             landing["state"] = "landed"
             notes.append(f"{landing['id']}: landed")
             continue
@@ -755,7 +1383,10 @@ def observe(state, at, read_pr, threads):
             if pr and pr.get("state") != "MERGED" and (
                     not pr.get("headRefOid", "").startswith(entry["head"])
                     or (not re.fullmatch(r"[0-9a-f]{7,40}", entry["base"]) and pr.get("baseRefName") != entry["base"])):
-                notes.append(f"{landing['id']}: a released head or base moved; withdraw the release before telling {landing['lander']}")
+                notes.append(
+                    f"{landing['id']}: a released head or base moved; move it to --to cancelling before notifying "
+                    f"{landing['lander']} and confirm forge cancellation before withdrawing"
+                )
                 break
     return notes
 
@@ -828,6 +1459,36 @@ class Record:
             raise Refused(f"{self.file} is not one value per line; run render_dashboard.py --check for the fix")
         return state
 
+    def create(self, state, message):
+        """Initialize a new git-backed program record; a failure leaves no state file or staged entry."""
+        if self.file.exists():
+            raise Refused(f"{self.file} already exists")
+        validate(state)
+        self.file.parent.mkdir(parents=True, exist_ok=True)
+        (self.file.parent / "reports").mkdir(exist_ok=True)
+        if not (self.file.parent / ".git").exists():
+            self.git("init", "-q")
+        else:
+            if self.git("ls-files", "--", self.file.name).strip():
+                raise Refused(f"{self.file.name} is already tracked or staged in git")
+            in_head = subprocess.run(["git", "-C", str(self.file.parent), "cat-file", "-e", f"HEAD:{self.file.name}"],
+                                     capture_output=True)
+            if in_head.returncode == 0:
+                raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")
+        staged = False
+        try:
+            self.file.write_text(layout(state))
+            self.git("add", "--", self.file.name)
+            staged = True
+            self.git("commit", "-q", "-m", message, "--", self.file.name)
+        except (Refused, ValueError, OSError):
+            if staged:
+                with contextlib.suppress(ValueError):
+                    self.git("rm", "-q", "-f", "--cached", "--ignore-unmatch", "--", self.file.name)
+            self.file.unlink(missing_ok=True)
+            raise
+        print(f"committed: {message}")
+
     def save(self, state, message, files=None):
         """Commit state with files (record path: content) written into the program folder; a failure changes nothing."""
         validate(state)
@@ -894,6 +1555,59 @@ def arguments():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
 
+    command = commands.add_parser("init", parents=[shared], help="Create and commit a new program record")
+    command.add_argument("--title", required=True)
+    command.add_argument("--goal", required=True)
+    command.add_argument("--chief", required=True, help="The current coordinator thread link")
+    command.add_argument("--request", required=True, help="The original user request")
+    command.add_argument("--request-source", action="append", help="A source reference for the request; repeatable")
+    command.add_argument("--finish-line", help="Program-wide finish-line note")
+    command.add_argument("--hosting", help="Initial published command center URL")
+
+    command = commands.add_parser("grant", parents=[shared], help="Set or update the grant, landing authority, or hosting URL")
+    command.add_argument("--source", help="The user's message that authorized the grant or landing authority")
+    command.add_argument("--start", dest="start_rule", help="Which owners and support tasks the coordinator may start")
+    command.add_argument("--resolve", dest="resolve_rule", help="Which decisions the coordinator settles itself")
+    command.add_argument("--user", dest="user_rule", help="What stays with the user")
+    command.add_argument("--heartbeat", dest="heartbeat_rule", help="Heartbeat timing policy and scheduled task ID, or why none")
+    command.add_argument("--wake", dest="wake_rule", help="Answer wake scheduled task ID, or why none")
+    command.add_argument("--landing", dest="landing_rule", help="Agreed landing scope and gates (sets landingAuthority)")
+    command.add_argument("--hosting", help="Current published command center URL")
+    command.add_argument("--finish-line", help="Program-wide finish-line note")
+
+    command = commands.add_parser("work", parents=[shared], help="Add, update, scrap, or rebase a work row")
+    command.add_argument("--id", required=True, help="Work ID, such as W1")
+    command.add_argument("--add", action="store_true", help="Create a new work row")
+    command.add_argument("--title")
+    command.add_argument("--repo")
+    command.add_argument("--kind", choices=("outcome", "follow-up", "support"))
+    command.add_argument("--status", dest="work_state", choices=tuple(STATES), help="Work row state")
+    command.add_argument("--unknown-reason")
+    command.add_argument("--description")
+    command.add_argument("--scope")
+    command.add_argument("--finish-line", choices=tuple(FINISH_LINES))
+    command.add_argument("--finish-line-reason")
+    command.add_argument("--origin")
+    command.add_argument("--source", dest="sources", action="append", help="Source reference; repeatable")
+    command.add_argument("--blocked")
+    command.add_argument("--clear-blocked", action="store_true")
+    command.add_argument("--blocked-by", action="append", help="Logical dependency work ID; repeatable")
+    command.add_argument("--clear-blocked-by", action="store_true")
+    req = command.add_mutually_exclusive_group()
+    req.add_argument("--optional", action="store_true", help="Mark proposed work outside committed scope")
+    req.add_argument("--required", action="store_true", help="Mark work as required")
+    command.add_argument("--provisional-basis")
+    command.add_argument("--provisional-clears")
+    command.add_argument("--provisional-on", action="append", help="Outcome ID this provisional work rests on; repeatable")
+    command.add_argument("--clear-provisional", action="store_true")
+    transition = command.add_mutually_exclusive_group()
+    transition.add_argument("--scrap", action="store_true", help="Scrap this work row and clear active blockers")
+    transition.add_argument("--rebase-onto", help="Move live layers' base onto this branch (and clear or retarget dead-base provisional state)")
+    command.add_argument("--stack-on", help="Layer ID to set as stackedOn when rebasing onto another unmerged layer")
+    command.add_argument("--decision", dest="decision_id", help="Decision ID to answer in the same commit as --scrap or --rebase-onto")
+    command.add_argument("--option", dest="decision_option", type=int, help="Chosen option number for --decision")
+    command.add_argument("--answer-source", help="User message or stored pick that answered --decision")
+
     command = commands.add_parser("start", parents=[shared], help="An owner started on a work row")
     command.add_argument("--work", required=True)
     command.add_argument("--owner", required=True, help="The owner's name")
@@ -932,6 +1646,18 @@ def arguments():
     choice.add_argument("--option", type=int)
     choice.add_argument("--text")
 
+    command = commands.add_parser("reopen", parents=[shared], help="Reopen a resolved or answered decision")
+    command.add_argument("--decision", required=True)
+    command.add_argument("--why", required=True)
+    command.add_argument("--block", dest="blocks", action="append", help="Unlanded outcome and phase as WORK_ID:PHASE; repeatable")
+
+    command = commands.add_parser("withdraw", parents=[shared], help="Withdraw a decision and preserve its history")
+    command.add_argument("--decision", required=True)
+    command.add_argument("--why", required=True)
+
+    command = commands.add_parser("move", parents=[shared], help="Transfer coordinator ownership and live owner routes")
+    command.add_argument("--chief", required=True, help="The new coordinator thread link")
+
     command = commands.add_parser("applied", parents=[shared], help="You passed answers to the owners they affect")
     command.add_argument("--decision", action="append", required=True)
 
@@ -941,7 +1667,7 @@ def arguments():
     command.add_argument("--target")
     command.add_argument("--keep")
     command.add_argument("--landing", help="Move this landing instead")
-    command.add_argument("--to", choices=("submitted", "landed", "withdrawn"))
+    command.add_argument("--to", choices=("submitted", "cancelling", "landed", "withdrawn"))
     command.add_argument("--note")
 
     command = commands.add_parser("wait", parents=[shared], help="Record or clear a wait")
@@ -950,10 +1676,21 @@ def arguments():
     command.add_argument("--work")
     command.add_argument("--clear", action="store_true")
 
+    command = commands.add_parser("discovery", parents=[shared], help="Add or route a discovery / deferred follow-up")
+    command.add_argument("--id", help="Discovery ID (to route an open item, or assign on --add)")
+    command.add_argument("--add", action="store_true", help="Record a new discovery")
+    command.add_argument("--origin", help="Where the discovery came from (with --add)")
+    command.add_argument("--work", help="Originating work ID, if any")
+    command.add_argument("--text", help="What was discovered or deferred (with --add)")
+    command.add_argument("--evidence", help="Location or evidence note (with --add)")
+    command.add_argument("--impact", choices=DISCOVERY_IMPACTS, help="unrelated, shared-contract, or requested-scope")
+    command.add_argument("--route", help="Disposition: work ID, snip ID, issue URL, or declined reason")
+    command.add_argument("--reply-sent", action="store_true", help="Mark a routed discovery's held deferred PR reply sent to its PR owner")
+
     command = commands.add_parser("status", parents=[shared], help="Read PRs and owner threads; list what to do now")
     mode = command.add_mutually_exclusive_group()
     mode.add_argument("--turn-end", action="store_true",
-                      help="Commit nothing; fail while the verdict is runnable, the record is dirty, or the page is behind")
+                      help="Commit nothing; fail while the verdict is runnable, the record is dirty, an owner's thread state moved, or the page is behind")
     mode.add_argument("--heartbeat", action="store_true",
                       help="Commit nothing; print heartbeat: quiet, wake, or done against what was last seen")
     mode.add_argument("--exit-code", action="store_true", help="Exit 0 done, 3 waiting, 4 working, 5 runnable")
@@ -964,6 +1701,22 @@ def arguments():
 
 def event(args, state, at, files):
     """Apply the command's event to state; files gains each file the commit must add: its record path and content."""
+    if args.command == "grant":
+        return update_grant(state, at, args.source, args.start_rule, args.resolve_rule, args.user_rule,
+                            args.heartbeat_rule, args.wake_rule, args.landing_rule, args.hosting, args.finish_line)
+    if args.command == "work":
+        return mutate_work(state, at, args.id, args.add, args.title, args.repo, args.kind, args.work_state,
+                           args.unknown_reason, args.description, args.scope, args.finish_line, args.finish_line_reason,
+                           args.origin, args.blocked, args.clear_blocked, args.blocked_by, args.clear_blocked_by,
+                           args.sources, args.optional, args.required, args.provisional_basis, args.provisional_clears,
+                           args.provisional_on, args.clear_provisional, args.scrap, args.rebase_onto, args.stack_on,
+                           args.decision_id, args.decision_option, args.answer_source)
+    if args.command == "reopen":
+        return reopen_decision(state, at, args.decision, args.why, args.blocks)
+    if args.command == "withdraw":
+        return withdraw_decision(state, at, args.decision, args.why)
+    if args.command == "move":
+        return move_coordinator(state, args.chief)
     if args.command == "start":
         return start(state, at, args.work, args.owner, args.mode, args.session, args.route, args.workspace, args.replace)
     if args.command == "report":
@@ -1007,6 +1760,9 @@ def event(args, state, at, files):
         if not args.work:
             raise Refused("land needs --work to release, or --landing with --to")
         return release(state, at, args.work, args.lander, args.target, args.keep, args.note)
+    if args.command == "discovery":
+        return record_discovery(state, at, args.id, args.add, args.origin, args.work,
+                                args.text, args.evidence, args.impact, args.route, args.reply_sent)
     return wait(state, at, args.on, args.event, args.work, args.clear)
 
 
@@ -1102,6 +1858,12 @@ def main():
     try:
         if args.command == "status":
             return status(args, record)
+        if args.command == "init":
+            state = build_init_state(args.title, args.goal, args.chief, args.request,
+                                     args.next, args.request_source, args.finish_line, args.hosting)
+            record.create(state, f"init: {args.title}")
+            record.render()
+            return 0
         state = record.load()
         before = copy.deepcopy(state)
         files = {}
@@ -1113,7 +1875,8 @@ def main():
             record.save(state, message, files)
         for note in notes:
             print(f"note: {note}")
-        record.render()
+        if args.command != "move":
+            record.render()
         return 1 if any(note.startswith("ask again") for note in notes) else 0
     except (Refused, OSError, ValueError) as error:
         print(f"refused: {error}", file=sys.stderr)

@@ -2,10 +2,10 @@
 
 ## Collect
 
-Take threads, comments, reviews, and check results from
-[`pr_state`](../../pr/references/watch.md#read-the-state). It reads every page, and an
-incomplete read means feedback isn't proven. Older open threads still need a decision
-against the current code.
+Take threads, comments, reviews, and check results from the caller's complete PR
+state read (such as `pr_state.py`), or read every page via `gh` when running
+standalone. An incomplete read means feedback isn't proven. Older open threads
+still need a decision against the current code.
 
 Give each item the [finding schema](finding-schema.md) with its GitHub ID, location, claim,
 and source. Merge duplicates and keep their IDs. Take a failing or missing check in the same
@@ -19,7 +19,12 @@ Reply to a thread with `addPullRequestReviewThreadReply` and close it with
 
 - **No edit needed:** reply with the reason and evidence, then resolve rejected, handled,
   duplicate, or noise threads.
-- **Deferred:** reply with the decision and its home, linked or named, then resolve.
+- **Deferred:** when a durable home is already recorded (issue/snip link or
+  caller tracking ID), reply with the decision and that home, then resolve. When
+  a parent workflow must route the deferral first, leave the thread open and
+  return a **held deferred reply** keyed by thread ID and canonical issue ID so
+  the caller can reply with the recorded home and resolve it once routed (never
+  resolve on an unbacked prose promise).
 - **Stop:** reply naming who decides under [continue or stop](classification.md#continue-or-stop),
   and keep the thread open. Once the stop is settled, reply and resolve as for its result.
 - **Accepted edit:** return a held reply to your caller. Once the fix is in the remote head, the
