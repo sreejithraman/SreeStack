@@ -50,12 +50,15 @@ mv /absolute/path/command-center.next.html /absolute/path/command-center.html
 ```
 
 In **local-only mode** (when `grant.wake` records `"None (local only; Inbox in chat)"` and no
-hosted backend is available), do not claim external publication: verify the rendered
-`command-center.next.html` on disk, post any open Inbox items directly in chat, and run the same
-`mv` locally so `command-center.html` stays current and `status --turn-end` passes. When switching
-from a previously hosted page to local-only mode, run **Turn off** below (or delete the old webhook
-task and overwrite `grant.wake`) first and tell the user the previous hosted URL is now frozen and
-the local file plus chat Inbox are active instead.
+hosted backend is available), do not claim external publication: if the render staged
+`command-center.next.html` (`page: behind`), verify it on disk and run the same `mv` locally so
+`command-center.html` stays current and `status --turn-end` passes; if the render is unchanged
+(`page: current`, no `.next.html` staged), verify and retain the existing `command-center.html`.
+In both cases, post any open Inbox items directly in chat. When switching from a previously hosted
+page to local-only mode, run **Turn off** below (or delete any old webhook task in `grant.wake`)
+if an answer wake was active, update `grant.wake` to `"None (local only; Inbox in chat)"`, and
+tell the user the previous hosted URL is now frozen and the local file plus chat Inbox are active
+instead.
 
 If the deployed URL changed, record it once with `record.py grant --hosting <url>` and tell the
 user the new URL and that the previous URL is now frozen (the renderer omits `hosting`, so an

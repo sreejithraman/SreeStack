@@ -1932,9 +1932,9 @@ class LifecycleMutationTests(RecordCase):
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Rebase W2.",
                      "--answer-source", "User", message="multiple options match")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2",
-                     "--answer-source", "User", message="must name the target branch")
+                     "--answer-source", "User", message="unconditional affirmative single-target")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2 onto a new base",
-                     "--answer-source", "User", message="ambiguous or conditional")
+                     "--answer-source", "User", message="unconditional affirmative single-target")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2 onto Main",
                      "--answer-source", "User", message="does not match target")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--option", "3",
@@ -2322,9 +2322,9 @@ class LifecycleMutationTests(RecordCase):
         self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D10", "--text", "Rebase W2",
                      "--answer-source", "User", message="multiple options match")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D10",
-                     "--text", "Please rebase W2 onto main or release", "--answer-source", "User", message="ambiguous or conditional destination")
+                     "--text", "Please rebase W2 onto main or release", "--answer-source", "User", message="unconditional affirmative single-target")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D10",
-                     "--text", "Rebase W2 onto main then rebase onto release", "--answer-source", "User", message="multiple destinations")
+                     "--text", "Rebase W2 onto main then rebase onto release", "--answer-source", "User", message="unconditional affirmative single-target")
 
     def test_pass8_fail_closed_free_text_status_terminal_guards_and_blocked_late_merge(self):
         # 1. P8-01: Fail-closed unbound free-text rebase refuses lists, slash-alternatives, conditionals, and questions,
@@ -2352,7 +2352,7 @@ class LifecycleMutationTests(RecordCase):
             "Rebase W2 onto main?",
         ):
             self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D11",
-                         "--text", phrase, "--answer-source", "User", message="ambiguous or conditional")
+                         "--text", phrase, "--answer-source", "User", message="unconditional affirmative single-target")
             self.assertEqual(subprocess.check_output(["git", "-C", str(self.program.folder), "rev-parse", "HEAD"], text=True).strip(), before_head)
         _, ok_after, _ = self.event("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D11",
                                     "--text", "Please rebase W2 onto `main`, please.", "--answer-source", "User")
@@ -2401,6 +2401,128 @@ class LifecycleMutationTests(RecordCase):
         found = assess(after_w, "2026-11-02T18:45:00Z", {})
         self.assertEqual(found["verdict"], "runnable")
         self.assertTrue(any(e["kind"] == "route discovery" and e["id"] == late_disc["id"] for e in found["runnable"]))
+
+    def test_pass9_affirmative_grammar_unknown_late_merge_pasted_stored_precedence_and_landed_immutability(self):
+        # 1. P9-01: Negative, conditional, foreign-work, question-form, and Git-legal punctuation targets are refused.
+        cur = self.head()
+        cur["decisions"].append({
+            "id": "W2-D12", "question": "Base repair for W2?", "date": "2026-11-02T18:50:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Rebase W2", "effect": "Onto release", "recommended": True, "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                {"label": "Scrap W2", "effect": "Drop", "reversible": False,
+                 "action": {"type": "scrap", "work": "W2"}},
+            ],
+            "blocks": [{"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur, "2026-11-02T18:50:00Z")
+        for phrase, msg in (
+            ("Never rebase W2 onto main", "unconditional affirmative"),
+            ("Before you rebase W2 onto main", "unconditional affirmative"),
+            ("Rebase W99 onto main", "targets W99, not W2"),
+            ("Rebase W2 onto main;", "does not match target 'main;'"),
+        ):
+            self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D12",
+                         "--text", phrase, "--answer-source", "User", message=msg)
+        for phrase, msg in (
+            ("Never scrap W2", "unconditional affirmative scrap"),
+            ("Scrap W2 if the tests fail", "unconditional affirmative scrap"),
+            ("Scrap W2?", "unconditional affirmative scrap"),
+            ("Scrap W99", "targets W99, not W2"),
+        ):
+            self.refused("work", "--id", "W2", "--scrap", "--decision", "W2-D12",
+                         "--text", phrase, "--answer-source", "User", message=msg)
+
+        # 2. P9-03: Mixed --pasted --stored with newer pasted Rebase and older stored Scrap suppresses the
+        #    conflicting stored-only Scrap action while keeping the stored pick unread until the combined work command runs.
+        cur_dead = self.head()
+        work(cur_dead, "W1")["layers"][1]["status"] = "closed"
+        self.program.write(cur_dead, "2026-11-02T18:50:30Z")
+        d12 = decision(self.head(), "W2-D12")
+        rev = revision(d12)
+        pasted_rebase = decision_prompt(d12, self.head(), f'I choose option 1: {quoted(d12["options"][0]["label"])}')
+        stored_file = self.program.folder.parent / "stored-p9.jsonl"
+        doc_id = f"{'W2-D12'.encode().hex()}-{rev}"
+        stored_file.write_text(
+            json.dumps({
+                "id": doc_id, "version": 1, "updatedAt": "2026-11-02T18:51:00Z",
+                "data": {"decision": "W2-D12", "revision": rev, "option": 2, "label": "Scrap W2"},
+            }) + "\n" + json.dumps({"count": 1}) + "\n"
+        )
+        res_mixed = self.run_record("answer", "--pasted", "--source", "User pasted reply", "--stored", str(stored_file), stdin=pasted_rebase)
+        self.assertEqual(res_mixed.returncode, 0, res_mixed.stderr)
+        self.assertIn("atomic work transition needed for W2-D12", res_mixed.stdout)
+        self.assertIn("--pasted --answer-source ... --stored <file>", res_mixed.stdout)
+        self.assertNotIn('user picked "Scrap W2"', res_mixed.stdout)
+        self.assertNotIn(f"delete: picks/{doc_id}", res_mixed.stdout)
+        self.assertIn("deferred stored pick for W2-D12", res_mixed.stdout)
+        # Applying the single combined pasted+stored command rebases W2, answers W2-D12 with Rebase W2, and supersedes the stored pick!
+        _, combined_after, combined_res = self.event(
+            "work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D12",
+            "--pasted", "--answer-source", "User pasted reply", "--stored", str(stored_file),
+            stdin=pasted_rebase,
+        )
+        self.assertEqual(decision(combined_after, "W2-D12")["answer"], "Rebase W2")
+        self.assertIn(f"delete: picks/{doc_id} (version 1)", combined_res.stdout)
+
+        # 3. P9-02 & P9-04: Late merge of blocked unknown work reconciles cleanly across land --to landed,
+        #    ordinary status, and partial withdrawal; once landed, work --scrap, --status, and report refuse.
+        for route_name in ("landed", "status", "partial"):
+            def setup_unknown(state):
+                ready(state)
+                work(state, "W1")["layers"][0]["url"] = f"https://github.com/org/exports/pull/501"
+                work(state, "W1")["layers"][1]["url"] = f"https://github.com/org/exports/pull/502"
+                w4 = work(state, "W4")
+                w4.update(state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                          layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                                   "url": "https://github.com/org/exports/pull/503", "head": "abc1234", "base": "main"}])
+                state["landings"] = [row for row in state["landings"] if row["id"] == "L1"]
+                state["discoveries"] = []
+            self.commit(setup_unknown)
+            if route_name == "partial":
+                _, rel, _ = self.event("land", "--work", "W1", "--work", "W4", "--lander", "Retry owner")
+            else:
+                _, rel, _ = self.event("land", "--work", "W1")
+            lid = rel["landings"][-1]["id"]
+            self.event("work", "--id", "W1", "--status", "unknown", "--unknown-reason", "Forge read failed",
+                       "--blocked", "Awaiting sign-off", "--blocked-by", "W4")
+            self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Unknown while blocked")
+            w1_l = work(self.head(), "W1")["layers"]
+            prs = {
+                w1_l[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                                 "autoMergeRequest": None, "isInMergeQueue": False},
+                w1_l[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                                 "autoMergeRequest": None, "isInMergeQueue": False},
+                "https://github.com/org/exports/pull/503": {"state": "OPEN", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "main",
+                                                            "autoMergeRequest": None, "isInMergeQueue": False},
+            }
+            self.serve(prs=prs)
+            if route_name == "landed":
+                _, after, _ = self.event("land", "--landing", lid, "--to", "landed")
+                self.assertEqual(after["landings"][-1]["state"], "landed")
+            elif route_name == "status":
+                _, after, _ = self.event("status")
+                self.assertEqual(after["landings"][-1]["state"], "landed")
+            else:
+                _, after, _ = self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "W1 merged, W4 stopped")
+                self.assertEqual(after["landings"][-1]["state"], "withdrawn")
+            w1_row = work(after, "W1")
+            self.assertEqual(w1_row["state"], "landed")
+            self.assertNotIn("unknownReason", w1_row)
+            self.assertNotIn("blocked", w1_row)
+            self.assertNotIn("blockedBy", w1_row)
+            disc = next(d for d in after.get("discoveries", []) if d.get("work") == "W1" and d.get("status") == "open")
+            self.assertIn("Awaiting sign-off", disc["text"])
+            self.assertIn("W4", disc["text"])
+
+        # P9-04: Confirmed landed W1 refuses --scrap, --status, --rebase-onto, and report overwrites.
+        self.refused("work", "--id", "W1", "--scrap", message="already landed")
+        self.refused("work", "--id", "W1", "--status", "building", message="already landed")
+        self.refused("work", "--id", "W1", "--rebase-onto", "main", message="already landed")
+        rep = self.program.folder / "reports" / "W1.md"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text('```json\n{"outcome": "W1", "state": "building"}\n```\n')
+        self.refused("report", "--work", "W1", message="already landed")
 
 
 if __name__ == "__main__":

@@ -251,14 +251,26 @@ def move_coordinator(state, chief):
 
 SCRAP_VERBS = re.compile(r"\bscrap(?:ping|ped)?\b")
 REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget)\b")
-NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap)\b")
-NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
-ONTO_TARGET = re.compile(r"\bonto\s+(?:`([^`]+)`|\"([^\"]+)\"|'([^']+)'|(\S+))", re.I)
-CLEAN_AFTER_TARGET = re.compile(r"^(?:[\s,]*(?:please|thanks|thank\s+you|now))*\s*[.!]?\s*$", re.I)
-UNBOUND_AMBIGUOUS = re.compile(
-    r"\b(?:or|either|neither|vs\.?|versus|if|unless|whether|maybe|perhaps|might|could|alternatively|then)\b|[/?]",
-    re.I,
-)
+NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not|never)\s+(scrapping|scrap)\b")
+NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not|never)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
+TARGET_GROUP = r"(?:`(?P<bt>[^`]+)`|\"(?P<dq>[^\"]+)\"|'(?P<sq>[^']+)'|(?P<bare>[^\s?]+))"
+ONTO_TARGET = re.compile(rf"\bonto\s+{TARGET_GROUP}", re.I)
+AFFIRMATIVE_PREFIX = r"^\s*(?:(?:please|yes|ok|okay|go\s+ahead(?:\s+and)?|let'?s)\s*,?\s*)*"
+WORK_OBJECT = r"(?:\s+(?:work\s+)?(?!(?:please|thanks|thank|now|onto)\b)(?P<work>[A-Za-z][A-Za-z0-9_-]*))?"
+POLITE_SUFFIX = r"(?:[\s,]*(?:please|thanks|thank\s+you|now))*\s*[.!]?\s*$"
+FREE_TEXT_REBASE = re.compile(rf"{AFFIRMATIVE_PREFIX}(?:rebase|restack|retarget){WORK_OBJECT}\s+onto\s+{TARGET_GROUP}{POLITE_SUFFIX}", re.I)
+FREE_TEXT_SCRAP = re.compile(rf"{AFFIRMATIVE_PREFIX}scrap{WORK_OBJECT}{POLITE_SUFFIX}", re.I)
+
+
+def extract_onto_target(match):
+    """Return (target, was_quoted) from an onto-target match, stripping only Git-illegal trailing '.' when unquoted."""
+    bare = match.group("bare")
+    quoted_target = bare is None
+    raw_named = bare if bare is not None else (match.group("bt") or match.group("dq") or match.group("sq"))
+    # Git forbids branch names ending with '.', so only a sentence period is stripped on unquoted refs;
+    # punctuation legal in Git refs (such as ';', ':', ',') stays literal.
+    named = raw_named if quoted_target else (raw_named[:-1] if raw_named.endswith(".") else raw_named)
+    return named, quoted_target
 
 
 def is_base_repair_decision(row):
@@ -289,12 +301,12 @@ def atomic_halting_work(state, decision_id):
 
 
 def normalized_choice(value):
-    """Case- and trailing-punctuation-insensitive option label key for matching chat text to options."""
-    return quoted(value.strip().rstrip(".!?")).casefold()
+    """Case- and declarative-punctuation-insensitive option label key; keeps '?' so questions never bind."""
+    return quoted(value.strip().rstrip(".!")).casefold()
 
 
 def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_id=None, option=None):
-    """Verify the chosen option or explicit free text unambiguously authorizes --scrap or --rebase-onto."""
+    """Verify the chosen option or affirmative free text unambiguously authorizes --scrap or --rebase-onto."""
     action = option.get("action") if isinstance(option, dict) else None
     if isinstance(action, dict):
         if "work" in action and work_id is not None and action["work"] != work_id:
@@ -311,6 +323,36 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
             if action.get("stackOn") != stack_on:
                 raise Refused(f"--stack-on {stack_on!r} does not match typed option stackOn {action.get('stackOn')!r}")
             return
+    if option is None:
+        if scrap:
+            match = FREE_TEXT_SCRAP.fullmatch(chosen)
+            if not match:
+                raise Refused(
+                    f"free-text scrap {chosen!r} is not an unconditional affirmative scrap authorization; "
+                    "pass --option <number> or an explicit affirmative command"
+                )
+            named_work = match.group("work")
+            if named_work and work_id is not None and named_work.lower() not in {"it", "this"} and named_work != work_id:
+                raise Refused(f"free-text scrap {chosen!r} targets {named_work}, not {work_id}")
+            return
+        if rebase_onto is not None:
+            match = FREE_TEXT_REBASE.fullmatch(chosen)
+            if not match:
+                raise Refused(
+                    f"free-text rebase {chosen!r} must be an unconditional affirmative single-target command "
+                    f"(e.g. 'Rebase {work_id or ''} onto {rebase_onto}') or pass --option <number>"
+                )
+            named_work = match.group("work")
+            if named_work and work_id is not None and named_work.lower() not in {"it", "this"} and named_work != work_id:
+                raise Refused(f"free-text rebase {chosen!r} targets {named_work}, not {work_id}")
+            named, _ = extract_onto_target(match)
+            allowed = {rebase_onto} | ({stack_on} if stack_on else set())
+            if named not in allowed:
+                raise Refused(
+                    f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}"
+                )
+            return
+        return
     lower = chosen.lower()
     if scrap:
         if (not SCRAP_VERBS.search(lower) or NEGATED_SCRAP.search(lower)
@@ -322,38 +364,10 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
             raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
         matches = list(ONTO_TARGET.finditer(chosen))
         allowed = {rebase_onto} | ({stack_on} if stack_on else set())
-        if option is None:
-            if not matches:
-                raise Refused(
-                    f"free-text rebase {chosen!r} must name the target branch (e.g. 'onto {rebase_onto}') "
-                    "or pass --option <number>"
-                )
-            if len(matches) != 1:
-                raise Refused(
-                    f"free-text rebase {chosen!r} names multiple destinations; "
-                    "pass --option <number> or an explicit single target"
-                )
-            match = matches[0]
-            quoted_target = match[4] is None
-            raw_named = next(g for g in match.groups() if g is not None)
-            named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
-            before, after = chosen[:match.start()], chosen[match.end():]
-            if not CLEAN_AFTER_TARGET.match(after) or UNBOUND_AMBIGUOUS.search(before) or (not quoted_target and "?" in raw_named):
-                raise Refused(
-                    f"free-text rebase {chosen!r} names an ambiguous or conditional destination; "
-                    "pass --option <number> or an unconditional single target"
-                )
-            if named not in allowed:
-                raise Refused(
-                    f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}"
-                )
-        elif matches:
-            for match in matches:
-                quoted_target = match[4] is None
-                raw_named = next(g for g in match.groups() if g is not None)
-                named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
-                if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
-                    raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
+        for match in matches:
+            named, quoted_target = extract_onto_target(match)
+            if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
+                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
 
 
 def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
@@ -387,6 +401,17 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
         if existing is None:
             raise Refused(f"no work {identity}; pass --add to create it")
         row = existing
+        if row["state"] == "landed":
+            if scrap:
+                raise Refused(f"{identity} is already landed; create a follow-up outcome instead of scrapping landed work")
+            if rebase_onto is not None:
+                raise Refused(f"{identity} is already landed; create a follow-up outcome instead of rebasing landed work")
+            if work_state is not None and work_state != "landed":
+                raise Refused(f"{identity} is already landed; keep landed history intact and create a follow-up outcome for new work")
+            if finish_line is not None and finish_line != row.get("finishLine"):
+                raise Refused(f"{identity} is already landed; cannot change its finish line")
+            if blocked is not None or blocked_by:
+                raise Refused(f"{identity} is already landed; create a follow-up outcome instead of blocking landed work")
         action = f"{identity} update"
 
     layers_by_id = {layer["id"]: (layer, owner_row) for owner_row in state["work"]
@@ -712,6 +737,8 @@ def report(state, at, work, block, source, files):
     """
     only(block, REPORT_KEYS, "block")
     row = work_row(state, work)
+    if row["state"] == "landed":
+        raise Refused(f"{work} is already landed; create a follow-up outcome for post-merge work instead of overwriting landed state")
     if block.get("outcome") != work:
         raise Refused(f"the report block names outcome {block.get('outcome')!r}, not {work}")
     if block.get("state") not in STATES:
@@ -952,18 +979,20 @@ def answer_pasted(state, at, text, source, allow_atomic_only=False):
         settle(state, at, identity, options[number - 1]["label"], "answered", source=source)
         recorded.append(identity)
     notes = [f"ask again: {identity} changed or closed since the page showed it" for identity in stale]
+    stored_flag = " --stored <file>" if allow_atomic_only else ""
     for identity, works in atomic:
         notes.append(
             f"atomic work transition needed for {identity} (invalid base on {', '.join(works)}): "
-            f"run work --id {works[0]} --scrap|--rebase-onto <branch> --decision {identity} --pasted --answer-source ..."
+            f"run work --id {works[0]} --scrap|--rebase-onto <branch> --decision {identity} --pasted --answer-source ...{stored_flag}"
         )
+    atomic_ids = [identity for identity, _ in atomic]
     if not recorded:
         if allow_atomic_only and atomic and not stale:
-            return "pasted choices deferred for atomic work transition", notes, []
+            return "pasted choices deferred for atomic work transition", notes, [], atomic_ids
         raise Refused("; ".join(notes))
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
     notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
-    return f"{', '.join(recorded)} answered", notes, recorded
+    return f"{', '.join(recorded)} answered", notes, recorded, atomic_ids
 
 
 def stored_picks(text):
@@ -997,18 +1026,20 @@ def stored_picks(text):
 NOTHING_STORED = "stored picks: nothing to record"
 
 
-def answer_stored(state, at, documents, answered=()):
+def answer_stored(state, at, documents, answered=(), deferred_atomic=()):
     """Record each stored page pick that matches its open decision's current revision.
 
     Each decision gets one outcome, judged against the record as it stood before this import: a pick at its
     current revision wins over picks for earlier ones. A pick for an earlier revision is never applied: it
     marks the decision's stalePick, which asks again on an open decision and makes a reopen request of a
     settled one. Picks for the decisions in answered, which the user's message just answered, were saved
-    before that message was read, so it supersedes them. Each decision's picksRead names every pick read for
-    it by path, version, and save time, so reading one again after a failed cleanup changes nothing.
+    before that message was read, so it supersedes them. Picks for decisions in deferred_atomic have a newer
+    valid pasted choice waiting on an atomic `work` command, so they stay unread and undeleted without emitting
+    a conflicting stored-only action. Each decision's picksRead names every pick read for it by path, version,
+    and save time, so reading one again after a failed cleanup changes nothing.
     """
     before = {row["id"]: row for row in state["decisions"]}  # each row changes only after all its picks are read
-    notes, cleanup, found, superseded, receipts = [], [], {}, set(), {}
+    notes, cleanup, found, superseded, deferred_stored, receipts = [], [], {}, set(), set(), {}
     for document in documents:
         if not DOCUMENT_ID.fullmatch(document["id"]) or document["id"] in {".", ".."}:
             notes.append(f"ignored {json.dumps(document['id'])}: not a document ID")
@@ -1028,6 +1059,10 @@ def answer_stored(state, at, documents, answered=()):
         receipt = f"{name} {document['updatedAt']}"
         if receipt in row.get("picksRead", []):
             notes.append(f"{identity} already read {path}")
+            continue
+        if identity in deferred_atomic:
+            cleanup.pop()
+            deferred_stored.add(identity)
             continue
         receipts.setdefault(identity, []).append(receipt)
         if identity in answered:
@@ -1069,6 +1104,10 @@ def answer_stored(state, at, documents, answered=()):
         notes.append(f"stale: {identity} changed since the page showed it; the Inbox asks again" if row["status"] == "open"
                      else f"reopen request: the user picked {quoted(label)} after {identity} was {row['status']}; "
                           "reopen it under references/decisions.md#reopen")
+    for identity in sorted(deferred_stored):
+        notes.append(
+            f"deferred stored pick for {identity}: kept unread until the pasted atomic work command runs with --stored <file>"
+        )
     for identity in superseded:
         notes.append(f"superseded: the user's message replaces {identity}'s page pick")
     for identity, read in receipts.items():
@@ -1281,6 +1320,7 @@ def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=
                 if row["state"] != "landed":
                     prev = row["state"]
                     row["state"] = "landed"
+                    row.pop("unknownReason", None)
                     notes.append(f"{work_id}: {prev} -> landed")
                     reconciled.add(work_id)
                 blocked_parts = []
@@ -2078,18 +2118,19 @@ def event(args, state, at, files):
         if not args.source:
             raise Refused("answer needs --source: the user's message that answered")
         if args.pasted:
-            message, notes, answered = answer_pasted(state, at, sys.stdin.read(), args.source,
-                                                     allow_atomic_only=documents is not None)
+            message, notes, answered, deferred_atomic = answer_pasted(
+                state, at, sys.stdin.read(), args.source, allow_atomic_only=documents is not None
+            )
         elif args.decision and (args.option or args.text):
             row = decision_row(state, args.decision)
             message, notes = settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
                                     "answered", source=args.source)
-            answered = [args.decision]
+            answered, deferred_atomic = [args.decision], []
         else:
             raise Refused("answer needs --decision with --option or --text, --pasted, or --stored")
         if documents is None:
             return message, notes
-        stored_message, stored_notes = answer_stored(state, at, documents, answered)
+        stored_message, stored_notes = answer_stored(state, at, documents, answered, deferred_atomic)
         return message if stored_message == NOTHING_STORED else f"{message}; {stored_message}", notes + stored_notes
     if args.command == "resolve":
         row = decision_row(state, args.decision)
