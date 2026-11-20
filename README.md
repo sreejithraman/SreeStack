@@ -53,7 +53,8 @@ folders. It reports a conflict and leaves the path unchanged when it finds:
 Instructions with the same content are kept as `<name>.backup-<UTC time>` before
 sync links the path. Existing SreeStack-owned instruction links (including
 retired `global/AGENTS.md` links) relink or unlink cleanly. A link that already
-resolves to that host's source file, such as `~/.codex-t3/AGENTS.md` pointing at
+resolves to that host's source file without routing through another host whose
+source is changing, such as `~/.codex-t3/AGENTS.md` pointing at
 `~/.codex/AGENTS.md`, stays as it is. A skills folder linked as a whole to this
 clone's `skills/` becomes a real folder of per-skill links. To undo that, move
 the folder aside and run `ln -s "$PWD/skills" ~/.agents/skills`.

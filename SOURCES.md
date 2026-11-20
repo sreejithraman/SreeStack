@@ -1415,13 +1415,10 @@ start fresh with consolidated scope by default (reusing only for costly live
 state or directly helpful context). Keeps one owner per slice, separate writer
 paths, serial git/index work, the 12-child default limit, independent assessment
 exclusion, and bounded recovery; `swarm` owns the decision to run work in
-parallel. `references/models.md` holds the single editable model-default table
-(Codex GPT-6.2 Sol/Astra for Coordinator and Standard/Hardest implementation with
-Claude Opus 5.5 / Fable 5.2 fallbacks, Gemini 4 Neon High with Claude Opus 5.5 →
-Codex GPT-6.2 Sol fallback for document writing, Claude Opus 5.5 for UI
-implementation and Ponytail/Adversarial review, resolving exact provider IDs and
-options from live capabilities), difficulty tiers, row escalation, and dedicated
-UI operator rules. Goals and recurring work start only on explicit request.
+parallel. `references/models.md` holds the single editable model-default table (with
+ordered availability fallbacks and live capability/option resolution),
+difficulty tiers, row escalation, and dedicated UI operator rules. Goals and
+recurring work start only on explicit request.
 
 ## koubou
 

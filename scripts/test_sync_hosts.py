@@ -197,6 +197,22 @@ class SyncTests(Fixture):
                 {"skills": ".claude/skills", "instructions_source": "codex/AGENTS.md", "exclude": []},
                 "instructions_source requires instructions",
             ),
+            "null instructions_source": (
+                {**HOSTS["claude"], "instructions_source": None},
+                "instructions_source must be a non-empty path inside the repository",
+            ),
+            "null instructions": (
+                {"skills": ".claude/skills", "instructions": None, "exclude": []},
+                "instructions must be a non-empty path relative to home",
+            ),
+            "empty instructions_source": (
+                {**HOSTS["claude"], "instructions_source": ""},
+                "instructions_source must be a non-empty path inside the repository",
+            ),
+            "absolute instructions_source": (
+                {**HOSTS["claude"], "instructions_source": "/etc/hosts"},
+                "must stay inside the repository",
+            ),
         }
         for label, (manifest, message) in cases.items():
             with self.subTest(label):
@@ -378,7 +394,27 @@ class InstructionTests(Fixture):
         self.assertEqual(os.readlink(claude), "../.codex/AGENTS.md")
         self.assertEqual(list(claude.parent.glob("*.backup-*")), [])
 
+    def test_keeps_same_source_alias_through_migration_and_resolved_source_spelling(self):
+        os.symlink("codex/AGENTS.md", self.repo / "alias-instructions.md")
+        self.write(
+            "claude/setup.json",
+            json.dumps({**HOSTS["claude"], "instructions_source": "alias-instructions.md"}),
+        )
+        codex = self.home / ".codex/AGENTS.md"
+        codex.parent.mkdir()
+        os.symlink(self.repo / "global/AGENTS.md", codex)
+        claude = self.home / ".claude/CLAUDE.md"
+        claude.parent.mkdir()
+        os.symlink("../.codex/AGENTS.md", claude)
+
+        self.run_sync()
+
+        self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
+        self.assertEqual(os.readlink(claude), "../.codex/AGENTS.md")
+        self.assertEqual(list(claude.parent.glob("*.backup-*")), [])
+
     def test_migrates_retired_global_instruction_symlinks_and_preserves_user_files(self):
+        self.write("AGENTS.md", "# Repo root instructions\n")
         legacy = self.repo / "global/AGENTS.md"
         codex = self.home / ".codex/AGENTS.md"
         codex.parent.mkdir()
@@ -393,7 +429,7 @@ class InstructionTests(Fixture):
         self.assertFalse(os.path.lexists(claude))
         self.assertEqual(list(codex.parent.glob("*.backup-*")), [])
 
-        # A user-authored file or foreign link at a host with no instructions_source stays untouched.
+        # A user-authored file or foreign link (even into this repo) at a no-source host stays untouched.
         claude.write_text("# My local Claude notes\n")
         self.run_sync()
         self.assertEqual(claude.read_text(), "# My local Claude notes\n")
@@ -402,6 +438,18 @@ class InstructionTests(Fixture):
         os.symlink("/elsewhere/CLAUDE.md", claude)
         self.run_sync()
         self.assertEqual(os.readlink(claude), "/elsewhere/CLAUDE.md")
+
+        claude.unlink()
+        os.symlink(self.repo / "AGENTS.md", claude)
+        self.run_sync()
+        self.assertEqual(os.readlink(claude), str(self.repo / "AGENTS.md"))
+
+        # A user link to an unrelated repo file at a configured host reports a conflict without overwriting.
+        codex.unlink()
+        os.symlink(self.repo / "AGENTS.md", codex)
+        result = self.run_sync(code=1)
+        self.assertIn(f"{codex}: differs from codex/AGENTS.md", result.stderr)
+        self.assertEqual(os.readlink(codex), str(self.repo / "AGENTS.md"))
 
     def test_relinks_chained_alias_when_hosts_have_different_instruction_sources(self):
         self.write("claude/CLAUDE.md", "# Claude only\n")
@@ -417,6 +465,57 @@ class InstructionTests(Fixture):
 
         self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
         self.assertEqual(os.readlink(claude), str(self.repo / "claude/CLAUDE.md"))
+
+    def test_relinks_chained_alias_across_symlinked_host_directories(self):
+        # Intermediate directory symlink before `..` resolves physically to another host's instruction path.
+        (self.home / ".claude/sub").mkdir(parents=True)
+        claude = self.home / ".claude/CLAUDE.md"
+        os.symlink(self.repo / "codex/AGENTS.md", claude)
+        codex_dir = self.home / ".codex"
+        codex_dir.mkdir()
+        os.symlink("../.claude/sub", codex_dir / "ref")
+        codex = codex_dir / "AGENTS.md"
+        os.symlink("ref/../CLAUDE.md", codex)
+
+        self.run_sync()
+
+        self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
+        self.assertFalse(os.path.lexists(claude))
+
+    def test_rejects_in_repo_symlink_escaping_repository_for_instructions_source(self):
+        outside = self.base / "outside.md"
+        outside.write_text("# Outside\n")
+        os.symlink(outside, self.repo / "escaped.md")
+        self.write("claude/setup.json", json.dumps({**HOSTS["claude"], "instructions_source": "escaped.md"}))
+
+        result = self.run_sync(code=1)
+
+        self.assertIn("must stay inside the repository", result.stderr)
+        self.assertEqual(list(self.home.iterdir()), [])
+
+    def test_keeps_retired_target_when_dependent_relink_fails(self):
+        claude = self.home / ".claude/CLAUDE.md"
+        claude.parent.mkdir()
+        os.symlink(self.repo / "global/AGENTS.md", claude)
+        codex_dir = self.home / ".codex"
+        codex_dir.mkdir()
+        codex = codex_dir / "AGENTS.md"
+        os.symlink("../.claude/CLAUDE.md", codex)
+        codex_dir.chmod(0o555)
+        try:
+            result = self.run_sync(code=1)
+        finally:
+            codex_dir.chmod(0o755)
+
+        self.assertIn("could not relink", result.stderr)
+        self.assertIn("kept because a dependent link update failed", result.stderr)
+        self.assertEqual(os.readlink(claude), str(self.repo / "global/AGENTS.md"))
+        self.assertEqual(os.readlink(codex), "../.claude/CLAUDE.md")
+
+        # Retrying once writable migrates both cleanly.
+        self.run_sync()
+        self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
+        self.assertFalse(os.path.lexists(claude))
 
     def test_reports_differing_instructions_without_overwriting(self):
         codex = self.home / ".codex/AGENTS.md"
