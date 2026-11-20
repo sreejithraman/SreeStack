@@ -1454,13 +1454,16 @@ def git_dir_for(folder):
     return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
 
 
-def git_toplevel(folder):
-    """Return the resolved toplevel of the git worktree containing folder, or None."""
-    result = subprocess.run(
-        ["git", "-C", str(folder), "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
-    )
-    return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
+def repo_status(folder):
+    """Return git status --porcelain for a standalone git repo root, or None if folder is not one."""
+    resolved = folder.resolve()
+    if not (resolved / ".git").is_dir():
+        return None
+    top = subprocess.run(["git", "-C", str(resolved), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    if top.returncode != 0 or Path(top.stdout.strip()).resolve() != resolved:
+        return None
+    status = subprocess.run(["git", "-C", str(resolved), "status", "--porcelain"], capture_output=True, text=True)
+    return status.stdout.strip() if status.returncode == 0 else None
 
 
 def automation_cleared(value):
@@ -1530,51 +1533,33 @@ class Record:
         if self.file.exists():
             raise Refused(f"{self.file} already exists")
         target = self.file.parent.resolve()
-        enclosing = git_dir_for(target.parent)
-        if enclosing is not None:
-            raise Refused(
-                f"{self.file.parent} is inside git repository {enclosing}; keep program records outside "
-                f"project repos and worktrees so cleanup cannot wipe them (omit --state to use {programs_root()})"
-            )
+        hint = f"keep program records outside project repos and worktrees (omit --state to use {programs_root()})"
+        if (enclosing := git_dir_for(target.parent)) is not None:
+            raise Refused(f"{self.file.parent} is inside git repository {enclosing}; {hint}")
         git_entry = target / ".git"
         if git_entry.is_file():
-            raise Refused(
-                f"{self.file.parent} is a linked git worktree; keep program records outside project repos "
-                f"and worktrees (omit --state to use {programs_root()})"
-            )
+            raise Refused(f"{self.file.parent} is a linked git worktree; {hint}")
         if not git_entry.exists() and target.exists() and (existing_git := git_dir_for(target)) is not None:
-            raise Refused(
-                f"{self.file.parent} is inside git repository {existing_git}; keep program records outside "
-                f"project repos and worktrees so cleanup cannot wipe them (omit --state to use {programs_root()})"
-            )
+            raise Refused(f"{self.file.parent} is inside git repository {existing_git}; {hint}")
         validate(state)
         if git_entry.exists():
             tracked = [line for line in self.git("ls-files").splitlines() if line]
             if self.file.name in tracked:
                 raise Refused(f"{self.file.name} is already tracked or staged in git")
             if tracked:
-                raise Refused(
-                    f"{self.file.parent} is an existing git repository with tracked files; keep program "
-                    f"records in their own folder (omit --state to use {programs_root()})"
-                )
-            head_probe = subprocess.run(["git", "-C", str(target), "rev-parse", "--verify", "-q", "HEAD"],
-                                        capture_output=True)
-            if head_probe.returncode == 0:
+                raise Refused(f"{self.file.parent} is an existing git repository with tracked files; {hint}")
+            if subprocess.run(["git", "-C", str(target), "rev-parse", "--verify", "-q", "HEAD"], capture_output=True).returncode == 0:
                 head_files = [line for line in self.git("ls-tree", "--name-only", "HEAD").splitlines() if line]
                 if self.file.name in head_files:
                     raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")
                 if head_files:
-                    raise Refused(
-                        f"{self.file.parent} is an existing git repository with committed files; keep program "
-                        f"records in their own folder (omit --state to use {programs_root()})"
-                    )
+                    raise Refused(f"{self.file.parent} is an existing git repository with committed files; {hint}")
         self.file.parent.mkdir(parents=True, exist_ok=True)
         (self.file.parent / "reports").mkdir(exist_ok=True)
         if not git_entry.exists():
             self.git("init", "-q")
         write_git_excludes(self.file)
-        created_file = False
-        staged = False
+        created_file = staged = False
         try:
             with self.file.open("x", encoding="utf-8") as handle:
                 handle.write(layout(state))
@@ -1977,11 +1962,9 @@ def list_programs(root, as_json=False):
         for entry in sorted(root.iterdir()):
             if not entry.is_dir() or entry.is_symlink():
                 continue
-            nested_dir = entry / "record"
-            if nested_dir.is_dir() and not nested_dir.is_symlink() and (
-                (nested_dir / ".git").exists() or (nested_dir / "program.json").exists()
-            ):
-                candidates.append((entry, nested_dir, True))
+            nested = entry / "record"
+            if nested.is_dir() and not nested.is_symlink() and ((nested / ".git").exists() or (nested / "program.json").exists()):
+                candidates.append((entry, nested, True))
             elif (entry / ".git").exists() or (entry / "program.json").exists():
                 candidates.append((entry, entry, False))
     at = now()
@@ -1989,74 +1972,64 @@ def list_programs(root, as_json=False):
     for container, record_dir, is_nested in candidates:
         state_file = record_dir / "program.json"
         try:
-            if (record_dir / ".git").is_file() or git_toplevel(record_dir) != record_dir.resolve():
+            rec_status = repo_status(record_dir)
+            if rec_status is None:
                 raise ValueError(f"{record_dir} is not a standalone git repository")
             state = validate(committed(state_file))
-            record_dirty = bool(git(state_file, "status", "--porcelain").strip())
+            assessment = assess(state, at, recorded_threads(state))
+            pending_landings = sum(1 for row in state.get("landings", []) if row["state"] in PENDING_LANDINGS)
+            open_decisions = sum(1 for row in state["decisions"] if row["status"] == "open")
+            open_discoveries = sum(1 for row in state.get("discoveries", [])
+                                   if row.get("status") == "open" or row.get("reply") == "pending")
+            grant = state.get("grant", {})
             site_dir = container / "site"
             has_site = is_nested and (site_dir.exists() or site_dir.is_symlink())
             site_dirty = False
             if has_site:
-                if site_dir.is_symlink() or not site_dir.is_dir():
-                    site_dirty = True
-                elif (site_dir / ".git").is_dir() and git_toplevel(site_dir) == site_dir.resolve():
-                    site_status = subprocess.run(
-                        ["git", "-C", str(site_dir), "status", "--porcelain"],
-                        capture_output=True, text=True, check=True,
-                    )
-                    site_dirty = bool(site_status.stdout.strip())
-                else:
-                    site_dirty = any(site_dir.iterdir())
-            extra_entries = (
-                sorted(p.name for p in container.iterdir() if p.name not in {"record", "site"})
-                if is_nested else []
-            )
-            dirty = record_dirty or site_dirty or bool(extra_entries)
-            updated = git(state_file, "log", "-1", "--format=%cI").strip()
-            assessment = assess(state, at, recorded_threads(state))
-            all_terminal = bool(state["work"]) and all(row["state"] in TERMINAL for row in state["work"])
-            pending_landings = sum(1 for row in state.get("landings", []) if row["state"] in PENDING_LANDINGS)
-            open_decisions = sum(1 for row in state["decisions"] if row["status"] == "open")
-            open_discoveries = sum(
-                1 for row in state.get("discoveries", [])
-                if row.get("status") == "open" or row.get("reply") == "pending"
-            )
-            grant = state.get("grant", {})
-            heartbeat_val = grant.get("heartbeat")
-            wake_val = grant.get("wake")
-            automation_ok = automation_cleared(heartbeat_val) and automation_cleared(wake_val)
-            ready_to_prune = (
-                bool(state["work"]) and assessment["verdict"] == "done" and not dirty
-                and pending_landings == 0 and open_discoveries == 0 and automation_ok
-            )
+                site_status = None if (site_dir.is_symlink() or not site_dir.is_dir()) else repo_status(site_dir)
+                site_dirty = bool(site_status) if site_status is not None else (
+                    site_dir.is_symlink() or not site_dir.is_dir() or any(site_dir.iterdir())
+                )
+            extra = sorted(p.name for p in container.iterdir() if p.name not in {"record", "site"}) if is_nested else []
+            keep = []
+            if not state["work"]:
+                keep.append("no-work")
+            if assessment["verdict"] != "done":
+                keep.append(f"verdict={assessment['verdict']}")
+            if rec_status:
+                keep.append("record-dirty")
+            if site_dirty:
+                keep.append("site-dirty")
+            if extra:
+                keep.append(f"extra={','.join(extra)}")
+            if pending_landings:
+                keep.append(f"pending-landings={pending_landings}")
+            if open_discoveries:
+                keep.append(f"open-discoveries={open_discoveries}")
+            if not automation_cleared(grant.get("heartbeat")):
+                keep.append(f"heartbeat={grant['heartbeat']}")
+            if not automation_cleared(grant.get("wake")):
+                keep.append(f"wake={grant['wake']}")
             items.append({
                 "program": str(container),
                 "state": str(state_file),
                 "title": state["title"],
                 "verdict": assessment["verdict"],
                 "workCount": len(state["work"]),
-                "allTerminal": all_terminal,
-                "dirty": dirty,
-                "recordDirty": record_dirty,
-                "siteDirty": site_dirty,
-                "extraEntries": extra_entries,
+                "allTerminal": bool(state["work"]) and all(row["state"] in TERMINAL for row in state["work"]),
+                "dirty": bool(rec_status) or site_dirty or bool(extra),
                 "pendingLandings": pending_landings,
                 "openDecisions": open_decisions,
                 "openDiscoveries": open_discoveries,
                 "hasSite": has_site,
-                "updatedAt": updated,
-                "heartbeat": heartbeat_val,
-                "wake": wake_val,
-                "automationCleared": automation_ok,
-                "readyToPrune": ready_to_prune,
+                "updatedAt": git(state_file, "log", "-1", "--format=%cI").strip(),
+                "heartbeat": grant.get("heartbeat"),
+                "wake": grant.get("wake"),
+                "keepReasons": keep,
+                "readyToPrune": not keep,
             })
-        except (OSError, ValueError, subprocess.CalledProcessError) as error:
-            items.append({
-                "program": str(container),
-                "state": str(state_file),
-                "error": str(error),
-                "readyToPrune": False,
-            })
+        except (OSError, ValueError) as error:
+            items.append({"program": str(container), "state": str(state_file), "error": str(error), "readyToPrune": False})
     if as_json:
         print(json.dumps({"root": str(root), "programs": items}, ensure_ascii=False))
         return 0
@@ -2067,25 +2040,10 @@ def list_programs(root, as_json=False):
         if "error" in item:
             print(f"{item['program']} | invalid: {item['error']} | prune=keep")
             continue
-        extras = []
-        if item["recordDirty"]:
-            extras.append("dirty")
-        if item["siteDirty"]:
-            extras.append("site-dirty")
-        if item["extraEntries"]:
-            extras.append(f"extra={','.join(item['extraEntries'])}")
-        if item["hasSite"]:
-            extras.append("site")
-        if item["heartbeat"]:
-            extras.append(f"heartbeat={item['heartbeat']}")
-        if item["wake"]:
-            extras.append(f"wake={item['wake']}")
+        extras = (["site"] if item["hasSite"] else []) + item["keepReasons"]
         suffix = f" | {' | '.join(extras)}" if extras else ""
-        print(
-            f"{item['program']} | {item['title']} | verdict={item['verdict']} | "
-            f"work={item['workCount']} | updated={item['updatedAt']} | "
-            f"prune={'ready' if item['readyToPrune'] else 'keep'}{suffix}"
-        )
+        print(f"{item['program']} | {item['title']} | verdict={item['verdict']} | work={item['workCount']} | "
+              f"updated={item['updatedAt']} | prune={'ready' if item['readyToPrune'] else 'keep'}{suffix}")
     return 0
 
 

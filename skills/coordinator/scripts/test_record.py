@@ -1969,7 +1969,8 @@ class LifecycleMutationTests(RecordCase):
             by_title = list_json()
             self.assertFalse(by_title["Empty"]["readyToPrune"])
             self.assertFalse(by_title["Finished"]["readyToPrune"])
-            self.assertFalse(by_title["Finished"]["automationCleared"])
+            self.assertIn("heartbeat=10m task T1", by_title["Finished"]["keepReasons"])
+            self.assertIn("wake=Webhook task T2", by_title["Finished"]["keepReasons"])
 
             # Clear automation and add a clean sibling site/ git checkout -> ready to prune.
             subprocess.run([
@@ -1985,18 +1986,18 @@ class LifecycleMutationTests(RecordCase):
             by_title = list_json()
             self.assertTrue(by_title["Finished"]["readyToPrune"])
             self.assertTrue(by_title["Finished"]["hasSite"])
-            self.assertFalse(by_title["Finished"]["siteDirty"])
+            self.assertEqual(by_title["Finished"]["keepReasons"], [])
             self.assertEqual(by_title["Finished"]["heartbeat"], "None (program done)")
 
             # Dirty sibling site/ checkout flips readyToPrune to False.
             (site_dir / "index.html").write_text("edited\n")
             self.assertFalse(list_json()["Finished"]["readyToPrune"])
-            self.assertTrue(list_json()["Finished"]["siteDirty"])
+            self.assertIn("site-dirty", list_json()["Finished"]["keepReasons"])
             text_site_dirty = subprocess.run(
                 [sys.executable, str(SCRIPT), "programs", "--root", str(programs)],
                 capture_output=True, text=True, check=True, env=env,
             ).stdout
-            self.assertIn("prune=keep | site-dirty | site", text_site_dirty)
+            self.assertIn("prune=keep | site | site-dirty", text_site_dirty)
             (site_dir / "index.html").write_text("ok\n")
 
             # Unexpected extra file directly in container blocks pruning.
@@ -2004,7 +2005,7 @@ class LifecycleMutationTests(RecordCase):
             extra.write_text("keep me\n")
             item = list_json()["Finished"]
             self.assertFalse(item["readyToPrune"])
-            self.assertEqual(item["extraEntries"], ["notes.txt"])
+            self.assertIn("extra=notes.txt", item["keepReasons"])
             extra.unlink()
 
             # Uncommitted asset outside program.json in record/ blocks pruning.
@@ -2012,8 +2013,9 @@ class LifecycleMutationTests(RecordCase):
             files_dir.mkdir()
             untracked_pic = files_dir / "draft.png"
             untracked_pic.write_bytes(b"\x89PNG")
-            self.assertFalse(list_json()["Finished"]["readyToPrune"])
-            self.assertTrue(list_json()["Finished"]["recordDirty"])
+            item = list_json()["Finished"]
+            self.assertFalse(item["readyToPrune"])
+            self.assertIn("record-dirty", item["keepReasons"])
             untracked_pic.unlink()
 
             # Deleted working copy of program.json is still discovered via HEAD and marked dirty.
@@ -2021,7 +2023,7 @@ class LifecycleMutationTests(RecordCase):
             done_state.unlink()
             item = list_json()["Finished"]
             self.assertFalse(item["readyToPrune"])
-            self.assertTrue(item["recordDirty"])
+            self.assertIn("record-dirty", item["keepReasons"])
             done_state.write_text(saved_text)
 
             # Requested pr-review outcome at ready state is done and prune-ready even with allTerminal=False.
