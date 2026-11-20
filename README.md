@@ -52,8 +52,9 @@ folders. It reports a conflict and leaves the path unchanged when it finds:
 
 Instructions with the same content are kept as `<name>.backup-<UTC time>` before
 sync links the path. Existing instruction links pointing at a currently
-configured source or retired `global/AGENTS.md` relink or unlink cleanly; links
-to an older unconfigured source report a conflict until moved aside. A link that
+configured source or retired `global/AGENTS.md` relink or unlink cleanly; other
+links stay untouched when a host omits `instructions_source`, and otherwise
+follow the matching-content backup or conflict rules above. A link that
 already resolves to that host's source file without routing through another host
 whose source is changing, such as `~/.codex-t3/AGENTS.md` pointing at
 `~/.codex/AGENTS.md`, stays as it is. A skills folder linked as a whole to this
