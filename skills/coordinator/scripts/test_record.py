@@ -28,7 +28,7 @@ FAKE = textwrap.dedent("""\
     }
     fixtures = json.load(open(os.environ["RECORD_FIXTURES"]))
     if sys.argv[1:3] == ["api", "graphql"]:
-        host = "github.com"
+        host = None
         variables = {}
         index = 3
         while index < len(sys.argv):
@@ -42,8 +42,8 @@ FAKE = textwrap.dedent("""\
                 index += 2
             else:
                 index += 1
-        if "query" not in variables or not {"owner", "name", "number"} <= set(variables):
-            sys.exit("invalid graphql invocation")
+        if not host or "query" not in variables or not {"owner", "name", "number"} <= set(variables):
+            sys.exit("invalid graphql invocation: missing --hostname or required variables")
         url = f"https://{host}/{variables['owner']}/{variables['name']}/pull/{variables['number']}"
         if url not in fixtures["prs"]:
             sys.exit(f"{url} not found")
@@ -556,7 +556,7 @@ class StatusTests(RecordCase):
         _, after, result = self.event("status")
         self.assertEqual((work(after, "W1")["state"], work(after, "W1")["layers"][0]["base"]), ("in-review", "release"))
         self.assertIn("W1-L1 base moved to release", result.stdout)
-        self.assertIn("L2: a released head or base moved; withdraw the release", result.stdout)
+        self.assertIn("L2: a released head or base moved; move it to --to cancelling before notifying", result.stdout)
 
     def test_related_forge_facts_apply_whatever_the_row_order(self):
         def stack(order):
@@ -2169,6 +2169,162 @@ class LifecycleMutationTests(RecordCase):
         _, free_after, _ = self.event("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D9",
                                       "--text", "Please rebase W2 onto main", "--answer-source", "User")
         self.assertEqual(decision(free_after, "W2-D9")["status"], "answered")
+
+    def test_pass7_status_reconcile_fallback_hostname_retargeted_withdraw_and_ambiguous_target(self):
+        # 1. P7-01: Reconciling a cancelling landing in status while an unrelated held outcome falls back
+        #    must not crash with KeyError and must persist both cleanly in one batch.
+        def two_held_outcomes(state):
+            ready(state)
+            work(state, "W1")["layers"][0]["url"] = "https://github.com/org/exports/pull/201"
+            work(state, "W1")["layers"][1]["url"] = "https://github.com/org/exports/pull/202"
+            w4 = work(state, "W4")
+            w4.update(state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                      layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                               "url": "https://github.com/org/exports/pull/203", "head": "abc1234", "base": "main"}])
+        self.commit(two_held_outcomes)
+        _, rel, _ = self.event("land", "--work", "W1")
+        lid = rel["landings"][-1]["id"]
+        cur = self.head()
+        cur["decisions"].extend([
+            {
+                "id": "W1-D11", "question": "Hold on W1?", "date": "2026-11-02T18:20:00Z", "source": "Coordinator", "status": "open",
+                "options": [{"label": "Keep", "effect": "New PR", "recommended": True, "reversible": True},
+                            {"label": "Skip", "effect": "None", "reversible": True}],
+                "blocks": [{"id": "W1", "phase": "landing"}],
+            },
+            {
+                "id": "W4-D11", "question": "Unrelated hold on W4?", "date": "2026-11-02T18:21:00Z", "source": "Coordinator", "status": "open",
+                "options": [{"label": "Keep", "effect": "New PR", "recommended": True, "reversible": True},
+                            {"label": "Skip", "effect": "None", "reversible": True}],
+                "blocks": [{"id": "W4", "phase": "landing"}],
+            },
+        ])
+        self.program.write(cur, "2026-11-02T18:21:00Z")
+        self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Hold on W1")
+        w1_layers = work(self.head(), "W1")["layers"]
+        self.serve(prs={
+            w1_layers[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_layers[0]["head"], "baseRefName": w1_layers[0]["base"],
+                                  "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_layers[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_layers[1]["head"], "baseRefName": w1_layers[1]["base"],
+                                  "autoMergeRequest": None, "isInMergeQueue": False},
+            "https://github.com/org/exports/pull/203": {"state": "MERGED", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "main",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, batch_after, batch_res = self.event("status")
+        self.assertEqual(work(batch_after, "W1")["state"], "landed")
+        self.assertEqual(batch_after["landings"][-1]["state"], "landed")
+        self.assertEqual(decision(batch_after, "W1-D11")["status"], "open")
+        self.assertNotIn("blocks", decision(batch_after, "W1-D11"))
+        self.assertEqual(work(batch_after, "W4")["state"], "ready")
+        self.assertIn("W4: recorded its forge facts from the forge; settle by hand", batch_res.stdout)
+
+        # 2. P7-02: Public github.com URL always passes --hostname github.com even when GH_HOST is overridden.
+        old_path, old_fix, old_host = os.environ.get("PATH"), os.environ.get("RECORD_FIXTURES"), os.environ.get("GH_HOST")
+        self.serve(prs={
+            "https://github.com/org/repo/pull/99": {
+                "state": "OPEN", "isDraft": False, "headRefOid": "c" * 40, "baseRefName": "main",
+                "autoMergeRequest": None, "isInMergeQueue": False,
+            },
+        })
+        try:
+            os.environ["PATH"] = f"{self.bin}{os.pathsep}{old_path or ''}"
+            os.environ["RECORD_FIXTURES"] = str(self.fixtures)
+            os.environ["GH_HOST"] = "example.invalid"
+            pr = gh_pr("https://github.com/org/repo/pull/99")
+            self.assertEqual(pr["headRefOid"], "c" * 40)
+        finally:
+            for key, val in (("PATH", old_path), ("RECORD_FIXTURES", old_fix), ("GH_HOST", old_host)):
+                if val is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = val
+
+        # 3. P7-03 & empty autoMergeRequest: Partial withdrawal with a retargeted stopped PR whose new base
+        #    matches another tracked layer (C-L1) still withdraws, lands merged work, lapses stopped readiness,
+        #    and unblocks move and rebase!
+        def retarget_setup(state):
+            ready(state)
+            work(state, "W1")["layers"][0]["url"] = "https://github.com/org/exports/pull/301"
+            work(state, "W1")["layers"][1]["url"] = "https://github.com/org/exports/pull/302"
+            w4 = work(state, "W4")
+            w4.update(state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                      layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                               "url": "https://github.com/org/exports/pull/303", "head": "abc1234", "base": "main"}])
+            w6 = work(state, "W6")
+            w6.update(state="in-review", finishLine="land",
+                      layers=[{"id": "W6-L1", "branch": "tracked-c", "status": "open",
+                               "url": "https://github.com/org/exports/pull/304", "head": "def5678", "base": "main"}])
+        self.commit(retarget_setup)
+        _, rel_ret, _ = self.event("land", "--work", "W1", "--work", "W4", "--lander", "Retry owner")
+        lid_ret = rel_ret["landings"][-1]["id"]
+        self.event("land", "--landing", lid_ret, "--to", "cancelling", "--note", "W4 retargeted")
+        w1_l = work(self.head(), "W1")["layers"]
+        # Empty dict autoMergeRequest ({}) is non-None and must be refused as armed!
+        self.serve(prs={
+            w1_l[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_l[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            "https://github.com/org/exports/pull/303": {"state": "OPEN", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "tracked-c",
+                                                        "autoMergeRequest": {}, "isInMergeQueue": False},
+        })
+        self.refused("land", "--landing", lid_ret, "--to", "withdrawn", "--note", "Try empty autoMergeRequest", message="auto-merge")
+        self.serve(prs={
+            w1_l[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[0]["head"], "baseRefName": w1_l[0]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_l[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_l[1]["head"], "baseRefName": w1_l[1]["base"],
+                             "autoMergeRequest": None, "isInMergeQueue": False},
+            "https://github.com/org/exports/pull/303": {"state": "OPEN", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "tracked-c",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, ret_after, ret_res = self.event("land", "--landing", lid_ret, "--to", "withdrawn", "--note", "W1 merged, W4 stopped after retarget")
+        self.assertEqual(ret_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(ret_after, "W1")["state"], "landed")
+        self.assertEqual(work(ret_after, "W4")["state"], "in-review")
+        self.assertEqual(work(ret_after, "W4")["layers"][0]["status"], "open")
+        self.assertIn("settle by hand", ret_res.stdout)
+        self.refused("land", "--work", "W4", message="not ready to land")
+        self.event("move", "--chief", SESSION.format("chief-3"))
+        self.event("work", "--id", "W4", "--rebase-onto", "tracked-c", "--stack-on", "W6-L1")
+
+        # 4. P7-05: All-stopped withdrawal with a closed PR at a new head invalidates readiness and blocks stale re-release.
+        self.commit(lambda s: (
+            work(s, "W4").update(state="ready", finishLine="land",
+                                 layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                                          "url": "https://github.com/org/exports/pull/303", "head": "abc1234", "base": "main"}]),
+        ))
+        _, rel_stop, _ = self.event("land", "--work", "W4")
+        lid_stop = rel_stop["landings"][-1]["id"]
+        self.event("land", "--landing", lid_stop, "--to", "cancelling", "--note", "PR closed")
+        self.serve(prs={
+            "https://github.com/org/exports/pull/303": {"state": "CLOSED", "isDraft": False, "headRefOid": "9999999" + "0" * 33, "baseRefName": "main",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, stop_after, _ = self.event("land", "--landing", lid_stop, "--to", "withdrawn", "--note", "Closed without merge")
+        self.assertEqual(stop_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(stop_after, "W4")["state"], "in-review")
+        self.assertEqual(work(stop_after, "W4")["layers"][0]["status"], "closed")
+        self.refused("land", "--work", "W4", message="not ready to land")
+
+        # 5. P7-04: Ambiguous free-text destinations and normalized-colliding option labels are refused.
+        cur4 = self.head()
+        cur4["decisions"].append({
+            "id": "W2-D10", "question": "Rebase W2 where?", "date": "2026-11-02T18:30:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Rebase W2", "effect": "Onto release", "recommended": True, "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                {"label": "rebase W2.", "effect": "Onto staging", "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "staging"}},
+            ],
+            "blocks": [{"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur4, "2026-11-02T18:30:00Z")
+        self.refused("work", "--id", "W2", "--rebase-onto", "release", "--decision", "W2-D10", "--text", "Rebase W2",
+                     "--answer-source", "User", message="multiple options match")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D10",
+                     "--text", "Please rebase W2 onto main or release", "--answer-source", "User", message="ambiguous destination")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D10",
+                     "--text", "Rebase W2 onto main then rebase onto release", "--answer-source", "User", message="does not match target")
 
 
 if __name__ == "__main__":

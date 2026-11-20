@@ -251,6 +251,7 @@ REBASE_VERBS = re.compile(r"\b(rebase|restack|retarget)\b")
 NEGATED_SCRAP = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(scrapping|scrap)\b")
 NEGATED_REBASE = re.compile(r"\b(instead of|rather than|do not|don't|not)\s+(rebasing|rebase|restacking|restack|retargeting|retarget)\b")
 ONTO_TARGET = re.compile(r"\bonto\s+(?:`([^`]+)`|\"([^\"]+)\"|'([^']+)'|(\S+))", re.I)
+AMBIGUOUS_AFTER_TARGET = re.compile(r"^\s*(?:,\s*)?(?:or|/|versus|vs\.?)\s+\S+", re.I)
 
 
 def is_base_repair_decision(row):
@@ -312,25 +313,34 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
         if (not REBASE_VERBS.search(lower) or NEGATED_REBASE.search(lower)
                 or (SCRAP_VERBS.search(lower) and not NEGATED_SCRAP.search(lower))):
             raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
-        match = ONTO_TARGET.search(chosen)
+        matches = list(ONTO_TARGET.finditer(chosen))
         allowed = {rebase_onto} | ({stack_on} if stack_on else set())
         if option is None:
-            if not match:
+            if not matches:
                 raise Refused(
                     f"free-text rebase {chosen!r} must name the target branch (e.g. 'onto {rebase_onto}') "
                     "or pass --option <number>"
                 )
-            quoted_target = match[4] is None
-            raw_named = next(g for g in match.groups() if g is not None)
-            named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
-            if named not in allowed:
-                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}")
-        elif match:
-            quoted_target = match[4] is None
-            raw_named = next(g for g in match.groups() if g is not None)
-            named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
-            if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
-                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
+            for match in matches:
+                quoted_target = match[4] is None
+                raw_named = next(g for g in match.groups() if g is not None)
+                named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
+                if named not in allowed:
+                    raise Refused(
+                        f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}"
+                    )
+                if AMBIGUOUS_AFTER_TARGET.match(chosen[match.end():]):
+                    raise Refused(
+                        f"free-text rebase {chosen!r} names an ambiguous destination; "
+                        "pass --option <number> or an explicit single target"
+                    )
+        elif matches:
+            for match in matches:
+                quoted_target = match[4] is None
+                raw_named = next(g for g in match.groups() if g is not None)
+                named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
+                if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
+                    raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
 
 
 def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None, work_state=None,
@@ -406,9 +416,7 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
                 opt_obj = options[decision_option - 1]
             else:
                 chosen = decision_text
-                matches = [opt for opt in options if quoted(opt["label"]) == quoted(chosen)]
-                if not matches:
-                    matches = [opt for opt in options if normalized_choice(opt["label"]) == normalized_choice(chosen)]
+                matches = [opt for opt in options if normalized_choice(opt["label"]) == normalized_choice(chosen)]
                 if len(matches) > 1:
                     raise Refused(f"multiple options match {chosen!r}; pass --option <number>")
                 opt_obj = matches[0] if len(matches) == 1 else None
@@ -1217,8 +1225,27 @@ def release(state, at, works, lander=None, target=None, keep=None, note=None):
     return f"{identity} released: {', '.join(works)} to {target}", [f"resume {lander} with landing {identity}"]
 
 
+def apply_forge_layer(layer, pr, work_id=None, notes=None):
+    """Apply observed forge PR facts to one layer dict in place; return True if head or base moved."""
+    moved = False
+    for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
+        recorded = layer.get(key, "")
+        if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
+            put(layer, key, value, LAYER_KEYS)
+            moved = True
+            if recorded and notes is not None and work_id is not None:
+                notes.append(f"{work_id}: {layer['id']} {key} moved to {value[:7] if key == 'head' else value}")
+    status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
+    status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
+    if status != layer["status"]:
+        if status == "closed" and notes is not None and work_id is not None:
+            notes.append(f"{work_id}: {layer['id']} closed without merge")
+        layer["status"] = status
+    return moved
+
+
 def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=None):
-    """Apply observed merge/stop facts to work in a landing, landing fully merged work and detaching open holds."""
+    """Apply observed merge facts to fully merged work in a landing, landing it and detaching open holds."""
     reconciled = set()
     for work_id in work_ids:
         row = work_row(state, work_id)
@@ -1227,19 +1254,10 @@ def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=
             if not url:
                 continue
             pr = (forge_by_url or {}).get(url)
-            moved = False
             if isinstance(pr, dict):
-                for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
-                    recorded = layer.get(key, "")
-                    if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
-                        put(layer, key, value, LAYER_KEYS)
-                        moved = True
-            if url in merged_urls or (isinstance(pr, dict) and pr.get("state") == "MERGED"):
+                apply_forge_layer(layer, pr, work_id, notes)
+            if url in merged_urls:
                 layer["status"] = "merged"
-            elif isinstance(pr, dict):
-                status = {"CLOSED": "closed"}.get(pr.get("state"))
-                status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
-                layer["status"] = status
         layers = row.get("layers", [])
         if layers and all(layer["status"] == "merged" for layer in layers):
             if effective_finish(row) == "land":
@@ -1265,6 +1283,25 @@ def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=
             row["state"] = "in-review"
         row["checkedAt"] = at
     return reconciled
+
+
+def merged_lapsed(row, facts, merged_urls, at):
+    """Fallback row keeping valid bases/heads on stopped layers while recording merged layers and lapsing readiness."""
+    fallback = copy.deepcopy(row)
+    observed = {layer["id"]: layer for layer in facts.get("layers", [])}
+    allowed = READY_LAYERS.get(effective_finish(row), (set(),))[0]
+    unsupported = False
+    for layer in fallback.get("layers", []):
+        if layer.get("url") in merged_urls:
+            layer["status"] = "merged"
+        elif observed[layer["id"]]["status"] not in allowed:
+            unsupported = True
+            if layer["status"] == "ready":
+                layer["status"] = "open"
+    if fallback["state"] == "ready" and unsupported:
+        fallback["state"] = "in-review"
+    fallback["checkedAt"] = at
+    return fallback
 
 
 def move_landing(state, at, identity, to, read_pr, note=None):
@@ -1298,17 +1335,72 @@ def move_landing(state, at, identity, to, read_pr, note=None):
                 raise Refused(
                     f"{url} is missing definite auto-merge or merge-queue facts; confirm on GitHub before withdrawing"
                 )
-            if forge_pr["autoMergeRequest"] or forge_pr["isInMergeQueue"]:
+            if forge_pr["autoMergeRequest"] is not None or forge_pr["isInMergeQueue"]:
                 raise Refused(f"{url} still has auto-merge or merge-queue armed on the forge; cancel it first")
             stopped_urls.append(url)
         if not stopped_urls:
             raise Refused(f"all PRs in {identity} already merged on the forge; record --to landed instead")
+        landing["state"] = "withdrawn"
+        if note:
+            put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
+        merged_set = set(merged_urls)
+        landed_ids = set()
+        for wid in landing["work"]:
+            row = work_row(state, wid)
+            layers = row.get("layers", [])
+            if layers and all(layer["status"] == "merged" or layer.get("url") in merged_set for layer in layers):
+                trial = copy.deepcopy(state)
+                trial_notes = []
+                reconciled = reconcile_landed_work(trial, at, [wid], merged_set, trial_notes, forge_by_url)
+                try:
+                    validate(trial)
+                except ValueError as error:
+                    notes.append(f"{wid}: could not reconcile merged work automatically; settle by hand: {error}")
+                else:
+                    state["work"] = trial["work"]
+                    state["decisions"] = trial["decisions"]
+                    landed_ids |= reconciled
+                    notes.extend(trial_notes)
+        candidates, kept = {}, {}
+        work_indices = {row["id"]: idx for idx, row in enumerate(state["work"])}
+        for wid in landing["work"]:
+            if wid in landed_ids:
+                continue
+            index = work_indices[wid]
+            row = state["work"][index]
+            facts = copy.deepcopy(row)
+            for layer in facts.get("layers", []):
+                url = layer.get("url")
+                if url in forge_by_url:
+                    apply_forge_layer(layer, forge_by_url[url], wid, notes)
+            facts["checkedAt"] = at
+            derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
+            if derived != row:
+                labels = (
+                    (derived, None),
+                    (facts, "its forge facts"),
+                    (merged_lapsed(row, facts, merged_set, at), "its merged layers and lapsed readiness"),
+                    (lapsed(row, facts), "that its readiness lapsed"),
+                    (row, "nothing"),
+                )
+                unique = [(option, label) for position, (option, label) in enumerate(labels)
+                          if option is row or option not in [other for other, _ in labels[position + 1:]]]
+                candidates[index] = [option for option, _ in unique]
+                kept[index] = {id(option): label for option, label in unique}
+        if candidates:
+            reasons = first_valid(state, candidates)
+            for index, (*_, original) in candidates.items():
+                row = state["work"][index]
+                if index in reasons:
+                    notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
+                elif row["state"] != original["state"]:
+                    notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
         if merged_urls:
-            reconcile_landed_work(state, at, landing["work"], set(merged_urls), notes, forge_by_url)
             notes.append(
                 f"{identity} partially merged before cancellation: merged {', '.join(merged_urls)}; "
                 f"confirmed stopped {', '.join(stopped_urls)} (fresh release required to land remaining work)"
             )
+        return f"{identity} withdrawn", notes
     if to == "landed":
         forge_by_url = {}
         for pr in landing["prs"]:
@@ -1344,10 +1436,13 @@ GH_PR_VIEW_FIELDS = "url,state,isDraft,headRefOid,baseRefName,autoMergeRequest"
 
 
 def gh_pr_graphql(gh, host, owner, name, number):
-    cmd = [gh, "api", "graphql"]
-    if host.lower() != "github.com":
-        cmd += ["--hostname", host]
-    cmd += ["-f", f"query={PR_GRAPHQL_QUERY}", "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={int(number)}"]
+    cmd = [
+        gh, "api", "graphql", "--hostname", host,
+        "-f", f"query={PR_GRAPHQL_QUERY}",
+        "-f", f"owner={owner}",
+        "-f", f"name={name}",
+        "-F", f"number={int(number)}",
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     if result.returncode:
         raise OSError(result.stderr.strip() or f"gh exited with status {result.returncode}")
@@ -1428,20 +1523,7 @@ def read_layers(row, read_pr, forge, notes):
             failed += 1
             notes.append(f"{row['id']}: could not read {layer['url']}: {error}")
             continue
-        moved = False
-        for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
-            recorded = layer.get(key, "")
-            if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
-                put(layer, key, value, LAYER_KEYS)
-                moved = True
-                if recorded:
-                    notes.append(f"{row['id']}: {layer['id']} {key} moved to {value[:7] if key == 'head' else value}")
-        status = {"MERGED": "merged", "CLOSED": "closed"}.get(pr.get("state"))
-        status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
-        if status != layer["status"]:
-            if status == "closed":
-                notes.append(f"{row['id']}: {layer['id']} closed without merge")
-            layer["status"] = status
+        apply_forge_layer(layer, pr, row["id"], notes)
     return facts, reads, failed
 
 
@@ -1532,6 +1614,7 @@ def observe(state, at, read_pr, threads):
             candidates[index] = [option for option, _ in unique]
             kept[index] = {id(option): label for option, label in unique}
     reasons = first_valid(state, candidates)
+    selected_labels = {index: kept[index][id(state["work"][index])] for index in reasons}
     merged = ({layer["url"] for row in state["work"] for layer in row.get("layers", [])
                if layer["status"] == "merged" and "url" in layer}
               | {url for url, pr in forge.items() if isinstance(pr, dict) and pr.get("state") == "MERGED"})
@@ -1578,14 +1661,17 @@ def observe(state, at, read_pr, threads):
             if pr and pr.get("state") != "MERGED" and (
                     not pr.get("headRefOid", "").startswith(entry["head"])
                     or (not re.fullmatch(r"[0-9a-f]{7,40}", entry["base"]) and pr.get("baseRefName") != entry["base"])):
-                landing_notes.append(f"{landing['id']}: a released head or base moved; withdraw the release before telling {landing['lander']}")
+                landing_notes.append(
+                    f"{landing['id']}: a released head or base moved; move it to --to cancelling before notifying "
+                    f"{landing['lander']} and confirm forge cancellation before withdrawing"
+                )
                 break
     for index, (*_, original) in candidates.items():
         row = state["work"][index]
         if row["id"] in reconciled_works:
             continue
         if index in reasons:
-            notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
+            notes.append(f"{row['id']}: recorded {selected_labels[index]} from the forge; settle by hand: {reasons[index]}")
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
     notes.extend(landing_notes)
