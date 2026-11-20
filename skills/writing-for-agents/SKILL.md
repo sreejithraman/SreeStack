@@ -1,6 +1,6 @@
 ---
 name: writing-for-agents
-description: Write, edit, audit, or rewrite skills, AGENTS.md, CLAUDE.md, tool guides, or agent docs, or evaluate whether an instruction change improves agent behavior or context use.
+description: Write, edit, audit, or rewrite skills, AGENTS.md, CLAUDE.md, tool guides, or agent docs, or evaluate or fix cross-model gaps in agent behavior or context use.
 ---
 
 # Writing for Agents
@@ -9,12 +9,14 @@ Make every line in an agent-facing document earn its context by changing what th
 does. Start from the document or skill to create, edit, audit, or evaluate and the goal
 or failure behind it. Leave the guidance in the strongest home that can hold it—code,
 tool help, or the document—with proof matching the change's risk. You are done when
-every covered line passes the line test or is a protected guardrail, project checks
-pass, and the required proof for the change type succeeded or has its gap stated.
+every covered line passes the line test, is a protected guardrail, or was supplied or
+kept explicitly by the user (or, for a read-only audit, every finding cites evidence),
+project checks pass, and the required proof for the change type succeeded or has its gap
+stated.
 
-## Go to the matching guide first
+## Go to the matching guides first
 
-Read only the guide for the work in front of you before editing:
+Read every guide that matches the work in front of you before starting:
 
 - `AGENTS.md`, `CLAUDE.md`, or repo docs: [agent instructions](references/agent-instructions.md).
 - Creating, editing, auditing, or rewriting a skill: [working on skills](references/working-on-skills.md).
@@ -55,11 +57,14 @@ document.
 
 ## Write rules agents follow
 
-- **State outcome, constraints, and a falsifiable `Done` condition.** Number steps only
-  when order changes the result; express other required work as conditions the result
-  must meet. Ask for coverage (*"every modified model accounted for"*) rather than vague
-  completion (*"understanding reached"*). If an agent still rushes an early stage, hide
-  later stages behind a subagent or handoff.
+- **State outcome, constraints, and falsifiable `Done` conditions.** End the job—and
+  each stage where rushing would skip required work—with a condition that proves it is
+  done. Number steps only when order changes the result; express other required work as
+  conditions the result must meet. Ask for coverage (*"every modified model accounted
+  for"*) rather than vague completion (*"understanding reached"*). If an agent still
+  rushes an early stage, hide later stages behind a subagent or handoff.
+- **Write the normal path first.** Give a rare case one line, or move it behind a
+  pointer if it needs more.
 - **Replace judgment words with a test.** Swap *small*, *big*, *relevant*, *appropriate*,
   *tight*, or *as needed* for how to decide. Prefer one test over a list of cases, and
   sort rules by outcome rather than source.
@@ -72,8 +77,8 @@ document.
   rules, but explain surprising traps (*"Run `gh` outside the sandbox; its token lives in
   macOS Keychain"*) so agents neither rationalize around them nor misapply them when
   conditions change.
-- **Calibrate with 1–2 concrete examples.** Use a short before/after or boundary example
-  whenever prose alone leaves format, scope, or tone open:
+- **Calibrate with a few concrete examples.** Use a short before/after or boundary
+  example whenever prose alone leaves format, scope, or tone open:
 
 | Before | After |
 | --- | --- |
@@ -87,28 +92,31 @@ document.
 ## Load as late as possible
 
 From earliest to latest loaded: always-loaded root files → skill descriptions → skill
-body → references and docs behind a pointer. Keep what every path needs early; move
-branch-specific detail behind a request-shaped pointer placed at the step that needs it
-(`Read docs/release.md when cutting a release`). Leave the target's content to the
-target.
+body → references and docs behind a pointer. Always-loaded text costs context on every
+turn, so prune root files and descriptions hardest. Keep what every path needs early;
+move branch-specific detail behind a request-shaped pointer placed at the step that needs
+it (`Read docs/release.md when cutting a release`). Leave the target's content to the
+target. If a must-have pointer gets missed, sharpen its wording first; inline the target
+only if sharpening fails.
 
 - **One home per meaning.** Keep a concept's definition, rules, and caveats under one
   heading, and link to the owner instead of repeating it.
-- **Keep references flat and independent.** Link every reference directly from `SKILL.md`
-  so agents do not miss nested reads, and never cross-reference another document by step
-  number.
+- **Keep references flat and independent.** Link every reference directly from
+  `SKILL.md`, because agents often read nested files only in part, and never
+  cross-reference another document by step number.
 - **Link only to unread material the agent needs to act.** Keep links for unread
   references, scripts, handoff skills, and external specs the agent must look up (such as
   an experimental CLI format). Skip same-file `#anchor` jump-links, back-links to an
   already-loaded `SKILL.md`, repeated links to the same target in one file, and
   background or citation URLs (put those in `SOURCES.md` or `README.md`).
 - **Keep script outputs compact.** When a skill ships a helper script, emit a compact
-  verdict or structured summary to stdout and diagnostics to stderr.
+  verdict or structured summary to stdout and diagnostics to stderr so callers do not burn
+  context parsing verbose logs.
 - **Keep docs alive.** Move a reference back in if most runs read it. Rewrite silted
   documents fresh from their purpose instead of patching around dead structure, and
   retest assumptions after major model releases.
 
-## Match proof to risk
+## Proof ladder
 
 Before adding a rule, name the failure it prevents and stop at the first home that
 handles it: enforce it in code or tool errors first, edit an existing rule that covers
@@ -116,9 +124,9 @@ the class before appending a new line, and put incident details in the commit me
 
 | Change | Minimum proof |
 | --- | --- |
-| Factual or command fix, link fix, exact user wording, or rule moved into passing code | Prove the command safely or verify against source, and run project checks. |
-| Adding or editing a behavioral rule or trigger | Confirm the failure (session log or reproduction), apply the edit, and run a fresh-session smoke trial (plus a near-miss for triggers). |
-| Removing, weakening, moving, or rewriting guidance | Run [Settle what changed](references/working-on-skills.md#settle-what-changed); keep survival items and guardrails intact. |
+| Factual or command fix, link spelling fix, exact user wording, or rule moved into passing code | Prove the command safely or verify against source, and run project checks. |
+| Adding or editing a behavioral rule, trigger, or handoff | Confirm the failure (session log or reproduction; new guardrails skip this step), apply the edit, and run fresh-session trials on affected requests (plus a near-miss for triggers). |
+| Removing, weakening, moving, or rewriting guidance | Capture affected survival items and requests before editing, run [Settle what changed](references/working-on-skills.md#settle-what-changed), and verify affected paths. |
 | Claiming measurable improvement (cost, turns, pass rate) or clearing a guardrail | Run a controlled comparison. |
 
 **Proving a command safely:** run a command live only if it risks nothing a guardrail

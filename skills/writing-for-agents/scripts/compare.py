@@ -60,6 +60,24 @@ def mean_of(result: dict, field: str) -> float | None:
     return mean_of_runs(plugin_runs(result), field)
 
 
+def case_aggregates(case: dict) -> dict:
+    agg = case.get("aggregates")
+    return agg if isinstance(agg, dict) else {}
+
+
+def case_arm_stats(case: dict) -> dict:
+    runs = case["arms"]["with"]
+    agg = case_aggregates(case)
+    return {
+        "score": agg.get("score"),
+        "pass_rate": agg.get("passRate"),
+        "passed": sum(1 for run in runs if run.get("passed")),
+        "runs": len(runs),
+        "turns": mean_of_runs(runs, "turns"),
+        "cost_usd": mean_of_runs(runs, "costUsd"),
+    }
+
+
 def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
     old_by_name = {case["name"]: case for case in old["cases"]}
     has_baseline = new["suite"].get("ablation") == "with-without"
@@ -67,31 +85,19 @@ def case_summaries(old: dict, new: dict, required: list[str]) -> list[dict]:
     summary = []
     for new_case in new["cases"]:
         old_case = old_by_name[new_case["name"]]
-
-        def arm_stats(case: dict) -> dict:
-            runs = case["arms"]["with"]
-            agg = case["aggregates"]
-            return {
-                "score": agg.get("score"),
-                "pass_rate": agg.get("passRate"),
-                "passed": sum(1 for run in runs if run.get("passed")),
-                "runs": len(runs),
-                "turns": mean_of_runs(runs, "turns"),
-                "cost_usd": mean_of_runs(runs, "costUsd"),
-            }
-
         entry = {
             "name": new_case["name"],
             "required": new_case["name"] in required_set,
-            "old": arm_stats(old_case),
-            "new": arm_stats(new_case),
+            "old": case_arm_stats(old_case),
+            "new": case_arm_stats(new_case),
         }
         if has_baseline:
+            old_agg, new_agg = case_aggregates(old_case), case_aggregates(new_case)
             entry["without"] = {
-                "old_score": old_case["aggregates"].get("scoreWithout"),
-                "new_score": new_case["aggregates"].get("scoreWithout"),
-                "old_pass_rate": old_case["aggregates"].get("passRateWithout"),
-                "new_pass_rate": new_case["aggregates"].get("passRateWithout"),
+                "old_score": old_agg.get("scoreWithout"),
+                "new_score": new_agg.get("scoreWithout"),
+                "old_pass_rate": old_agg.get("passRateWithout"),
+                "new_pass_rate": new_agg.get("passRateWithout"),
             }
         summary.append(entry)
     return summary

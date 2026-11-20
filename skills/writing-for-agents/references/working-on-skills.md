@@ -18,9 +18,6 @@ A skill is one of two kinds:
 For example, `review` assesses a change, `review-sweep` settles findings, and
 `review-fix-loop` chains them.
 
-Link every reference directly from `SKILL.md`, because agents often read nested files
-only in part.
-
 ## Write the description
 
 A model-invoked description is only a trigger; leave capabilities and procedure to the
@@ -47,12 +44,12 @@ the check enforce host alignment.
 | Cost | Description loads on every turn | Person must remember it exists |
 
 A person can invoke either kind by name. Do not record test notes in `model:` or
-`effort:` frontmatter: Claude Code switches to those settings when the skill runs.
-Linking to a user-invoked skill lets an agent
-read it, but grants nothing the choice withholds: link one only behind a user request or
-user-started workflow that names its actions or effects. Put logic shared across
-workflows in a reference or a model-invoked skill. Spend user-invoked slots only where
-human judgment matters.
+`effort:` frontmatter—Claude Code switches to those settings when the skill runs; keep
+test notes in `SOURCES.md` or commit messages instead. Linking to a user-invoked skill
+lets an agent read it, but grants nothing the choice withholds: link one only behind a
+user request or user-started workflow that names its actions or effects. Put logic shared
+across workflows in a reference or a model-invoked skill. Spend user-invoked slots only
+where human judgment matters.
 
 ### Split by invocation
 
@@ -65,8 +62,9 @@ uses, or when an agent must reach it independently.
    (plus near-misses for a model-invoked description).
 2. Write `SKILL.md` and only the references that some paths skip.
 3. Update host metadata (`agents/openai.yaml`) and the project record (`SOURCES.md`).
-4. Run project checks and prove the new skill per the Proof ladder in `SKILL.md`, running
-   trials per [controlled comparison](controlled-comparison.md#run-trials-safely).
+4. Run project checks and prove the new skill on each model that uses it per the Proof
+   ladder in `SKILL.md`, running trials per
+   [controlled comparison](controlled-comparison.md#run-trials-safely).
 
 Done: the contract is explicit, metadata and records are updated, checks pass, and each
 request has a result or stated gap.
@@ -75,16 +73,22 @@ request has a result or stated gap.
 
 Read the skill's project record (`SOURCES.md`) first. Preserve local adaptations and its
 invocation choice unless the user asks to change them. Edit the source of truth, not an
-installed copy.
+installed copy. If the change touches a CLI, API, SDK, MCP tool, or bundled script, also
+read [tool guidance](tool-guidance.md).
 
 For a whole-skill overhaul, use Rewrite below. For a **targeted change**:
 
 1. Inspect consumers, links, and tests that depend on the changed text. If the reported
    problem does not hold, stop and report that.
-2. Apply the edit.
-3. Prove the change per the Proof ladder in `SKILL.md`. If the edit removes, weakens, or
-   moves guidance, run Settle what changed on the affected paths.
-4. Run project checks.
+2. When the edit removes, weakens, or moves guidance, or changes a trigger or handoff,
+   record the affected survival items and collect representative requests (including
+   near-misses for triggers) before editing.
+3. Apply the edit. Update `SOURCES.md` and host metadata (`agents/openai.yaml`) if local
+   differences or metadata changed.
+4. Prove the change per the Proof ladder in `SKILL.md`, exercising the affected requests
+   on the final text when step 2 applies. If the edit removes, weakens, or moves
+   guidance, run Settle what changed on the affected paths.
+5. Run project checks and report final-text results and any remaining gaps.
 
 Done: the required proof passed (or the problem was reported invalid), any reduced or
 moved guidance is settled, and project checks pass.
@@ -98,8 +102,7 @@ To pick a target, rank skills by `SKILL.md` size and lines added vs removed in
 `git log --numstat`.
 
 - Read `SKILL.md`, every reference, its project record, and its real runs (see Learn from
-  real runs in controlled comparison); add [tool guidance](tool-guidance.md) if it
-  teaches a tool.
+  real runs in controlled comparison); add tool guidance if it teaches a tool.
 - Check the contract, `Done` condition, invocation choice, description triggers and
   exclusions, and every line against the line test (flagging no-ops, duplicates,
   environment-held facts, and stale rules).
@@ -113,16 +116,17 @@ Done: every file in the skill was inspected and each finding cites evidence.
 Use when the user asks for a rewrite, or when the current structure no longer fits the
 job.
 
-1. **Record the survival list:** invocation choice, local adaptations, supported hosts,
-   legal notices, paths and anchors other files link to, tests asserting text, consumers,
-   and prior user decisions. Confirm the original is recoverable in git.
+1. **Record the survival list:** check each source and list the invocation choice, local
+   adaptations, supported hosts, legal notices, paths and anchors other files link to,
+   tests asserting text, consumers, and prior user decisions. Confirm the original is
+   recoverable in git.
 2. **Collect real requests:** pull from the description, consumers, session history, and
    rare rules so every path has a concrete request.
 3. **Write fresh:** draft the contract and skill in a clean file from the requests and
    survival list so old structure does not carry over.
-4. **Try it:** run the collected requests in fresh sessions (Run trials safely in
-   controlled comparison), comparing against the old text where behavior must stay equal;
-   report unavailable trials as gaps.
+4. **Try it:** run the collected requests in fresh sessions on each model that uses the
+   skill (Run trials safely in controlled comparison), comparing against the old text
+   where behavior must stay equal; report unavailable trials as gaps.
 5. **Settle what changed** against the original text.
 6. **Finalize:** update `SOURCES.md` and host metadata (`agents/openai.yaml`), verify new
    factual claims against sources, and run project checks.

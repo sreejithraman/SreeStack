@@ -44,9 +44,7 @@ Match the exact syntax the agent sends:
 | Native or MCP | The call object's fields, values, and structure |
 
 Skip what a schema already declares; spend words on decisions it cannot express. Leave
-volatile lists (such as model catalogs) to live discovery. For bundled scripts you
-author, emit compact verdicts or structured summaries to stdout and diagnostics to stderr
-so callers do not burn context parsing verbose logs.
+volatile lists (such as model catalogs) to live discovery.
 
 ## Verify the guide
 

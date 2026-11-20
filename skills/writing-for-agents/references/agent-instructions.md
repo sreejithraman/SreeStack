@@ -23,24 +23,27 @@ Proof ladder in `SKILL.md`, then cut every line that fails the three tests.
 
 ## Use one file
 
-Write `AGENTS.md` so every host reads the same source of truth. On a full rewrite or
-consolidation, fold duplicate host-specific files (such as `CLAUDE.md` or `GEMINI.md`)
-into `AGENTS.md`. If an external tool requires another filename, symlink it to
-`AGENTS.md` rather than using `@` imports, which load eagerly and can break in
-subfolders. Put truly host-only rules in that host's rules folder.
+Write `AGENTS.md` so every host reads the same source of truth. Before consolidating or
+removing an existing host-specific file (such as `CLAUDE.md` or `GEMINI.md`), confirm
+every supported host loads `AGENTS.md` without being shadowed by another file. If a host
+or external tool requires another filename, symlink it to `AGENTS.md` where symlinks
+work rather than using `@` imports, which load eagerly and can break in subfolders. Put
+truly host-only rules in that host's rules folder.
 
 ## Put the rest where it will load
 
 | What it is | Where it goes |
 | --- | --- |
 | A rule for one folder or package | `AGENTS.md` in that folder, plus a root pointer naming it |
+| A rule spanning scattered paths | A repo doc or host path-scoped rules file, plus a root pointer so every host finds it |
 | A procedure only this repo uses | A repo doc, with a pointer in the root |
 | A procedure several repos share | A skill |
 | An explanation, decision, or spec | The project's docs folder |
 
-Hosts walk up from the working directory, not down into subfolders from the root, so a
-subfolder `AGENTS.md` needs a root pointer to be discoverable from root sessions. Use
-pointers rather than eager `@` includes, which load with the file and save no context.
+Root sessions often do not preload subfolder instruction files (some hosts load them only
+when a session starts in that subfolder or reads a file there), so a subfolder
+`AGENTS.md` needs a root pointer to stay discoverable. Use pointers rather than eager `@`
+includes, which load with the file and save no context.
 
 Keep guardrails in the root or in code, because a folder file or doc can arrive after the
 first write.
@@ -53,7 +56,8 @@ Reuse docs the project already maintains and add no agent-only copy.
 
 - **Targeted edit:** check only the changed lines and the commands they name. Report any
   other failing lines or competing host instruction files you notice without moving them
-  unasked.
+  unasked. If the edit removes, weakens, or moves guidance, apply the Proof ladder and
+  Settle what changed on the affected paths.
 - **Full rewrite:** check every line and command from a clean checkout, moving rules that
   still matter to their proper home instead of deleting them, and settle removed or
   weakened rules per the Proof ladder.
@@ -61,10 +65,11 @@ Reuse docs the project already maintains and add no agent-only copy.
 Test instruction-file lines against the three root tests, and doc lines against what a
 doc holds. Prove each covered command safely per the Proof ladder.
 
-After adding, moving, or removing an instruction file, start fresh sessions at the root
-and in each changed folder and confirm every expected file loads (via the host's context
-inspector or by asking it to quote the rule).
+After adding, moving, or removing an instruction file—or after a targeted move or edit
+that a competing host file could shadow—start fresh sessions at the root and in each
+changed folder and confirm the edited or moved rule actually loads (via the host's
+context inspector or by asking it to quote the specific rule from the file).
 
-Done: every file that should load still does, every covered command is proved or reported
-unproven, and every covered line passes its test, is a guardrail, or was supplied or kept
-explicitly by the user.
+Done: every file and moved rule that should load still does, every covered command is
+proved or reported unproven, and every covered line passes its test, is a guardrail, or
+was supplied or kept explicitly by the user.

@@ -1417,7 +1417,7 @@ Setup references use the local `setup-sreestack` entry point.
 ## writing-for-agents
 
 - [mattpocock/skills / skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6acc160e4e0cd062dbbbd7a1b26ae92855edf07e/skills/productivity/writing-for-agents) — v1.2.3, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
-- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/b93e14766ef327e2ff1b1d44f93027fb654e880b) — v0.2.0, commit `b93e14766ef327e2ff1b1d44f93027fb654e880b`; `skills/skill-diet/SKILL.md`, `references/diet.md`, `references/tool-skills.md`, `references/formats.md`, `references/eval.md`, `references/adapter.md`, and `skills/skill-model-gap/SKILL.md` inform the revision, tool-guidance, cross-model gap, and evaluation procedures, and `scripts/eval.mjs` informed the comparison rules in `scripts/compare.py` (MIT).
+- [nicobailon/skill-diet](https://github.com/nicobailon/skill-diet/tree/b93e14766ef327e2ff1b1d44f93027fb654e880b) — v0.2.0, commit `b93e14766ef327e2ff1b1d44f93027fb654e880b`; `skills/skill-diet/SKILL.md`, `skills/skill-diet/references/{diet,tool-skills,formats,eval,adapter}.md`, and `skills/skill-model-gap/SKILL.md` inform the revision, tool-guidance, cross-model gap, and evaluation procedures, and `skills/skill-diet/scripts/eval.mjs` informed the comparison rules in `scripts/compare.py` (MIT).
 
 Locally rewritten around one test: a line stays only if removing it changes what an
 agent does. Keeps the upstream concepts that change behavior: pointers, late loading,
@@ -1443,7 +1443,8 @@ descriptions, paired Claude Code (`disable-model-invocation`, per
 and Codex (`policy.allow_implicit_invocation`, per
 [Codex skill docs](https://developers.openai.com/codex/build-skills#optional-metadata))
 invocation settings (preserving existing invocation choices), and fresh rewrites settled
-by meaning (allowing batched candidate runs for rewrites). `references/tool-guidance.md`
+by meaning (allowing batched candidate runs for rewrites). Direct-from-`SKILL.md`
+reference linking follows [Claude skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#avoid-deeply-nested-references). `references/tool-guidance.md`
 covers drift, help quality, call syntax, compact script output, and safe call
 verification. `references/agent-instructions.md` is local and kept host-agnostic around `AGENTS.md`
 (omitting inline vendor byte/line ceilings, per-host rules-folder matrices, and per-host
