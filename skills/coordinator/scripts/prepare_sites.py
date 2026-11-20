@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -45,9 +46,10 @@ def git_root(path: Path) -> Path | None:
         return None
     if probe.is_file():
         probe = probe.parent
+    env = {k: v for k, v in os.environ.items() if k not in {"GIT_CEILING_DIRECTORIES", "GIT_DIR", "GIT_WORK_TREE"}}
     result = subprocess.run(
         ["git", "-C", str(probe), "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, env=env,
     )
     return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
 

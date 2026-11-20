@@ -1928,6 +1928,12 @@ class LifecycleMutationTests(RecordCase):
             ], capture_output=True, text=True, env=env)
             self.assertEqual(conflicting.returncode, 1)
             self.assertIn("only when --state is omitted", conflicting.stderr)
+            ceiling_refused = subprocess.run([
+                sys.executable, str(SCRIPT), "init", "--state", str(project / "subdir" / "program.json"),
+                "--title", "Bad", "--goal", "Reject", "--chief", SESSION.format("chief"), "--request", "Reject",
+            ], capture_output=True, text=True, env={**env, "GIT_CEILING_DIRECTORIES": str(project)})
+            self.assertEqual(ceiling_refused.returncode, 1)
+            self.assertIn("inside git repository", ceiling_refused.stderr)
 
     def test_programs_lists_containers_with_prune_readiness(self):
         with tempfile.TemporaryDirectory() as sandbox:
@@ -2026,8 +2032,10 @@ class LifecycleMutationTests(RecordCase):
             self.assertIn("record-dirty", item["keepReasons"])
             done_state.write_text(saved_text)
 
-            # Requested pr-review outcome at ready state is done and prune-ready even with allTerminal=False.
+            # Requested pr-review outcome at ready state requires recorded teardown before prune=ready,
+            # and accepts a clean reopened site/.sites-checkout (rejecting dirty edits inside it).
             pr_state = run_init("pr-review-done", "PR Ready", "Open PR")
+            pr_container = pr_state.parent.parent
             subprocess.run([
                 sys.executable, str(SCRIPT), "work", "--state", str(pr_state),
                 "--id", "W1", "--add", "--title", "One", "--repo", "org/repo", "--finish-line", "pr-review",
@@ -2049,7 +2057,24 @@ class LifecycleMutationTests(RecordCase):
             pr_item = list_json()["PR Ready"]
             self.assertEqual(pr_item["verdict"], "done")
             self.assertFalse(pr_item["allTerminal"])
-            self.assertTrue(pr_item["readyToPrune"])
+            self.assertFalse(pr_item["readyToPrune"])
+            self.assertIn("heartbeat=unset", pr_item["keepReasons"])
+            self.assertIn("wake=unset", pr_item["keepReasons"])
+
+            subprocess.run([
+                sys.executable, str(SCRIPT), "grant", "--state", str(pr_state),
+                "--source", "User msg 2", "--start", "All", "--resolve", "Reversible", "--user", "Merges",
+                "--heartbeat", "None (program done)", "--wake", "None (program done)",
+            ], check=True, capture_output=True, text=True, env=env)
+            reopened = pr_container / "site" / ".sites-checkout"
+            reopened.mkdir(parents=True)
+            subprocess.run(["git", "-C", str(reopened), "init", "-q"], check=True, env=env)
+            (reopened / "index.html").write_text("ok\n")
+            subprocess.run(["git", "-C", str(reopened), "add", "index.html"], check=True, env=env)
+            subprocess.run(["git", "-C", str(reopened), "commit", "-q", "-m", "reopen"], check=True, env=env)
+            self.assertTrue(list_json()["PR Ready"]["readyToPrune"])
+            (reopened / "index.html").write_text("dirty\n")
+            self.assertIn("site-dirty", list_json()["PR Ready"]["keepReasons"])
 
             # Active program with a recorded running owner reports verdict=working (via recorded_threads).
             active_state = run_init("active-run", "Active", "Running")

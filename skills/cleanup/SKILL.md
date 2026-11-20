@@ -23,10 +23,10 @@ heads or reflogs).
   folders, workspace roots, unresolved variables, globs, symlinks, and shared paths without
   proven ownership. Ask before removing retained user data, shared caches, release artifacts,
   or uncertain resources.
-- **Scope:** an explicit cleanup request or a handoff from [merge](../merge/SKILL.md) after an
-  authorized merge covers verified task-owned temporary resources (worktrees, branches, dev
-  processes, simulator/emulator installs, temporary devices, disposable test data, and explicitly
-  scoped disposable task directories). It never authorizes unrelated or uncertain targets.
+- **Scope:** an explicit cleanup request or an authorized merge handoff covers verified task-owned
+  temporary resources (worktrees, branches, dev processes, simulator/emulator installs, temporary
+  devices, disposable test data, and explicitly scoped disposable task directories). It never
+  authorizes unrelated or uncertain targets.
 
 ## 1. Inventory
 

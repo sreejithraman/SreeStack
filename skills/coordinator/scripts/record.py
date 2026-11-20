@@ -1447,9 +1447,10 @@ def git_dir_for(folder):
         return None
     if probe.is_file():
         probe = probe.parent
+    env = {k: v for k, v in os.environ.items() if k not in {"GIT_CEILING_DIRECTORIES", "GIT_DIR", "GIT_WORK_TREE"}}
     result = subprocess.run(
         ["git", "-C", str(probe), "rev-parse", "--absolute-git-dir"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, env=env,
     )
     return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
 
@@ -1467,8 +1468,8 @@ def repo_status(folder):
 
 
 def automation_cleared(value):
-    """True when a grant automation field is unset or explicitly recorded as None (...)."""
-    return not value or bool(re.match(r"^none(?:\b|$)", value.strip(), re.I))
+    """True when a grant automation field is explicitly recorded as None (...)."""
+    return bool(value) and bool(re.match(r"^none(?:\b|$)", value.strip(), re.I))
 
 
 def write_git_excludes(state_file):
@@ -1562,8 +1563,8 @@ class Record:
         created_file = staged = False
         try:
             with self.file.open("x", encoding="utf-8") as handle:
+                created_file = True
                 handle.write(layout(state))
-            created_file = True
             self.git("add", "--", self.file.name)
             staged = True
             self.git("commit", "-q", "-m", message, "--", self.file.name)
@@ -1986,10 +1987,14 @@ def list_programs(root, as_json=False):
             has_site = is_nested and (site_dir.exists() or site_dir.is_symlink())
             site_dirty = False
             if has_site:
-                site_status = None if (site_dir.is_symlink() or not site_dir.is_dir()) else repo_status(site_dir)
-                site_dirty = bool(site_status) if site_status is not None else (
-                    site_dir.is_symlink() or not site_dir.is_dir() or any(site_dir.iterdir())
-                )
+                if site_dir.is_symlink() or not site_dir.is_dir():
+                    site_dirty = True
+                else:
+                    site_children = list(site_dir.iterdir())
+                    reopened = site_dir / ".sites-checkout"
+                    site_repo = reopened if (len(site_children) == 1 and site_children[0] == reopened and reopened.is_dir() and not reopened.is_symlink()) else site_dir
+                    site_status = repo_status(site_repo)
+                    site_dirty = bool(site_status) if site_status is not None else bool(site_children)
             extra = sorted(p.name for p in container.iterdir() if p.name not in {"record", "site"}) if is_nested else []
             keep = []
             if not state["work"]:
@@ -2007,9 +2012,9 @@ def list_programs(root, as_json=False):
             if open_discoveries:
                 keep.append(f"open-discoveries={open_discoveries}")
             if not automation_cleared(grant.get("heartbeat")):
-                keep.append(f"heartbeat={grant['heartbeat']}")
+                keep.append(f"heartbeat={grant.get('heartbeat') or 'unset'}")
             if not automation_cleared(grant.get("wake")):
-                keep.append(f"wake={grant['wake']}")
+                keep.append(f"wake={grant.get('wake') or 'unset'}")
             items.append({
                 "program": str(container),
                 "state": str(state_file),
