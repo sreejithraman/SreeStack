@@ -9,7 +9,7 @@ import tempfile
 import textwrap
 import unittest
 
-from record import Refused, answer_stored, observe, stored_picks
+from record import Refused, answer_stored, gh_pr, observe, stored_picks
 from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, now_line, work
 
@@ -17,11 +17,53 @@ from test_render_dashboard import GIT_ENV, Program, decision, example, now_line,
 SCRIPT = Path(__file__).with_name("record.py")
 FAKE = textwrap.dedent("""\
     import json, os, sys
+    GH_PR_VIEW_ALLOWED = {
+        "additions", "assignees", "author", "autoMergeRequest", "baseRefName", "baseRefOid", "body",
+        "changedFiles", "closed", "closedAt", "closingIssuesReferences", "comments", "commits", "createdAt",
+        "deletions", "files", "fullDatabaseId", "headRefName", "headRefOid", "headRepository",
+        "headRepositoryOwner", "id", "isCrossRepository", "isDraft", "labels", "latestReviews",
+        "maintainerCanModify", "mergeCommit", "mergeStateStatus", "mergeable", "mergedAt", "mergedBy",
+        "milestone", "number", "potentialMergeCommit", "projectCards", "projectItems", "reactionGroups",
+        "reviewDecision", "reviewRequests", "reviews", "state", "statusCheckRollup", "title", "updatedAt", "url",
+    }
     fixtures = json.load(open(os.environ["RECORD_FIXTURES"]))
-    kind, key = ("prs", sys.argv[3]) if sys.argv[1] == "pr" else ("threads", sys.argv[-1])
-    if key not in fixtures[kind]:
+    if sys.argv[1:3] == ["api", "graphql"]:
+        host = "github.com"
+        variables = {}
+        index = 3
+        while index < len(sys.argv):
+            arg = sys.argv[index]
+            if arg == "--hostname":
+                host = sys.argv[index + 1]
+                index += 2
+            elif arg in {"-f", "-F"}:
+                key, value = sys.argv[index + 1].split("=", 1)
+                variables[key] = value
+                index += 2
+            else:
+                index += 1
+        if "query" not in variables or not {"owner", "name", "number"} <= set(variables):
+            sys.exit("invalid graphql invocation")
+        url = f"https://{host}/{variables['owner']}/{variables['name']}/pull/{variables['number']}"
+        if url not in fixtures["prs"]:
+            sys.exit(f"{url} not found")
+        print(json.dumps({"data": {"repository": {"pullRequest": fixtures["prs"][url]}}}))
+        sys.exit(0)
+    if sys.argv[1] == "pr":
+        if "--json" in sys.argv:
+            requested = sys.argv[sys.argv.index("--json") + 1].split(",")
+            unknown = [field for field in requested if field not in GH_PR_VIEW_ALLOWED]
+            if unknown:
+                sys.exit(f'Unknown JSON field: "{unknown[0]}"')
+        key = sys.argv[3]
+        if key not in fixtures["prs"]:
+            sys.exit(f"{key} not found")
+        print(json.dumps(fixtures["prs"][key]))
+        sys.exit(0)
+    key = sys.argv[-1]
+    if key not in fixtures["threads"]:
         sys.exit(f"{key} not found")
-    print(json.dumps(fixtures[kind][key] if kind == "prs" else {"thread": fixtures[kind][key], "messages": []}))
+    print(json.dumps({"thread": fixtures["threads"][key], "messages": []}))
 """)
 SESSION = "https://app.t3.codes/threads/env/thread%3A{}"
 
@@ -396,6 +438,14 @@ class LandingTests(RecordCase):
         self.assertIn("resume Retry owner with landing L2", result.stdout)
         self.refused("land", "--work", "W1", message="already has pending landing L2")
         self.refused("land", "--landing", "L2", "--to", "withdrawn", message="needs --note")
+        self.refused("land", "--landing", "L2", "--to", "withdrawn", "--note", "Head moved",
+                     message="move it to --to cancelling first")
+        self.event("land", "--landing", "L2", "--to", "cancelling", "--note", "Head moved")
+        self.serve(prs={
+            layer["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": layer["head"], "baseRefName": layer["base"],
+                           "autoMergeRequest": None, "isInMergeQueue": False}
+            for layer in work(after, "W1")["layers"]
+        })
         _, after, _ = self.event("land", "--landing", "L2", "--to", "withdrawn", "--note", "Head moved")
         self.assertEqual(after["landings"][-1]["state"], "withdrawn")
 
@@ -1813,15 +1863,25 @@ class LifecycleMutationTests(RecordCase):
         self.commit(ready)
         _, rel, _ = self.event("land", "--work", "W1")
         lid = rel["landings"][-1]["id"]
-        w1_prs = {layer["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": layer["head"], "baseRefName": layer["base"]}
+        w1_prs = {layer["url"]: {"state": "OPEN", "isDraft": False, "headRefOid": layer["head"], "baseRefName": layer["base"],
+                                 "autoMergeRequest": None, "isInMergeQueue": False}
                   for layer in work(rel, "W1")["layers"]}
         self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Cancelling before takeover")
         self.refused("land", "--landing", lid, "--to", "submitted", message="is cancelling")
         self.refused("move", "--chief", SESSION.format("new-chief"), message="pending landing")
-        # Armed auto-merge blocks finalizing withdrawn!
+        # Incomplete auto-merge/queue facts block finalizing withdrawn!
+        incomplete = {url: {"state": "OPEN", "isDraft": False, "headRefOid": info["headRefOid"], "baseRefName": info["baseRefName"]}
+                      for url, info in w1_prs.items()}
+        self.serve(prs=incomplete)
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Try incomplete",
+                     message="missing definite auto-merge or merge-queue facts")
+        # Armed auto-merge or merge-queue blocks finalizing withdrawn!
         armed = {url: {**info, "autoMergeRequest": {"enabledAt": "2026-11-02T17:30:00Z"}} for url, info in w1_prs.items()}
         self.serve(prs=armed)
         self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Try early", message="auto-merge")
+        queued = {url: {**info, "isInMergeQueue": True} for url, info in w1_prs.items()}
+        self.serve(prs=queued)
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Try queued", message="merge-queue")
         # Confirmed stopped on forge allows withdrawn and move!
         self.serve(prs=w1_prs)
         self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "Forge cancellation confirmed")
@@ -1867,6 +1927,16 @@ class LifecycleMutationTests(RecordCase):
         self.program.write(cur4, "2026-11-02T17:45:00Z")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Rebase W2",
                      "--answer-source", "User", message="multiple options match")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "rebase W2",
+                     "--answer-source", "User", message="multiple options match")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Rebase W2.",
+                     "--answer-source", "User", message="multiple options match")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2",
+                     "--answer-source", "User", message="must name the target branch")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2 onto a new base",
+                     "--answer-source", "User", message="does not match target")
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--text", "Please rebase W2 onto Main",
+                     "--answer-source", "User", message="does not match target")
         self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D8", "--option", "3",
                      "--answer-source", "User", message="does not match target 'new'")
 
@@ -1968,6 +2038,137 @@ class LifecycleMutationTests(RecordCase):
         d99 = next(row for row in added["discoveries"] if row.get("id") == "D99")
         self.assertEqual(d99["status"], "routed")
         self.assertEqual(d99["route"], "Snip #42")
+
+    def test_pass6_graphql_pr_reader_partial_merge_cancel_status_reconcile_and_free_text(self):
+        # 1. P6-01: gh_pr uses gh api graphql for standard GitHub & GHE PR URLs and returns definite queue/auto-merge facts.
+        gh_url = "https://github.com/org/repo/pull/42"
+        ghe_url = "https://ghe.example.com/org/repo/pull/7"
+        self.serve(prs={
+            gh_url: {"state": "OPEN", "isDraft": False, "headRefOid": "a" * 40, "baseRefName": "main",
+                     "autoMergeRequest": None, "isInMergeQueue": False},
+            ghe_url: {"state": "OPEN", "isDraft": False, "headRefOid": "b" * 40, "baseRefName": "main",
+                      "autoMergeRequest": None, "isInMergeQueue": True},
+        })
+        old_path, old_fix = os.environ.get("PATH"), os.environ.get("RECORD_FIXTURES")
+        try:
+            os.environ["PATH"] = f"{self.bin}{os.pathsep}{old_path or ''}"
+            os.environ["RECORD_FIXTURES"] = str(self.fixtures)
+            pr_gh = gh_pr(gh_url)
+            self.assertEqual(pr_gh["state"], "OPEN")
+            self.assertIs(pr_gh["isInMergeQueue"], False)
+            self.assertIsNone(pr_gh["autoMergeRequest"])
+            pr_ghe = gh_pr(ghe_url)
+            self.assertIs(pr_ghe["isInMergeQueue"], True)
+        finally:
+            if old_path is None:
+                os.environ.pop("PATH", None)
+            else:
+                os.environ["PATH"] = old_path
+            if old_fix is None:
+                os.environ.pop("RECORD_FIXTURES", None)
+            else:
+                os.environ["RECORD_FIXTURES"] = old_fix
+
+        # 2. P6-02 & P6-04: Partially merged release reconciles cleanly during cancelling -> withdrawn,
+        #    unblocking move and requiring a fresh release for the stopped remainder.
+        def two_ready(state):
+            ready(state)
+            work(state, "W1")["layers"][0]["url"] = "https://github.com/org/exports/pull/101"
+            work(state, "W1")["layers"][1]["url"] = "https://github.com/org/exports/pull/102"
+            row = work(state, "W4")
+            row.update(state="ready", finishLine="land", owner=copy.deepcopy(work(state, "W1")["owner"]),
+                       layers=[{"id": "W4-L1", "branch": "progress", "status": "ready",
+                                "url": "https://github.com/org/exports/pull/103",
+                                "head": "abc1234", "base": "main"}])
+        self.commit(two_ready)
+        _, rel, _ = self.event("land", "--work", "W1", "--work", "W4", "--lander", "Retry owner")
+        lid = rel["landings"][-1]["id"]
+        # P6-04: submitted -> withdrawn is also refused without cancelling first!
+        self.event("land", "--landing", lid, "--to", "submitted")
+        self.refused("land", "--landing", lid, "--to", "withdrawn", "--note", "Skip fence",
+                     message="move it to --to cancelling first")
+        # Open a hold on W1 before partial merge cancellation.
+        cur = self.head()
+        cur["decisions"].append({
+            "id": "W1-D10", "question": "Post-merge follow-up?",
+            "date": "2026-11-02T18:00:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Follow up", "effect": "New PR", "recommended": True, "reversible": True},
+                {"label": "Skip", "effect": "None", "reversible": True},
+            ],
+            "blocks": [{"id": "W1", "phase": "landing"}, {"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur, "2026-11-02T18:00:00Z")
+        self.event("land", "--landing", lid, "--to", "cancelling", "--note", "Cancel after hold")
+        # W1's two PRs merged; W4's PR stopped cleanly!
+        w1_layers = work(self.head(), "W1")["layers"]
+        self.serve(prs={
+            w1_layers[0]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_layers[0]["head"], "baseRefName": w1_layers[0]["base"],
+                                  "autoMergeRequest": None, "isInMergeQueue": False},
+            w1_layers[1]["url"]: {"state": "MERGED", "isDraft": False, "headRefOid": w1_layers[1]["head"], "baseRefName": w1_layers[1]["base"],
+                                  "autoMergeRequest": None, "isInMergeQueue": False},
+            "https://github.com/org/exports/pull/103": {"state": "OPEN", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "main",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, partial_after, partial_res = self.event("land", "--landing", lid, "--to", "withdrawn", "--note", "W1 merged, W4 stopped")
+        self.assertEqual(partial_after["landings"][-1]["state"], "withdrawn")
+        self.assertEqual(work(partial_after, "W1")["state"], "landed")
+        self.assertEqual(work(partial_after, "W4")["state"], "ready")
+        self.assertEqual(decision(partial_after, "W1-D10")["status"], "open")
+        self.assertEqual(decision(partial_after, "W1-D10")["blocks"], [{"id": "W2", "phase": "proof"}])
+        self.assertIn("partially merged before cancellation", partial_res.stdout)
+        # Move now succeeds, and W4 can get a fresh release!
+        self.event("move", "--chief", SESSION.format("chief-2"))
+        _, rel_w4, _ = self.event("land", "--work", "W4")
+        lid_w4 = rel_w4["landings"][-1]["id"]
+
+        # 3. P6-03: Ordinary status running FIRST when a cancelling release merges with an open hold
+        #    atomically lands W4, lands the release, detaches W4 from the open decision, and keeps other blocks!
+        cur2 = self.head()
+        cur2["decisions"].append({
+            "id": "W4-D1", "question": "Metrics tag?",
+            "date": "2026-11-02T18:05:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Add tag", "effect": "New PR", "recommended": True, "reversible": True},
+                {"label": "Leave", "effect": "Done", "reversible": True},
+            ],
+            "blocks": [{"id": "W4", "phase": "landing"}, {"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur2, "2026-11-02T18:05:00Z")
+        self.event("land", "--landing", lid_w4, "--to", "cancelling", "--note", "Hold before merge")
+        self.serve(prs={
+            "https://github.com/org/exports/pull/103": {"state": "MERGED", "isDraft": False, "headRefOid": "abc1234", "baseRefName": "main",
+                                                        "autoMergeRequest": None, "isInMergeQueue": False},
+        })
+        _, status_after, status_res = self.event("status")
+        self.assertEqual(work(status_after, "W4")["state"], "landed")
+        self.assertEqual(status_after["landings"][-1]["state"], "landed")
+        self.assertEqual(decision(status_after, "W4-D1")["status"], "open")
+        self.assertEqual(decision(status_after, "W4-D1")["blocks"], [{"id": "W2", "phase": "proof"}])
+        self.assertIn("W4 already merged while W4-D1 stayed open", status_res.stdout)
+        self.assertNotIn("settle by hand", status_res.stdout)
+
+        # 4. P6-05: Normalized single typed option binds its target; free-text rebase with explicit exact target succeeds.
+        cur3 = self.head()
+        cur3["decisions"].append({
+            "id": "W2-D9", "question": "Rebase W2?",
+            "date": "2026-11-02T18:10:00Z", "source": "Coordinator", "status": "open",
+            "options": [
+                {"label": "Rebase W2", "effect": "Onto release", "recommended": True, "reversible": True,
+                 "action": {"type": "rebase", "work": "W2", "onto": "release"}},
+                {"label": "Scrap W2", "effect": "Drop", "reversible": False,
+                 "action": {"type": "scrap", "work": "W2"}},
+            ],
+            "blocks": [{"id": "W2", "phase": "proof"}],
+        })
+        self.program.write(cur3, "2026-11-02T18:10:00Z")
+        # Normalized case/punctuation variant binds to the single typed option and refuses wrong target!
+        self.refused("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D9", "--text", "rebase W2.",
+                     "--answer-source", "User", message="does not match typed option target 'release'")
+        # Explicit free-text rebase naming the exact destination succeeds!
+        _, free_after, _ = self.event("work", "--id", "W2", "--rebase-onto", "main", "--decision", "W2-D9",
+                                      "--text", "Please rebase W2 onto main", "--answer-source", "User")
+        self.assertEqual(decision(free_after, "W2-D9")["status"], "answered")
 
 
 if __name__ == "__main__":

@@ -50,8 +50,12 @@ mv /absolute/path/command-center.next.html /absolute/path/command-center.html
 
 If the deployed URL changed, record it once with `record.py grant --hosting <url>` and tell the
 user the new URL and that the previous URL is now frozen (the renderer omits `hosting`, so an
-otherwise unchanged render needs no second publish). On publish failure, leave `command-center.html`
-and `hosting` untouched and report the error and retry target.
+otherwise unchanged render needs no second publish; if the render does change, publish it normally).
+On publish failure, leave `command-center.html` and `hosting` untouched, keep Site identity so a
+retry reuses the same target, and report the failure and any created target or saved version needed
+to retry. If recording the link (`record.py grant --hosting <url>`) fails after publication, report
+the confirmed deployed URL and the incomplete record write, and retry the metadata write with that
+URL without redeploying.
 
 ## Tap-to-answer
 

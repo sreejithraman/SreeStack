@@ -280,8 +280,13 @@ def atomic_halting_work(state, decision_id):
     return affected
 
 
+def normalized_choice(value):
+    """Case- and trailing-punctuation-insensitive option label key for matching chat text to options."""
+    return quoted(value.strip().rstrip(".!?")).casefold()
+
+
 def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_id=None, option=None):
-    """Verify the chosen option unambiguously authorizes --scrap or --rebase-onto (and its exact target)."""
+    """Verify the chosen option or explicit free text unambiguously authorizes --scrap or --rebase-onto."""
     action = option.get("action") if isinstance(option, dict) else None
     if isinstance(action, dict):
         if "work" in action and work_id is not None and action["work"] != work_id:
@@ -308,11 +313,22 @@ def check_work_decision_action(chosen, scrap, rebase_onto, stack_on=None, work_i
                 or (SCRAP_VERBS.search(lower) and not NEGATED_SCRAP.search(lower))):
             raise Refused(f"--rebase-onto is not unambiguously authorized by chosen option {chosen!r}")
         match = ONTO_TARGET.search(chosen)
-        if match:
+        allowed = {rebase_onto} | ({stack_on} if stack_on else set())
+        if option is None:
+            if not match:
+                raise Refused(
+                    f"free-text rebase {chosen!r} must name the target branch (e.g. 'onto {rebase_onto}') "
+                    "or pass --option <number>"
+                )
             quoted_target = match[4] is None
             raw_named = next(g for g in match.groups() if g is not None)
             named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
-            allowed = {rebase_onto} | ({stack_on} if stack_on else set())
+            if named not in allowed:
+                raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in free-text answer {chosen!r}")
+        elif match:
+            quoted_target = match[4] is None
+            raw_named = next(g for g in match.groups() if g is not None)
+            named = raw_named if quoted_target else raw_named.rstrip(".,;:)")
             if named not in allowed and (quoted_target or named.lower() not in {"a", "an", "the", "new", "another"}):
                 raise Refused(f"--rebase-onto {rebase_onto!r} does not match target {named!r} in chosen option {chosen!r}")
 
@@ -391,6 +407,8 @@ def mutate_work(state, at, identity, add=False, title=None, repo=None, kind=None
             else:
                 chosen = decision_text
                 matches = [opt for opt in options if quoted(opt["label"]) == quoted(chosen)]
+                if not matches:
+                    matches = [opt for opt in options if normalized_choice(opt["label"]) == normalized_choice(chosen)]
                 if len(matches) > 1:
                     raise Refused(f"multiple options match {chosen!r}; pass --option <number>")
                 opt_obj = matches[0] if len(matches) == 1 else None
@@ -1199,6 +1217,56 @@ def release(state, at, works, lander=None, target=None, keep=None, note=None):
     return f"{identity} released: {', '.join(works)} to {target}", [f"resume {lander} with landing {identity}"]
 
 
+def reconcile_landed_work(state, at, work_ids, merged_urls, notes, forge_by_url=None):
+    """Apply observed merge/stop facts to work in a landing, landing fully merged work and detaching open holds."""
+    reconciled = set()
+    for work_id in work_ids:
+        row = work_row(state, work_id)
+        for layer in row.get("layers", []):
+            url = layer.get("url")
+            if not url:
+                continue
+            pr = (forge_by_url or {}).get(url)
+            moved = False
+            if isinstance(pr, dict):
+                for key, value in (("head", pr.get("headRefOid", "")), ("base", pr.get("baseRefName", ""))):
+                    recorded = layer.get(key, "")
+                    if value and not (recorded and (value.startswith(recorded) if key == "head" else value == recorded)):
+                        put(layer, key, value, LAYER_KEYS)
+                        moved = True
+            if url in merged_urls or (isinstance(pr, dict) and pr.get("state") == "MERGED"):
+                layer["status"] = "merged"
+            elif isinstance(pr, dict):
+                status = {"CLOSED": "closed"}.get(pr.get("state"))
+                status = status or ("draft" if pr.get("isDraft") else "ready" if layer["status"] == "ready" and not moved else "open")
+                layer["status"] = status
+        layers = row.get("layers", [])
+        if layers and all(layer["status"] == "merged" for layer in layers):
+            if effective_finish(row) == "land":
+                if row["state"] != "landed":
+                    prev = row["state"]
+                    row["state"] = "landed"
+                    notes.append(f"{work_id}: {prev} -> landed")
+                    reconciled.add(work_id)
+                for decision in state.get("decisions", []):
+                    if decision["status"] == "open" and any(b["id"] == work_id for b in decision.get("blocks", [])):
+                        kept = [b for b in decision["blocks"] if b["id"] != work_id]
+                        if kept:
+                            decision["blocks"] = kept
+                        else:
+                            decision.pop("blocks", None)
+                        notes.append(
+                            f"{work_id} already merged while {decision['id']} stayed open; "
+                            f"create a follow-up outcome and block it on {decision['id']} if changes are needed"
+                        )
+            else:
+                notes.append(f"{work_id}: all PRs merged on the forge despite finish line {effective_finish(row)}; settle by hand")
+        elif row["state"] == "ready" and any(layer["status"] not in READY_LAYERS[effective_finish(row)][0] for layer in layers):
+            row["state"] = "in-review"
+        row["checkedAt"] = at
+    return reconciled
+
+
 def move_landing(state, at, identity, to, read_pr, note=None):
     landing = next((row for row in state.get("landings", []) if row["id"] == identity), None)
     if landing is None:
@@ -1209,37 +1277,50 @@ def move_landing(state, at, identity, to, read_pr, note=None):
         raise Refused(f"{identity} is cancelling; confirm stopped (--to withdrawn) or merged (--to landed)")
     if to in {"withdrawn", "cancelling"} and not note:
         raise Refused(f"moving a landing to {to} needs --note: why")
+    if to == "withdrawn" and landing["state"] != "cancelling":
+        raise Refused(
+            f"{identity} is {landing['state']}; move it to --to cancelling first to fence its lander, "
+            "then confirm forge state before withdrawing"
+        )
     notes = []
-    if to == "withdrawn" and landing["state"] in {"submitted", "cancelling"}:
+    if to == "withdrawn":
+        forge_by_url, merged_urls, stopped_urls = {}, [], []
+        for pr in landing["prs"]:
+            url = pr["url"]
+            forge_pr = read_pr(url)
+            if not isinstance(forge_pr, dict) or forge_pr.get("state") not in {"OPEN", "CLOSED", "MERGED"}:
+                raise Refused(f"{url} returned incomplete forge state; confirm on GitHub before withdrawing")
+            forge_by_url[url] = forge_pr
+            if forge_pr["state"] == "MERGED":
+                merged_urls.append(url)
+                continue
+            if "autoMergeRequest" not in forge_pr or not isinstance(forge_pr.get("isInMergeQueue"), bool):
+                raise Refused(
+                    f"{url} is missing definite auto-merge or merge-queue facts; confirm on GitHub before withdrawing"
+                )
+            if forge_pr["autoMergeRequest"] or forge_pr["isInMergeQueue"]:
+                raise Refused(f"{url} still has auto-merge or merge-queue armed on the forge; cancel it first")
+            stopped_urls.append(url)
+        if not stopped_urls:
+            raise Refused(f"all PRs in {identity} already merged on the forge; record --to landed instead")
+        if merged_urls:
+            reconcile_landed_work(state, at, landing["work"], set(merged_urls), notes, forge_by_url)
+            notes.append(
+                f"{identity} partially merged before cancellation: merged {', '.join(merged_urls)}; "
+                f"confirmed stopped {', '.join(stopped_urls)} (fresh release required to land remaining work)"
+            )
+    if to == "landed":
+        forge_by_url = {}
         for pr in landing["prs"]:
             forge_pr = read_pr(pr["url"])
-            if forge_pr.get("state") == "MERGED":
-                raise Refused(f"{pr['url']} already merged on the forge; record --to landed instead")
-            if forge_pr.get("autoMergeRequest") or forge_pr.get("isInMergeQueue"):
-                raise Refused(f"{pr['url']} still has auto-merge or merge-queue armed on the forge; cancel it first")
-    if to == "landed":
-        for pr in landing["prs"]:
-            if read_pr(pr["url"]).get("state") != "MERGED":
+            if not isinstance(forge_pr, dict) or forge_pr.get("state") != "MERGED":
                 raise Refused(f"{pr['url']} is not merged on the forge")
-        for work in landing["work"]:
-            row = work_row(state, work)
-            for layer in row.get("layers", []):
-                if any(pr["url"] == layer.get("url") for pr in landing["prs"]):
-                    layer["status"] = "merged"
-            if all(layer["status"] == "merged" for layer in row.get("layers", [])):
-                row["state"] = "landed"
-                for decision in state.get("decisions", []):
-                    if decision["status"] == "open" and any(b["id"] == work for b in decision.get("blocks", [])):
-                        kept = [b for b in decision["blocks"] if b["id"] != work]
-                        if kept:
-                            decision["blocks"] = kept
-                        else:
-                            decision.pop("blocks", None)
-                        notes.append(
-                            f"{work} already merged while {decision['id']} stayed open; "
-                            f"create a follow-up outcome and block it on {decision['id']} if changes are needed"
-                        )
-            row["checkedAt"] = at
+            forge_by_url[pr["url"]] = forge_pr
+        for wid in landing["work"]:
+            row = work_row(state, wid)
+            if effective_finish(row) != "land":
+                raise Refused(f"{wid} has finish line {effective_finish(row)}, not land; reconcile it before recording {identity} landed")
+        reconcile_landed_work(state, at, landing["work"], {pr["url"] for pr in landing["prs"]}, notes, forge_by_url)
     landing["state"] = to
     if note:
         put(landing, "note", note, ("id", "date", "chief", "lander", "target", "work", "prs", "state", "keep", "note"))
@@ -1248,17 +1329,56 @@ def move_landing(state, at, identity, to, read_pr, note=None):
 
 # Status: facts from the forge and the host.
 
+PR_URL_RE = re.compile(r"^https?://([^/]+)/([^/]+)/([^/]+)/pull/(\d+)(?:[/?#].*)?$")
+PR_GRAPHQL_QUERY = """
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      state isDraft headRefOid baseRefName isInMergeQueue
+      autoMergeRequest { enabledAt }
+    }
+  }
+}
+"""
+GH_PR_VIEW_FIELDS = "url,state,isDraft,headRefOid,baseRefName,autoMergeRequest"
+
+
+def gh_pr_graphql(gh, host, owner, name, number):
+    cmd = [gh, "api", "graphql"]
+    if host.lower() != "github.com":
+        cmd += ["--hostname", host]
+    cmd += ["-f", f"query={PR_GRAPHQL_QUERY}", "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={int(number)}"]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    if result.returncode:
+        raise OSError(result.stderr.strip() or f"gh exited with status {result.returncode}")
+    payload = json.loads(result.stdout)
+    if payload.get("errors"):
+        messages = "; ".join(err.get("message", str(err)) for err in payload["errors"])
+        raise OSError(f"GitHub GraphQL error: {messages}")
+    pr = ((payload.get("data") or {}).get("repository") or {}).get("pullRequest")
+    if not isinstance(pr, dict):
+        raise OSError(f"pull request {owner}/{name}#{number} not found")
+    return pr
+
+
 def gh_pr(target):
     gh = shutil.which("gh")
     if not gh:
         raise OSError("gh is not installed")
+    match = PR_URL_RE.match(target)
+    if match:
+        return gh_pr_graphql(gh, *match.groups())
     result = subprocess.run(
-        [gh, "pr", "view", target, "--json", "state,isDraft,headRefOid,baseRefName,autoMergeRequest,isInMergeQueue"],
+        [gh, "pr", "view", target, "--json", GH_PR_VIEW_FIELDS],
         capture_output=True, text=True, timeout=60,
     )
     if result.returncode:
         raise OSError(result.stderr.strip() or f"gh exited with status {result.returncode}")
-    return json.loads(result.stdout)
+    pr = json.loads(result.stdout)
+    url_match = PR_URL_RE.match(pr.get("url", "")) if isinstance(pr, dict) else None
+    if url_match:
+        return gh_pr_graphql(gh, *url_match.groups())
+    return pr
 
 
 def t3_thread(identity):
@@ -1412,31 +1532,66 @@ def observe(state, at, read_pr, threads):
             candidates[index] = [option for option, _ in unique]
             kept[index] = {id(option): label for option, label in unique}
     reasons = first_valid(state, candidates)
-    for index, (*_, original) in candidates.items():
-        row = state["work"][index]
-        if index in reasons:
-            notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
-        elif row["state"] != original["state"]:
-            notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
-    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
-        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
-            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
-    merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
-              if layer["status"] == "merged" and "url" in layer}
-    for landing in state.get("landings", []):
+    merged = ({layer["url"] for row in state["work"] for layer in row.get("layers", [])
+               if layer["status"] == "merged" and "url" in layer}
+              | {url for url, pr in forge.items() if isinstance(pr, dict) and pr.get("state") == "MERGED"})
+    reconciled_works = set()
+    landing_notes = []
+    for landing_index, landing in enumerate(state.get("landings", [])):
         if landing["state"] not in PENDING_LANDINGS:
             continue
-        if all(entry["url"] in merged or forge.get(entry["url"], {}).get("state") == "MERGED" for entry in landing["prs"]):
-            landing["state"] = "landed"
-            notes.append(f"{landing['id']}: landed")
-            continue
+        all_merged = all(entry["url"] in merged for entry in landing["prs"])
+        newly_merged_works = [
+            wid for wid in landing["work"]
+            if (row := work_row(state, wid))["state"] != "landed" and row.get("layers")
+            and all(layer.get("url") in merged or layer["status"] == "merged" for layer in row["layers"])
+        ]
+        if all_merged or newly_merged_works:
+            trial = copy.deepcopy(state)
+            trial_notes = []
+            reconciled = (
+                reconcile_landed_work(trial, at, newly_merged_works, merged, trial_notes, forge)
+                if newly_merged_works else set()
+            )
+            if all_merged and all(
+                work_row(trial, wid)["state"] == "landed"
+                for wid in landing["work"]
+                if work_row(trial, wid).get("layers")
+                and all(layer["status"] == "merged" for layer in work_row(trial, wid)["layers"])
+            ):
+                trial["landings"][landing_index]["state"] = "landed"
+                trial_notes.append(f"{landing['id']}: landed")
+            try:
+                validate(trial)
+            except ValueError as error:
+                landing_notes.append(f"{landing['id']}: could not reconcile merged landing automatically; settle by hand: {error}")
+            else:
+                state["work"] = trial["work"]
+                state["decisions"] = trial["decisions"]
+                state["landings"] = trial["landings"]
+                reconciled_works |= reconciled
+                landing_notes.extend(trial_notes)
+                if state["landings"][landing_index]["state"] == "landed":
+                    continue
         for entry in landing["prs"]:
             pr = forge.get(entry["url"])
             if pr and pr.get("state") != "MERGED" and (
                     not pr.get("headRefOid", "").startswith(entry["head"])
                     or (not re.fullmatch(r"[0-9a-f]{7,40}", entry["base"]) and pr.get("baseRefName") != entry["base"])):
-                notes.append(f"{landing['id']}: a released head or base moved; withdraw the release before telling {landing['lander']}")
+                landing_notes.append(f"{landing['id']}: a released head or base moved; withdraw the release before telling {landing['lander']}")
                 break
+    for index, (*_, original) in candidates.items():
+        row = state["work"][index]
+        if row["id"] in reconciled_works:
+            continue
+        if index in reasons:
+            notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
+        elif row["state"] != original["state"]:
+            notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
+    notes.extend(landing_notes)
+    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
+        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
+            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     return notes
 
 

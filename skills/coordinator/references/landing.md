@@ -44,6 +44,9 @@ not land).
 Whenever a release's head, base, coordinator, lander, finish line, provisional state, decision, or
 hold changes, first move it to `cancelling` (`record.py land --landing <ID> --to cancelling --note "<why>"`)
 to fence the lander while keeping `move` and conflicting releases blocked, then notify its owner,
-cancel any pending auto-merge or queue entry through Merge's controls, and once confirmed stopped
-mark it `withdrawn` (or `landed` if it already merged). Report anything already merged or
-unconfirmed. Only the user can lift a human hold.
+cancel any pending auto-merge or queue entry through Merge's controls, and once every unmerged PR
+is confirmed stopped on the forge mark it `withdrawn` (which also reconciles any PRs that merged
+before cancellation took effect and leaves remaining layers needing a fresh release) or `landed` if
+every PR already merged. `record.py land --to withdrawn` requires `cancelling` and verifies definite
+forge state, auto-merge, and merge-queue facts first. Report anything already merged or unconfirmed.
+Only the user can lift a human hold.
