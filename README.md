@@ -1,7 +1,7 @@
 # SreeStack
 
 A collection of agent skills for planning, coding, review, research, and UI work,
-with T3 Code orchestration and shared instructions for Codex and Claude Code.
+with T3 Code orchestration and host setup for Codex and Claude Code.
 It includes original workflows and adapted skills from the projects credited below.
 Browse [skills/](skills/) and see [SOURCES.md](SOURCES.md) for upstream origins
 and local differences to preserve during updates.
@@ -26,33 +26,37 @@ still links skills and instructions, then reports the
 settings as unmerged and prints this setup. Nothing installs packages for you.
 
 Sync reads each host's manifest. It links every skill folder one by one, and
-links each host's global instructions to [global/AGENTS.md](global/AGENTS.md):
+links host-specific instructions when a manifest sets `instructions_source`
+(and removes any retired SreeStack instruction link when omitted):
 
 | Host | Manifest | Skill links | Instructions link |
 |---|---|---|---|
-| Codex | [codex/setup.json](codex/setup.json) | `~/.agents/skills/<skill>` | `~/.codex/AGENTS.md` |
-| Claude Code | [claude/setup.json](claude/setup.json) | `~/.claude/skills/<skill>` | `~/.claude/CLAUDE.md` |
+| Codex | [codex/setup.json](codex/setup.json) | `~/.agents/skills/<skill>` | `~/.codex/AGENTS.md` → [codex/AGENTS.md](codex/AGENTS.md) |
+| Claude Code | [claude/setup.json](claude/setup.json) | `~/.claude/skills/<skill>` | — (skills trigger directly; user-managed if present) |
 
-Manifest paths are relative to home. New skills link to every host by default;
-add a skill name to a manifest's `exclude` list to keep it out of that host.
-Sync rejects unknown manifest keys and unknown skill names.
+Manifest paths are relative to home (`instructions_source` is relative to this
+repo). New skills link to every host by default; add a skill name to a
+manifest's `exclude` list to keep it out of that host. Sync rejects unknown
+manifest keys, invalid `instructions_source` paths, and unknown skill names.
 
 Sync is idempotent. It adds links for new skills and removes or repoints links
 into this clone's `skills/` that no longer match a skill. It leaves every other
-entry alone, including Claude's `synced/` account downloads and links into other
+entry alone, including Claude's `synced/` account downloads, user-authored
+instruction files where a host omits `instructions_source`, and links into other
 folders. It reports a conflict and leaves the path unchanged when it finds:
 
 - a file, folder, or foreign link at a skill's name;
-- instructions whose content differs from `global/AGENTS.md`; merge that guidance
-  into `global/AGENTS.md` or move the file aside, then rerun;
+- host instructions whose content differs from that host's `instructions_source`;
+  merge that guidance into the repo file or move the local file aside, then rerun;
 - a skills folder linked to anything other than this clone's `skills/`.
 
 Instructions with the same content are kept as `<name>.backup-<UTC time>` before
-sync links the path. A link that already resolves to `global/AGENTS.md`, such as
-`~/.codex-t3/AGENTS.md` pointing at `~/.codex/AGENTS.md`, stays as it is. A
-skills folder linked as a whole to this clone's `skills/` becomes a real folder
-of per-skill links. To undo that, move the folder aside and run
-`ln -s "$PWD/skills" ~/.agents/skills`.
+sync links the path. Existing SreeStack-owned instruction links (including
+retired `global/AGENTS.md` links) relink or unlink cleanly. A link that already
+resolves to that host's source file, such as `~/.codex-t3/AGENTS.md` pointing at
+`~/.codex/AGENTS.md`, stays as it is. A skills folder linked as a whole to this
+clone's `skills/` becomes a real folder of per-skill links. To undo that, move
+the folder aside and run `ln -s "$PWD/skills" ~/.agents/skills`.
 
 Sync and hook installation write only from the stable clone with `main` checked
 out. They refuse linked worktrees, feature branches, and detached checkouts.
@@ -142,10 +146,11 @@ Sync links each skill there instead of linking the whole folder, because Claude
 also stores account downloads in `synced/`. Those downloads stay out of
 SreeStack and Codex.
 
-Claude reads user instructions from `~/.claude/CLAUDE.md`, which sync links to
-the same `global/AGENTS.md` as Codex. Claude Code v2.1.277 or later reads project
-`AGENTS.md` by default when no project or ancestor `CLAUDE.md` or `CLAUDE.local.md`
-exists; see [instruction discovery and exceptions](https://code.claude.com/docs/en/memory#agents-md).
+Claude Code v2.1.277 or later reads project `AGENTS.md` by default when no
+project or ancestor `CLAUDE.md` or `CLAUDE.local.md` exists; see
+[instruction discovery and exceptions](https://code.claude.com/docs/en/memory#agents-md).
+SreeStack leaves `~/.claude/CLAUDE.md` unlinked so Claude relies on skills
+triggering directly without extra global prompt overhead.
 
 Sync merges the keys from [claude/settings.json](claude/settings.json) into your
 `~/.claude/settings.json`; see [Host defaults](#host-defaults).
@@ -153,8 +158,7 @@ Sync merges the keys from [claude/settings.json](claude/settings.json) into your
 The template's `cc-plugin-agents-md@builtin` configuration applies to Claude Code
 v2.1.285 or later. It keeps reading `AGENTS.md` when a project also has Claude
 instructions. This setting applies at user scope, not project/local scope.
-Claude still reads the shared global `~/.claude/CLAUDE.md`. See
-[instruction file selection](https://code.claude.com/docs/en/memory#choose-which-instruction-files-load).
+See [instruction file selection](https://code.claude.com/docs/en/memory#choose-which-instruction-files-load).
 
 The template also sets a personal 500k-token compaction budget: how much context
 Claude Code keeps before it compacts the conversation. It does not change output
@@ -636,7 +640,7 @@ run `brew install pyright typescript-language-server`, while Swift's
 `sourcekit-lsp` ships with Xcode. TypeScript's server uses each project's own
 `typescript` package.
 
-Shared instructions are not a template: sync links them, as described in [Use](#use).
+Host instructions are not a template: sync links them per manifest, as described in [Use](#use).
 
 The templates own the keys they set, and a local change to one of those keys is
 replaced on the next sync. Every other key stays local and never reaches this
@@ -662,7 +666,7 @@ host can still write in the moment before the rename and lose that write. The
 backup holds the version sync read. Quit hosts first when that matters.
 
 If `~/.codex/AGENTS.override.md` exists, it takes precedence over
-the linked `AGENTS.md`; merge its guidance into `global/AGENTS.md` or remove it.
+the linked `AGENTS.md`; merge its guidance into `codex/AGENTS.md` or remove it.
 Native child execution uses explicit policy settings rather than named rank
 presets. Start a new task after changing host settings and check its effective
 selection; active tasks may retain earlier settings.
@@ -716,7 +720,7 @@ uses and adapts:
 - [OpenAI’s Codex plugin](https://github.com/openai/codex-plugin-cc) — adversarial review criteria.
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `coordinator`, `swarm`, and `orchestration`.
-- [Robert C. Martin’s ub-mode](https://github.com/unclebob/ub-mode) — simplicity, behavior verification, and assumption-checking ideas informing the shared global instructions; no upstream prose or code copied.
+- [FeiZ](https://x.com/Fei2411/status/2123017612741554208), [Kxians](https://x.com/xulijian1994/status/2122931496285798499), and [Dan McAteer](https://x.com/daniel_mac8/status/2123744188617380254) — Codex self-calibration, persistence, and reporting ideas informing `codex/AGENTS.md`; instructions are independently written.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.

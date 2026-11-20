@@ -7,12 +7,12 @@ agent or overrides the model the user picked for a thread.
 
 | Purpose | Provider | Model | Effort | Availability fallback | Review pool |
 | --- | --- | --- | --- | --- | --- |
-| Coordinator | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
+| Coordinator | Codex | GPT-6.2 Sol | High | Claude / Opus 5.5 / High | — |
 | UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
 | Simple implementation and fixes | Codex | GPT-6.2 Sol | Medium | — | — |
-| Standard implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
-| Hardest implementation and fixes | Claude | Opus 5.5 | X-High | Codex / GPT-6.2 Astra / X-High | — |
-| Document writing and revision | Claude | Opus 5.5 | Medium | Codex / GPT-6.2 Sol / Medium | — |
+| Standard implementation and fixes | Codex | GPT-6.2 Sol | High | Claude / Opus 5.5 / High | — |
+| Hardest implementation and fixes | Codex | GPT-6.2 Astra | X-High | Claude / Fable 5.2 / X-High | — |
+| Document writing and revision | Antigravity | Gemini 4 Neon | High | Claude / Opus 5.5 / Medium → Codex / GPT-6.2 Sol / Medium | — |
 | Routine UI operation | Codex | GPT-6.1 Terra | Medium | — | — |
 | Demanding UI operation | Codex | GPT-6.1 Terra | High | — | — |
 | Complex UI operation | Codex | GPT-6.1 Terra | X-High | — | — |
@@ -26,8 +26,8 @@ agent or overrides the model the user picked for a thread.
 | Additional review | Antigravity | Gemini 4 Hydrogen High | High | — | Gemini |
 
 The Primary review row also sets the model for cross-judges, single-reviewer audits, and second
-opinions. Some providers (such as Gemini) encode effort in the model ID; resolve the exact ID from
-live host capabilities.
+opinions. Some providers (such as Gemini) encode effort in the model ID or expose a separate
+thought-level option; resolve exact IDs and options from live host capabilities.
 
 ## Choose a model
 

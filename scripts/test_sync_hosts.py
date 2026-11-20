@@ -16,11 +16,16 @@ except ImportError as error:
 
 SCRIPTS = Path(__file__).parent
 HOSTS = {
-    "codex": {"skills": ".agents/skills", "instructions": ".codex/AGENTS.md", "exclude": []},
+    "codex": {
+        "skills": ".agents/skills",
+        "instructions": ".codex/AGENTS.md",
+        "instructions_source": "codex/AGENTS.md",
+        "exclude": [],
+    },
     "claude": {"skills": ".claude/skills", "instructions": ".claude/CLAUDE.md", "exclude": []},
 }
 SKILL_DIRS = (".agents/skills", ".claude/skills")
-INSTRUCTIONS = "# Shared\n\n- Keep it simple.\n"
+INSTRUCTIONS = "# Codex\n\n- Keep it simple.\n"
 CLAUDE_TEMPLATE = {"model": "template-model", "pluginConfigs": {"demo": {"options": {"mode": "on"}}}}
 CODEX_TEMPLATE = '# Public note.\nmodel = "template-model"\n\n[agents]\nmax_threads = 12\n'
 HOOK = "reference-transaction"
@@ -55,7 +60,7 @@ class Fixture(unittest.TestCase):
         (self.repo / "scripts").mkdir(parents=True)
         for script in ("sync_hosts.py", "host_settings.py"):
             shutil.copyfile(SCRIPTS / script, self.repo / "scripts" / script)
-        self.write("global/AGENTS.md", INSTRUCTIONS)
+        self.write("codex/AGENTS.md", INSTRUCTIONS)
         self.write("claude/settings.json", json.dumps(CLAUDE_TEMPLATE))
         self.write("codex/config.toml", CODEX_TEMPLATE)
         for host, manifest in HOSTS.items():
@@ -117,14 +122,14 @@ class Fixture(unittest.TestCase):
 
 
 class SyncTests(Fixture):
-    def test_links_each_skill_and_shared_instructions_for_every_host(self):
+    def test_links_each_skill_and_host_instructions(self):
         self.run_sync()
 
         for skills in SKILL_DIRS:
             self.assertFalse((self.home / skills).is_symlink())
         self.assert_linked("alpha", "beta")
-        for instructions in (".codex/AGENTS.md", ".claude/CLAUDE.md"):
-            self.assertEqual(os.readlink(self.home / instructions), str(self.repo / "global/AGENTS.md"))
+        self.assertEqual(os.readlink(self.home / ".codex/AGENTS.md"), str(self.repo / "codex/AGENTS.md"))
+        self.assertFalse(os.path.lexists(self.home / ".claude/CLAUDE.md"))
         self.assertIn("up to date", self.run_sync("--check").stdout)
         before = self.tree()
         self.assertIn("up to date", self.run_sync().stdout)
@@ -180,6 +185,18 @@ class SyncTests(Fixture):
             "unknown skill": ({**HOSTS["claude"], "exclude": ["betta"]}, "unknown skills in exclude: betta"),
             "escaping path": ({**HOSTS["claude"], "skills": "../skills"}, "must stay inside home"),
             "shared path": ({**HOSTS["claude"], "skills": ".agents/skills"}, "hosts share a skills path"),
+            "missing instructions_source": (
+                {**HOSTS["claude"], "instructions_source": "claude/MISSING.md"},
+                "instructions_source does not exist",
+            ),
+            "escaping instructions_source": (
+                {**HOSTS["claude"], "instructions_source": "../outside.md"},
+                "must stay inside the repository",
+            ),
+            "instructions_source without instructions": (
+                {"skills": ".claude/skills", "instructions_source": "codex/AGENTS.md", "exclude": []},
+                "instructions_source requires instructions",
+            ),
         }
         for label, (manifest, message) in cases.items():
             with self.subTest(label):
@@ -275,7 +292,7 @@ class StableCloneTests(Fixture):
         worktree = self.base / "worktree"
         self.git("worktree", "add", "--quiet", "-b", "task", str(worktree))
         self.add_skill("task-only", root=worktree)
-        self.write("global/AGENTS.md", "task instructions", root=worktree)
+        self.write("codex/AGENTS.md", "task instructions", root=worktree)
         for mode in ("--check", "--check-hooks"):
             result = self.run_sync(mode, root=worktree)
             self.assertIn(f"Checking stable clone {self.repo}", result.stdout)
@@ -305,13 +322,13 @@ class StableCloneTests(Fixture):
         self.run_sync()
         before = self.tree()
         skill = self.home / ".claude/skills/alpha/SKILL.md"
-        instructions = self.home / ".claude/CLAUDE.md"
+        instructions = self.home / ".codex/AGENTS.md"
         skill_text, instruction_text = skill.read_text(), instructions.read_text()
         worktree = self.repo.parent / "worktree"
 
         self.git("worktree", "add", "--quiet", "-b", "task", str(worktree), "main")
         self.write("skills/alpha/SKILL.md", "task edit\n", root=worktree)
-        self.write("global/AGENTS.md", "task instructions\n", root=worktree)
+        self.write("codex/AGENTS.md", "task instructions\n", root=worktree)
         self.add_skill("epsilon", root=worktree)
         shutil.rmtree(worktree / "skills/beta")
         self.commit("task work", cwd=worktree)
@@ -326,7 +343,8 @@ class StableCloneTests(Fixture):
 
 
 class InstructionTests(Fixture):
-    def test_backs_up_matching_files_and_links_shared_instructions(self):
+    def test_backs_up_matching_files_and_links_host_instructions(self):
+        self.write("claude/setup.json", json.dumps({**HOSTS["claude"], "instructions_source": "codex/AGENTS.md"}))
         codex = self.home / ".codex/AGENTS.md"
         codex.parent.mkdir()
         codex.write_text(INSTRUCTIONS)
@@ -336,7 +354,7 @@ class InstructionTests(Fixture):
 
         self.run_sync()
 
-        canonical = str(self.repo / "global/AGENTS.md")
+        canonical = str(self.repo / "codex/AGENTS.md")
         self.assertEqual(os.readlink(codex), canonical)
         self.assertEqual(os.readlink(claude), canonical)
         [codex_backup] = codex.parent.glob("AGENTS.md.backup-*")
@@ -346,10 +364,11 @@ class InstructionTests(Fixture):
         self.assertEqual(sorted(os.listdir(codex.parent)),
                          ["AGENTS.md", codex_backup.name, "config.toml"])
 
-    def test_keeps_aliases_that_already_resolve_to_shared_instructions(self):
+    def test_keeps_aliases_that_already_resolve_to_same_host_instructions(self):
+        self.write("claude/setup.json", json.dumps({**HOSTS["claude"], "instructions_source": "codex/AGENTS.md"}))
         codex = self.home / ".codex/AGENTS.md"
         codex.parent.mkdir()
-        os.symlink(self.repo / "global/AGENTS.md", codex)
+        os.symlink(self.repo / "codex/AGENTS.md", codex)
         claude = self.home / ".claude/CLAUDE.md"
         claude.parent.mkdir()
         os.symlink("../.codex/AGENTS.md", claude)
@@ -359,6 +378,46 @@ class InstructionTests(Fixture):
         self.assertEqual(os.readlink(claude), "../.codex/AGENTS.md")
         self.assertEqual(list(claude.parent.glob("*.backup-*")), [])
 
+    def test_migrates_retired_global_instruction_symlinks_and_preserves_user_files(self):
+        legacy = self.repo / "global/AGENTS.md"
+        codex = self.home / ".codex/AGENTS.md"
+        codex.parent.mkdir()
+        os.symlink(legacy, codex)
+        claude = self.home / ".claude/CLAUDE.md"
+        claude.parent.mkdir()
+        os.symlink(legacy, claude)
+
+        self.run_sync()
+
+        self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
+        self.assertFalse(os.path.lexists(claude))
+        self.assertEqual(list(codex.parent.glob("*.backup-*")), [])
+
+        # A user-authored file or foreign link at a host with no instructions_source stays untouched.
+        claude.write_text("# My local Claude notes\n")
+        self.run_sync()
+        self.assertEqual(claude.read_text(), "# My local Claude notes\n")
+
+        claude.unlink()
+        os.symlink("/elsewhere/CLAUDE.md", claude)
+        self.run_sync()
+        self.assertEqual(os.readlink(claude), "/elsewhere/CLAUDE.md")
+
+    def test_relinks_chained_alias_when_hosts_have_different_instruction_sources(self):
+        self.write("claude/CLAUDE.md", "# Claude only\n")
+        self.write("claude/setup.json", json.dumps({**HOSTS["claude"], "instructions_source": "claude/CLAUDE.md"}))
+        codex = self.home / ".codex/AGENTS.md"
+        codex.parent.mkdir()
+        os.symlink(self.repo / "claude/CLAUDE.md", codex)
+        claude = self.home / ".claude/CLAUDE.md"
+        claude.parent.mkdir()
+        os.symlink("../.codex/AGENTS.md", claude)
+
+        self.run_sync()
+
+        self.assertEqual(os.readlink(codex), str(self.repo / "codex/AGENTS.md"))
+        self.assertEqual(os.readlink(claude), str(self.repo / "claude/CLAUDE.md"))
+
     def test_reports_differing_instructions_without_overwriting(self):
         codex = self.home / ".codex/AGENTS.md"
         codex.parent.mkdir()
@@ -366,11 +425,11 @@ class InstructionTests(Fixture):
 
         result = self.run_sync(code=1)
 
-        self.assertIn(f"{codex}: differs from global/AGENTS.md", result.stderr)
+        self.assertIn(f"{codex}: differs from codex/AGENTS.md", result.stderr)
         self.assertFalse(codex.is_symlink())
         self.assertEqual(codex.read_text(), INSTRUCTIONS + "- Local preference.\n")
         self.assertEqual(list(codex.parent.glob("*.backup-*")), [])
-        self.assertTrue((self.home / ".claude/CLAUDE.md").is_symlink())
+        self.assertEqual(self.links(".claude/skills"), self.expected_links("alpha", "beta"))
 
     def test_concurrent_syncs_back_up_once(self):
         codex = self.home / ".codex/AGENTS.md"

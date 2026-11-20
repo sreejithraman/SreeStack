@@ -1,5 +1,6 @@
 {
   "skills": ".agents/skills",
   "instructions": ".codex/AGENTS.md",
+  "instructions_source": "codex/AGENTS.md",
   "exclude": []
 }
