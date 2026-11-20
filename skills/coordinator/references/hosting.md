@@ -20,19 +20,28 @@ and prints `page: behind record <commit>` (plus any `files/<hash>.<ext>` images 
 when the page changed. On resume, coordinator move, or same-thread provider switch, force
 publication even if unchanged so skill updates reach the hosted page.
 
-Reuse the selected backend's existing target. If switching backends (or creating a new Claude
-artifact), turn off tap-to-answer on the old Claude artifact first; switching backends needs no
-extra approval. Whenever the hosted URL changes, tell the user the new URL and that the previous
-URL is now frozen.
+Reuse the selected backend's existing target. Switching backends needs no extra approval, and owns
+the full wake transition in one sequence:
 
-- **Claude:** call `publish_files` with the page as `index.html` and each listed image as
-  `files/<name>` (from `files/` beside the page). Update the existing private artifact by slug and
-  current version in patch mode so unchanged images stay. On first creation, set up tap-to-answer
-  below.
-- **Codex:** read the plugin-managed `sites:sites` skill and deploy the prepared output below as a
-  buildless static Site, reusing the checkout's `.openai/hosting.json` (`project_id`). Use no
-  framework starter, package install, local server, or public audience. Wait for a confirmed
-  terminal deployment URL (registration or saved version alone is not publication).
+1. **Before mutating `hosting` or `grant.wake`:** capture any existing Claude artifact slug and
+   `grant.wake` task ID.
+2. **If leaving a Claude artifact** (switching to Codex Sites, local-only, or a new Claude
+   artifact): run **Turn off** below first so `config/wake` is removed, final picks are drained, and
+   the old webhook task is deleted. If your session lacks the old Claude DB tools, delete the old
+   webhook task (`delete_scheduled_task`), overwrite `grant.wake` via
+   `record.py grant --wake "None (<reason>)"`, tell the user Send answer on the old artifact no
+   longer reaches you, and ask them to re-answer any unrecorded picks through the active Inbox.
+3. **Publish once on the new backend:**
+   - **Claude:** call `publish_files` with the page as `index.html` and each listed image as
+     `files/<name>` (from `files/` beside the page). Update the existing private artifact by slug
+     and current version in patch mode so unchanged images stay. If this is the first Claude publish
+     or tap-to-answer is not active on this thread, run **Set up** below once after publication.
+   - **Codex:** read the plugin-managed `sites:sites` skill and deploy the prepared output below as
+     a buildless static Site, reusing the checkout's `.openai/hosting.json` (`project_id`). Use no
+     framework starter, package install, local server, or public audience. Wait for a confirmed
+     terminal deployment URL (registration or saved version alone is not publication).
+4. Whenever the hosted URL changes, record it with `record.py grant --hosting <url>` and tell the
+   user the new URL and that the previous URL is now frozen.
 
 Only after confirmed publication, advance the marker:
 

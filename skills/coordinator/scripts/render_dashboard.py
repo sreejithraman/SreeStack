@@ -35,12 +35,14 @@ ENTRY = ("date", "source", "text")
 START_MODES = ("top-level", "delegated", "adopted")
 LANDING_STATES = ("released", "submitted", "landed", "withdrawn")
 DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
+DISCOVERY_STATUSES = ("open", "routed")
+DISCOVERY_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
 HISTORY = {"date", "source", "answerSource", "rationale", "applied", "stalePick", "picksRead"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
 GRANT = ("date", "source", "start", "resolve", "user")
-DECISION_KEYS = ("id", "question", "date", "source", "status", "context", "pictures", "meanwhile", "recommendation",
+DECISION_KEYS = ("id", "question", "date", "source", "status", "reopened", "context", "pictures", "meanwhile", "recommendation",
                  "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied", "stalePick", "picksRead")
 OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible")
 PICTURE_SHAPES = {"side-by-side": (2, 3), "before-after": (2, 2), "sequence": (2, 8)}  # shape: (fewest, most) images
@@ -380,6 +382,8 @@ def validate_decision(row, by_id):
         text(row.get("rationale"), f"{path}.rationale")
     if "applied" in row and (row["applied"] is not False or status not in {"answered", "resolved"}):
         raise ValueError(f"{path}.applied is false on an answer not yet passed to its owners, and absent otherwise")
+    if "reopened" in row and (type(row["reopened"]) is not int or row["reopened"] < 1):
+        raise ValueError(f"{path}.reopened must be a positive integer")
     if row.get("weight", "judgment") not in {"quick", "judgment"}:
         raise ValueError(f"{path}.weight must be quick or judgment")
     strings(row.get("context", []), f"{path}.context")
@@ -502,10 +506,12 @@ def validate(state):
             if "work" in row:
                 known(row["work"], f"{name}[{index}].work", by_id)
             if name == "discoveries":
-                if "status" in row and row["status"] not in {"open", "routed"}:
-                    raise ValueError(f"discoveries[{index}].status must be open or routed")
-                if "impact" in row and row["impact"] not in {"unrelated", "shared-contract", "requested-scope"}:
-                    raise ValueError(f"discoveries[{index}].impact must be unrelated, shared-contract, or requested-scope")
+                if "status" in row:
+                    one_of(row["status"], DISCOVERY_STATUSES, f"discoveries[{index}].status")
+                    if row["status"] == "open":
+                        text(row.get("id"), f"discoveries[{index}].id")
+                if "impact" in row:
+                    one_of(row["impact"], DISCOVERY_IMPACTS, f"discoveries[{index}].impact")
     discovery_ids = [row["id"] for row in state.get("discoveries", []) if "id" in row]
     if len(discovery_ids) != len(set(discovery_ids)):
         raise ValueError("discoveries contain duplicate ids")
@@ -705,11 +711,10 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
         elif decision.get("applied") is False:
             affected = ", ".join(entry["id"] for entry in decision.get("blocks", [])) or "the owners it affects"
             runnable.append(item("apply answer", decision["id"], f"pass {'the user' + chr(39) + 's answer' if decision['status'] == 'answered' else 'your call'} to {affected}, then run applied"))
-    for index, discovery in enumerate(state.get("discoveries", [])):
+    for discovery in state.get("discoveries", []):
         if discovery.get("status") == "open":
-            label = discovery.get("id") or f"discovery[{index}]"
             impact = f"[{discovery['impact']}] " if discovery.get("impact") else ""
-            runnable.append(item("route discovery", label, f"{impact}{discovery['text']}", discovery["date"]))
+            runnable.append(item("route discovery", discovery["id"], f"{impact}{discovery['text']}", discovery["date"]))
     open_rows = {row["id"] for row in state["work"] if row["state"] not in TERMINAL}
     for wait in state.get("waits", []):
         if wait.get("work", "program") in open_rows | {"program"}:

@@ -88,5 +88,6 @@ limits.
    resources, including device installs. Name resources that remaining stack layers still need.
    A failed issue update doesn't stop eligible cleanup.
 
-Report merged and pending PRs, the fixes made along the way, issue results, cleanup results, and
-blockers, and show the result. The report ends at what landed.
+Report merged and pending PRs, the fixes made along the way, any `Deferred` findings and `Stops`
+returned by PR or review steps, issue results, cleanup results, and blockers, and show the result.
+The report ends at what landed.

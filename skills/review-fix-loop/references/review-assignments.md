@@ -26,10 +26,10 @@ additional-review pool to supplement required assessments. Later stages add none
 owner-only prose review needs no additional agents.
 
 Resolve candidates through the model defaults and record unavailable targets with
-reasons. For each pool, use the sole eligible candidate when one remains, pick
-uniformly with a tool-backed draw when two or more are eligible, and skip an
-empty pool. Record one mapping per loop and retain it through repairs and any
-superseded first pass unless the selection policy changes.
+reasons. Dispatch each configured eligible additional-review target once in the
+first independent pass; skip any unavailable or empty pool. Record one mapping per
+loop and retain it through repairs and any superseded first pass unless the
+selection policy changes.
 
 ## Use the selected provider
 

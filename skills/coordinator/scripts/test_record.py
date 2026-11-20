@@ -1309,6 +1309,11 @@ class LifecycleMutationTests(RecordCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((fresh.parent / "reports").is_dir())
         state = json.loads(fresh.read_text())
+        committed_state = json.loads(subprocess.run(
+            ["git", "-C", str(fresh.parent), "show", "HEAD:program.json"],
+            capture_output=True, text=True, check=True,
+        ).stdout)
+        self.assertEqual(state, committed_state)
         self.assertEqual((state["title"], state["next"], state["work"], state["decisions"]),
                          ("Payments", "Add outcomes", [], []))
         self.assertEqual(state["request"], {"text": "Ship retries cleanly", "sources": ["User msg 1"]})
@@ -1319,6 +1324,24 @@ class LifecycleMutationTests(RecordCase):
         ], capture_output=True, text=True, env=env)
         self.assertEqual(again.returncode, 1)
         self.assertIn("already exists", again.stderr)
+
+        # Failed commit during init leaves neither file nor staged index entry.
+        broken = self.program.folder.parent / "broken-init" / "program.json"
+        broken.parent.mkdir()
+        subprocess.run(["git", "-C", str(broken.parent), "init", "-q"], check=True, env=env)
+        hook = broken.parent / ".git" / "hooks" / "pre-commit"
+        hook.write_text("#!/bin/sh\nexit 1\n")
+        hook.chmod(0o755)
+        failed = subprocess.run([
+            sys.executable, str(SCRIPT), "init", "--state", str(broken),
+            "--title", "Broken", "--goal", "Fail commit", "--chief", SESSION.format("chief"),
+            "--request", "Fail commit",
+        ], capture_output=True, text=True, env=env)
+        self.assertEqual(failed.returncode, 1)
+        self.assertFalse(broken.exists())
+        staged = subprocess.run(["git", "-C", str(broken.parent), "ls-files"],
+                                capture_output=True, text=True, check=True, env=env).stdout.strip()
+        self.assertEqual(staged, "")
 
     def test_grant_updates_grant_landing_authority_and_hosting(self):
         _, after, _ = self.event(
@@ -1336,7 +1359,10 @@ class LifecycleMutationTests(RecordCase):
         _, after, _ = self.event("grant", "--heartbeat", "20m task T1")
         self.assertEqual(after["grant"]["heartbeat"], "20m task T1")
         self.assertEqual(after["grant"]["start"], "All program outcomes")
-        self.refused("grant", "--landing", "Need source", message="--landing needs --source")
+        self.refused("grant", "--landing", "Need source", message="needs --source")
+        self.refused("grant", "--start", "Widen without source", message="needs --source")
+        self.refused("grant", "--resolve", "Widen without source", message="needs --source")
+        self.refused("grant", "--next", "line1\u2028line2", "--heartbeat", "10m", message="one short line")
         self.refused("grant", message="at least one field")
 
     def test_work_add_and_update(self):
@@ -1386,6 +1412,25 @@ class LifecycleMutationTests(RecordCase):
         self.assertEqual(decision(after, "W2-D9")["status"], "answered")
 
     def test_work_scrap_clears_blockers_and_answers_decision(self):
+        self.commit(lambda s: decision(s, "W6-D1").update(
+            question="Keep or scrap W6?",
+            options=[
+                {"label": "Rebase W6 onto main", "effect": "Keep W6", "recommended": True, "reversible": True},
+                {"label": "Scrap W6", "effect": "Close W6", "reversible": False},
+            ],
+        ))
+        # Opposing option choice is refused.
+        self.refused(
+            "work", "--id", "W6", "--scrap",
+            "--decision", "W6-D1", "--option", "1", "--answer-source", "User msg 11",
+            message="conflicts with chosen option",
+        )
+        # Unrelated decision is refused.
+        self.refused(
+            "work", "--id", "W1", "--scrap",
+            "--decision", "W6-D1", "--option", "2", "--answer-source", "User msg 11",
+            message="does not block W1",
+        )
         _, after, _ = self.event(
             "work", "--id", "W6", "--scrap",
             "--decision", "W6-D1", "--option", "2", "--answer-source", "User msg 11",
@@ -1393,6 +1438,78 @@ class LifecycleMutationTests(RecordCase):
         self.assertEqual(work(after, "W6")["state"], "scrapped")
         self.assertNotIn("blocked", work(after, "W6"))
         self.assertEqual(decision(after, "W6-D1")["status"], "answered")
+
+    def test_work_rebase_demotes_readiness_refreshes_provisional_and_handles_inbox_picks(self):
+        # 1. Rebasing a ready row invalidates stale readiness.
+        self.commit(ready)
+        self.refused("work", "--id", "W1", "--stack-on", "W2-L1", "--scope", "x", message="--stack-on requires --rebase-onto")
+        _, rebased, _ = self.event("work", "--id", "W1", "--rebase-onto", "release")
+        w1 = work(rebased, "W1")
+        self.assertEqual(w1["state"], "in-review")
+        self.assertTrue(all(layer["status"] != "ready" for layer in w1["layers"]))
+
+        # 2. Dead-base stored pick in mixed batch leaves dead-base pick for atomic work --decision --stored.
+        self.commit(lambda s: (
+            work(s, "W1").update(state="scrapped"),
+            work(s, "W1").pop("blocked", None),
+            s["work"].append({
+                "id": "W9", "title": "Alt parent", "repo": "acme/app", "kind": "outcome",
+                "state": "in-review", "finishLine": "land", "checkedAt": "2026-11-02T17:00:00Z",
+                "owner": {"name": "Alt owner", "start": "top-level", "route": "t3"},
+                "layers": [{"id": "W9-L1", "branch": "feat/w9", "status": "open", "url": "https://github.com/acme/app/pull/99", "base": "main"}],
+            }),
+            s["decisions"].append({
+                "id": "W2-D8", "question": "W1 was scrapped. Scrap or rebase W2?",
+                "date": "2026-11-02T17:10:00Z", "source": "Coordinator", "status": "open",
+                "options": [
+                    {"label": "Rebase onto feat/w9", "effect": "Stack W2 on W9", "recommended": True, "reversible": True},
+                    {"label": "Scrap W2", "effect": "Close W2", "reversible": False},
+                ],
+                "blocks": [{"id": "W2", "phase": "proof"}],
+            }),
+        ))
+        current = self.head()
+        d8 = decision(current, "W2-D8")
+        d6 = decision(current, "W6-D1")
+        picks_file = self.program.folder.parent / "picks.jsonl"
+        doc_d8 = {
+            "id": f"{d8['id'].encode().hex()}-{revision(d8)}", "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+            "data": {"decision": "W2-D8", "revision": revision(d8), "option": 1, "label": "Rebase onto feat/w9"},
+        }
+        doc_d6 = {
+            "id": f"{d6['id'].encode().hex()}-{revision(d6)}", "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
+            "data": {"decision": "W6-D1", "revision": revision(d6), "option": 1, "label": d6["options"][0]["label"]},
+        }
+        picks_file.write_text("\n".join([json.dumps(doc_d8), json.dumps(doc_d6), json.dumps({"count": 2})]) + "\n")
+
+        _, after_batch, batch_res = self.event("answer", "--stored", str(picks_file))
+        self.assertEqual(decision(after_batch, "W6-D1")["status"], "answered")
+        self.assertEqual(decision(after_batch, "W2-D8")["status"], "open")
+        self.assertIn("atomic work transition needed for W2-D8", batch_res.stdout)
+
+        # Now apply W2-D8 atomically via work --rebase-onto --stack-on --decision --stored; provisional text refreshes!
+        _, after_rebase, rebase_res = self.event(
+            "work", "--id", "W2", "--rebase-onto", "feat/w9", "--stack-on", "W9-L1",
+            "--decision", "W2-D8", "--stored", str(picks_file),
+        )
+        w2 = work(after_rebase, "W2")
+        self.assertEqual(w2["provisional"]["on"], ["W9"])
+        self.assertIn("W9", w2["provisional"]["basis"])
+        self.assertIn("W9", w2["provisional"]["clears"])
+        self.assertNotIn("W1", w2["provisional"]["clears"])
+        self.assertEqual(decision(after_rebase, "W2-D8")["status"], "answered")
+        self.assertIn("delete:", rebase_res.stdout)
+
+    def test_reopen_bumps_revision_rejecting_prior_opening_picks(self):
+        d6 = decision(self.head(), "W6-D1")
+        old_rev = revision(d6)
+        _, _, _ = self.event("answer", "--decision", "W6-D1", "--option", "1", "--source", "User msg 1")
+        _, reopened, _ = self.event("reopen", "--decision", "W6-D1", "--why", "Reconsider")
+        new_d6 = decision(reopened, "W6-D1")
+        self.assertEqual(new_d6["reopened"], 1)
+        self.assertNotEqual(old_rev, revision(new_d6))
+        stale_prompt = f'Decision "W6-D1" (revision {old_rev}): I choose option 1: {quoted(d6["options"][0]["label"])}\n'
+        self.refused("answer", "--pasted", "--source", "Old copy", stdin=stale_prompt, message="ask again")
 
     def test_reopen_and_withdraw_preserve_history(self):
         resolved = next(row for row in self.state["decisions"] if row["status"] == "resolved")
@@ -1473,7 +1590,28 @@ class LifecycleMutationTests(RecordCase):
                              for entry in found_after["runnable"]))
         self.refused("discovery", "--id", "W1-F1", "--route", "Again", message="already routed")
 
-        # Coordinator can also add a discovery directly.
+        # Conflicting followup ID from another owner is refused.
+        w2_report = self.program.folder / "reports" / "W2.md"
+        w2_report.write_text(
+            "```json\n"
+            + json.dumps({
+                "outcome": "W2", "state": "in-review",
+                "followups": [{"id": "W1-F1", "text": "Different finding colliding on ID"}],
+            })
+            + "\n```\n"
+        )
+        self.refused("report", "--work", "W2", message="already belongs to another discovery")
+
+        # Coordinator can add an open discovery without --id; it gets an auto-allocated routable ID.
+        _, opened, _ = self.event("discovery", "--add", "--origin", "PR #10 review",
+                                  "--text", "Needs routing later", "--impact", "unrelated")
+        auto_d = next(row for row in opened["discoveries"] if row["text"] == "Needs routing later")
+        self.assertTrue(auto_d["id"].startswith("D"))
+        self.assertEqual(auto_d["status"], "open")
+        _, routed_auto, _ = self.event("discovery", "--id", auto_d["id"], "--route", "Snip #43")
+        self.assertEqual(next(row for row in routed_auto["discoveries"] if row.get("id") == auto_d["id"])["status"], "routed")
+
+        # Coordinator can also add an already-routed discovery directly.
         _, added, _ = self.event("discovery", "--add", "--id", "D99", "--origin", "PR #10 review",
                                  "--text", "Clean up unused flag", "--impact", "unrelated",
                                  "--route", "Snip #42")

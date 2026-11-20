@@ -106,10 +106,13 @@ evidence, and report stalled disputes rather than repeating equivalent passes.
   unaffected work, then return every other stop (including product, scope,
   irreversible, or caller-reserved decisions) to the caller with the decision
   needed. A stop blocks completion.
-- **Deferred findings:** carry every `Defer` item forward (with origin, evidence,
-  reason, and impact) into the final report so the caller routes it. If a
-  deferral has `shared-contract` or `requested-scope` impact, surface it promptly
-  (and treat an unauthorized split of requested scope as a stop).
+- **Deferred findings:** when a session or workflow caller owns routing, carry
+  every `Defer` item forward (with origin, evidence, reason, and impact) into the
+  final report so the caller routes it — surfacing `shared-contract` or
+  `requested-scope` impact promptly, and treating an unauthorized split of
+  requested scope as a stop. When running standalone directly for the user, give
+  each `Defer` item a real durable home (a tracker issue or Snip Snap ID) before
+  finishing and report it.
 
 ## Route repairs
 
@@ -157,10 +160,11 @@ Repeat Validate and settle and Route repairs until no routed fixes or checkpoint
 work remain.
 
 **Final integrated check:** if code or substantive-instruction repairs ran after
-initial discovery and Primary did not review the final repairs, run one fresh
-Primary task over all repairs since initial discovery on the current snapshot to
-check their interactions, requested behavior, and current verification. Process
-its results through Validate and settle.
+initial discovery, ensure a fresh Primary assessment has checked **all accumulated
+repairs since initial discovery and their interactions** on the current snapshot
+(reusing a Primary pass only when its assessed scope already covered every repair
+with no later repair after it, or when that scope survived wording-polish or
+clean-rebase carry-forward). Process its results through Validate and settle.
 
 ## Finish
 
@@ -169,21 +173,23 @@ findings and checks are settled on it, and no accepted code or
 substantive-instruction fixes remain. Missing required coverage, open accepted
 findings, and unresolved stops block completion.
 
-When recording completion on a committed head (such as a branch headed for a PR),
-post a `review-fix-loop` commit status on the final reviewed SHA (or the clean
-disjoint rebase or wording-polish SHA carrying forward its coverage), with a
-description of at most 140 characters:
+When reviewing a committed head, build and return the exact `review-fix-loop`
+commit status command for the final covered SHA (including a clean disjoint rebase
+or wording-polish SHA carrying forward its coverage), with a description of at most
+140 characters:
 
 ```sh
 gh api repos/<owner>/<repo>/statuses/<reviewed sha> -f state=success \
   -f context=review-fix-loop -f description="<workflow_id>: <N> passes"
 ```
 
-Run it once that SHA is on the remote (GitHub rejects an unpushed SHA; a PR is
-not needed). Until then, hand the exact command unchanged to whoever pushes that
-SHA. When posting fails (missing permission, fork), report it as a blocker;
-another review run will not fix it. A local-diff review with no PR planned
-finishes with its snapshot evidence.
+Hand this command unchanged to the publishing workflow (which runs it once that SHA
+is on the remote and its preparation checks cover the change). Do not post a PR
+merge-gate status from a standalone review run unless the caller explicitly asked
+to stamp it and confirmed preparation checks cover the final SHA. When posting
+fails (missing permission, fork), report it as a blocker; another review run will
+not fix it. A local-diff review with no PR planned finishes with its snapshot
+evidence.
 
 In the handoff to the caller, report:
 - reviewed base and final snapshot/SHA (plus any carried-forward rebase or polish note)

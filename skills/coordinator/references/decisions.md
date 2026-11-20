@@ -70,9 +70,11 @@ Answers count only from the user's own messages, host input tools, or verified p
   decision raises a reopen request.
 
 After `answer` or `resolve`, update affected owners, dependencies, and landing releases, then run
-`record.py applied`. For a dead-base scrap-or-rebase answer, record the answer and work transition
-atomically with `record.py work --scrap` or `--rebase-onto` plus `--decision`. Withdraw obsolete
-decisions with `record.py withdraw`.
+`record.py applied`. For a dead-base scrap-or-rebase answer (whether direct, `--pasted`, or
+`--stored`), `answer` leaves the dead-base pick for atomic handling; record the answer and work
+transition together with `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID>`
+(passing `--option`/`--text` + `--answer-source`, `--pasted` + `--answer-source`, or `--stored <file>`).
+Withdraw obsolete decisions with `record.py withdraw`.
 
 ## Reopen
 

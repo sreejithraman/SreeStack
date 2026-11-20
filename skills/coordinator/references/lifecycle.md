@@ -12,7 +12,9 @@ when active owners are running and timing is unknown, and record a timing reason
 lengthening unchanged waits.
 
 - **0 running owners, waiting purely on the user:** pause the heartbeat (`enabled: false`) so idle
-  ticks don't compact the thread — the user's reply or answer wake resumes you immediately.
+  ticks don't compact the thread — the user's reply or answer wake resumes you immediately. On the
+  first ordinary wake or Inbox answer that restores running owners or external waits, explicitly
+  re-enable the paused heartbeat (`enabled: true`) and verify `enabled` and `nextRunAt`.
 - **0 running owners, waiting only on slow external events** (upstream issue, teammate review):
   lengthen to 1–6 hours with the reason in `next`.
 - **Long-lived, heavily compacted coordinator thread:** move to a fresh thread via `record.py move`

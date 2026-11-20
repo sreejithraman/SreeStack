@@ -557,15 +557,16 @@ Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CL
 publication does not substitute for that link. Layers get `pr`’s Prepare and Review steps before
 `submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
 Each layer runs its held `review-fix-loop` status command unchanged once its SHA is pushed;
-after a restack, the loop reruns for that layer as a repair pass.
+after a restack, clean disjoint rebases carry forward coverage while edits or interacting base
+changes run a repair pass.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
 on request, to match `pr`. Branch deletion after a merge goes through `repo-cleanup`
 rather than `sync --prune`, which doesn't check merge-time heads. Layers split only
 for dependency order and reviewability, and can emerge as the work takes shape;
 tests and docs stay with the behavior they prove, and independent outcomes get
-separate stacks or PRs even inside one feature. Incidental fixes follow
-Implement's scope rule rather than riding along.
+separate stacks or PRs even inside one feature. Incidental fixes stay out of the
+current stack as separate PRs, stacks, or follow-ups.
 
 The entrypoint keeps common calls and first-action guards inline; installation,
 state fields, and exit-code details live with command behavior. Existing recovery

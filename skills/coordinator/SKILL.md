@@ -107,7 +107,10 @@ owners are adopted; and the grant, page, heartbeat, and answer wake are set.
 Start ready outcomes per [dependencies](references/dependencies.md) and
 [To Tasks' ready rule](../to-tasks/SKILL.md#ready) (including provisional starts). Unrelated
 outcomes never wait on blocked ones. When starting **3+ homogeneous outcomes**, run one canary
-unit through kickoff and proof first so kickoff or environment flaws cost one owner instead of all.
+unit through kickoff and proof first so kickoff or environment flaws cost one owner instead of all:
+hold the remaining planned rows with `record.py work --id <W> --blocked "Waiting on canary <W1> kickoff and proof"`,
+and clear them with `--clear-blocked` once the canary proves the kickoff (so `status --turn-end`
+does not treat held rows as runnable).
 
 Fill [owner kickoff](assets/owner-kickoff.md) — starting with `/implement` (Claude), `$implement`
 (Codex), or a plain instruction to follow the `implement` skill (other providers) — and launch each

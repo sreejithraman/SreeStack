@@ -44,23 +44,15 @@ When this thread's model or provider changes in place (such as Claude ↔ Codex 
 via `t3_thread_configure` or the model picker), `chief` and the bound heartbeat stay the same, so
 do not run `record.py move`. Instead:
 
-1. **Leaving Claude:** delete the old webhook wake task (`delete_scheduled_task` using the task ID
-   in `grant.wake`), overwrite `grant.wake` via `record.py grant --wake "None (<reason>)"` so
-   future heartbeat ticks stop looking for Claude DB picks, and tell the user Send answer on the old
-   Claude artifact no longer reaches you.
-2. **Entering Claude:** publish a private Claude artifact, set up tap-to-answer under
-   [hosting](hosting.md), and update `grant.wake`.
-3. **Publish on the new backend:** force-publish under [hosting](hosting.md), record any new URL via
-   `record.py grant --hosting`, tell the user the old hosted URL is now frozen, and verify the
-   existing heartbeat's `enabled` and `nextRunAt`.
+1. Run the single backend and wake transition + forced publish under [hosting](hosting.md) (which
+   drains/turns off any old Claude wake, publishes once on the new backend, sets up tap-to-answer
+   once if entering Claude, and updates `grant.hosting` and `grant.wake`).
+2. Verify the existing heartbeat's `enabled` and `nextRunAt`.
 
 ## After either
 
-The new coordinator keeps the same program folder and git history, publishes the page with its
-session's backend (recording any new URL via `record.py grant --hosting` and telling the user the
-old hosted URL is now frozen), sets up its own heartbeat bound to its thread (`grant.heartbeat`),
-and updates `grant.wake`: on Claude, set up tap-to-answer; on any non-Claude provider, delete any
-remaining old webhook task (`delete_scheduled_task`) and overwrite `grant.wake` (such as
-`"None (Sites page; Copy answer only)"`) so heartbeat ticks never try to read Claude DB picks.
-The rest of the grant stays unchanged. Reconcile state as on resume, send owners their updated
-route, watch any delegated owner's pending PRs, and ask any remaining old thread to unwatch.
+The new coordinator keeps the same program folder and git history, runs the single backend and wake
+transition + forced publish under [hosting](hosting.md), and sets up its own heartbeat bound to its
+thread (`grant.heartbeat`). The rest of the grant stays unchanged. Reconcile state as on resume,
+send owners their updated route, watch any delegated owner's pending PRs, and ask any remaining old
+thread to unwatch.

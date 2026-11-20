@@ -102,10 +102,11 @@ Done when required assertions pass (or exact gaps are reported) and the user can
 - **PR:** publish and watch to the requested state via [PR](../pr/SKILL.md).
 - **Land:** land via [Merge](../merge/SKILL.md) (stacks bottom-up as one merge set).
 
-An open decision affecting scope blocks landing. Coordinate cross-layer stack changes via
-[gh-stack](../gh-stack/SKILL.md). When a session caller supplies a kickoff, grant, report format,
-or landing-release rule, follow it: run your own review loop, stop at readiness when landing
-requires caller release, and land only on that release.
+An open decision affecting scope blocks landing; provisional work follows
+[provisional work](references/provisional.md) and never merges (`Land` becomes `Try`). Coordinate
+cross-layer stack changes via [gh-stack](../gh-stack/SKILL.md). When a session caller supplies a
+kickoff, grant, report format, or landing-release rule, follow it: run your own review loop, stop
+at readiness when landing requires caller release, and land only on that release.
 
 ## Keep scope and decisions
 
