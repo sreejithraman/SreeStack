@@ -4,13 +4,12 @@
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
 
-from render_dashboard import page_files
+from render_dashboard import git_env, page_files
 
 
 REFRESH = Path(__file__).resolve().parents[1] / "assets" / "chief-refresh.js"
@@ -46,12 +45,21 @@ def git_root(path: Path) -> Path | None:
         return None
     if probe.is_file():
         probe = probe.parent
-    env = {k: v for k, v in os.environ.items() if k not in {"GIT_CEILING_DIRECTORIES", "GIT_DIR", "GIT_WORK_TREE"}}
+    env = git_env()
     result = subprocess.run(
         ["git", "-C", str(probe), "rev-parse", "--show-toplevel"],
         capture_output=True, text=True, env=env,
     )
-    return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
+    if result.returncode == 0 and result.stdout.strip():
+        return Path(result.stdout.strip()).resolve()
+    git_dir = subprocess.run(
+        ["git", "-C", str(probe), "rev-parse", "--absolute-git-dir"],
+        capture_output=True, text=True, env=env,
+    )
+    if git_dir.returncode == 0 and git_dir.stdout.strip():
+        resolved_git_dir = Path(git_dir.stdout.strip()).resolve()
+        return resolved_git_dir.parent if resolved_git_dir.name == ".git" else resolved_git_dir
+    return None
 
 
 def is_record_repo(repo_root: Path) -> bool:
@@ -59,7 +67,7 @@ def is_record_repo(repo_root: Path) -> bool:
         return True
     head = subprocess.run(
         ["git", "-C", str(repo_root), "cat-file", "-e", "HEAD:program.json"],
-        capture_output=True,
+        capture_output=True, env=git_env(),
     )
     return head.returncode == 0
 

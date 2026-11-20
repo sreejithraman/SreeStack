@@ -1934,6 +1934,15 @@ class LifecycleMutationTests(RecordCase):
             ], capture_output=True, text=True, env={**env, "GIT_CEILING_DIRECTORIES": str(project)})
             self.assertEqual(ceiling_refused.returncode, 1)
             self.assertIn("inside git repository", ceiling_refused.stderr)
+            # Exported GIT_DIR/GIT_WORK_TREE for an unrelated repo must not hijack init's git writes.
+            exclude_before = (project / ".git" / "info" / "exclude").read_text(encoding="utf-8")
+            isolated = subprocess.run([
+                sys.executable, str(SCRIPT), "init", "--state", str(root / "isolated" / "program.json"),
+                "--title", "Isolated", "--goal", "Stay isolated", "--chief", SESSION.format("chief"), "--request", "Stay isolated",
+            ], capture_output=True, text=True, env={**env, "GIT_DIR": str(project / ".git"), "GIT_WORK_TREE": str(project)})
+            self.assertEqual(isolated.returncode, 0, isolated.stderr)
+            self.assertEqual((project / ".git" / "info" / "exclude").read_text(encoding="utf-8"), exclude_before)
+            self.assertTrue((root / "isolated" / ".git").is_dir())
 
     def test_programs_lists_containers_with_prune_readiness(self):
         with tempfile.TemporaryDirectory() as sandbox:
@@ -2061,9 +2070,16 @@ class LifecycleMutationTests(RecordCase):
             self.assertIn("heartbeat=unset", pr_item["keepReasons"])
             self.assertIn("wake=unset", pr_item["keepReasons"])
 
+            # Ambiguous None-prefixed automation text stays keep; exact None (<reason>) clears it.
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(pr_state),
                 "--source", "User msg 2", "--start", "All", "--resolve", "Reversible", "--user", "Merges",
+                "--heartbeat", "None? old task still needs checking", "--wake", "None (program done)",
+            ], check=True, capture_output=True, text=True, env=env)
+            self.assertFalse(list_json()["PR Ready"]["readyToPrune"])
+
+            subprocess.run([
+                sys.executable, str(SCRIPT), "grant", "--state", str(pr_state),
                 "--heartbeat", "None (program done)", "--wake", "None (program done)",
             ], check=True, capture_output=True, text=True, env=env)
             reopened = pr_container / "site" / ".sites-checkout"

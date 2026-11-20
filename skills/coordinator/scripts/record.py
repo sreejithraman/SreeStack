@@ -25,7 +25,7 @@ from urllib.parse import unquote, urlsplit
 from render_dashboard import (ACTIVE, DECISION_KEYS, DISCOVERY_IMPACTS, FINISH_LINES, GRANT, HALTING, IMAGE_SUFFIXES, LAYER_KEYS,
                               LIVE_LAYERS, OWNER_KEYS, OPTION_KEYS, PENDING_LANDINGS, PHASES, PICTURE_SHAPES,
                               PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
-                              check_pictures, committed, content_name, dead_base, effective_finish, fields, git,
+                              check_pictures, committed, content_name, dead_base, effective_finish, fields, git, git_env,
                               hexed, known_keys, layout, now, observation, open_blocks, page_files,
                               pending_landing, place, quoted, recorded_threads, records, revision, stage_page, unsatisfied, validate)
 
@@ -1447,10 +1447,9 @@ def git_dir_for(folder):
         return None
     if probe.is_file():
         probe = probe.parent
-    env = {k: v for k, v in os.environ.items() if k not in {"GIT_CEILING_DIRECTORIES", "GIT_DIR", "GIT_WORK_TREE"}}
     result = subprocess.run(
         ["git", "-C", str(probe), "rev-parse", "--absolute-git-dir"],
-        capture_output=True, text=True, env=env,
+        capture_output=True, text=True, env=git_env(),
     )
     return Path(result.stdout.strip()).resolve() if result.returncode == 0 and result.stdout.strip() else None
 
@@ -1460,16 +1459,20 @@ def repo_status(folder):
     resolved = folder.resolve()
     if not (resolved / ".git").is_dir():
         return None
-    top = subprocess.run(["git", "-C", str(resolved), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    env = git_env()
+    top = subprocess.run(["git", "-C", str(resolved), "rev-parse", "--show-toplevel"], capture_output=True, text=True, env=env)
     if top.returncode != 0 or Path(top.stdout.strip()).resolve() != resolved:
         return None
-    status = subprocess.run(["git", "-C", str(resolved), "status", "--porcelain"], capture_output=True, text=True)
+    status = subprocess.run(
+        ["git", "-C", str(resolved), "status", "--porcelain", "--untracked-files=all"],
+        capture_output=True, text=True, env=env,
+    )
     return status.stdout.strip() if status.returncode == 0 else None
 
 
 def automation_cleared(value):
-    """True when a grant automation field is explicitly recorded as None (...)."""
-    return bool(value) and bool(re.match(r"^none(?:\b|$)", value.strip(), re.I))
+    """True when a grant automation field is explicitly recorded as None or None (<reason>)."""
+    return bool(value) and bool(re.match(r"^none(?:\s*\([^)]*\S[^)]*\))?$", value.strip(), re.I))
 
 
 def write_git_excludes(state_file):
@@ -1549,7 +1552,7 @@ class Record:
                 raise Refused(f"{self.file.name} is already tracked or staged in git")
             if tracked:
                 raise Refused(f"{self.file.parent} is an existing git repository with tracked files; {hint}")
-            if subprocess.run(["git", "-C", str(target), "rev-parse", "--verify", "-q", "HEAD"], capture_output=True).returncode == 0:
+            if subprocess.run(["git", "-C", str(target), "rev-parse", "--verify", "-q", "HEAD"], capture_output=True, env=git_env()).returncode == 0:
                 head_files = [line for line in self.git("ls-tree", "--name-only", "HEAD").splitlines() if line]
                 if self.file.name in head_files:
                     raise Refused(f"{self.file.name} already exists in HEAD (staged deletion); settle it instead of running init")

@@ -38,7 +38,8 @@ to update `next` in the same commit; run `<command> --help` for full flags):
 | Check forge/threads and verdict | `status` (also `--heartbeat`, `--turn-end`, `--json`, `--exit-code`) |
 
 Each write command stamps ISO UTC times from its own clock, validates through `render_dashboard.py`,
-commits, and stages `command-center.next.html` (`status` and `programs` are read-only). A refusal
+commits, and stages `command-center.next.html` (`programs` is read-only; `status` updates
+observations and `seen` state as needed; `move` commits `chief` without staging a page). A refusal
 changes nothing. If it refuses over an uncommitted `program.json` change, show the printed diff to
 the user and settle it before building on it (`render_dashboard.py --check` + commit to keep, or
 `git checkout HEAD -- program.json` to discard).
