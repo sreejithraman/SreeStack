@@ -171,6 +171,20 @@ class CheckRunnerTests(unittest.TestCase):
     def test_arguments_run_with_the_environment_python_and_keep_its_exit_status(self):
         self.run_checks("-c", "raise SystemExit(7)", code=7)
 
+    def test_parallel_runner_reports_seed_workers_and_proves_every_file_ran(self):
+        result = self.run_checks()
+        self.assertIn("Ran 9 tests across 9 files", result.stdout)
+        self.assertIn("seed=", result.stdout)
+
+        env = {**os.environ, "CHECK_SEED": "42", "CHECK_WORKERS": "2"}
+        seeded = subprocess.run(self.runner(), text=True, capture_output=True, env=env)
+        self.assertEqual(seeded.returncode, 0, seeded.stdout + seeded.stderr)
+        self.assertIn("with 2 workers (seed=42)", seeded.stdout)
+
+        (self.repo / "scripts/test_fixture.py").unlink()
+        missing = self.run_checks(code=1)
+        self.assertIn("No test_*.py files found in scripts", missing.stderr)
+
 
 class BarePythonTests(unittest.TestCase):
     def test_missing_dependency_names_the_runner(self):
