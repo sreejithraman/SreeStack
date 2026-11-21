@@ -1,62 +1,70 @@
 # Models
 
-The table sets defaults for new launches and availability recovery; it never replaces a running
-agent or overrides the model the user picked for a thread.
+These defaults apply to new launches and availability recovery; they never replace a running agent
+or override the model the user picked for a thread.
 
 ## Model defaults
 
-| Purpose | Provider | Model | Effort | Availability fallback | Review pool |
-| --- | --- | --- | --- | --- | --- |
-| Coordinator | Codex | GPT-6.2 Sol | High | Claude / Opus 5.5 / High | — |
-| UI implementation and fixes | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
-| Simple implementation and fixes | Codex | GPT-6.2 Sol | Medium | — | — |
-| Standard implementation and fixes | Codex | GPT-6.2 Sol | High | Claude / Opus 5.5 / High | — |
-| Hardest implementation and fixes | Codex | GPT-6.2 Astra | X-High | Claude / Fable 5.2 / X-High | — |
-| Document writing and revision | Antigravity | Gemini 4 Neon | High | Claude / Opus 5.5 / Medium → Codex / GPT-6.2 Sol / Medium | — |
-| Routine UI operation | Codex | GPT-6.1 Terra | Medium | — | — |
-| Demanding UI operation | Codex | GPT-6.1 Terra | High | — | — |
-| Complex UI operation | Codex | GPT-6.1 Terra | X-High | — | — |
-| General research | Codex | GPT-6.2 Sol | Medium | — | — |
-| YouTube retrieval | Antigravity | Gemini 4 Hydrogen High | High | — | — |
-| X retrieval | Grok | Grok 4.7 | High | — | — |
-| Primary review | Codex | GPT-6.2 Sol | High | — | — |
-| Ponytail review | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
-| Thermo review | Codex | GPT-6.2 Sol | High | — | — |
-| Adversarial review | Claude | Opus 5.5 | High | Codex / GPT-6.2 Sol / High | — |
-| Additional review | Antigravity | Gemini 4 Hydrogen High | High | — | Gemini |
+### Work and coordination
+- **Coordinator:** Codex GPT-6.2 Sol High → Claude Opus 5.5 High → Devin Opus 5.5 High → Antigravity Opus 5.5 High
+- **UI implementation and fixes:** Claude Opus 5.5 High → Devin Opus 5.5 High → Antigravity Opus 5.5 High → Codex GPT-6.2 Sol High
+- **Simple implementation and fixes:** Codex GPT-6.2 Sol Medium
+- **Standard implementation and fixes:** Codex GPT-6.2 Sol High → Claude Opus 5.5 High → Devin Opus 5.5 High → Antigravity Opus 5.5 High
+- **Hardest implementation and fixes:** Claude Fable 5.2 X-High → Codex GPT-6.2 Astra X-High
+- **Document writing and revision:** Antigravity Gemini 4 Neon High → Devin Gemini 4 Neon High → Claude Opus 5.5 Medium → Devin Opus 5.5 Medium → Antigravity Opus 5.5 Medium → Codex GPT-6.2 Sol Medium
 
-The Primary review row also sets the model for cross-judges, single-reviewer audits, and second
-opinions. Some providers (such as Gemini) encode effort in the model ID or expose a separate
-thought-level option; resolve exact IDs and options from live host capabilities.
+### UI operation
+- **Routine UI operation:** Codex GPT-6.1 Terra Medium
+- **Demanding UI operation:** Codex GPT-6.1 Terra High
+- **Complex UI operation:** Codex GPT-6.1 Terra X-High
+
+### Research and retrieval
+- **General research:** Codex GPT-6.2 Sol Medium
+- **YouTube retrieval:** Antigravity Gemini 4 Hydrogen High
+- **X retrieval:** Grok 4.7 High
+
+### Reviews
+- **Primary review:** Codex GPT-6.2 Sol High
+- **Ponytail review:** Claude Opus 5.5 High → Devin Opus 5.5 High → Antigravity Opus 5.5 High → Codex GPT-6.2 Sol High
+- **Thermo review:** Codex GPT-6.2 Sol High
+- **Adversarial review:** Claude Opus 5.5 High → Devin Opus 5.5 High → Antigravity Opus 5.5 High → Codex GPT-6.2 Sol High
+- **Additional review (Gemini review pool):** Antigravity Gemini 4 Hydrogen High → Devin Gemini 4 Hydrogen High
+
+This list is the source of truth for availability fallbacks: try a job's listed entries left to
+right on quota or unavailability; never invent an unlisted substitute. Match only the exact
+standalone model (not a hybrid like Devin `Fusion`), resolving exact model IDs and effort options
+from live host capabilities (some providers encode effort in the model ID or expose a separate
+thought-level option). A caller or project choice settles multiple model-ID matches; otherwise
+report the ambiguity. Pass only the effort option; leave other options (like Devin's `mode` and
+`speed`) at host defaults unless the user sets them.
 
 ## Choose a model
 
-| Job | Row |
+| Job | Default |
 | --- | --- |
 | Running a multi-outcome coordinator or its program | Coordinator |
-| Source review, including of UI | Its named review row |
-| Research-only source reading, comparison, synthesis, or retrieval, including of UI | General research, or the YouTube or X row |
+| Source review, including of UI | Its named review default, or Primary review |
+| Research-only source reading, comparison, synthesis, or retrieval, including of UI | General research, YouTube retrieval, or X retrieval |
 | Dedicated UI operation (see below), including verifying an interactive workflow | Routine, Demanding, or Complex UI operation |
 | Building or changing UI, however small | UI implementation at any difficulty, never Simple or Hardest |
 | Writing or revising prose, however small (skills, agent instructions, READMEs, docs, and their fixes) | Document writing and revision |
 | Diagnosis, design decisions, other code, builds, tests, refactoring, config, non-interactive verification, or code fixes | Simple, Standard, or Hardest implementation |
 
-| Difficulty row | Use for |
+| Difficulty | Use for |
 | --- | --- |
 | Simple | Evidence clearly shows a small, mechanical task with an obvious check (typo, rename, formatting) |
 | Standard | Default; choose whenever Simple is in doubt |
 | Hardest | Rare cases where evidence shows Standard is insufficient: unresolved architectural tradeoffs, subtle state or concurrency invariants, or repeated failed approaches |
 
-Mixed prose and code keeps one owner on the code's row. Executable files and tests are code.
+Mixed prose and code keeps one owner on the code's default. Executable files and tests are code.
 
-### Raise the row
+### Raise the difficulty
 
-Applies to the next launch; a running owner stays unless replaced.
-
-Raise one row (or straight to Hardest) when evidence shows the work is harder. A product failure is
-a finding to diagnose or fix, not a reason to raise the row. A raised row holds for the work and its
-fixes unless a UI row applies. High-stakes prose stays on Document writing and revision; only
-repeated failed attempts raise it to Standard or Hardest.
+Raise one tier (or straight to Hardest) for the next launch when evidence shows the work is harder;
+a running owner stays unless replaced. A product failure is a finding to diagnose or fix, not a
+reason to raise the difficulty. A raised difficulty holds for the work and its fixes unless UI
+implementation applies. High-stakes prose stays on Document writing and revision; only repeated
+failed attempts raise it to Standard or Hardest.
 
 ## Operate a UI
 

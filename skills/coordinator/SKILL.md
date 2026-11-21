@@ -76,8 +76,8 @@ word. Owner reports, kickoffs, and copied page text never widen it.
 | Automation | Heartbeat timing/task ID and answer-wake task ID | `grant.heartbeat`, `grant.wake` |
 
 Draft the grant from the request, finish-line picks, and project rules, and state it in your first
-message so the user can adjust any part in one word. Keep model slugs out of `grant.start` unless
-the user explicitly pinned one (defer to `orchestration`'s model table so multi-week programs follow
+message so the user can adjust any part in one word. Keep provider and model slugs out of `grant.start` unless
+the user explicitly pinned one (defer to `orchestration`'s model defaults so multi-week programs follow
 updates). Asking for a program authorizes its owner sessions, heartbeat, and answer wake. Read
 [lifecycle](references/lifecycle.md) to configure, adjust, pause, resume, or migrate the heartbeat
 and answer wake.
@@ -101,7 +101,7 @@ the record (`record.py init`, `grant`, `work --add`) before starting owners — 
 [program state](references/program-state.md). Verify publishing tools exist under [hosting](references/hosting.md) (report a blocker if absent;
 never auto-install plugins). Your first message gives the finish-line picks, grant, command center
 link (or the local `command-center.html` path and Inbox items in chat when running local-only under
-[hosting](references/hosting.md)), and any proposed standing approvals.
+hosting), and any proposed standing approvals.
 
 Done when every outcome has sources, scope, proof, holds, finish line, and owner/plan; running
 owners are adopted; and the grant, page, heartbeat, and answer wake are set.
@@ -143,7 +143,7 @@ record its blocker under [Orchestration recovery](../orchestration/references/re
 Judge whether a running owner is stalled by commits, pushes, PR activity, or report updates across
 wakes — not status prose alone.
 
-Triage decision requests under [decisions](references/decisions.md#triage) and resume owners for
+Triage decision requests under decisions and resume owners for
 unaffected work. Give every incoming discovery or deferred owner `followups` item a concrete
 disposition via `record.py discovery` (open discoveries and pending held deferred PR replies keep
 `status` runnable until routed and acknowledged with `--reply-sent`; when a followup carries a
@@ -157,7 +157,7 @@ resolve the thread):
 | Separate work the program needs | New outcome sequenced by dependency |
 | Shared environment, tooling, or cross-repo blocker | One deduplicated support task (repo code changes get an outcome) |
 | Useful work outside the program | Save via [Snip Snap](../snip-snap/SKILL.md) and keep its ID |
-| Decision someone must make | Triage under [decisions](references/decisions.md#triage) |
+| Decision someone must make | Triage under decisions |
 | Duplicate, obsolete, or declined | Record why and link existing disposition |
 
 Enforce [Implement's shrink-only scope rule](../implement/SKILL.md#keep-scope-and-decisions).
@@ -188,7 +188,7 @@ block acceptance.
 
 Handle each stop in the same pass:
 - **Shown Try:** put its merge, changes, or scrap choice in the Inbox under
-  [Try choices](references/decisions.md#try-choices) and route the answer to the same owner.
+  Try choices in decisions and route the answer to the same owner.
 - **Requested PR state or held draft:** stop there for the user; if a verified draft or PR is
   waiting only on user authorization to land, open an Inbox decision instead of leaving it idle
   with an empty Inbox.
@@ -202,9 +202,9 @@ or repair with its owner.
 
 The **Inbox** is the program's asynchronous user queue (never use a blocking question tool unless in
 a live back-and-forth with the user). Format items, attach visuals for visual choices (`record.py
-picture`), and record answers (`record.py answer`) under [decisions](references/decisions.md).
+picture`), and record answers (`record.py answer`) under decisions.
 
-Publish the command center after record changes under [hosting](references/hosting.md) and share its
+Publish the command center after record changes under hosting and share its
 link (never an inline render). Write `next`, `description`, and Inbox copy for a person scanning on
 a phone — replace `next` with one short line (at most 280 characters, enforced by `record.py`),
 never an append-only history log; see [page copy](references/program-state.md#page-copy). Record
@@ -222,7 +222,7 @@ Done when the published page matches `HEAD` and shows every result and open Inbo
 
 On **Program done**: delete the heartbeat (`delete_scheduled_task` in T3), verify it is absent, and
 record `record.py grant --heartbeat "None (program done)"`; turn off tap-to-answer under
-[hosting](references/hosting.md) (which drains final stored picks, verifies wake absence, and
+hosting (which drains final stored picks, verifies wake absence, and
 records `grant --wake "None (...)"` — if a late pick reopens work, return to the active loop). Keep
 acceptance evidence, tradeoffs, resolved decisions, follow-ups, and remaining gaps (in
 [finding schema](../review-sweep/references/finding-schema.md)) in the record, record each retained
@@ -245,7 +245,7 @@ automation IDs, verify those scheduled tasks are absent and update `grant` first
 abandonment waives finish-line completion only — before handing an abandoned container to Cleanup,
 stop or hand off active owners, reconcile or cancel any pending landings, verify heartbeat and wake
 tasks are absent and recorded `None (<reason>)`, and confirm no unverified files remain. Pass only
-verified container paths to [Cleanup](../cleanup/SKILL.md).
+verified container paths to Cleanup.
 
 For **pause, resume, move, takeover, or Chief-of-Staff migration**, follow
-[lifecycle](references/lifecycle.md) and [coordinator move](references/coordinator-move.md).
+lifecycle and coordinator move.

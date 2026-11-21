@@ -339,25 +339,24 @@ current operation's result. Simple state can stay simple.
 
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
 from T3's live catalog. Edit
-[model-defaults table](skills/orchestration/references/models.md#model-defaults)
+[model defaults](skills/orchestration/references/models.md#model-defaults)
 to change working/research/review models, source-retrieval routes, effort, and
 additional-review pools.
-The local concurrency ceiling is in Orchestration. This table is the one source
+The local concurrency ceiling is in Orchestration. That list is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [models](skills/orchestration/references/models.md).
 [Who does the work](skills/orchestration/SKILL.md#who-does-the-work) says when a thread delegates.
 
 [Models](skills/orchestration/references/models.md) defines UI operation, UI and implementation
-tiers, document work, and raising a row;
+tiers, document work, and raising difficulty;
 [reuse and recovery](skills/orchestration/references/reuse-and-recovery.md) covers agent reuse,
-owner replacement, and availability fallbacks. The existing agent handles routine UI operation,
+owner replacement, and failure recovery. The existing agent handles routine UI operation,
 with dedicated operators for substantial work, specialized capabilities, independent
 verification, or repeated difficulty.
 
-Enable and authenticate the providers named in that table in T3 Code. Routing
-resolves their exact instance/model IDs and supported options from the live
-catalog; an ambiguous match needs an explicit selection. Gemini's effort selection
-is encoded in its model ID, while other providers may expose an option. Catalog availability does
+Enable and authenticate the providers listed there in T3 Code. Routing
+resolves their exact instance/model IDs and effort options from the live catalog;
+an ambiguous match needs an explicit selection. Catalog availability does
 not establish quota or successful access. T3's injected MCP tools or supported
 ACP bridge must be reachable from the agent. Gemini reviewers read
 their review references from this stack; provider plugins are not needed.
@@ -368,7 +367,7 @@ failing checks the same way, by outcome, and sends accepted fixes through
 [Orchestration](skills/orchestration/SKILL.md#who-does-the-work).
 [Review Fix Loop](skills/review-fix-loop/SKILL.md) owns review coverage, reviewer
 selection, harness review, optional skips, and fix rounds. It uses Orchestration's
-model table and delegation rules.
+model defaults and delegation rules.
 Substantial changes also receive a required adversarial assessment that tests
 assumptions and failure paths. The loop records its coverage decision from the
 change's behavior and consequences.
@@ -385,7 +384,7 @@ Sample requests and expected results:
   comparison, and synthesis.
 - “Research this YouTube video and X post”: `research` routes retrieval to Gemini
   and Grok respectively, then checks the source evidence before writing a cited note.
-- “Implement this change”: the model table supplies the subagent's model and options;
+- “Implement this change”: the model defaults supply the subagent's model and options;
   parallel children have disjoint ownership in the same checkout.
 - “Review and fix this shared-contract change”: Primary, Ponytail, Thermo, and
   optional pool reviewers assess the initial snapshot. The parent settles design
@@ -395,10 +394,10 @@ Sample requests and expected results:
   reviewers for contained ordinary work; contained risky work adds a fitting
   lens. An ordinary prose or wording-only edit with no procedure change uses
   parent review.
-- When an additional reviewer is unavailable or fails, the loop records a skip
+- When an additional-review pool is exhausted or fails, the loop records a skip
   and continues. Missing required coverage cannot produce a clean result.
-- A substantive fix gets a new pass: new tasks on the original reviewers' models
-  for the angles it touches, with the prior evidence. Each pass checks the current
+- A substantive fix gets a new pass: fresh tasks under Orchestration's review-pass
+  rule for the angles it touches, with the prior evidence. Each pass checks the current
   snapshot, bounded to affected behavior, prior findings, and relevant proof.
   From the second repair pass, or sooner for a small repair, one reviewer checks
   each pass. Primary's integrated check covers cumulative repairs. Retain

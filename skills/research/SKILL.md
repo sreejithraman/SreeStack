@@ -6,7 +6,7 @@ description: Use when asked to research a question, look up documentation or API
 # Research
 
 Own a question and the evidence needed to answer it. Resolve the decision and
-scope. Use [the General research row](../orchestration/references/models.md#model-defaults)
+scope. Use [General research](../orchestration/references/models.md#model-defaults)
 for investigation and synthesis.
 
 ## Note storage
@@ -28,9 +28,8 @@ assign additional children only when the brief permits it.
 
 ## Source routing
 
-Use Gemini for YouTube retrieval and Grok for X posts, with the configured
-rows in [the model table](../orchestration/references/models.md#model-defaults).
-Honor user overrides. Use orchestration for bounded source retrieval; when
+Use Orchestration's YouTube retrieval and X retrieval defaults. Honor user overrides. Use
+orchestration for bounded source retrieval; when
 dispatching a researcher, permit these source tasks in its brief. Source
 retrievers work directly and return content or grounded extracts with canonical
 URLs, relevant dates/timestamps, retrieval method, and access gaps. Inspect the

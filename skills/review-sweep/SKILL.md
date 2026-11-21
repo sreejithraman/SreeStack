@@ -27,13 +27,13 @@ rounds.
    [classification](references/classification.md) — a reviewer's `High` severity,
    `confidence: 1.0`, or even a real reproduction does not make it `Must-fix`. Push back on
    synthetic torture paths, reviewer-invented guarantees, or patches worse than the bug; prefer
-   narrowing a permissive contract over adding heuristics. Then apply
-   [continue or stop](references/classification.md#continue-or-stop). Only Must-fix and
+   narrowing a permissive contract over adding heuristics. Then apply its
+   Continue or stop rules. Only Must-fix and
    Worth-fixing are accepted. Record a crisp 1-line falsifiable premise for every rejection,
    deferral, or narrowed contract so later passes treat it as settled.
 4. **Repair and check.** Follow [Orchestration](../orchestration/SKILL.md#who-does-the-work) for who
    repairs, and pick the model of any repair you delegate from
-   [the model table](../orchestration/references/models.md#choose-a-model).
+   [models](../orchestration/references/models.md#choose-a-model).
    Keep intended behavior inside the authorized scope. A changed product decision is a stop.
    Run the checks accepted fixes affect, including React Doctor diagnostics where they apply.
    Reuse proof while it's valid. Record each issue's repair state and snapshot separately from
