@@ -28,7 +28,7 @@ compare the load with the CPU count (`sysctl -n hw.logicalcpu` or `nproc`). Less
 10% free space, or a load above twice the CPU count, is critical. Then hold the device
 work, continue independent work, and recheck when that runs out. If it is still
 critical, report both numbers as the blocker. Free space only through
-[Repo Cleanup](../repo-cleanup/SKILL.md)'s ownership checks.
+[Cleanup](../cleanup/SKILL.md)'s ownership checks.
 
 On a remote device host, single-quote the commands so `$HOME` expands there, such as
 `ssh <host> 'df -h "$HOME"; uptime; sysctl -n hw.logicalcpu'`. If the host offers no

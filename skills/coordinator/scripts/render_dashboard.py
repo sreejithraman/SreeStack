@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import hashlib
 from html import escape
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -1454,8 +1455,13 @@ def layout(state):
     return json.dumps(state, indent=2, ensure_ascii=False) + "\n"
 
 
+def git_env():
+    """Environment stripped of ambient git-repo discovery overrides."""
+    return {k: v for k, v in os.environ.items() if k not in {"GIT_CEILING_DIRECTORIES", "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"}}
+
+
 def git(state_file, *args):
-    result = subprocess.run(["git", "-C", str(state_file.parent), *args], capture_output=True, encoding="utf-8")
+    result = subprocess.run(["git", "-C", str(state_file.parent), *args], capture_output=True, encoding="utf-8", env=git_env())
     if result.returncode:
         raise ValueError(result.stderr.strip() or f"git {args[0]} exited with status {result.returncode}")
     return result.stdout

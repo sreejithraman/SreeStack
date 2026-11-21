@@ -1,8 +1,11 @@
 # Program record and CLI
 
 Specs, tickets, snips, PRs, and user decisions stay in their existing tools. `program.json` is the
-program's single coordination record, kept in a task-owned git folder that survives worktree
-cleanup (with a `reports/` subfolder). `HEAD` is authoritative; the git log is its history.
+program's single coordination record, kept in its own git repo at
+`${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/record/program.json`
+(with a `reports/` subfolder, outside any project repo or worktree so cleanup never wipes it;
+`record.py init` enforces this and populates `.git/info/exclude`). `HEAD` is authoritative; the
+git log is its history.
 
 **One writer:** owners write only `reports/<ID>.md`. Only the current coordinator writes
 `program.json`, after checking `chief` in `HEAD:program.json`.
@@ -10,12 +13,14 @@ cleanup (with a `reports/` subfolder). `HEAD` is authoritative; the git log is i
 ## Record commands
 
 Run from this skill's folder as
-`python3 scripts/record.py <command> --state /absolute/path/program.json ...` (add `--next "<action>"`
+`python3 scripts/record.py <command> --state /absolute/path/record/program.json ...` (`init` defaults
+`--state`; `programs` is read-only and takes no `--state`; add `--next "<action>"` on write commands
 to update `next` in the same commit; run `<command> --help` for full flags):
 
 | Event | Command |
 | --- | --- |
-| Create a new program | `init --title "<t>" --goal "<g>" --chief <thread link> --request "<text>"` |
+| Create a new program | `init --title "<t>" --goal "<g>" --chief <thread link> --request "<text>" [--slug <slug>]` (omitting `--state` creates the default `.../record/program.json` and prints `state: <path>`) |
+| List program folders and prune readiness | `programs [--root <dir>] [--json]` |
 | Set/update grant, landing scope, heartbeat/wake IDs, or page URL | `grant [--source "<msg>"] [--start "..."] [--resolve "..."] [--user "..."] [--heartbeat "..."] [--wake "..."] [--landing "..."] [--hosting <url>]` |
 | Add, update, scrap, or rebase a work row | `work --id W1 [--add --title "<t>" --repo "<r>" --finish-line land] [--blocked-by W0] [--provisional-basis "..." --provisional-clears "..." --provisional-on W0] [--scrap \| --rebase-onto main [--stack-on L1]] [--decision D1 --option 1 --answer-source "<msg>"]` |
 | Owner started or adopted | `start --work W1 --owner "Retry owner" --session <thread link> [--mode top-level\|delegated\|adopted] [--replace]` |
@@ -32,11 +37,12 @@ to update `next` in the same commit; run `<command> --help` for full flags):
 | Transfer coordinator ownership | `move --chief <new thread link>` (does not prompt to publish) |
 | Check forge/threads and verdict | `status` (also `--heartbeat`, `--turn-end`, `--json`, `--exit-code`) |
 
-Each command stamps ISO UTC times from its own clock, validates through `render_dashboard.py`,
-commits, and stages `command-center.next.html`. A refusal changes nothing. If it refuses over an
-uncommitted `program.json` change, show the printed diff to the user and settle it before building
-on it (`render_dashboard.py --check` + commit to keep, or `git checkout HEAD -- program.json` to
-discard).
+Each write command stamps ISO UTC times from its own clock, validates through `render_dashboard.py`,
+commits, and stages `command-center.next.html` (`programs` is read-only; `status` updates
+observations and `seen` state as needed; `move` commits `chief` without staging a page). A refusal
+changes nothing. If it refuses over an uncommitted `program.json` change, show the printed diff to
+the user and settle it before building on it (`render_dashboard.py --check` + commit to keep, or
+`git checkout HEAD -- program.json` to discard).
 
 **Never reuse IDs** (even withdrawn or scrapped ones). Store returned T3 thread links verbatim.
 

@@ -98,7 +98,7 @@ Done when required assertions pass (or exact gaps are reported) and the user can
 - **Try:** stop before review and PR (run [Review Fix Loop](../review-fix-loop/SKILL.md) only if
   asked). Show the result. For a user caller, ask through the host's question tool: merge, changes,
   or scrap (`/merge` goes to Merge; changes return to stage 3; scrap goes to
-  [Repo Cleanup](../repo-cleanup/SKILL.md)). For a session caller, return the Try result and choice.
+  [Cleanup](../cleanup/SKILL.md)). For a session caller, return the Try result and choice.
 - **PR:** publish and watch to the requested state via [PR](../pr/SKILL.md).
 - **Land:** land via [Merge](../merge/SKILL.md) (stacks bottom-up as one merge set).
 

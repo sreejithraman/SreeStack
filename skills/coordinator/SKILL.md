@@ -37,12 +37,16 @@ For other cross-thread work, take the lightest route:
 
 **Start a program** when carrying **3+ outcomes**, outcomes with **cross-owner dependencies or
 provisional stacks**, **async multi-turn work the user is stepping away from**, or when the **user
-explicitly asks for a program, coordinator, or dashboard**. Everything below applies to programs.
+explicitly asks for a program, coordinator, or dashboard**. To prune old finished or abandoned
+program folders, follow stage 6 (`record.py programs`). Everything below applies to programs.
 
 ## Keep moving
 
-Run every record command from this skill's folder as
-`python3 scripts/record.py <command> --state /absolute/path/program.json`.
+Run program record commands from this skill's folder as
+`python3 scripts/record.py <command> --state /absolute/path/record/program.json` (`init` defaults
+`--state` to
+`${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/record/program.json`;
+`programs` lists program folders without `--state`).
 
 The `status` verdict decides how every program turn ends:
 
@@ -216,14 +220,32 @@ Done when the published page matches `HEAD` and shows every result and open Inbo
 
 ## 6. Finish, pause, or resume
 
-On **Program done**: delete the heartbeat (`delete_scheduled_task` in T3) and turn off tap-to-answer
-under [hosting](references/hosting.md). Keep acceptance evidence, tradeoffs, resolved decisions,
-follow-ups, and remaining gaps (in [finding schema](../review-sweep/references/finding-schema.md))
-in the record. Lead the final handoff with open Inbox items if action is needed, otherwise usable
-outcomes and links, naming coordinator-resolved decisions so the user can reopen them. Clean up via
-[Repo Cleanup](../repo-cleanup/SKILL.md) once active dependents no longer need resources, record
-each retained owner's successor route in `owner.route` and a one-line final disposition in `next`,
-and settle the thread (`t3_thread_organize` with `action: "settle"`).
+On **Program done**: delete the heartbeat (`delete_scheduled_task` in T3), verify it is absent, and
+record `record.py grant --heartbeat "None (program done)"`; turn off tap-to-answer under
+[hosting](references/hosting.md) (which drains final stored picks, verifies wake absence, and
+records `grant --wake "None (...)"` — if a late pick reopens work, return to the active loop). Keep
+acceptance evidence, tradeoffs, resolved decisions, follow-ups, and remaining gaps (in
+[finding schema](../review-sweep/references/finding-schema.md)) in the record, record each retained
+owner's successor route in `owner.route` and a one-line final disposition in `next`, and verify
+the published page matches `HEAD` (publish any final update without re-enabling tap-to-answer). Only
+after final record writes and publication finish, delete transient staging files
+(`command-center.next.html`, stored-pick scratch files, and any temporary Sites archives in
+`$TMPDIR`), keeping the program container (`record/` plus any sibling `site/` checkout) intact for
+audit and resume until the user asks to prune old programs (`record.py programs`). Lead the final
+handoff with open Inbox items if action is needed, otherwise usable outcomes and links, naming
+coordinator-resolved decisions so the user can reopen them. Clean up owner worktrees, branches,
+processes, and simulators via [Cleanup](../cleanup/SKILL.md) once active dependents no longer need
+resources, and settle the thread (`t3_thread_organize` with `action: "settle"`).
+
+When asked to prune old finished or abandoned program folders, run `record.py programs` first. It
+checks clean `record/` and sibling `site/` checkouts (including reopened `site/.sites-checkout`),
+unexpected container files, and explicitly cleared `heartbeat`/`wake` (`None (<reason>)`). For
+finished programs, require `prune=ready` before handoff; for older records with unset or stale
+automation IDs, verify those scheduled tasks are absent and update `grant` first. Explicit user
+abandonment waives finish-line completion only — before handing an abandoned container to Cleanup,
+stop or hand off active owners, reconcile or cancel any pending landings, verify heartbeat and wake
+tasks are absent and recorded `None (<reason>)`, and confirm no unverified files remain. Pass only
+verified container paths to [Cleanup](../cleanup/SKILL.md).
 
 For **pause, resume, move, takeover, or Chief-of-Staff migration**, follow
 [lifecycle](references/lifecycle.md) and [coordinator move](references/coordinator-move.md).

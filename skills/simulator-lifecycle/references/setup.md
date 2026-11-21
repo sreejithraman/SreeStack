@@ -54,7 +54,7 @@ leases copy that source. It is not retention of the released virtual device.
 Inventory managed and unmanaged devices separately. Keep user inspection
 devices, retained data and devices with uncertain consumers outside SimLock's
 disposable pool. SimLock does not automatically adopt or clean existing
-unmanaged devices. Use Repo Cleanup's ownership checks for individually
+unmanaged devices. Use Cleanup's ownership checks for individually
 authorized legacy disposal; names, age and disk pressure do not establish it.
 
 Record the migration's measured baseline and review date. The November 1, 2026

@@ -86,7 +86,7 @@ creates drafts. Omit it only when the user asks for drafts. Titles/bodies are
 generated; use `gh pr edit` for custom text. `sync` fetches, reconciles, rebases,
 pushes, and refreshes PR state; under a TTY it also asks to prune and defaults to
 yes, so decline it. Delete branches after a merge through
-[Repo Cleanup](../repo-cleanup/SKILL.md): `sync --prune` alone doesn't compare a
+[Cleanup](../cleanup/SKILL.md): `sync --prune` alone doesn't compare a
 branch's tip to the PR's merge-time head, so it can delete later commits' only ref.
 A diverged stack can return exit 0 with `Sync aborted`: verify the resulting state
 instead of declaring synchronization.

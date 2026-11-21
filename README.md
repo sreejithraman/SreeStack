@@ -208,7 +208,7 @@ instructions rather than maintaining another API manual.
 | Generate or edit images in any coding agent | [create-image](skills/create-image/SKILL.md), automatically discoverable; API first, then the host's subscription tool |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
 | Publish and watch | `pr`; `gh-stack` manages dependent layers |
-| Land and clean up | `merge`, then `repo-cleanup` |
+| Land and clean up | `merge`, then `cleanup` |
 | Transfer context or improve the environment | Explicit `handoff` or `retro` |
 | Improve the stack's skills and checks from evidence | [tune-stack](skills/tune-stack/SKILL.md), started by you; chains `retro` and `correct`, and proves each change against the old version |
 
@@ -411,7 +411,7 @@ Sample requests and expected results:
 `pr` writes titles and bodies, publishes one PR, and watches it to ready. `merge` lands a
 finished change: it brings the PR to ready, stops only when a fix changes what you kept,
 shows the result, and finishes resolved GitHub issues through GitHub CLI. `merge` uses
-`gh-stack` for stacks and `repo-cleanup` for completed task resources, including Mac development
+`gh-stack` for stacks and `cleanup` for completed task resources, including Mac development
 apps, simulator/emulator test installs, and task-created temporary devices when
 platform tooling is available.
 `handoff` is manual-only: invoke it explicitly and supply the handoff note path

@@ -7,8 +7,9 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 
-from render_dashboard import page_files
+from render_dashboard import git_env, page_files
 
 
 REFRESH = Path(__file__).resolve().parents[1] / "assets" / "chief-refresh.js"
@@ -29,7 +30,64 @@ VIEW_SCOPE = """<script>
 </script>"""
 
 
-def prepare(page_file: Path, output: Path) -> str:
+def default_output(page_file: Path) -> Path:
+    resolved = page_file.expanduser().resolve()
+    if resolved.parent.name == "record":
+        return resolved.parent.parent / "site" / "dist"
+    raise ValueError("--output is required unless --page is inside a program's record/ folder")
+
+
+def git_root(path: Path) -> Path | None:
+    probe = path.expanduser().resolve()
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not probe.exists():
+        return None
+    if probe.is_file():
+        probe = probe.parent
+    env = git_env()
+    result = subprocess.run(
+        ["git", "-C", str(probe), "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True, env=env,
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        return Path(result.stdout.strip()).resolve()
+    git_dir = subprocess.run(
+        ["git", "-C", str(probe), "rev-parse", "--absolute-git-dir"],
+        capture_output=True, text=True, env=env,
+    )
+    if git_dir.returncode == 0 and git_dir.stdout.strip():
+        resolved_git_dir = Path(git_dir.stdout.strip()).resolve()
+        return resolved_git_dir.parent if resolved_git_dir.name == ".git" else resolved_git_dir
+    return None
+
+
+def is_record_repo(repo_root: Path) -> bool:
+    if (repo_root / "program.json").exists():
+        return True
+    head = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-e", "HEAD:program.json"],
+        capture_output=True, env=git_env(),
+    )
+    return head.returncode == 0
+
+
+def prepare(page_file: Path, output: Path | None = None) -> str:
+    page_file = page_file.expanduser()
+    output = default_output(page_file) if output is None else output.expanduser()
+    output_resolved = output.resolve()
+    page_repo = git_root(page_file)
+    if page_repo is not None and output_resolved.is_relative_to(page_repo):
+        raise ValueError(
+            f"--output ({output}) must be outside the program record git repo ({page_repo}) "
+            "so Codex Sites does not nest .git inside it; use a sibling site/dist directory"
+        )
+    out_repo = git_root(output)
+    if out_repo is not None and is_record_repo(out_repo):
+        raise ValueError(
+            f"--output ({output}) must be outside the program record git repo ({out_repo}) "
+            "so Codex Sites does not nest .git inside it; use a sibling site/dist directory"
+        )
     page = page_file.read_text(encoding="utf-8")
     if "</head>" not in page or "</body>" not in page or 'name="chief-version"' in page:
         raise ValueError("--page must be the renderer's HTML, before Sites preparation")
@@ -56,7 +114,8 @@ def prepare(page_file: Path, output: Path) -> str:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--page", required=True, type=Path, help="Already rendered HTML selected for publication")
-    parser.add_argument("--output", required=True, type=Path, help="Static output directory in the durable Site source, normally dist")
+    parser.add_argument("--output", type=Path,
+                        help="Static output directory in the sibling Site checkout (defaults to ../site/dist when --page is in record/)")
     args = parser.parse_args()
     try:
         print(prepare(args.page, args.output))

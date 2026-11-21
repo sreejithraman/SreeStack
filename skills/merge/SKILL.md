@@ -83,7 +83,7 @@ limits.
    [automatic closing links](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
    apply when work reaches the default branch.
 
-6. **Clean up.** Use [Repo Cleanup](../repo-cleanup/SKILL.md) for confirmed merges. Pass merge
+6. **Clean up.** Use [Cleanup](../cleanup/SKILL.md) for confirmed merges. Pass merge
    results, proven merge-time source heads, branches and bases, worktrees, and known task
    resources, including device installs. Name resources that remaining stack layers still need.
    A failed issue update doesn't stop eligible cleanup.

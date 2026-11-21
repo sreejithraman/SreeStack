@@ -194,7 +194,7 @@ they do not reuse the released profile.
 
 Remove only the runner's disposable host outputs after its writers have exited
 and current path ownership and retention still match. Use
-[development resource cleanup](../../repo-cleanup/references/development-resources.md#clean-up)
+[development resource cleanup](../../cleanup/references/development-resources.md#clean-up)
 only for this run's ownership-checked process and host resource disposal; routine
 teardown does not invoke repository housekeeping. An old receipt, expired lease
 or missing renewal never
