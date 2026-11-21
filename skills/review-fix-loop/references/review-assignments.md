@@ -10,7 +10,6 @@ Report material issues noticed outside the assigned lens.
 | Ponytail | Proven simplification, deletion, reuse, and root-cause repairs using [Ponytail](../../review/references/ponytail.md) |
 | Thermo | Structure, boundaries, abstractions, types, and concrete design improvements using [Thermo](../../review/references/thermo.md) |
 | Adversarial | Challenge assumptions and trace material failure scenarios using [Adversarial](../../review/references/adversarial.md) |
-| Additional reviewer | General review across Review's applicable criteria |
 
 Primary also owns Review's applicable indirect-consumer and React/Next checks,
 including `react-best-practices` and React Doctor evidence. A single-reviewer
@@ -21,15 +20,9 @@ repair made stale or newly required.
 
 Map each required assessment to its named review default in
 [model defaults](../../orchestration/references/models.md#model-defaults).
-In the loop's first independent pass, add one general reviewer from each named
-additional-review pool to supplement required assessments. Later stages add none;
-owner-only prose review needs no additional agents.
-
-Resolve candidates through the model defaults and record unavailable targets with
-reasons. Dispatch each pool's first available listed entry once in the first
-independent pass; skip an exhausted or empty pool. Record one mapping per
-loop and retain it through repairs and any superseded first pass unless the
-selection policy changes.
+Record unavailable targets with reasons, and retain the mapping per loop
+through repairs and any superseded first pass unless the selection policy
+changes.
 
 ## Use the selected provider
 
@@ -46,16 +39,7 @@ reference is incomplete coverage.
 Use Orchestration's
 [recovery](../../orchestration/references/reuse-and-recovery.md#recover-work)
 for required reviewers at every stage and for uncertain dispatches. A reviewer
-that stays unknown after recovery is an incomplete review: a required assessment
-gets a fresh run, and an additional review is skipped.
-
-Additional reviewers use the pool's listed fallbacks on a confirmed quota, rate
-limit, or unavailable model/provider, but override Orchestration's
-transient-retry default: on authentication failure, runtime error, incomplete
-review, or an exhausted pool, skip that assignment for the rest of the loop,
-retain partial findings for Review Sweep, and continue the other assignments.
-Do not retry, redraw, substitute an unlisted provider or model, or replace a
-skipped slot. Skipped additional coverage does not block completion.
+that stays unknown after recovery is an incomplete review and gets a fresh run.
 
 Review Sweep resolves overlapping or conflicting findings using its
 [classification](../../review-sweep/references/classification.md).

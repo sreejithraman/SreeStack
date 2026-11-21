@@ -56,7 +56,7 @@ file count alone.
 
 Record the selection and a one-sentence reason in the brief. Apply
 [review assignments](references/review-assignments.md) for criteria, model
-mapping, additional reviewers, provider references, and failure handling.
+mapping, provider references, and failure handling.
 
 **Coverage rule:** Coverage counts for the final snapshot only when an assessment
 of it, or proof that still applies to it, supports that angle:
@@ -74,12 +74,11 @@ context.
 
 Each pass gets a fresh brief, frozen snapshot, and unique report path. Dispatch
 each selected read-only assessment through Orchestration, excluding any agent that
-wrote or directed the assessed work. Await all required assessments and any
-unskipped additional reviews.
+wrote or directed the assessed work. Await all required assessments.
 
 Substantial work runs in two waves, using Validate and settle between them:
 
-1. Run Wave 1 (Primary, Ponytail, Thermo, plus configured additional reviews),
+1. Run Wave 1 (Primary, Ponytail, and Thermo),
    then validate, settle findings, and apply accepted fixes.
 2. Run Wave 2 (Adversarial) over the complete settled change as `first discovery`
    — mark the brief `first discovery` so Wave 1 reports are treated as same-round
@@ -218,7 +217,7 @@ In the handoff to the caller, report:
 - reviewed base and final snapshot/SHA (plus any carried-forward rebase or polish note)
 - child tasks mapped to workflow/pass, assignment, criteria, configured model,
   and which prior reviewer each follow-up followed
-- findings and dispositions, coverage gaps, skipped additional reviews with
-  reasons, and provider references used or unavailable
+- findings and dispositions, coverage gaps, and provider references used or
+  unavailable
 - all **`Deferred`** findings (origin, evidence, reason, impact) for the caller to route
 - any **`Stops`** with the decision each needs
