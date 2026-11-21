@@ -1,8 +1,7 @@
 # Review evidence
 
-Use this when assigning delegated reviews. Reviewers follow
-[Delegated reviews](../SKILL.md#delegated-reviews) for their read/write limits and
-coverage block.
+Use this when assigning delegated reviews. Reviewers follow Review's Delegated
+reviews rules for their read/write limits and coverage block.
 
 ## Assign outputs
 

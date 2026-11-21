@@ -2,14 +2,6 @@
 
 How to decide what goes in each layer. Read this before running `gh stack init` or adding a layer.
 
-## Contents
-
-- [When to add a layer](#when-to-add-a-layer)
-- [Set the order](#set-the-order)
-- [Branch naming](#branch-naming)
-- [Staging changes deliberately](#staging-changes-deliberately)
-- [Separate stacks for independent outcomes](#separate-stacks-for-independent-outcomes)
-
 ## When to add a layer
 
 Split work into layers only for true dependency order and reviewability. A layer is one result a

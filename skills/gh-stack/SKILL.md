@@ -9,10 +9,18 @@ metadata:
 
 # gh-stack
 
-`gh stack` manages linear chains of branches and PRs. Stacks print trunk-first:
-`(main) <- auth <- api <- frontend`. Left is bottom and merges first; right is
-top. `up` moves away from trunk; `down` moves toward it. Put dependencies below
-their callers and use separate stacks for independent work.
+Create, inspect, rebase, synchronize, submit, and merge linear chains of stacked
+Git branches and dependent PRs with `gh stack`. Start from a repository and the
+stack action requested. Leave the stack branches, remote refs, or PR chain in
+the verified target state with retained local files accounted for. You are done
+when `gh stack view --json` confirms the intended branch/PR state, in T3 every
+scoped PR layer taken over, created, or pushed is linked, and any retained local
+files are verified after history changes.
+
+Stacks print trunk-first: `(main) <- auth <- api <- frontend`. Left is bottom
+and merges first; right is top. `up` moves away from trunk; `down` moves toward
+it. Put dependencies below their callers and use separate stacks for independent
+work.
 
 ## Before acting
 
@@ -26,23 +34,20 @@ their callers and use separate stacks for independent work.
   Before a new stack's first `init`, check that setup for the `rerere` prompt;
   explicit branch names alone do not suppress it.
 - Before checkout or history-changing work, follow
-  [Preserve local files](../pr/references/preserve-local-files.md) in every
+  [Preserve local files](references/preserve-local-files.md) in every
   affected worktree. Retain verified backups through conflicts and recovery.
 - With multiple remotes, `push`, `submit`, `sync`, `rebase`, and `link` need
   `--remote <name>` unless `remote.pushDefault` selects it. `checkout` and `trunk`
   have no `--remote` flag and require that config.
-- In T3, link every scoped PR taken over, created, or pushed, using
-  [PR's publish step](../pr/SKILL.md#publish). A CLI operation doesn't link its layers
-  to the thread.
-- Before `gh stack submit`, or `gh stack link` when it creates PRs or marks them ready, run
-  PR's [Prepare and Review steps](../pr/SKILL.md#publish) on each layer against its immediate
-  base.
-  Run each layer's held `review-fix-loop` status command unchanged once its SHA is pushed, as
-  [Review Fix Loop's finish step](../review-fix-loop/SKILL.md#finish) says. After a restack,
-  follow [Review Fix Loop's repair routing](../review-fix-loop/SKILL.md#route-repairs) for
-  that layer.
-  Land through [Merge](../merge/SKILL.md): run
-  `gh stack merge` only from its land step.
+- In T3, link every scoped PR taken over, created, or pushed (including `push`,
+  `sync`, `submit`, and `link`); a CLI operation does not link stack layers to
+  the thread.
+- Publish or mark stack PRs ready only after PR preparation, per-layer review
+  against each immediate base, and post-push review status stamping cover them
+  (and post-restack repair routing after rebases); route direct publication
+  requests through [PR](../pr/SKILL.md).
+- Run `gh stack merge` only from [Merge](../merge/SKILL.md)'s land step so
+  authorization, readiness, and exact-head checks are never bypassed.
 
 ### Worktree capabilities
 

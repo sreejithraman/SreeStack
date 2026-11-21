@@ -22,8 +22,7 @@ limits.
    already merged PR skips to step 5.
 
 2. **Bring it to ready.** Follow PR's [watch](../pr/references/watch.md). Failures, comments,
-   conflicts, and commits you didn't push all go through
-   [continue or stop](../review-sweep/references/classification.md#continue-or-stop). Fixes that
+   conflicts, and commits you didn't push all go through continue or stop above. Fixes that
    continue get one line in your report. A wake resumes this step, because the merge request
    still stands. An open `## Provisional` section, which `pr_state` reports as a blocker, is a
    stop; a merge request alone never clears it. On a stop, cancel any armed landing and confirm
@@ -34,8 +33,7 @@ limits.
 
    `pr_state` blocks a head without a passing `review-fix-loop` status, including after a base
    update or restack. A caller with its own repair owner gets the gap back. Without one, take
-   the head through PR's [Prepare and Review steps](../pr/SKILL.md#publish), publish any fixes,
-   and read the state again. A new head of reviewed work follows
+   the head through PR's Prepare and Review steps, publish any fixes, and read the state again. A new head of reviewed work follows
    [Review Fix Loop's repair routing](../review-fix-loop/SKILL.md#route-repairs) (clean
    disjoint rebases carry forward coverage onto the new pushed SHA; edits or interacting base
    changes run a repair pass).
@@ -60,16 +58,14 @@ limits.
 
    Closing links that would close unfinished issues block landing. After repairs or restacking,
    recheck every affected layer. Before local history changes, apply
-   [Preserve local files](../pr/references/preserve-local-files.md). Land the set only when all of
+   [Preserve local files](../gh-stack/references/preserve-local-files.md). Land the set only when all of
    it is ready.
 
 4. **Land.** Follow repository merge settings, protections, and queues. For one PR, use
-   [gh pr merge](https://cli.github.com/manual/gh_pr_merge) with
-   `--match-head-commit <verified head>`, and leave branch deletion to cleanup. For stacks, use
+   `gh pr merge --match-head-commit <verified head>`, and leave branch deletion to cleanup. For stacks, use
    `gh-stack`, with guards against unverified head changes on every layer: head preconditions,
    or enforced current-head checks and fresh approvals after pushes. Without them, report the
-   blocker; see
-   [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches).
+   blocker (branch protection must prevent unverified head changes).
    Confirm with `pr_state` that each PR reports `merged`. Queued work is still pending. After a
    failed or timed-out submission, read GitHub before you retry. If it reports `state: MERGED`
    with `the head moved`, commits you didn't verify landed. Read them and tell the user what
@@ -79,9 +75,7 @@ limits.
    intended delivery branch. Confirm automatic closure, or close a fully resolved open issue as
    completed with the merged PR link. Keep partial issues, and those waiting on unmerged layers,
    open. Check existing state and comments before posting. An intermediate stack merge doesn't
-   prove delivery, because
-   [automatic closing links](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
-   apply when work reaches the default branch.
+   prove delivery, because automatic closing links apply only when work reaches the default branch.
 
 6. **Clean up.** Use [Cleanup](../cleanup/SKILL.md) for confirmed merges. Pass merge
    results, proven merge-time source heads, branches and bases, worktrees, and known task
