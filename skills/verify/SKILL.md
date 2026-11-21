@@ -100,7 +100,8 @@ Add specialist references only when needed:
 
 Load the matching platform guide: [web](references/web.md), [iOS](references/ios.md),
 [macOS](references/macos.md), or
-[terminal and services](references/terminal-and-service.md). For simulators and
+[terminal and services](references/terminal-and-service.md); for anything else,
+use the best tool that shows the public interaction and its result. For simulators and
 emulators, follow [Simulator Lifecycle](../simulator-lifecycle/SKILL.md). For
 physical-device installs, read
 [device delivery](../show-me/references/native-device-delivery.md). For login or
@@ -110,21 +111,25 @@ retrieving credentials or driving a login. Follow
 [Orchestration's UI rule](../orchestration/references/models.md#operate-a-ui) for
 who drives an interface; the driver reports observations and you keep verdicts.
 
-Prefer a run-scratch script for repeatable setup, driving, and capture; when a
-check repeats on a later commit, offer to turn it into a committed test or recipe.
+Find the launch command, readiness signal, prerequisites, fixtures, and isolation
+options in the repo and environment. Prefer a run-scratch script for repeatable
+setup, driving, and capture; when a check repeats on a later commit, offer to
+turn it into a committed test or recipe.
 
 - **Run a read-only doctor first:** run the map's doctor if present, then check
   anything uncovered without mutating state—right instance and build (including
   uncommitted changes), right port/target/connections, right account/role and
   provider test vs live mode, and real workflow readiness after initialization,
   migrations, and fixtures (a live port or DB health check alone is insufficient).
-  Bound every wait with an observable condition and deadline. Separate missing
-  prerequisites from product failures; missing fixtures leave assertions `blocked`
-  (or `failed` if product setup should supply them).
+  Bound every wait with an observable condition and deadline. If the doctor
+  fails, fix the setup or report it, keeping the failing command and its output.
+  Separate missing prerequisites from product failures; missing fixtures leave
+  assertions `blocked` (or `failed` if product setup should supply them).
 - **Profiles and targets:** test first-run flows from an isolated empty profile
   where supported; routine checks can reuse known state while leaving user data
-  untouched. Steps performed by a substitute environment instead of the real
-  target stay unverified.
+  untouched. If a substitute environment did setup the real target will not do,
+  those steps stay unverified and assertions that depend on the target cannot
+  pass.
 - **Keep runs apart:** before concurrent or long checks, follow
   [Separate Before Serializing Shared State](../engineering-principles/references/separate-before-serializing-shared-state.md)
   and leave active owners alone. Reuse a launched instance for related checks and
@@ -132,10 +137,12 @@ check repeats on a later commit, offer to turn it into a committed test or recip
   authorization plus proof that two simultaneous runs stay isolated and stopping
   one leaves the other working.
 - **Limit side effects:** use disposable accounts, fixtures, and verified
-  dry-run/test modes. Never touch real money, live customer data, or external
-  recipients unless the user explicitly names that action; stop at the last safe
-  step and mark the rest `blocked`. Record credential names and setup paths, never
-  values, and redact secrets or private data from kept proof.
+  dry-run/test modes. Take an irreversible or externally visible action only
+  within the task's authorization; never touch real money, live customer data,
+  or external recipients unless the user explicitly names that action. Stop at
+  the last safe step and mark the rest `blocked`. Record credential names and
+  setup paths, never values, and remove secrets or private data from all
+  evidence and kept proof.
 
 ## Show it red first
 
@@ -152,8 +159,9 @@ matching red evidence from `tdd` or `diagnosing-bugs` when the method matches.
 
 ## Drive
 
-Exercise public interfaces only; internal setters and test-only endpoints can
-prepare state or aid diagnosis, never prove public interaction.
+Exercise public interfaces only; a CLI can drive a UI, whereas internal setters
+and test-only endpoints can prepare state or aid diagnosis, never prove public
+interaction.
 
 - **By hand:** wait for settled state, inspect rendered view and semantic tree,
   perform one meaningful action, and inspect before the next. Target roles,
@@ -167,11 +175,13 @@ prepare state or aid diagnosis, never prove public interaction.
   a pass. Keep required broader gates and report any skipped.
 - **Unchanged or stuck state:** record the observation before retrying. Retry once
   only when evidence shows the target moved or had not settled, recording the
-  retry as its own attempt. After a stuck or surprising state, verify instance
-  health and restore known state even if the process looks alive.
+  retry as its own attempt; a repeated failure is evidence. After a stuck or
+  surprising state, verify instance health and restore known state even if the
+  process looks alive.
 - **Intermittent reports:** choose an attempt count up front (`~3 / failure_rate`,
-  e.g., ~30 for 1 in 10) for both sides, restore fresh equivalent state before
-  each attempt, record every outcome, and count recovery retries separately.
+  e.g., ~30 for 1 in 10) for both sides, restore equivalent state with disposable
+  or uniquely named data before each attempt, record every outcome, and count
+  recovery retries separately.
 
 ## Judge
 
@@ -190,7 +200,8 @@ Classify every mismatch:
 
 Never weaken an assertion to accept a defect. Call a failure pre-existing only
 with a matching runtime baseline (same source including local changes,
-environment, fixtures, and method), stating comparison limits.
+environment, fixtures, and method)—matching source or another revision's results
+do not show that—and state comparison limits.
 
 ## Clean up and report
 
@@ -215,7 +226,8 @@ defect reproduced on the old behavior and a cause-tied check now passes (otherwi
 `untested`, or `blocked` without an independent expectation).
 
 Name omissions, unmapped surfaces, blockers, and drift (stating what the map or
-doc should read). For user-only steps, give the exact action and location,
-continue independent checks, and label results `user-reported`. Use
+doc should read, and that `setup-sreestack` can apply it). For user-only steps,
+give the exact action and location, continue independent checks, resume when
+they finish, and label results `user-reported`. Use
 [Show Me](../show-me/SKILL.md) with this evidence when showing results or letting
 the user try them.

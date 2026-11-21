@@ -8,14 +8,11 @@ description: Use when the user asks to diagnose a failure or reports a bug or un
 Isolate the cause of a reported failure or slowdown through a tight, repeatable
 signal, then repair and lock it down when fixes are in scope. Start from a user
 symptom, failure report, or captured artifact. Leave an evidence-backed root
-cause—and, for authorized repairs, a passing regression test, original-scenario
-rerun, and cleanup. You are done when the supported cause is reported (provisional
-if no runnable loop exists) and, for fixes, the original repro and regression
-test pass, user-workflow repairs pass [Verify](../verify/SKILL.md), and all
-temporary probes are removed.
+cause—and, for authorized repairs, a verified fix and cleanup. You are done when
+the supported cause is reported (provisional when no runnable loop exists) and,
+for authorized repairs, Phase 6's finish conditions hold.
 
-Skip a phase only with an explicit reason; the artifact-only path supports
-provisional diagnosis, never a verified fix.
+Skip a phase only with an explicit reason.
 
 Resolve domain terms with
 [glossary paths](../domain-modeling/references/glossary-paths.md) and read
@@ -129,16 +126,18 @@ loop on the original unminimised scenario.
 Finish only when:
 - the original repro is green;
 - the regression test passes (or its missing seam is recorded);
-- any repair affecting a user workflow has a passing Verify verdict (a green
-  diagnostic loop is evidence, not acceptance; Verify can reuse matching red
-  evidence);
-- temporary logs (confirmed by searching for the unique debug prefix) and
-  throwaway prototypes are removed or moved to a clearly marked debug location.
+- any repair affecting a user workflow has a passing [Verify](../verify/SKILL.md)
+  verdict (a green diagnostic loop is evidence, not acceptance; Verify can reuse
+  matching red evidence);
+- all temporary logs are removed (confirmed by searching for the unique debug
+  prefix);
+- throwaway prototypes are removed or moved to a clearly marked debug location.
 
 State the supported cause in the report and commit or PR message. When evidence
 establishes a recurring failure class, record the verified cause and examples for
-recurring-failure prevention without expanding active diagnosis into historical
-mining (an isolated incident supports a regression repair, not recurrence).
+recurring-failure prevention—historical mining and broader prevention require
+that scope from the user; keep active diagnosis focused on this failure (an
+isolated incident supports a regression repair, not recurrence).
 
 If the decisive fact required deep investigation, propose the cheapest persistent
 signal that would have exposed it earlier (health check, counter, or structured

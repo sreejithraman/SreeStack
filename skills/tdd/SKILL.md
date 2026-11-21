@@ -51,9 +51,9 @@ literal, a worked example, or the spec. A test is **tautological** when its orac
 copies the production algorithm, derives from the actual result, or asserts a constant
 equal to itself.
 
-See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
-For lifecycle or async behavior, use the [event-sequence example](tests.md#event-sequences)
-to choose scenarios through the agreed public seam.
+See [tests.md](tests.md) for examples (including its Event sequences section for
+lifecycle or async behavior through the agreed public seam) and
+[mocking.md](mocking.md) for mocking guidelines.
 
 ## Seams: where tests go
 
