@@ -73,8 +73,10 @@ account scope. Record the expected role, credential-provider setup path, actual 
 delivery route, and runtime access and automatic login readiness separately, with exact
 blockers when unproved. Keep values out of the map, and link this setup from recipes.
 
-Add the verification pointer to the project's active instruction block:
-`For acceptance checks, read docs/agents/verification/index.md and use Verify. To change this map, use setup-sreestack.`
+Add the verification pointer to the project's active instruction block using the resolved
+index path (for example, `For acceptance checks, read <resolved-index-path> and use Verify.
+To change this map, use setup-sreestack.`), and confirm the active pointer reaches the
+index you updated.
 
 ## Feature recipes
 
