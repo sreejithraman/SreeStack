@@ -42,9 +42,11 @@ report the check as not run and continue under the host's controls.
 
 Before acquiring, finish eligible device-independent builds with
 [Mac Work handoffs](../mac-work/references/handoffs.md); command admission does not cover
-automatic T3 device boots. Read [project runner integration](references/project-runners.md)
-when changing normal test commands, and [setup and rollout](references/setup.md) for
-authorized adoption.
+automatic T3 device boots. Check
+[build and test target compatibility](references/project-runners.md#build-and-test-target-compatibility)
+before running any native suite (including existing suites), read
+[project runner integration](references/project-runners.md) when changing normal test
+commands, and read [setup and rollout](references/setup.md) for authorized adoption.
 
 If acquisition, runner preparation, or a device command fails, read
 [when a session fails](references/workflow.md#when-a-session-fails) before retrying. A hold

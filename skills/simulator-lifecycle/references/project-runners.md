@@ -33,9 +33,11 @@ The runner must:
 - Allocate a unique run directory for temporary fixtures and logs, and keep
   caller proof outside it. Record created paths and process identities as they
   are created.
-- Place per-run Xcode DerivedData (`-derivedDataPath`) and result bundles
-  (`-resultBundlePath`) in unique run-scoped paths unless this run is the
-  checkout's sole builder using the default build path.
+- Pass `-resultBundlePath` inside the run directory on every test run. Pass
+  `-derivedDataPath` inside the run directory on every build—including builds of
+  disposable checkouts or any run unsure it is alone—except when this run is
+  confirmed to be a non-disposable checkout's sole builder using the default
+  DerivedData path.
 - Capture PIDs at spawn and use existing ownership-checked stop tooling. Recheck
   start identity, executable/workspace and other consumers immediately before
   stopping. Await all run-owned writers, including test helpers and descendants;

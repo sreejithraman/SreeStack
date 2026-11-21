@@ -79,7 +79,7 @@ branch, folder, or task; preserve unique commits unless explicitly abandoned or 
   completed or explicitly abandoned work (or whose eligibility cannot be proved). Retain any
   remote branch used as an open PR's head or base. Delete a remote branch only when eligible and
   in scope (merged task, explicitly abandoned task, or explicit request for that remote branch),
-  using an expected-tip lease (`git push --force-with-lease=<branch>:<expected-tip> <remote> :<branch>`) so a
+  using an expected-tip lease (`git push --force-with-lease=refs/heads/<branch>:<expected-tip> <remote> :refs/heads/<branch>`) so a
   concurrent push fails the delete. If a clean current worktree holds a branch
   being deleted, detach it at the appropriate base first; otherwise leave the worktree and branch
   in place. Delete a local branch only when no worktree holds it, using an atomic
