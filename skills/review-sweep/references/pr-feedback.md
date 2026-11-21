@@ -7,7 +7,7 @@ state read (such as `pr_state.py`), or read every page via `gh` when running
 standalone. An incomplete read means feedback isn't proven. Older open threads
 still need a decision against the current code.
 
-Give each item the [finding schema](finding-schema.md) with its GitHub ID, location, claim,
+Give each item the finding schema with its GitHub ID, location, claim,
 and source. Merge duplicates and keep their IDs. Take a failing or missing check in the same
 pass, with its log from `gh run view` or the workflow file that explains it. Rerun a flaky one
 with `gh run rerun --failed`, and return it as pending for the PR's watcher. Human and bot comments get the same treatment.
@@ -25,7 +25,7 @@ Reply to a thread with `addPullRequestReviewThreadReply` and close it with
   return a **held deferred reply** keyed by thread ID and canonical issue ID so
   the caller can reply with the recorded home and resolve it once routed (never
   resolve on an unbacked prose promise).
-- **Stop:** reply naming who decides under [continue or stop](classification.md#continue-or-stop),
+- **Stop:** reply naming who decides under classification's Continue or stop rules,
   and keep the thread open. Once the stop is settled, reply and resolve as for its result.
 - **Accepted edit:** return a held reply to your caller. Once the fix is in the remote head, the
   caller replies with that head and evidence, and resolves. Read feedback again for anything new.

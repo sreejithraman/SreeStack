@@ -91,13 +91,11 @@ Recheck the snapshot before accepting results. If it moved during review, cancel
 obsolete tasks, keep useful observations as unverified claims, and rerun with
 refreshed inputs; superseded assessments do not satisfy coverage.
 
-For a matching snapshot, verify outputs under
-[Review evidence](../review/references/review-evidence.md). Invalid or missing
+For a matching snapshot, verify outputs under Review evidence. Invalid or missing
 required coverage gets a fresh assessment under the
 [failure policy](references/review-assignments.md#handle-failures).
 
-Pass every result and partial finding with provenance to
-[Review Sweep](../review-sweep/SKILL.md). Carry canonical issue IDs and per-issue
+Pass every result and partial finding with provenance to Review Sweep. Carry canonical issue IDs and per-issue
 repair/check evidence across passes; reopen a settled finding only with new
 evidence, and report stalled disputes rather than repeating equivalent passes.
 
