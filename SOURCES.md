@@ -275,8 +275,9 @@ Apple guidance shares that procedure. Run counts fit cost and noise rather than
 a fixed minimum; ballparks remain labeled estimates. Diagnostic cleanup proposes
 a cheap persistent signal with runtime/privacy costs after a deep investigation;
 implementation stays within the authorized fix and temporary probes still leave.
-Recurring-class evidence is recorded for recurring-failure prevention; active
-diagnosis keeps its reproduction and repair loop.
+Recurring-class evidence is returned in the report for the caller to route (or
+passed to `correct` on direct requests when broader prevention is in scope);
+active diagnosis keeps its reproduction and repair loop.
 Shared evidence guidance covers root-cause decisions, measurement validity, and revisiting a failed
 premise; the runnable diagnosis phases remain local.
 Timing and lifecycle reproductions capture starting state, event order, and

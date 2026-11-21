@@ -134,10 +134,12 @@ Finish only when:
 - throwaway prototypes are removed or moved to a clearly marked debug location.
 
 State the supported cause in the report and commit or PR message. When evidence
-establishes a recurring failure class, record the verified cause and examples for
-recurring-failure prevention—historical mining and broader prevention require
-that scope from the user; keep active diagnosis focused on this failure (an
-isolated incident supports a regression repair, not recurrence).
+establishes a recurring failure class, return the recurring-class evidence
+(examples, verified cause, and live path) in the report for the caller to
+route—or pass it to [Correct](../correct/SKILL.md) on a direct request when
+broader prevention is in the user's scope; historical mining and broader
+prevention require that scope from the user, so keep active diagnosis focused on
+this failure (an isolated incident supports a regression repair, not recurrence).
 
 If the decisive fact required deep investigation, propose the cheapest persistent
 signal that would have exposed it earlier (health check, counter, or structured

@@ -187,7 +187,10 @@ interaction.
 
 Compare observed results against written expectations plus usability (layout,
 readability, focus, input, navigation, and loading, empty, disabled, and error
-states). Verify saved data or output files via a fresh read outside the current
+states). For qualitative work or competing candidates, agree on concrete
+criteria, references, and the judge up front; never invent numeric scores to
+make taste appear objective, and leave any user-approval gate unfinished until
+accepted. Verify saved data or output files via a fresh read outside the current
 screen and record what was read. If tests, fixtures, or measurements changed,
 confirm they still detect failure and measure the same work.
 
