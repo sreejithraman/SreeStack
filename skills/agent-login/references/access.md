@@ -56,8 +56,8 @@ vault grants; a token's presence alone does not prove scope.
 Automatic access stays on its scoped service account and never falls back to
 personal access. A missing token or a Touch ID prompt on this path means the
 runtime needs machine setup; do not attempt desktop sign-in. Outside a requested
-machine setup, name that block. Inside one, continue in
-[machine setup](machine-setup.md). Check the affected host's command
+machine setup, name that block. Inside one, continue in the machine setup guide.
+Check the affected host's command
 environment even when another host works. With a token present, capture
 authentication errors privately and report the cause without revealing
 credentials. Missing or denied access names the specific runtime or scope gap.

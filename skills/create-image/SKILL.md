@@ -7,13 +7,11 @@ description: Use first whenever a task needs a generated or edited raster image,
 
 Make the requested image through the OpenAI Images API, and use the host's
 subscription image tool when the API cannot deliver. The user has approved that
-fallback in advance, so use it without asking.
-
-- **Input:** a prompt, any local images, and an optional model preference.
-- **Output:** saved image files.
-- **Done:** every file exists at its reported path, you opened it and checked it
-  against the request, and your report names the route, the model, and any
-  disclosure below.
+fallback in advance, so use it without asking. Start from a prompt, any local
+images, and an optional model preference, and leave saved image files on disk.
+You are done when every file exists at its reported path, you opened and checked
+it against the request, and your report names the route, the model, and any
+required disclosure below.
 
 ## Choose the model
 
@@ -32,8 +30,7 @@ a required model forbids it.
 ## Run the API route
 
 Use the CLI in this skill's `scripts/` folder. If a higher-priority host
-instruction forbids the API or the network, skip the CLI and go to
-[Fall back](#fall-back).
+instruction forbids the API or the network, skip the CLI and use Fall back below.
 
 ```bash
 python3 <skill-folder>/scripts/openai_images.py generate --prompt "..." --out assets/hero.png
@@ -59,7 +56,7 @@ The CLI prints one JSON object. Read `reason`, `message`, `outputs`,
 | --- | --- | --- |
 | 0 | Saved, or dry run passed | Check each file in `outputs` |
 | 2 | Bad argument, file, or output path. Nothing was sent | Fix it and rerun |
-| 3 | The API could not deliver, and a fallback is allowed | [Fall back](#fall-back) |
+| 3 | The API could not deliver, and a fallback is allowed | Use Fall back below |
 | 4 | Request stopped, or a file could not be saved | Stop, and report `message` and any `outputs`. The flag rule below is the one exception |
 | 5 | The API could not deliver, and the model is required | Stop and report `message` |
 | 1 | CLI bug | Stop and report `message` |
