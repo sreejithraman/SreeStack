@@ -34,10 +34,9 @@ lifetime.
 Use Xcode's Debug Memory Graph for object relationships. When allocation stack
 traces are needed, enable Malloc Stack in the scheme's Run diagnostics before
 capturing the graph. Use Instruments Allocations and Leaks for a time-based
-investigation. Export a memory graph when offline comparison helps. Apple's
-[memory-use guide](https://developer.apple.com/documentation/xcode/gathering-information-about-memory-use)
-describes these paths and notes that exported graphs can be inspected with
-`vmmap` and `leaks`.
+investigation. Export a memory graph when offline comparison helps; Apple's
+memory-use guide above notes that exported graphs can be inspected with `vmmap`
+and `leaks`.
 
 For command-line inspection, query the installed tools before relying on an
 option:

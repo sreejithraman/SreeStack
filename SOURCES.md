@@ -275,8 +275,9 @@ Apple guidance shares that procedure. Run counts fit cost and noise rather than
 a fixed minimum; ballparks remain labeled estimates. Diagnostic cleanup proposes
 a cheap persistent signal with runtime/privacy costs after a deep investigation;
 implementation stays within the authorized fix and temporary probes still leave.
-Recurring-class evidence passes to `correct` when the user's scope includes
-broader prevention; active diagnosis keeps its reproduction and repair loop.
+Recurring-class evidence is returned in the report for the caller to route (or
+passed to `correct` on direct requests when broader prevention is in scope);
+active diagnosis keeps its reproduction and repair loop.
 Shared evidence guidance covers root-cause decisions, measurement validity, and revisiting a failed
 premise; the runnable diagnosis phases remain local.
 Timing and lifecycle reproductions capture starting state, event order, and
@@ -1270,7 +1271,7 @@ Automatic discovery includes feature and bug work, but not ordinary
 integration-test additions by themselves. Seams established by the spec or
 project conventions count as pre-agreed; user confirmation is reserved for
 material unresolved choices.
-The review stage uses `review-fix-loop`.
+Refactoring belongs to the review stage.
 Shared behavior-test guidance uses `engineering-principles`; seam selection,
 vertical red/green cycles, specialist examples, mocking, and local pitfalls stay here.
 Each cycle covers one behavior, not upstream's one test; cases of that behavior can go together.
