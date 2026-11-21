@@ -10,10 +10,8 @@ Surface architectural friction and propose **deepening opportunities**—refacto
 that turn shallow modules into deep ones for testability and AI-navigability.
 Start from a named area, pain point, or recent codebase hot spots. Leave
 evidence-backed recommendations in chat (an HTML report only when requested) and,
-for a design or migration request, a checked plan. You are done when worthwhile
-candidates have evidence, reasons, and confidence—and any requested design or
-migration plan has checked technical uncertainties (or explicit gaps) and
-concrete migration and verification steps.
+for a design or migration request, a checked plan. You are done when the
+completion criteria in stage 4 hold for the chosen finish line.
 
 Resolve glossary paths with
 [glossary paths](../domain-modeling/references/glossary-paths.md) before reading
@@ -125,6 +123,10 @@ affected callers and compatibility paths, migration order, enforcement,
 verification, tradeoffs, rejected alternatives, experiment artifacts/commands,
 proposed checks, and any glossary or ADR updates.
 
+Interactive findings are complete when worthwhile candidates have evidence,
+reasons, and confidence. A requested design or plan is complete when its
+technical uncertainties have been checked (or have explicit evidence gaps and
+next checks) and the migration and proof are concrete enough to review.
 Production implementation happens only within the user's authorized scope; hand
 selected designs that need design-in-the-loop implementation to
 [Architect](../architect/SKILL.md), carrying forward checked findings and

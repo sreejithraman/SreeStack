@@ -8,10 +8,9 @@ description: "Produce independent candidates for one artifact, pick a base, and 
 Produce independent competing candidates for one artifact, judge them against a
 shared rubric, and either recommend a winner or synthesize a verified result.
 Start from an artifact goal, constraints, and finish line (synthesis by default;
-comparison-only when requested). Leave the candidates, rubric scores, and either
-a recommendation or one verified synthesized artifact with its synthesis note.
-You are done when the requested finish line is delivered with observed proof (or
-an explicit incomplete report if fewer than two usable candidates succeeded).
+comparison-only when requested). Leave the required Outputs below for that
+finish line. You are done when the requested finish line is delivered with
+observed proof, or reported incomplete under Phase B.
 
 Open a task plan with one entry per phase (Frame, Fan out, Cross-judge, Pick,
 Graft, Verify) before launching. Preserve the caller's finish line; production
@@ -34,14 +33,16 @@ Every candidate receives the same prompt as its contract:
 
 Use [Prototype](../prototype/SKILL.md) for UI observation on the target platform
 and [architecture experiments](../codebase-design/references/experiments.md) for
-technical assumptions. Coverage partitions and races belong to
+technical assumptions; keep product preferences distinct from facts a run can
+settle. Coverage partitions and races belong to
 [Swarm](../swarm/SKILL.md); Arena assigns every runner the same artifact.
 
 ## Phase B: Fan out
 
 Dispatch independent candidates through Orchestration with the shared task,
 rubric, grounding, output path, and instructions to include a short rationale of
-considered and rejected alternatives. Keep candidates isolated from each other.
+considered and rejected alternatives. Keep candidates isolated from each other;
+run in parallel within capacity, or in waves using the same starting inputs.
 On dropouts, apply Orchestration's bounded recovery; fewer than two usable
 candidates makes the comparison incomplete rather than declaring a winner.
 
@@ -49,9 +50,10 @@ candidates makes the comparison incomplete rather than declaring a winner.
 
 After all candidates stop writing, dispatch one read-only cross-judge through
 Orchestration (running in parallel with your Phase D reading) with the rubric
-and path-labeled candidates. It scores each criterion on evidence—not model
-reputation—and recommends a base. An unavailable required judge is a coverage
-gap to report while retaining candidates.
+and path-labeled candidates. Keep the candidates fixed while judging them. The
+judge scores each criterion on evidence—not model reputation—and recommends a
+base. An unavailable required judge is a coverage gap to report while retaining
+candidates.
 
 ## Phase D: Pick a base
 
@@ -67,7 +69,9 @@ Judge UI on the target surface and performance on comparable workloads; scores
 never replace required proof.
 
 Comparison-only requests finish here with candidates, evidence, tradeoffs, and
-recommendation, preserving any requested user choice or checkpoint.
+recommendation. On any path—including synthesis—preserve an explicitly requested
+user choice or checkpoint here before proceeding to Phase E grafting or
+consensus adoption.
 
 ## Phase E: Graft (synthesis only)
 

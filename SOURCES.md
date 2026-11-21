@@ -235,8 +235,7 @@ counts independent occurrences, checks current exposure, and ranks live classes.
 Shared design and enforcement selection use `engineering-principles`; guard proof
 and technical experiments live in `codebase-design`. Planning and implementation
 honor the requested finish line and leave multi-outcome coordination and
-behavioral evaluation to calling workflows without upward links; bounded parallel
-work uses `swarm`.
+behavioral evaluation to calling workflows; bounded parallel work uses `swarm`.
 Automatic correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
 

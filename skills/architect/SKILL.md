@@ -19,8 +19,7 @@ claims separated.
 **locality**). Routine changes with an established shape need no design panel.
 
 Open a task plan for the applicable phases: Ground, Sketch, Agree, Implement, and
-Scrap (when needed). Resolve the finish line up front: design-only and
-planning-only requests stop at their artifact and never enter implementation.
+Scrap (when needed), and resolve the finish line from the request up front.
 
 ## Phase A: Ground the problem
 
@@ -66,8 +65,10 @@ Synthesis decision section.
 
 For implementation requests, proceed directly unless the user explicitly asks
 for a checkpoint (*"architect with checkpoint"*, *"stop and show me before
-implementing"*); then present the design and wait for sign-off. Design-only and
-planning-only requests finish here.
+implementing"*); then present the design and wait for sign-off. Design-only
+requests finish here with the checked design; planning-only requests finish with
+the ordered migration plan specified under Outputs below without entering
+implementation.
 
 The accepted design can be its own commit when commits are in scope. Keep
 temporary scaffolding inside development boundaries and restore delivery checks
@@ -86,10 +87,8 @@ sketch was wrong, a requirement was missed, or the implementation overreached.
 Resolve technical questions from code and experiments; ask the user only for
 product choices that materially change the result.
 
-Implement with [TDD](../tdd/SKILL.md) at the agreed seams. For multi-part work,
-sequence small verifiable units; a requested migration plan names affected
-callers, dependencies, compatibility paths, and proof per unit after technical
-uncertainties are checked or bounded. Verify real workflows with
+Implement with [TDD](../tdd/SKILL.md) at the agreed seams, sequencing multi-part
+work into small verifiable units. Verify real workflows with
 [Verify](../verify/SKILL.md), demonstrate integrated results with
 [Show Me](../show-me/SKILL.md), remove temporary stubs and comparison controls,
 and record decisive evidence in the project record already in scope.
@@ -123,4 +122,6 @@ changes; module map plus types for larger work). Ship the prose rationale per
 [design rationale](references/design-rationale.md), including usage sketch,
 synthesis decision, experiment commands and evidence, remaining gaps, and any
 requested plan or verified implementation, keeping proposed behavior separate
-from checked claims.
+from checked claims. A requested migration plan sequences verifiable units and
+names affected callers, dependencies, compatibility paths, and proof per unit
+after technical uncertainties are checked or explicitly bounded.

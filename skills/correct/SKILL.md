@@ -10,10 +10,8 @@ structural repairs that prevent the same mechanism from recurring. Start from
 supplied examples or a bounded repository history window and a requested finish
 line (plan vs authorized repair). Leave ranked live failure classes with a
 proof-backed prevention plan—and, when repairs are authorized, implemented guards
-verified against historical failures and supported paths. You are done when
-planning returns traceable evidence and concrete guard-proof plans, or
-authorized repairs and checks pass with explicit dispositions for remaining
-classes.
+verified against historical failures and supported paths. You are done when the
+closing completion conditions below hold for the requested finish line.
 
 Use [Engineering Principles](../engineering-principles/SKILL.md) for design and
 enforcement choices and
@@ -77,3 +75,6 @@ delivery follow the caller's workflow and requested finish line.
 
 Report each class as `planned`, `prevented`, `partly covered`,
 `resolved already`, or `deferred`, with evidence, checks, and remaining exposure.
+Planning is complete when recommendations have traceable evidence and a concrete
+migration and guard-proof plan. Implementation is complete when selected repairs
+and checks pass and remaining classes have explicit dispositions.
