@@ -30,9 +30,12 @@ Run a read-only Review assignment in the selected provider's harness through
 Orchestration. Include the applicable checked-in provider reference linked from
 [Review](../../review/SKILL.md) alongside any assigned lens. Gemini reviews use
 these repository instructions without installing plugins or invoking native
-review commands. Keep the selected model, effort, complete snapshot, and common
-review contract. Record which references the reviewer read; an unread required
-reference is incomplete coverage.
+review commands; when Gemini runs an assigned review, the assigned criteria —
+including indirect consumers, missing proof, and test gaps — override
+`gemini.md`'s changed-lines-only, cursory-test, and verify/ensure constraints.
+Keep the selected model, effort, complete snapshot, and common review contract.
+Record which references the reviewer read; an unread required reference is
+incomplete coverage.
 
 ## Handle failures
 

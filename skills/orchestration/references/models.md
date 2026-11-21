@@ -31,8 +31,9 @@ standalone model (not a hybrid like Devin `Fusion`), resolving exact model IDs a
 from live host capabilities (some providers encode effort in the model ID or expose a separate
 thought-level option). A caller or project choice settles multiple model-ID matches; otherwise
 report the ambiguity. Pass the effort option only when live host capabilities advertise one for that
-model; leave other options (like Devin's `mode` and `speed`) at host defaults unless the user sets
-them.
+model (if neither option nor model ID expresses the listed effort, record the effective effort as
+host default in briefs and handoffs); leave other options (like Devin's `mode` and `speed`) at host
+defaults unless the user sets them.
 
 ## Choose a model
 
@@ -40,8 +41,9 @@ Use the job's named default above, applying these boundaries:
 
 - **Building or changing UI (any size):** `UI implementation and fixes` — never `Simple` or
   `Hardest` (reviewing or researching UI still uses its review or research default).
-- **Prose only (skills, agent instructions, READMEs, docs):** `Document writing and revision`. Mixed
-  prose and code keeps one owner on the code default; executable scripts and tests are code.
+- **Prose only, any size, including fixes (skills, agent instructions, READMEs, docs):** `Document
+  writing and revision`. Mixed prose and code keeps one owner on the code default; executable
+  scripts and tests are code.
 - **Unnamed source review (second opinions, ad-hoc audits):** `Primary review`.
 - **Other code, diagnosis, design, tests, config, or non-interactive verification:** `Standard` by
   default (choose it whenever `Simple` is in doubt). Use `Simple` only for small, mechanical tasks
