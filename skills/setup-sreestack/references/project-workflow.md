@@ -20,12 +20,10 @@ Avoid a second source of truth for commands, standards, or shared procedures.
   project facts. Environment adoption uses its
   [setup checks](../../simulator-lifecycle/references/setup.md) when requested;
   ordinary project setup records missing integration without claiming it works.
-- **Acceptance:** link the verification index established by
-  [Setup's foundation step](../SKILL.md#verification-foundation), or the existing
-  map for a scoped workflow update. Record established demonstration or access
-  conventions. `verify` owns real workflow checks, and
-  [verification maps](verification-map.md) own feature recipes;
-  `show-me` chooses demonstrations and access.
+- **Acceptance:** link the verification index established by the setup
+  verification-foundation step, or the existing map for a scoped workflow update. Record
+  established demonstration or access conventions. `verify` owns real workflow checks,
+  verification maps own feature recipes, and `show-me` chooses demonstrations and access.
 - **Review:** identify the intended review base and required project checks.
   Link existing standards. Mechanical rules belong in existing tooling;
   `CODING_STANDARDS.md` is for genuine judgement calls, created only when such
@@ -51,9 +49,9 @@ leave installation to an explicit environment-setup request.
 
 ## Instruction pointers
 
-Apply Setup's [existing-guidance comparison](../SKILL.md#discover-the-project)
-before adapting these concise, request-shaped pointers into the project's
-existing block. Include only pointers needed to reach relevant guidance:
+Apply Setup's existing-guidance comparison before adapting these concise,
+request-shaped pointers into the project's existing block. Include only pointers needed to
+reach relevant guidance:
 
 ```markdown
 ## SreeStack
