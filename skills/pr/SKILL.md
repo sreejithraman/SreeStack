@@ -24,7 +24,11 @@ remote description. Writing text commits and pushes nothing.
 
 ## Publish
 
-Watching an existing PR starts at step 4.
+Watching an existing PR starts at step 4. For stacked PRs, run steps 1 and 2 on
+each layer against its immediate base before `gh stack submit` (or `gh stack link`
+when creating PRs or marking them ready), stamp each layer's held
+`review-fix-loop` status once pushed, link every layer in T3, and use Review Fix
+Loop's repair routing after a restack.
 
 1. **Prepare it.** Run [Show, Don't Tell](../show-dont-tell/SKILL.md) on the complete diff
    against the immediate base, including docs-only changes, unless earlier evidence covers

@@ -562,16 +562,16 @@ Invocation remains unchanged. Checks installed-extension capabilities before
 newer worktree behavior. Conflict staging follows the diagnostic owner, and
 sync rollback guidance preserves partial-restoration recovery state instead of
 promising unconditional rollback.
-History-changing operations home `references/preserve-local-files.md` here so
-`pr`, `merge`, and `coordinator` point downward to back up retained local files
-affected by tracking deletions and verify restoration.
+History-changing operations use `references/preserve-local-files.md` (shared with
+`pr`, `merge`, and `coordinator`) to back up retained local files affected by
+tracking deletions and verify restoration.
 
-Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
-publication does not substitute for that link. Layers get `pr`’s Prepare and Review steps before
-`submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
-Each layer runs its held `review-fix-loop` status command unchanged once its SHA is pushed;
-after a restack, clean disjoint rebases carry forward coverage while edits or interacting base
-changes run a repair pass.
+Every scoped PR layer taken over, created, or pushed is linked in T3; CLI
+operations do not substitute for thread links. Stacked publication gates
+(Prepare, per-layer Review, held `review-fix-loop` status stamping, and
+post-restack repair routing) live in `pr`, and landing gates live in `merge`;
+`gh-stack` keeps entry-boundary guardrails routing direct publish and merge
+requests to them.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
 on request, to match `pr`. Branch deletion after a merge goes through `cleanup`
