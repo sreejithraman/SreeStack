@@ -48,7 +48,7 @@ multiple unmerged inputs:
   from `blockedBy`, and verify C's base contains both inputs before C starts.
 - If A and B already have sibling PRs, pick an anchor and have B's owner restack only B's change
   onto A via [gh-stack](../../gh-stack/SKILL.md), preserving local files under
-  [preserve local files](../../pr/references/preserve-local-files.md). Refresh diffs, review, and
+  [preserve local files](../../gh-stack/references/preserve-local-files.md). Refresh diffs, review, and
   proof affected by the base change.
 - Serialize restacks bottom-first (one writer per branch). Never invent multi-parent stacks in a
   linear-chain tool; if the repo cannot support the chain, collapse into one cohesive outcome with

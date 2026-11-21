@@ -562,8 +562,9 @@ Invocation remains unchanged. Checks installed-extension capabilities before
 newer worktree behavior. Conflict staging follows the diagnostic owner, and
 sync rollback guidance preserves partial-restoration recovery state instead of
 promising unconditional rollback.
-History-changing operations use the shared PR preservation reference to back up
-retained local files affected by tracking deletions and verify restoration.
+History-changing operations home `references/preserve-local-files.md` here so
+`pr`, `merge`, and `coordinator` point downward to back up retained local files
+affected by tracking deletions and verify restoration.
 
 Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
 publication does not substitute for that link. Layers get `pr`’s Prepare and Review steps before
@@ -1158,7 +1159,8 @@ A delegated owner returns a pending report instead of watching; the parent
 watches and resumes that same owner for repairs. Unavailable watchers and exhausted
 rate limits remain explicit pending states without custom polling.
 Evidence reuses Show Me's checked demonstrations and access links when available.
-History changes share a local preservation reference with Merge and gh-stack:
+History changes use `gh-stack`'s shared `references/preserve-local-files.md`
+preservation reference (shared with Merge and Coordinator):
 back up current retained bytes outside affected checkouts, preserve both versions
 on conflicts, and verify hashes after success or recovery.
 

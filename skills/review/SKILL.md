@@ -30,8 +30,8 @@ staged, unstaged, and untracked work. Honor a requested narrower scope, which na
 what it excludes. "Focus on" is an emphasis, not a narrower scope.
 
 Account for requirements, repo rules, risks, and current check evidence. Mark
-missing or stale evidence. Without a supplied brief, use the
-[review brief](references/review-brief.md) as your checklist.
+missing or stale evidence. Without a supplied brief, use the review brief above
+as your checklist.
 
 ## Read the whole change
 
@@ -47,10 +47,10 @@ changes during review, return it as superseded rather than approving it.
 
 ## Apply the criteria
 
-Explicit assignments select the criteria. The always checks under
-[Add what this change needs](#add-what-this-change-needs) apply whatever is assigned,
-and their findings go in the same report. For code or mixed changes without
-assignments, including executable skill scripts, cover both:
+Explicit assignments select the criteria. The always checks under Add what this
+change needs below apply whatever is assigned, and their findings go in the same
+report. For code or mixed changes without assignments, including executable skill
+scripts, cover both:
 
 - **Correctness:** bugs, regressions, edge cases, security, data loss, and test
   gaps. Use [Spec](references/spec.md) to trace supplied requirements.

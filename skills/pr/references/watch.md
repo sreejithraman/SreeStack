@@ -31,7 +31,7 @@ when a result looks wrong.
 - **Failures and feedback:** send them together to one [Review Sweep](../../review-sweep/SKILL.md)
   pass, with its [PR feedback](../../review-sweep/references/pr-feedback.md) guide. After it
   fixes something, check that review evidence covers the change. If it's missing or stale,
-  rerun [review](../SKILL.md#publish) on the affected scope. Then [publish](publish.md), post
+  rerun PR's Prepare and Review steps on the affected scope. Then [publish](publish.md), post
   held replies, and read the state again. When Review Sweep returns a **held deferred reply**
   waiting on a recorded durable home (even with no code edit or push): if no parent workflow owns
   routing (a direct user request to PR or Merge), record an unrelated deferral's durable home
@@ -41,9 +41,8 @@ when a result looks wrong.
   recorded home comes back, post the held reply, resolve the thread, and read the state again.
 - **No passing review status:** for a requested draft PR still carrying `## Provisional`,
   treat the missing review status as expected until the provisional condition clears or before
-  marking it ready. Otherwise take the head through PR's
-  [Prepare and Review steps](../SKILL.md#publish), unless posting its status already failed;
-  then report that blocker. A new head of reviewed work follows
+  marking it ready. Otherwise take the head through PR's Prepare and Review steps,
+  unless posting its status already failed; then report that blocker. A new head of reviewed work follows
   [Review Fix Loop's repair routing](../../review-fix-loop/SKILL.md#route-repairs) (clean
   disjoint rebases carry forward coverage and stamp the new pushed SHA; edits or interacting
   base changes run a repair pass).

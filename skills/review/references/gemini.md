@@ -2,7 +2,7 @@
 
 <!-- Modified by SreeStack. -->
 
-Use the caller’s supplied snapshot and [Review](../SKILL.md) for read-only
+Use the caller’s supplied snapshot and Review for read-only
 limits, assigned criteria, agent-procedure checks, and required coverage metadata.
 Apply the output format below and report coverage and gaps afterward, even when
 there are no findings. The caller settles findings and decides acceptance.
