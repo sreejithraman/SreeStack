@@ -3,8 +3,8 @@
 Use a disposable technical experiment when a design decision depends on a fact
 that code or records cannot settle. A type sketch, real-caller migration slice,
 state-machine harness, or concurrency replay can test architecture without a UI
-prototype. For a question about the interface a person sees or uses, use
-[prototype](../../prototype/SKILL.md).
+prototype. For a question about the interface a person sees or uses, use a UI
+prototype instead.
 
 ## Frame and run
 
@@ -22,7 +22,7 @@ Run the relevant check: compile a proposed interface against its caller, replay
 the failure, exercise state transitions, or measure the operation. A sketch that
 was never compiled or run supports a proposal, not an experimental result.
 For performance comparisons, use
-[measurement validity](../../diagnosing-bugs/references/measurement-validity.md)
+[measurement validity](../../engineering-principles/references/measurement-validity.md)
 before choosing from the numbers.
 
 ## Decide and retain proof

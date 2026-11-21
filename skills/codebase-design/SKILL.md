@@ -5,9 +5,15 @@ description: Shared vocabulary for designing deep modules. Use when the user wan
 
 # Codebase Design
 
+Provide the shared deep-module vocabulary, seam principles, and structural checks
+for designing or restructuring code. Start from a module, interface, or structural
+friction question. Leave consistent terminology and grounded interface, ownership,
+or experiment recommendations. You are done when every structural choice uses this
+vocabulary consistently and rests on caller, state, or maintenance evidence.
+
 Resolve project, legacy, or custom glossary paths with [glossary paths](../domain-modeling/references/glossary-paths.md) before reading or writing the domain vocabulary.
 
-Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface. Use this language and these principles wherever code is being designed or restructured. The aim is leverage for callers, locality for maintainers, and testability for everyone.
+Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface. The aim is leverage for callers, locality for maintainers, and testability for everyone.
 
 ## Glossary
 
@@ -64,7 +70,7 @@ When designing an interface, ask:
 - **Depth is a property of the interface, not the implementation.** A deep module can be internally composed of small, mockable, swappable parts; they just aren't part of the interface. A module can have **internal seams** (private to its implementation, used by its own tests) as well as the **external seam** at its interface.
 - **The deletion test.** Imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
 - **The interface is the test surface.** Callers and tests cross the same seam. If you want to test *past* the interface, the module is probably the wrong shape.
-- **Own the lifecycle.** When correctness depends on event order, a deep module owns the states, allowed transitions, and effects. Callers express intent through its interface rather than coordinating flags or remembering operation order. Use [Model the Domain](../engineering-principles/references/model-the-domain.md#stateful-behavior) to make that lifecycle explicit.
+- **Own the lifecycle.** When correctness depends on event order, a deep module owns the states, allowed transitions, and effects. Callers express intent through its interface rather than coordinating flags or remembering operation order. Model the lifecycle explicitly under Model the Domain below.
 - **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a seam unless something actually varies across it.
 
 When designing or assessing ownership and enforceable interfaces, read
@@ -80,11 +86,11 @@ a redesign.
 Read [Model the Domain](../engineering-principles/references/model-the-domain.md)
 when choosing state ownership or module responsibilities,
 [Type System Discipline](../engineering-principles/references/type-system-discipline.md)
-when designing domain types, and
+when designing domain types,
 [Boundary Discipline](../engineering-principles/references/boundary-discipline.md)
-when setting visibility or enforcement points. For the interface's test surface,
-read [Test Behavior, Not Implementation](../engineering-principles/references/test-behavior-not-implementation.md).
-Use [TDD](../tdd/SKILL.md) for the test-first implementation loop.
+when setting visibility or enforcement points, and
+[Test Behavior, Not Implementation](../engineering-principles/references/test-behavior-not-implementation.md)
+for the interface's test surface.
 
 ## Relationships
 
@@ -102,6 +108,6 @@ Use [TDD](../tdd/SKILL.md) for the test-first implementation loop.
 
 ## Going deeper
 
-- **Deepening a cluster given its dependencies**, see [DEEPENING.md](DEEPENING.md): dependency categories, seam discipline, and replace-don't-layer testing.
-- **Exploring alternative interfaces**, see [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md): use arena to compare independent designs on depth, locality, and seam placement, with synthesis when requested.
-- **Carrying a consequential design through implementation**, use [architect](../architect/SKILL.md) for caller-first sketches, experiments, and the implementation feedback loop.
+- **Deepening a cluster given its dependencies:** [DEEPENING.md](DEEPENING.md) (dependency categories, seam discipline, and replace-don't-layer testing).
+- **Exploring alternative interfaces:** [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md) (compare independent designs on depth, locality, and seam placement, with synthesis when requested).
+- **Testing an unresolved technical assumption:** [architecture experiments](references/experiments.md) (disposable caller, type, state, or measurement checks before production migration).

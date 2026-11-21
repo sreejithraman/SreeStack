@@ -34,7 +34,7 @@ Every candidate gets the same prompt, so the prompt is the contract.
    assuming they were copied.
 
 Use [prototype](../prototype/SKILL.md) when a UI question needs observation on
-the target platform, and [architecture experiments](../improve-codebase-architecture/references/experiments.md)
+the target platform, and [architecture experiments](../codebase-design/references/experiments.md)
 for technical assumptions. Keep product preferences distinct from facts a run
 can settle. Coverage partitions and races belong to [swarm](../swarm/SKILL.md); arena gives
 each runner the same artifact to produce.

@@ -110,7 +110,7 @@ those questions from the code, ADRs, and evidence; bring back only questions
 that require the user's judgment or unavailable access.
 
 When a decision rests on an untested technical assumption, run a focused
-[architecture experiment](references/experiments.md). Compare actual caller
+[architecture experiment](../codebase-design/references/experiments.md). Compare actual caller
 requirements, migration cost, and enforceable invariants. Use the shared
 measurement guidance linked there for performance claims. Return commands,
 observations, and limits; keep unrun proposals distinct from checked designs.
@@ -130,7 +130,7 @@ During interactive design, apply "domain-modeling" as decisions crystallize:
 For autonomous planning, record proposed glossary and ADR changes in the plan
 for review. When exploring alternative interfaces, use Codebase Design's
 [design-it-twice guidance](../codebase-design/DESIGN-IT-TWICE.md) to compare
-structurally distinct designs through arena; check technical assumptions with
+structurally distinct designs through [Arena](../arena/SKILL.md); check technical assumptions with
 experiments where proposals alone cannot distinguish the options.
 
 ### 4. Return a usable plan

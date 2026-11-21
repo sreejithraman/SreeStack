@@ -29,7 +29,7 @@ insufficient, explain what is missing and ask the user.
 ## Phase 1: Build a feedback loop
 
 Spend the effort needed to make one command catch this bug. For performance
-work, read [measurement validity](references/measurement-validity.md) before
+work, read [measurement validity](../engineering-principles/references/measurement-validity.md) before
 building or using a baseline, choosing a fix, or reporting comparisons.
 
 Try these loop forms in roughly this order:
