@@ -34,8 +34,10 @@ one round under [Grilling](../grilling/SKILL.md)'s rules.
 
 3. **Write the spec into the record.** Replace the brief in the shaping record
    with the spec, so one copy exists. Carry every settled field of the brief
-   into the outcome it affects. Without a shaping record, choose its home
-   by Shape's [record rule](../shape/SKILL.md#the-record). Use the template below.
+   into the outcome it affects. Without a shaping record, reuse an authorized
+   spec or task record, or write a task-owned Markdown draft in host scratch
+   space and link its absolute path in the thread (moving it to project docs
+   only when asked). Use the template below.
 
 4. **Publish only on request.** When the user asks to publish, use the issue
    tracker the user or project configuration supplies. If a required choice

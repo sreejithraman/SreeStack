@@ -36,7 +36,7 @@ acceptance depends on it; use [TDD](../../tdd/SKILL.md) for durable behavior che
 Demonstrate meaningful failure detection with a contrasting input, known bug,
 or invalid disposable fixture when that would resolve uncertainty about a check.
 An implementation and test that repeat the same mistake are not independent
-support. Use [Verify](../../verify/SKILL.md) for runtime acceptance claims.
+support. Use Verify for runtime acceptance claims.
 
 For **qualitative work**, agree on useful criteria, references, and the judge.
 Compare concrete alternatives or use grounded critique where helpful. Explain

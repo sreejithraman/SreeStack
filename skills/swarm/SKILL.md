@@ -20,9 +20,9 @@ or devices. Separate files don't prove it.
 Keep cohesive work with one owner, and say so in the result. Start a dependent slice after its input
 is accepted. Never split to manage context.
 
-Use [Arena](../arena/SKILL.md) to pick a base and graft the best of competing candidates. A target
-to pursue until met belongs to an [Implement](../implement/SKILL.md) owner, which runs Swarm rounds
-that select the best result toward it.
+Use [Arena](../arena/SKILL.md) to pick a base and graft the best of competing candidates. A
+measurable target pursued across rounds belongs to the calling execution owner, which runs Swarm
+rounds and selects the best result toward it.
 
 ## Assign
 
@@ -31,9 +31,8 @@ that select the best result toward it.
   selection rule: first valid pass, rank all, or best result.
 - **Mixed:** race approaches within slices, then assemble the required coverage.
 
-Keep writers apart under [Orchestration's assignment rules](../orchestration/SKILL.md#assign) and
-[child limit](../orchestration/SKILL.md#dispatch). When outputs must land in one place, name one
-child to integrate them. If you are a child yourself, integrate them.
+Keep writers apart under Orchestration's assignment rules and child limit. When outputs must land
+in one place, name one child to integrate them. If you are a child yourself, integrate them.
 
 Tell each worker the skills to use. Each returns **PASS**, **ISSUES**, or **BLOCKED** with evidence
 and gaps, reports every supported issue in its scope, and separates what it exercised from
