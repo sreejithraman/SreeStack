@@ -4,7 +4,7 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/), which
 provides `uvx`. The tools require Python 3.11+, Git, and the target project's
 test dependencies. Confirm that `uvx --version` works before running the skill.
 
-The [skill commands](../SKILL.md) fetch pinned Git revisions into uv's isolated
+The skill commands fetch pinned Git revisions into uv's isolated
 cache on first use. Later runs reuse the cached environments. Clearing the
 cache or changing the source or environment requirements can trigger setup
 again. Mutator's command includes Crapper as an additional dependency, so it

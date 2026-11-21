@@ -5,8 +5,9 @@ description: Run Crapper, Dryer, and Mutator for complexity, duplication, and mu
 
 # Code Quality
 
-Run the tools and report their output. Leave source changes and acceptance
-policy to the caller.
+Run the selected tools on a target project and report their output; leave source changes
+and acceptance policy to the caller. You are done when your report below covers every
+selected tool's result or skip and lists the report paths this run wrote.
 
 Run from the target project's root. Run all three tools unless a subset is
 requested. Honor requested paths and flags; without paths, analyze the project.
@@ -41,7 +42,3 @@ tool or coverage failures from code findings. Dryer can report duplicates with
 exit status 0; Mutator uses 3 for survivors and 2 for a failed baseline.
 When fresh mutation results are needed after tests or dependencies change,
 use Mutator's `--mutate-all` to avoid reusing cached kills for unchanged functions.
-
-Command details: [Crapper](https://github.com/unclebob/crapper#readme),
-[Dryer](https://github.com/unclebob/dryer#readme),
-[Mutator](https://github.com/unclebob/mutator#readme).

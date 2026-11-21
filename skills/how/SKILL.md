@@ -5,7 +5,13 @@ description: Explain how existing code works, trace a subsystem's runtime and da
 
 # How
 
-Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
+Explore the codebase to answer "how does X work?" questions with a senior-engineer mental
+model rather than annotated source code. Start from a question about existing code, runtime
+flow, or package ownership at the current revision. Leave a concrete architectural
+explanation anchored in real files, functions, and boundaries. You are done when the
+requested flow and boundaries are traced to concrete code (or any stopping point and reason
+are named) and code-derived behavior is kept distinct from observed execution and
+historical evidence.
 
 Work read-only within the requested scope. Use [orchestration](../orchestration/SKILL.md)
 for model selection, useful delegation, and acceptance. Historical motivation
@@ -35,7 +41,7 @@ directly. Keep source inputs consistent and give each explorer a bounded questio
 
 ## 3. Synthesize (complex only)
 
-Once exploration is complete, use [the explainer prompt](references/explainer-prompt.md)
+Once exploration is complete, use the explainer prompt
 with the question and findings. Reconcile overlapping accounts and resolve
 contradictions against the source before presenting one explanation. The parent
 checks the synthesis and owns the final answer.
@@ -43,7 +49,5 @@ checks the synthesis and owns the final answer.
 ## 4. Present
 
 Adapt the explanation's sections to the question: Overview, Key Concepts, How
-It Works, Where Things Live, Gotchas. Finish when the requested flow and boundaries
-are traced to concrete code, or name exactly where the trace stops and why.
-Distinguish code-derived behavior from observed execution and historical evidence;
-a source walkthrough alone does not prove runtime correctness or author intent.
+It Works, Where Things Live, Gotchas. A source walkthrough alone does not prove
+runtime correctness or author intent.
