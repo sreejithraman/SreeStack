@@ -9,9 +9,10 @@ Use SimLock to isolate disposable simulator and emulator runs without colliding 
 sibling sessions or retained inspection devices. Start from a simulator or emulator task,
 its host route, and whether the target is disposable or a retained inspection device. Leave
 a run receipt, any required evidence exported before teardown, and a released lease or an
-explicitly recorded retention. You are done when every run-owned consumer has stopped, the
-lease is released (or explicitly retained with an owner) and teardown status is confirmed, or
-an exact host/capacity blocker is reported.
+explicitly recorded retention. You are done when every run-owned consumer has stopped and
+any acquired lease is released (with teardown status confirmed) or explicitly retained with
+an owner—or, when blocked before acquisition or after an uncertain grant or teardown, all
+run-owned resources are reconciled or recorded for recovery alongside the exact blocker.
 
 Follow the host's live device contract first. In T3, read
 [T3 device routing and recovery](references/t3.md) before acquisition, interaction, setup,

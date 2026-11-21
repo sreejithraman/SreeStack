@@ -82,8 +82,9 @@ branch, folder, or task; preserve unique commits unless explicitly abandoned or 
   using an expected-tip lease (`git push --force-with-lease=refs/heads/<branch>:<expected-tip> <remote> :refs/heads/<branch>`) so a
   concurrent push fails the delete. If a clean current worktree holds a branch
   being deleted, detach it at the appropriate base first; otherwise leave the worktree and branch
-  in place. Delete a local branch only when no worktree holds it, using an atomic
-  expected-old-tip check (`git update-ref -d refs/heads/<branch> <expected-tip>`). Remove
+  in place. Delete a local branch only when no worktree holds it—skipping symbolic refs unless
+  alias cleanup is explicitly in scope—using an atomic expected-old-tip check
+  (`git update-ref --no-deref -d refs/heads/<branch> <expected-tip>`). Remove
   branch-specific Git config afterward only if the branch name remains absent; retain and report
   the config if recreated.
 
