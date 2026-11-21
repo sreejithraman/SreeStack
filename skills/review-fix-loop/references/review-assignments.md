@@ -26,8 +26,8 @@ additional-review pool to supplement required assessments. Later stages add none
 owner-only prose review needs no additional agents.
 
 Resolve candidates through the model defaults and record unavailable targets with
-reasons. Dispatch each configured eligible additional-review target once in the
-first independent pass; skip any unavailable or empty pool. Record one mapping per
+reasons. Dispatch each pool's first available listed entry once in the first
+independent pass; skip an exhausted or empty pool. Record one mapping per
 loop and retain it through repairs and any superseded first pass unless the
 selection policy changes.
 
@@ -49,14 +49,13 @@ for required reviewers at every stage and for uncertain dispatches. A reviewer
 that stays unknown after recovery is an incomplete review: a required assessment
 gets a fresh run, and an additional review is skipped.
 
-Additional reviewers override Orchestration's transient-retry default: on a
-confirmed quota or rate limit or unavailable model/provider, try the pool's
-next listed fallback in the model defaults and skip the slot once no listed
-entry remains. On authentication failure, runtime error, incomplete review, or
-an exhausted pool, skip that assignment for the rest of the loop, retain partial
-findings for Review Sweep, and continue the other assignments. Do not retry,
-redraw, substitute an unlisted provider or model, or replace a skipped slot.
-Skipped additional coverage does not block completion.
+Additional reviewers use the pool's listed fallbacks on a confirmed quota, rate
+limit, or unavailable model/provider, but override Orchestration's
+transient-retry default: on authentication failure, runtime error, incomplete
+review, or an exhausted pool, skip that assignment for the rest of the loop,
+retain partial findings for Review Sweep, and continue the other assignments.
+Do not retry, redraw, substitute an unlisted provider or model, or replace a
+skipped slot. Skipped additional coverage does not block completion.
 
 Review Sweep resolves overlapping or conflicting findings using its
 [classification](../../review-sweep/references/classification.md).

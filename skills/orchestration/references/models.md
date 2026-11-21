@@ -31,12 +31,12 @@ or override the model the user picked for a thread.
 - **Additional review (Gemini review pool):** Antigravity Gemini 4 Hydrogen High → Devin Gemini 4 Hydrogen High
 
 This list is the source of truth for availability fallbacks: try a job's listed entries left to
-right on quota or unavailability, skipping disabled or unavailable providers/models; never invent
-an unlisted substitute. Match only the exact standalone model (not a hybrid like Devin `Fusion`),
-resolving exact model IDs and effort options from live host capabilities (some providers encode
-effort in the model ID or expose a separate thought-level option). A caller or project choice
-settles multiple model-ID matches; otherwise report the ambiguity. Pass only the effort option
-unless the user asks for others so host defaults (like Devin's `mode` and `speed`) apply.
+right on quota or unavailability; never invent an unlisted substitute. Match only the exact
+standalone model (not a hybrid like Devin `Fusion`), resolving exact model IDs and effort options
+from live host capabilities (some providers encode effort in the model ID or expose a separate
+thought-level option). A caller or project choice settles multiple model-ID matches; otherwise
+report the ambiguity. Pass only the effort option; leave other options (like Devin's `mode` and
+`speed`) at host defaults unless the user sets them.
 
 ## Choose a model
 

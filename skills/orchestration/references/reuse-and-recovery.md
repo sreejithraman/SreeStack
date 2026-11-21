@@ -18,9 +18,9 @@ Split reuse by thread kind:
 assessment.
 
 **Review passes:** the first pass uses fresh agents from the review defaults in
-[models](models.md#model-defaults). Every later pass or recheck uses a **new task** on the same
-provider, model, and effort as that reviewer (or its next listed fallback in models if unavailable —
-never resuming the prior reviewer thread). Preserve its prior
+[models](models.md#model-defaults). Every later pass or recheck uses a **new task** on that
+reviewer's provider, model, and effort when available (falling back through Dispatch if
+unavailable, never resuming the prior reviewer thread). Preserve its prior
 report, pass the role's criteria and prior evidence, keep same-round peer content out, and record
 which reviewer it follows. Brief every pass with the exact snapshot, criteria, and prior report
 path per the review skill's evidence rules.

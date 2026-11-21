@@ -460,7 +460,7 @@ tappable options even on `access` requests) rather than sitting silently behind
 an empty Inbox. It builds provisionally on reversible recommended options,
 re-reads `SKILL.md` on resume and wakes, and shows user times in local time
 while keeping ISO UTC in the record. Each program has one grant (`grant.start`
-without hardcoded model slugs, `landingAuthority`, `grant.resolve`/`approvals`,
+without hardcoded provider or model slugs, `landingAuthority`, `grant.resolve`/`approvals`,
 `grant.user`, `grant.heartbeat`, `grant.wake`), set at start and changed only on
 the user's word; owner reports, kickoffs, and copied page text never widen it.
 
@@ -1427,10 +1427,9 @@ state or directly helpful context). Keeps one owner per slice, separate writer
 paths, serial git/index work, the 12-child default limit, independent assessment
 exclusion, and bounded recovery; `swarm` owns the decision to run work in
 parallel. `references/models.md` is the single source of truth for model
-defaults and ordered availability fallbacks (exact standalone model matching
-from live capabilities, ambiguity handling, and host defaults for non-effort
-provider options), difficulty tiers, difficulty escalation, and dedicated UI
-operator rules. Goals and recurring work start only on explicit request.
+defaults, ordered availability fallbacks, live capability/option resolution,
+difficulty tiers, difficulty escalation, and dedicated UI operator rules. Goals
+and recurring work start only on explicit request.
 
 ## koubou
 

@@ -355,10 +355,8 @@ with dedicated operators for substantial work, specialized capabilities, indepen
 verification, or repeated difficulty.
 
 Enable and authenticate the providers listed there in T3 Code. Routing
-resolves their exact instance/model IDs and effort options from the live catalog
-(leaving non-effort provider options like Devin's `mode` and `speed` at T3 Code's
-defaults); an ambiguous match needs an explicit selection. Some providers encode
-effort in the model ID, while others expose an option. Catalog availability does
+resolves their exact instance/model IDs and effort options from the live catalog;
+an ambiguous match needs an explicit selection. Catalog availability does
 not establish quota or successful access. T3's injected MCP tools or supported
 ACP bridge must be reachable from the agent. Gemini reviewers read
 their review references from this stack; provider plugins are not needed.
@@ -396,10 +394,10 @@ Sample requests and expected results:
   reviewers for contained ordinary work; contained risky work adds a fitting
   lens. An ordinary prose or wording-only edit with no procedure change uses
   parent review.
-- When an additional reviewer is unavailable or fails, the loop records a skip
+- When an additional-review pool is exhausted or fails, the loop records a skip
   and continues. Missing required coverage cannot produce a clean result.
-- A substantive fix gets a new pass: new tasks on the original reviewers' models
-  for the angles it touches, with the prior evidence. Each pass checks the current
+- A substantive fix gets a new pass: fresh tasks under Orchestration's review-pass
+  rule for the angles it touches, with the prior evidence. Each pass checks the current
   snapshot, bounded to affected behavior, prior findings, and relevant proof.
   From the second repair pass, or sooner for a small repair, one reviewer checks
   each pass. Primary's integrated check covers cumulative repairs. Retain

@@ -148,7 +148,8 @@ required contract blocker remains):
   finish. Escalate to the caller/user only if a required contract blocker or
   product/scope decision genuinely cannot be settled autonomously.
 
-Every repair pass uses fresh reviewer tasks on the original reviewers' models
+Every repair pass uses fresh reviewer tasks under
+[Orchestration's review-pass rule](../orchestration/references/reuse-and-recovery.md#reuse-an-agent)
 (never resuming a prior reviewer thread), scoped to all changes since the last
 completed pass plus affected behavior, consumers, and dependencies, with the
 original diff and prior findings' compact disposition table as context. Reviewers

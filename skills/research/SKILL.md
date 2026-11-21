@@ -28,8 +28,8 @@ assign additional children only when the brief permits it.
 
 ## Source routing
 
-Use the configured YouTube retrieval and X retrieval defaults in Orchestration's
-model defaults. Honor user overrides. Use orchestration for bounded source retrieval; when
+Use Orchestration's YouTube retrieval and X retrieval defaults. Honor user overrides. Use
+orchestration for bounded source retrieval; when
 dispatching a researcher, permit these source tasks in its brief. Source
 retrievers work directly and return content or grounded extracts with canonical
 URLs, relevant dates/timestamps, retrieval method, and access gaps. Inspect the
