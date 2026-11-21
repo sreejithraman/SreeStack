@@ -8,7 +8,8 @@ Builds take turns and a finished one moves into place in one step, so a run sees
 a whole environment or none.
 
 With arguments, run them with the environment's Python instead of the checks.
-Environment overrides for the full suite: CHECK_WORKERS and CHECK_SEED.
+Environment overrides for the full suite: CHECK_WORKERS, CHECK_SEED,
+CHECK_CHANGED_SINCE, and CHECK_PUSH_REFS.
 """
 
 import contextlib
@@ -155,8 +156,66 @@ def _has_own_fixture(cls, names) -> bool:
     return False
 
 
+def select_test_dirs(changed_since: str) -> tuple[tuple[str, ...], str]:
+    """Return the TEST_DIRS reachable from changes since changed_since, or all TEST_DIRS."""
+    try:
+        diff_committed = subprocess.check_output(
+            ["git", "diff", "-z", "--no-renames", "--name-only", f"{changed_since}...HEAD"],
+            cwd=ROOT, text=True, stderr=subprocess.DEVNULL,
+        ).split("\0")
+        diff_working = subprocess.check_output(
+            ["git", "diff", "-z", "--no-renames", "--name-only", "HEAD"],
+            cwd=ROOT, text=True, stderr=subprocess.DEVNULL,
+        ).split("\0")
+        untracked = subprocess.check_output(
+            ["git", "ls-files", "-z", "--others", "--exclude-standard"],
+            cwd=ROOT, text=True, stderr=subprocess.DEVNULL,
+        ).split("\0")
+    except subprocess.CalledProcessError:
+        return TEST_DIRS, f"could not diff against {changed_since}; running full suite"
+
+    changed = sorted({p for p in (*diff_committed, *diff_working, *untracked) if p})
+    if not changed:
+        return TEST_DIRS, f"no changed files since {changed_since}; running full suite"
+
+    outside = next((p for p in changed if not p.startswith("skills/")), None)
+    if outside:
+        return TEST_DIRS, f"full suite triggered by {outside}"
+
+    changed_skills = {Path(path).parts[1] for path in changed}
+    selected = tuple(d for d in TEST_DIRS if d.startswith("skills/") and Path(d).parts[1] in changed_skills)
+    return selected, f"selected {len(selected)}/{len(TEST_DIRS)} test dirs for skills {', '.join(sorted(changed_skills))}"
+
+
+def check_push_refs(push_refs: str) -> str | None:
+    """Return an error message if any non-deletion pushed SHA differs from HEAD."""
+    lines = [line.strip() for line in push_refs.splitlines() if line.strip()]
+    if not lines:
+        return None
+    head_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        local_ref, local_sha = parts[0], parts[1]
+        if set(local_sha) == {"0"}:
+            continue
+        peeled = subprocess.run(
+            ["git", "rev-parse", "--verify", f"{local_sha}^{{commit}}"],
+            cwd=ROOT, text=True, capture_output=True,
+        )
+        target_sha = peeled.stdout.strip() if peeled.returncode == 0 else local_sha
+        if target_sha != head_sha:
+            return (f"pre-push checks validate HEAD ({head_sha[:12]}), "
+                    f"but push updates {local_ref} ({local_sha[:12]}). "
+                    "Check out that branch or run full checks before pushing.")
+    return None
+
+
 def _discover_mode() -> int:
     os.environ.pop("_SREESTACK_CHECK_DISCOVER", None)
+    selected_env = os.environ.pop("_SREESTACK_SELECTED_DIRS", None)
+    test_dirs = tuple(json.loads(selected_env)) if selected_env is not None else TEST_DIRS
     proto_out = _detach_protocol_stdout()
     base_path = list(sys.path)
     root_resolved = ROOT.resolve()
@@ -167,7 +226,7 @@ def _discover_mode() -> int:
     file_tests = {}
     errors = []
 
-    for start_dir in TEST_DIRS:
+    for start_dir in test_dirs:
         folder = ROOT / start_dir
         _evict_repo_modules()
         sys.path[:] = [str(folder), *[p for p in base_path if p != str(folder)]]
@@ -371,7 +430,26 @@ def _build_units(discovery: dict, rng: random.Random, workers: int) -> list[dict
 
 def _run_parallel_checks(python: str) -> int:
     started = time.perf_counter()
-    discover_env = {**os.environ, "_SREESTACK_CHECK_DISCOVER": "1"}
+    push_refs = os.environ.get("CHECK_PUSH_REFS", "")
+    if push_refs.strip():
+        push_error = check_push_refs(push_refs)
+        if push_error:
+            print(f"Failed: {push_error}", file=sys.stderr)
+            return 1
+
+    changed_since = os.environ.get("CHECK_CHANGED_SINCE", "").strip()
+    if changed_since:
+        selected_dirs, reason = select_test_dirs(changed_since)
+        print(f"Selection ({changed_since}): {reason}", flush=True)
+    else:
+        selected_dirs = TEST_DIRS
+
+    discover_env = {
+        **os.environ,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "_SREESTACK_CHECK_DISCOVER": "1",
+        "_SREESTACK_SELECTED_DIRS": json.dumps(list(selected_dirs)),
+    }
     discover_proc = subprocess.run(
         [python, str(Path(__file__).resolve())],
         cwd=ROOT, env=discover_env, capture_output=True, text=True,
@@ -414,6 +492,7 @@ def _run_parallel_checks(python: str) -> int:
         def run_worker_thread():
             nonlocal skipped_count
             worker_env = {k: v for k, v in os.environ.items() if not k.startswith("CHECK_")}
+            worker_env["PYTHONDONTWRITEBYTECODE"] = "1"
             worker_env["_SREESTACK_CHECK_WORKER"] = "1"
             worker_env["_SREESTACK_TEST_CACHE"] = cache_dir
             proc = subprocess.Popen(
