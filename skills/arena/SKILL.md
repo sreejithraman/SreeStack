@@ -5,114 +5,100 @@ description: "Produce independent candidates for one artifact, pick a base, and 
 
 # Arena
 
+Produce independent competing candidates for one artifact, judge them against a
+shared rubric, and either recommend a winner or synthesize a verified result.
+Start from an artifact goal, constraints, and finish line (synthesis by default;
+comparison-only when requested). Leave the required Outputs below for that
+finish line. You are done when the requested finish line is delivered with
+observed proof, or reported incomplete under Phase B.
+
 Open a task plan with one entry per phase (Frame, Fan out, Cross-judge, Pick,
-Graft, Verify) before launching anything. By default, return one synthesized
-artifact. Comparison-only work returns a recommendation; production
-implementation follows only when requested. Preserve the caller's finish line.
+Graft, Verify) before launching. Preserve the caller's finish line; production
+implementation follows only when requested.
 
 ## Phase A: Frame
 
-Every candidate gets the same prompt, so the prompt is the contract.
+Every candidate receives the same prompt as its contract:
+1. State the artifact, preserved constraints, and success evidence.
+2. Define 3–6 concrete gradeable rubric criteria before seeing any candidate, and
+   share them with candidates and the cross-judge.
+3. Choose runners through [Orchestration](../orchestration/SKILL.md) using its
+   model defaults for candidates and Primary review for the cross-judge unless
+   the caller names models. Honor requested counts (minimum two for comparison;
+   independent attempts on one model count too) and report any unobtainable
+   model diversity.
+4. Give each candidate an isolated output path—a delegated worktree for code or
+   a per-runner scratch directory for standalone artifacts—starting from the
+   same confirmed revision, passing relevant uncommitted inputs explicitly.
 
-1. State the artifact each candidate is producing, the constraints it must
-   preserve, and the evidence that would establish success.
-2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks
-   like on *this* task. Share the requirements and criteria with the candidates
-   and judge. Set them before seeing candidates.
-3. Pick the runners through [orchestration](../orchestration/SKILL.md). Use its
-   model defaults for candidates and Primary review for the
-   cross-judge unless the caller specifies models. Honor a requested candidate
-   count. Use at least two candidates for a comparison; add more when they test
-   distinct directions. Independent attempts on the same model are useful too.
-   Report any requested model diversity that could not be obtained.
-4. Give each candidate its own output location: a task-owned worktree through
-   the host's delegation tools for code changes, or a per-runner scratch
-   directory for standalone artifacts. Follow the host's current workspace
-   rules and orchestration's ownership and recovery rules. Give every candidate
-   the same starting source. For isolated checkouts, confirm the starting
-   revision and supply relevant uncommitted inputs explicitly rather than
-   assuming they were copied.
-
-Use [prototype](../prototype/SKILL.md) when a UI question needs observation on
-the target platform, and [architecture experiments](../codebase-design/references/experiments.md)
-for technical assumptions. Keep product preferences distinct from facts a run
-can settle. Coverage partitions and races belong to [swarm](../swarm/SKILL.md); arena gives
-each runner the same artifact to produce.
+Use [Prototype](../prototype/SKILL.md) for UI observation on the target platform
+and [architecture experiments](../codebase-design/references/experiments.md) for
+technical assumptions; keep product preferences distinct from facts a run can
+settle. Coverage partitions and races belong to
+[Swarm](../swarm/SKILL.md); Arena assigns every runner the same artifact.
 
 ## Phase B: Fan out
 
-Dispatch independent candidates through orchestration, each with the same task,
-criteria, shared grounding, its own output path, and instructions to produce
-the artifact and a short rationale naming the alternatives it considered and
-what it rejected. Keep candidates independent of each other's work. Run in
-parallel within capacity, or in waves with the same starting inputs.
-
-If a candidate produces no usable output, note the dropout. Follow
-orchestration's bounded recovery. With fewer than two usable candidates, report
-the comparison as incomplete rather than claiming a winner.
+Dispatch independent candidates through Orchestration with the shared task,
+rubric, grounding, output path, and instructions to include a short rationale of
+considered and rejected alternatives. Keep candidates isolated from each other;
+run in parallel within capacity, or in waves using the same starting inputs.
+On dropouts, apply Orchestration's bounded recovery; fewer than two usable
+candidates makes the comparison incomplete rather than declaring a winner.
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates stop writing, spawn one read-only judge through
-orchestration. It sees the rubric and the candidates by path label, scores each
-criterion, and recommends a base with rationale. It runs in parallel with your
-reading in Phase D. Keep the candidates fixed while judging them.
-
-The judge assesses evidence, not model reputation. An unavailable required
-judge is a coverage gap; retain the candidates and report it. Model settings
-and recovery come from orchestration rather than an arena-specific panel.
+After all candidates stop writing, dispatch one read-only cross-judge through
+Orchestration (running in parallel with your Phase D reading) with the rubric
+and path-labeled candidates. Keep the candidates fixed while judging them. The
+judge scores each criterion on evidence—not model reputation—and recommends a
+base. An unavailable required judge is a coverage gap to report while retaining
+candidates.
 
 ## Phase D: Pick a base
 
-Read every candidate end to end before picking. Score each against the rubric
-criterion by criterion, not on holistic feel, and compare with the cross-judge.
-Agreement supports the pick. Disagreement may indicate bias or an ambiguous
-rubric. Read both rationales and check the evidence before deciding; if the
-rubric needs clarification, apply it to every candidate before choosing.
+Read every candidate end to end, score criterion by criterion, and compare with
+the cross-judge. Agreement supports the pick; disagreement signals potential
+bias or rubric ambiguity—check evidence and clarify the rubric across all
+candidates if needed.
 
-Pick the base a future maintainer can extend most easily without breaking
-invariants. When two feel tied, prefer the cleaner interface or smaller public
-surface, per [Laziness Protocol](../engineering-principles/references/laziness-protocol.md).
-Judge UI behavior on the target surface and measured claims on comparable
-workloads. A score does not replace the required proof.
+Prefer the base easiest to extend without breaking invariants; on ties, prefer
+the cleaner interface or smaller public surface per
+[Laziness Protocol](../engineering-principles/references/laziness-protocol.md).
+Judge UI on the target surface and performance on comparable workloads; scores
+never replace required proof.
 
-For a comparison-only request, return the candidates, evidence, tradeoffs, and
-recommendation here. Preserve an explicitly requested user choice or checkpoint
-before synthesis.
+Comparison-only requests finish here with candidates, evidence, tradeoffs, and
+recommendation. On any path—including synthesis—preserve an explicitly requested
+user choice or checkpoint here before proceeding to Phase E grafting or
+consensus adoption.
 
 ## Phase E: Graft (synthesis only)
 
-Walk each losing candidate once more for what is worth porting into the base,
-usually one or two things per candidate, not most of it. Fold each graft in by
-hand, per [Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md),
-so the result stays coherent under one mental model. Don't paste mechanically.
-
-If the candidates converge on one shape, note the agreement and use the
-consensus shape. No graft is needed. If they answer incompatible interpretations
-of the brief, reframe and re-run rather than averaging the divergence. Preserve
-the invariants and accepted tradeoffs of the chosen base as you graft.
+Scan each losing candidate for 1–2 high-value improvements to fold into the
+base by hand per
+[Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md)
+so the result keeps one coherent mental model without breaking base invariants.
+If candidates converge on one shape, use the consensus shape with no graft. If
+they answered incompatible interpretations of the brief, reframe and rerun
+instead of averaging.
 
 ## Phase F: Verify (synthesis only)
 
-Verify the synthesized artifact like any other output, per
-[Prove It Works](../engineering-principles/references/prove-it-works.md).
-Run the checks the combined result needs; passing candidates do not establish
-that their combination works. A design sketch supports only the claims its
-caller checks or experiments exercised. Mark untested runtime claims explicitly.
-
-If verification finds a problem the arena missed, revisit the frame or the
-graft that introduced it. Don't paper over it. For production changes, use
-[verify](../verify/SKILL.md) for the real workflow.
+Verify the combined artifact per
+[Prove It Works](../engineering-principles/references/prove-it-works.md)—passing
+candidates never prove their combination works. Design sketches support only
+claims exercised by caller checks or experiments; label untested runtime claims.
+For production changes, run [Verify](../verify/SKILL.md). Revisit the frame or
+graft if verification fails instead of papering over it.
 
 ## Outputs
 
-Comparison-only work returns the candidates, evidence, tradeoffs, and
-recommendation, including any dropouts.
+- **Comparison-only:** candidates, evidence, tradeoffs, recommendation, dropouts,
+  run instructions, and remaining evidence gaps.
+- **Synthesis:** synthesized artifact plus synthesis note (base and why,
+  cross-judge verdict, each graft and source, rejections and why, convergence or
+  dropouts, verification result, run instructions, and gaps).
 
-Synthesis returns one synthesized artifact, with a short synthesis note alongside
-naming the base and why, the cross-judge's verdict, each graft with its source
-candidate, what was rejected and why, any convergence or dropouts, and the
-verification result. Include run instructions and remaining evidence gaps for
-either finish line. Retain the candidates until the decision and decisive
-evidence are recorded; clean up task-owned disposable work only when it is no
-longer needed.
+Retain candidates until the decision and decisive evidence are recorded; clean
+up task-owned disposable work only after it is no longer needed.
