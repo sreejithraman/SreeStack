@@ -233,10 +233,10 @@ Automatically discoverable in both hosts so related skills can reach it for
 requested failure prevention. Uses bounded history and available session records,
 counts independent occurrences, checks current exposure, and ranks live classes.
 Shared design and enforcement selection use `engineering-principles`; guard proof
-remains in `codebase-design`. Technical experiments use the architecture reference.
-Planning and implementation honor
-the requested finish line and reuse existing delivery workflows. Program execution routes through `coordinator`; bounded parallel work
-uses `swarm`.
+and technical experiments live in `codebase-design`. Planning and implementation
+honor the requested finish line and leave multi-outcome coordination and
+behavioral evaluation to calling workflows without upward links; bounded parallel
+work uses `swarm`.
 Automatic correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
 

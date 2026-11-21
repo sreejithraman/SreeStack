@@ -7,16 +7,16 @@ the italic notes with actual content.
 ## Problem
 
 *One paragraph. What we're trying to do, and what about the existing system or
-constraints makes the shape non-obvious. If [Phase A](../SKILL.md#phase-a-ground-the-problem)
-surfaced constraints the design must honor (existing types to interop with,
-callers we can't break, invariants that crossed the interface), name them here
-so the reader sees the same constraints you saw.*
+constraints makes the shape non-obvious. If Phase A grounding surfaced
+constraints the design must honor (existing types to interop with, callers we
+can't break, invariants that crossed the interface), name them here so the
+reader sees the same constraints you saw.*
 
 ## Usage (caller's view)
 
 *Write this first, before the type sketch. Show the README or quickstart the
 consumer reads, plus two or three realistic call sites in their own code. What
-they import, what they call, what comes back. The type sketch in [Shape](#shape)
+they import, what they call, what comes back. The type sketch under Shape below
 is derived from this. The two must agree. When they diverge, reconcile the
 sketch to the usage, not the reverse. The caller's experience is the spec.
 The types serve it.*

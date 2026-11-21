@@ -6,146 +6,126 @@ disable-model-invocation: true
 
 # Improve Codebase Architecture
 
-Resolve project, legacy, or custom glossary paths with [glossary paths](../domain-modeling/references/glossary-paths.md) before reading or writing the domain vocabulary.
+Surface architectural friction and propose **deepening opportunities**—refactors
+that turn shallow modules into deep ones for testability and AI-navigability.
+Start from a named area, pain point, or recent codebase hot spots. Leave
+evidence-backed recommendations in chat (an HTML report only when requested) and,
+for a design or migration request, a checked plan. You are done when worthwhile
+candidates have evidence, reasons, and confidence—and any requested design or
+migration plan has checked technical uncertainties (or explicit gaps) and
+concrete migration and verification steps.
 
-Surface architectural friction and propose **deepening opportunities**: refactors that turn shallow modules into deep ones. The aim is testability and AI-navigability.
+Resolve glossary paths with
+[glossary paths](../domain-modeling/references/glossary-paths.md) before reading
+or writing domain vocabulary (`GLOSSARY.md` names good seams; ADRs in `docs/adr/`
+record settled decisions). Use
+[Codebase Design](../codebase-design/SKILL.md)'s exact vocabulary (**module**,
+**interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**)
+without drifting into "component," "service," "API," or "boundary," along with
+the deletion test, "the interface is the test surface," and "one adapter =
+hypothetical seam, two = real."
 
-Own structural improvement. [Correct](../correct/SKILL.md) owns mining repeated
-agent mistakes and proving their prevention. Use its findings as inputs when
-the requested architecture work addresses an evidenced failure class.
-
-Use [Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md)
-when shaping a candidate,
+Own structural improvement; [Correct](../correct/SKILL.md) owns mining repeated
+agent mistakes and proving their prevention (use its findings as input when
+addressing an evidenced failure class). Apply
+[Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md)
+when shaping candidates,
 [Model the Domain](../engineering-principles/references/model-the-domain.md)
-when ownership changes or correctness depends on event order, and
+when ownership or event order governs correctness, and
 [Migrate Callers Then Delete Legacy APIs](../engineering-principles/references/migrate-callers-then-delete-legacy-apis.md)
-when moving callers. Codebase Design supplies the module vocabulary and interface
-techniques used below.
+when moving callers.
 
 ## Choose the finish line
 
-Default to interactive exploration: present candidates, let the user select one,
-then explore its design together. When the user requests an autonomous
-investigation or a plan backed by experiments, carry promising candidates
-through design and technical checks before returning the recommendation.
-Resolve routine technical questions from the repository and experiments. Ask
-only when a missing product choice, access, or scope decision changes the result.
-Both paths produce recommendations; a planning request does not authorize
-production refactoring.
+Default to interactive exploration: present candidates, let the user pick one,
+then explore its design together. For a requested autonomous investigation or
+experiment-backed plan, carry strong candidates through design and technical
+checks before returning the recommendation; resolve routine technical questions
+from code and experiments, asking only for product, access, or scope decisions
+that materially change the result. Both paths return recommendations; a planning
+request never authorizes production refactoring.
 
-This command is _informed_ by the project's domain model and built on a shared design vocabulary:
+## 1. Explore
 
-- Apply the skill "codebase-design" for the architecture vocabulary (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**) and its principles (the deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two = real"). Use these terms exactly in every suggestion, and don't drift into "component," "service," "API," or "boundary."
-- The domain language in `GLOSSARY.md` gives names to good seams; ADRs in `docs/adr/` record decisions this command should not re-litigate.
+**Scope before scanning (YAGNI):** if the user named a module, subsystem, or pain
+point, use it; otherwise inspect recent commit history (`git log --oneline`) to
+prioritize actively changing hot spots before widening the net. Read `GLOSSARY.md`
+and relevant ADRs first.
 
-## Process
+Assign a read-only exploration through [Orchestration](../orchestration/SKILL.md)
+with the scope, domain vocabulary, ADRs, and an evidence-backed findings report
+as its completion check. Direct the child to apply
+[preventing recurring mistakes](../codebase-design/references/preventing-mistakes.md),
+[architecture signals](../codebase-design/references/architecture-signals.md),
+and the **deletion test** (would deleting a shallow module concentrate
+complexity or merely relocate it?) across these friction questions:
 
-### 1. Explore
+- Where does understanding one concept require bouncing across many small modules?
+- Where are modules **shallow** (interface nearly as complex as implementation)?
+- Where were pure functions extracted for testability while real bugs hide in
+  caller wiring (no **locality**)?
+- Where do tightly coupled modules leak across seams?
+- Which parts are untested or hard to test through their current interface?
 
-**Scope before you scan: YAGNI.** Deepening a module pays off by making future changes to it easier, so put extra weight on the parts of the codebase that have recently changed. Decide *where* to look before you look:
+Require caller traces, constructible states, and maintenance history—never layout
+or size preferences alone. Accept the findings against the assigned scope and
+evidence before recommending changes.
 
-- If the user named a direction (a module, a subsystem, a pain point), take it, and skip the inference below.
-- Otherwise, walk back a good stretch of the commit history (`git log --oneline`) to find the codebase's hot spots, the files and areas that keep coming up, and let those paths pull your attention first. If the changes are scattered with no clear hot spot, widen the net.
+## 2. Share findings and recommendations
 
-Read the project's domain glossary (`GLOSSARY.md`) and any ADRs in the area you're touching first.
+Lead in chat with the strongest recommendation first. For each worthwhile
+candidate give:
+- **Finding:** where the current design causes friction, with file links or examples.
+- **Recommendation:** what should change, in plain language using domain and
+  Codebase Design terms.
+- **Why:** expected benefit, key tradeoffs, and why it earns its cost.
+- **Confidence:** `Strong`, `Worth exploring`, or `Speculative`.
 
-Then use [orchestration](../orchestration/SKILL.md) to assign a read-only
-exploration of that scope, with paths, domain vocabulary, ADRs, and an
-evidence-backed findings report as its completion criterion. Give the child these
-friction questions and ask it to explore organically:
+If nothing earns a refactor, say so and why. Flag ADR conflicts only when
+observed friction justifies reopening them.
 
-- Where does understanding one concept require bouncing between many small modules?
-- Where are modules **shallow**, with an interface nearly as complex as the implementation?
-- Where have pure functions been extracted just for testability, but the real bugs hide in how they're called (no **locality**)?
-- Where do tightly-coupled modules leak across their seams?
-- Which parts of the codebase are untested, or hard to test through their current interface?
+Generate an HTML report only on request: follow [HTML-REPORT.md](HTML-REPORT.md),
+write `<tmpdir>/architecture-review-<timestamp>.html` (`$TMPDIR`/`/tmp`, `%TEMP%`
+on Windows), open it with the platform file opener, share its absolute path, and
+still include the high-level recommendation in chat.
 
-Have the child also apply Codebase Design's
-[ownership and enforcement checks](../codebase-design/references/preventing-mistakes.md)
-and [architecture signals](../codebase-design/references/architecture-signals.md)
-to evidenced friction in this scope. Use caller traces, constructible states,
-and maintenance history to distinguish worthwhile candidates from layout or
-size preferences. The child returns recommendations without implementing them.
+In interactive mode, ask which candidate to explore before designing interfaces.
+In autonomous mode, pick the strongest candidate (or compare contenders when a
+real tradeoff remains) and continue below.
 
-Include the **deletion test** in the brief: would deleting a suspected shallow
-module concentrate complexity, or just move it? A "yes, concentrates" is the
-signal to investigate. Accept the child's findings against the assigned scope
-and evidence before making recommendations.
+## 3. Explore the design
 
-### 2. Share findings and recommendations
+In interactive mode, use [Grilling](../grilling/SKILL.md) after the user chooses
+a candidate (constraints, dependencies, deepened interface, what sits behind the
+seam, surviving tests). In autonomous mode, settle those from code, ADRs, and
+evidence, escalating only user-judgment or missing-access questions.
 
-Default to a concise, high-level response in chat. Lead with the change you
-recommend first and why it matters. For each worthwhile candidate, explain:
+- **Untested technical assumptions:** run a focused
+  [architecture experiment](../codebase-design/references/experiments.md)
+  comparing caller requirements, migration cost, enforceable invariants, and
+  valid measurements; return commands, observations, and limits, keeping unrun
+  proposals distinct from checked designs.
+- **Lifecycle candidates:** include a compact transition table per Model the
+  Domain's stateful behavior rules, comparing lifecycle ownership and caller
+  obligations, and carry observed event sequences into verification plans.
+- **Alternative interfaces:** compare structurally distinct designs through
+  [Arena](../arena/SKILL.md) (comparison-only by default unless synthesis is
+  requested) using [Design It Twice](../codebase-design/DESIGN-IT-TWICE.md).
+- **Glossary and ADRs:** in interactive mode, use
+  [Domain Modeling](../domain-modeling/SKILL.md) to add or sharpen terms in
+  `GLOSSARY.md` (creating it lazily) and offer an ADR when the user rejects a
+  candidate for a durable load-bearing reason (skip ephemeral or self-evident
+  reasons). In autonomous mode, record proposed glossary and ADR changes in the
+  plan instead of writing them.
 
-- **Finding** — where the current design causes friction, with a brief example
-  or file link that supports it.
-- **Recommendation** — what should change, in plain language.
-- **Why** — the expected benefit, key tradeoffs, and why it is worth doing.
-- **Confidence** — `Strong`, `Worth exploring`, or `Speculative`.
+## 4. Return a usable plan
 
-Use the project's domain terms and the `/codebase-design` vocabulary. Keep
-implementation detail for the follow-up discussion. If no change is worth
-recommending, say so and explain why.
+For a migration plan, connect the finding to the target interface and owner,
+affected callers and compatibility paths, migration order, enforcement,
+verification, tradeoffs, rejected alternatives, experiment artifacts/commands,
+proposed checks, and any glossary or ADR updates.
 
-If a candidate conflicts with an ADR, explain why the observed friction warrants
-revisiting that decision. Only include conflicts worth reopening.
-
-Create an HTML report only when the user asks for one. For that path, read
-[HTML-REPORT.md](HTML-REPORT.md) for the format and diagrams. Write it to
-`<tmpdir>/architecture-review-<timestamp>.html`, using `$TMPDIR` or `/tmp`
-(`%TEMP%` on Windows). Open it with the platform's file opener and share its
-absolute path. Include the high-level recommendation in chat too.
-
-For interactive exploration, ask which candidate the user wants to explore
-before designing interfaces. For an autonomous investigation, select the
-strongest candidate or compare candidates when the evidence leaves a real
-tradeoff, then continue below.
-
-### 3. Explore the design
-
-For interactive exploration, apply "grilling" after the user picks a candidate:
-constraints, dependencies, the shape of the deepened module, what sits behind
-the seam, and what tests survive. For autonomous investigation, work through
-those questions from the code, ADRs, and evidence; bring back only questions
-that require the user's judgment or unavailable access.
-
-When a decision rests on an untested technical assumption, run a focused
-[architecture experiment](../codebase-design/references/experiments.md). Compare actual caller
-requirements, migration cost, and enforceable invariants. Use the shared
-measurement guidance linked there for performance claims. Return commands,
-observations, and limits; keep unrun proposals distinct from checked designs.
-
-For a lifecycle candidate, include a compact transition table using
-[stateful behavior](../engineering-principles/references/model-the-domain.md#stateful-behavior).
-Use the observed event sequence to compare which design concentrates lifecycle
-ownership and removes ordering knowledge from callers. Carry that sequence and
-its required outcomes into the verification plan.
-
-During interactive design, apply "domain-modeling" as decisions crystallize:
-
-- **Naming a deepened module after a concept not in `GLOSSARY.md`?** Add the term to `GLOSSARY.md`. Create the file lazily if it doesn't exist.
-- **Sharpening a fuzzy term during the conversation?** Update `GLOSSARY.md` right there.
-- **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing; skip ephemeral reasons ("not worth it right now") and self-evident ones.
-
-For autonomous planning, record proposed glossary and ADR changes in the plan
-for review. When exploring alternative interfaces, use Codebase Design's
-[design-it-twice guidance](../codebase-design/DESIGN-IT-TWICE.md) to compare
-structurally distinct designs through [Arena](../arena/SKILL.md); check technical assumptions with
-experiments where proposals alone cannot distinguish the options.
-
-### 4. Return a usable plan
-
-When a migration plan is requested, connect the finding to the recommended
-interface and owner, affected callers and compatibility paths, migration order,
-enforcement, and verification. Explain tradeoffs and rejected alternatives using
-the evidence actually gathered. Include experiment artifacts and commands, and
-label checks still proposed. State any ADR or domain vocabulary changes needed.
-
-Interactive findings are complete when worthwhile candidates have evidence,
-reasons, and confidence. A requested design or plan is complete when its
-technical uncertainties have been checked or have explicit evidence gaps and
-next checks, and the migration and proof are concrete enough to review.
-Production implementation follows only within the user's requested scope and
-uses the existing implementation, review, and verification workflows. Use
-[architect](../architect/SKILL.md) when the selected design needs to guide
-implementation; carry forward the findings and experiments already checked.
+Production implementation happens only within the user's authorized scope; hand
+selected designs that need design-in-the-loop implementation to
+[Architect](../architect/SKILL.md), carrying forward checked findings and
+experiments.
