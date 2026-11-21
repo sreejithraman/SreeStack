@@ -9,6 +9,7 @@ tests skip locally and fail in CI.
 """
 
 import copy
+import fcntl
 import functools
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -107,49 +108,39 @@ class Chrome:
         self.buffer = b""
         self.events = []
         self.stderr_path = Path(profile) / "chrome-stderr.log"
-        self.stderr_file = self.stderr_path.open("wb")
         commands_read, self.commands = os.pipe()
         self.replies, replies_write = os.pipe()
 
         def connect_debugging_pipe():
-            read_fd, write_fd = commands_read, replies_write
-            if write_fd == 3:
-                write_fd = os.dup(write_fd)
-            if read_fd != 3:
-                os.dup2(read_fd, 3)
-            if write_fd != 4:
-                os.dup2(write_fd, 4)
+            read_fd = fcntl.fcntl(commands_read, fcntl.F_DUPFD, 5)
+            write_fd = fcntl.fcntl(replies_write, fcntl.F_DUPFD, 5)
+            os.dup2(read_fd, 3)
+            os.dup2(write_fd, 4)
             for fd in {self.commands, self.replies, commands_read, replies_write, read_fd, write_fd} - {3, 4}:
-                try:
-                    os.close(fd)
-                except OSError:
-                    pass
-            os.set_inheritable(3, True)
-            os.set_inheritable(4, True)
+                os.close(fd)
 
         try:
-            self.process = subprocess.Popen(
-                [executable, "--headless=new", "--remote-debugging-pipe", "--no-sandbox", "--no-first-run",
-                 "--no-default-browser-check", "--disable-background-networking", "--disable-gpu",
-                 "--disable-dev-shm-usage", "--password-store=basic", "--use-mock-keychain",
-                 "--disable-extensions", f"--user-data-dir={profile}",
-                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "about:blank"],
-                preexec_fn=connect_debugging_pipe, close_fds=False,
-                stdout=subprocess.DEVNULL, stderr=self.stderr_file,
-            )
+            with self.stderr_path.open("wb") as stderr:
+                self.process = subprocess.Popen(
+                    [executable, "--headless=new", "--remote-debugging-pipe", "--no-sandbox", "--no-first-run",
+                     "--no-default-browser-check", "--disable-background-networking", "--disable-gpu",
+                     "--disable-dev-shm-usage", "--password-store=basic", "--use-mock-keychain",
+                     "--disable-extensions", f"--user-data-dir={profile}",
+                     "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "about:blank"],
+                    preexec_fn=connect_debugging_pipe, close_fds=False,
+                    stdout=subprocess.DEVNULL, stderr=stderr,
+                )
         except Exception:
             os.close(self.commands)
             os.close(self.replies)
-            self.stderr_file.close()
             raise
         finally:
             os.close(commands_read)
             os.close(replies_write)
 
     def _diagnostic(self):
-        self.stderr_file.flush()
         code = self.process.poll()
-        stderr = self.stderr_path.read_text(errors="replace").strip() if self.stderr_path.exists() else ""
+        stderr = self.stderr_path.read_text(errors="replace").strip()
         tail = "\n".join(stderr.splitlines()[-10:])
         parts = []
         if code is not None:
@@ -202,7 +193,6 @@ class Chrome:
             self.process.wait()
         os.close(self.commands)
         os.close(self.replies)
-        self.stderr_file.close()
 
 
 
