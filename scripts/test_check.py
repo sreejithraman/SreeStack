@@ -275,6 +275,77 @@ class CheckRunnerTests(unittest.TestCase):
         missing = self.run_checks(code=1)
         self.assertIn("No test_*.py files found in scripts", missing.stderr)
 
+    def test_changed_since_selects_touched_skills_reruns_all_on_core_and_catches_hidden_change(self):
+        self.preseed_environment()
+        # Seed a failing coordinator test on main so it is NOT in the branch diff.
+        self.write("skills/coordinator/scripts/test_fixture.py",
+                   "import unittest\nclass Broken(unittest.TestCase):\n    def test_fail(self): self.fail('hidden')\n")
+        self.git("add", "skills/coordinator/scripts/test_fixture.py")
+        self.git("-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "--quiet", "-m", "seed hidden coordinator failure on main")
+
+        # 1. Skill-only change selects only that skill's tests (passes despite hidden coordinator failure).
+        self.git("switch", "--quiet", "-c", "feature")
+        self.write("skills/pr/scripts/note.txt", "touched\n")
+        self.git("add", "skills/pr/scripts/note.txt")
+        self.git("-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "--quiet", "-m", "touch pr skill")
+
+        narrowed = self.run_checks(env={"CHECK_CHANGED_SINCE": "main"})
+        self.assertIn("selected 1/9 test dirs for skills pr", narrowed.stdout)
+        self.assertIn("Ran 1 tests across 1 files", narrowed.stdout)
+
+        # 2. Cross-skill rename selects both source and destination skills (--no-renames).
+        self.git("switch", "--quiet", "-c", "rename-feature")
+        self.git("mv", "skills/pr/scripts/note.txt", "skills/mac-work/scripts/note.txt")
+        self.git("-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "--quiet", "-m", "move note across skills")
+        renamed = self.run_checks(env={"CHECK_CHANGED_SINCE": "feature"})
+        self.assertIn("selected 2/9 test dirs for skills mac-work, pr", renamed.stdout)
+        self.assertIn("Ran 2 tests across 2 files", renamed.stdout)
+
+        # 3. Core/shared path change reruns all 9 test dirs and catches the hidden coordinator failure.
+        self.git("switch", "--quiet", "main")
+        self.git("switch", "--quiet", "-c", "core-feature")
+        self.write("scripts/shared_helper.py", "VALUE = 1\n")
+        core = self.run_checks(code=1, env={"CHECK_CHANGED_SINCE": "main"})
+        self.assertIn("full suite triggered by scripts/shared_helper.py", core.stdout)
+        self.assertIn("Ran 9 tests across 9 files", core.stdout)
+        self.assertIn("hidden", core.stderr)
+
+        # 4. Docs-only skill change selects 0 test dirs yet still runs check_skills.py and fails on it.
+        (self.repo / "scripts/shared_helper.py").unlink()
+        self.git("switch", "--quiet", "main")
+        self.write("scripts/check_skills.py", "raise SystemExit('broken link')\n")
+        self.git("add", "scripts/check_skills.py")
+        self.git("-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "--quiet", "-m", "seed failing check_skills on main")
+        self.git("switch", "--quiet", "-c", "docs-feature")
+        self.write("skills/docs-only/SKILL.md", "---\nname: docs-only\n---\n")
+        docs_only = self.run_checks(code=1, env={"CHECK_CHANGED_SINCE": "main"})
+        self.assertIn("selected 0/9 test dirs for skills docs-only", docs_only.stdout)
+        self.assertIn("Ran 0 tests across 0 files", docs_only.stdout)
+        self.assertIn("broken link", docs_only.stderr)
+
+        # 5. Non-HEAD pre-push ref update is refused cleanly; annotated tag on HEAD passes.
+        main_sha = self.git("rev-parse", "main").strip()
+        head_sha = self.git("rev-parse", "feature").strip()
+        non_head = self.run_checks(
+            code=1,
+            env={"CHECK_CHANGED_SINCE": "main",
+                 "CHECK_PUSH_REFS": f"refs/heads/feature {head_sha} refs/heads/feature {main_sha}\n"},
+        )
+        self.assertIn("pre-push checks validate HEAD", non_head.stderr)
+        self.git("switch", "--quiet", "feature")
+        self.git("-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "tag", "-a", "v1.0", "-m", "release")
+        tag_sha = self.git("rev-parse", "v1.0").strip()
+        tagged = self.run_checks(
+            env={"CHECK_CHANGED_SINCE": "main",
+                 "CHECK_PUSH_REFS": f"refs/tags/v1.0 {tag_sha} refs/tags/v1.0 {'0' * 40}\n"},
+        )
+        self.assertIn("Ran 1 tests across 1 files", tagged.stdout)
+
 
 class BarePythonTests(unittest.TestCase):
     def test_missing_dependency_names_the_runner(self):
