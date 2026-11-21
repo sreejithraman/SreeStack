@@ -11,7 +11,8 @@ import time
 import unittest
 from urllib.parse import urlsplit
 
-from render_dashboard import render
+from prepare_sites import prepare
+from render_dashboard import render, stage_page
 import test_command_center as center
 from test_render_dashboard import Program, example
 
@@ -83,15 +84,12 @@ class SitesRefreshTests(center.CommandCenterCase):
         stamp = datetime(2026, 11, 10, tzinfo=timezone.utc) + timedelta(seconds=self.publications)
         self.program.write(state, stamp.isoformat())
         marker = self.program.folder / "command-center.html"
-        rendered = self.program.run("--page", str(marker))
-        self.assertEqual(rendered.returncode, 0, rendered.stderr)
+        stage_page(self.program.source, marker)
         page = marker.with_name("command-center.next.html")
         self.prepare_page(page)
 
     def prepare_page(self, page):
-        result = subprocess.run([sys.executable, str(PREPARE), "--page", str(page),
-                                 "--output", str(self.page_file.parent)], capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        prepare(page, self.page_file.parent)
 
     def open_page(self, *args, **kwargs):
         page = super().open_page(*args, **kwargs)

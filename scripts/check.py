@@ -410,74 +410,76 @@ def _run_parallel_checks(python: str) -> int:
     skipped_count = 0
     worker_errors: list[str] = []
 
-    def run_worker_thread():
-        nonlocal skipped_count
-        worker_env = {k: v for k, v in os.environ.items() if not k.startswith("CHECK_")}
-        worker_env["_SREESTACK_CHECK_WORKER"] = "1"
-        proc = subprocess.Popen(
-            [python, str(Path(__file__).resolve())],
-            cwd=ROOT, env=worker_env,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            text=True,
-        )
-        try:
-            while True:
-                try:
-                    unit = work_queue.get_nowait()
-                except queue.Empty:
-                    break
-                try:
-                    proc.stdin.write(json.dumps(unit) + "\n")
-                    proc.stdin.flush()
-                except OSError as error:
+    with tempfile.TemporaryDirectory(prefix="sreestack-check-cache-") as cache_dir:
+        def run_worker_thread():
+            nonlocal skipped_count
+            worker_env = {k: v for k, v in os.environ.items() if not k.startswith("CHECK_")}
+            worker_env["_SREESTACK_CHECK_WORKER"] = "1"
+            worker_env["_SREESTACK_TEST_CACHE"] = cache_dir
+            proc = subprocess.Popen(
+                [python, str(Path(__file__).resolve())],
+                cwd=ROOT, env=worker_env,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                while True:
+                    try:
+                        unit = work_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                    try:
+                        proc.stdin.write(json.dumps(unit) + "\n")
+                        proc.stdin.flush()
+                    except OSError as error:
+                        with results_lock:
+                            worker_errors.append(f"Worker pipe error while sending {unit['file']}: {error}")
+                        break
+                    reply_line = proc.stdout.readline()
+                    if not reply_line:
+                        with results_lock:
+                            worker_errors.append(f"Worker exited while running {unit['file']}")
+                        break
+                    reply = json.loads(reply_line)
                     with results_lock:
-                        worker_errors.append(f"Worker pipe error while sending {unit['file']}: {error}")
-                    break
-                reply_line = proc.stdout.readline()
-                if not reply_line:
+                        rel_file = reply["file"]
+                        executed_files.add(rel_file)
+                        executed_tests.update(reply["executed"])
+                        skipped_tests.update(reply["skipped_tests"])
+                        file_durations[rel_file] = file_durations.get(rel_file, 0.0) + reply["duration"]
+                        skipped_count += reply["skipped"]
+                        unit_output = reply["output"]
+                        for test_name, tb in reply["failures"]:
+                            all_failures.append(("FAIL", f"{rel_file} {test_name}", tb, unit_output))
+                            unit_output = ""
+                        for test_name, tb in reply["errors"]:
+                            all_failures.append(("ERROR", f"{rel_file} {test_name}", tb, unit_output))
+                            unit_output = ""
+            finally:
+                if proc.stdin:
+                    try:
+                        proc.stdin.close()
+                    except OSError:
+                        pass
+                rc = proc.wait()
+                if rc != 0:
                     with results_lock:
-                        worker_errors.append(f"Worker exited while running {unit['file']}")
-                    break
-                reply = json.loads(reply_line)
-                with results_lock:
-                    rel_file = reply["file"]
-                    executed_files.add(rel_file)
-                    executed_tests.update(reply["executed"])
-                    skipped_tests.update(reply["skipped_tests"])
-                    file_durations[rel_file] = file_durations.get(rel_file, 0.0) + reply["duration"]
-                    skipped_count += reply["skipped"]
-                    unit_output = reply["output"]
-                    for test_name, tb in reply["failures"]:
-                        all_failures.append(("FAIL", f"{rel_file} {test_name}", tb, unit_output))
-                        unit_output = ""
-                    for test_name, tb in reply["errors"]:
-                        all_failures.append(("ERROR", f"{rel_file} {test_name}", tb, unit_output))
-                        unit_output = ""
-        finally:
-            if proc.stdin:
-                try:
-                    proc.stdin.close()
-                except OSError:
-                    pass
-            rc = proc.wait()
-            if rc != 0:
-                with results_lock:
-                    worker_errors.append(f"Worker exited with code {rc}")
+                        worker_errors.append(f"Worker exited with code {rc}")
 
-    script_results: dict[tuple[str, ...], subprocess.CompletedProcess] = {}
+        script_results: dict[tuple[str, ...], subprocess.CompletedProcess] = {}
 
-    def run_script_thread(check_cmd):
-        proc = subprocess.run([python, *check_cmd], cwd=ROOT, capture_output=True, text=True)
-        with results_lock:
-            script_results[check_cmd] = proc
+        def run_script_thread(check_cmd):
+            proc = subprocess.run([python, *check_cmd], cwd=ROOT, capture_output=True, text=True)
+            with results_lock:
+                script_results[check_cmd] = proc
 
-    threads = [threading.Thread(target=run_worker_thread) for _ in range(workers)]
-    for check_cmd in SCRIPT_CHECKS:
-        threads.append(threading.Thread(target=run_script_thread, args=(check_cmd,)))
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
+        threads = [threading.Thread(target=run_worker_thread) for _ in range(workers)]
+        for check_cmd in SCRIPT_CHECKS:
+            threads.append(threading.Thread(target=run_script_thread, args=(check_cmd,)))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
 
     failed_scripts = []
     for check_cmd in SCRIPT_CHECKS:

@@ -2055,8 +2055,8 @@ def list_programs(root, as_json=False):
     return 0
 
 
-def main():
-    args = arguments().parse_args()
+def main(argv=None):
+    args = arguments().parse_args(argv)
     try:
         if args.command == "programs":
             return list_programs(args.root, args.json)

@@ -1,17 +1,50 @@
+import atexit
+import contextlib
 import copy
 from datetime import datetime, timezone
+import fcntl
+import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
 import unittest
+from unittest import mock
 
+import record
 from record import Refused, answer_stored, gh_pr, observe, stored_picks
 from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, now_line, work
+
+
+_FALLBACK_CACHE = None
+
+
+def _example_repo_template():
+    global _FALLBACK_CACHE
+    root = os.environ.get("_SREESTACK_TEST_CACHE")
+    if not root:
+        if _FALLBACK_CACHE is None:
+            _FALLBACK_CACHE = tempfile.TemporaryDirectory()
+            atexit.register(_FALLBACK_CACHE.cleanup)
+        root = _FALLBACK_CACHE.name
+    cache_dir = Path(root)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    target = cache_dir / "coordinator-example-repo"
+    with open(cache_dir / "coordinator-example-repo.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not target.exists():
+            with tempfile.TemporaryDirectory(dir=cache_dir) as tmp:
+                draft = Path(tmp) / "program"
+                draft.mkdir()
+                Program(draft).write(example(), "2026-11-02T17:00:00Z",
+                                     git_config=("maintenance.auto=false", "gc.auto=0"))
+                draft.rename(target)
+    return target
 
 
 SCRIPT = Path(__file__).with_name("record.py")
@@ -100,10 +133,10 @@ class RecordCase(unittest.TestCase):
     def setUp(self):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
-        (Path(folder.name) / "program").mkdir()
-        self.program = Program(Path(folder.name) / "program")
+        dest = Path(folder.name) / "program"
+        shutil.copytree(_example_repo_template(), dest)
+        self.program = Program(dest, init=False)
         self.state = example()
-        self.program.write(self.state, "2026-11-02T17:00:00Z")
         self.bin = Path(folder.name) / "bin"
         self.bin.mkdir()
         for name in ("gh", "t3"):
@@ -119,8 +152,17 @@ class RecordCase(unittest.TestCase):
     def run_record(self, *args, stdin=None):
         env = {**GIT_ENV, "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "T3CODE_CLI_PATH": str(self.bin / "t3"),
                "RECORD_FIXTURES": str(self.fixtures)}
-        return subprocess.run([sys.executable, str(SCRIPT), args[0], "--state", str(self.program.source), *args[1:]],
-                              capture_output=True, text=True, input=stdin, env=env)
+        argv = [args[0], "--state", str(self.program.source), *args[1:]]
+        out, err = io.StringIO(), io.StringIO()
+        code = 0
+        with mock.patch.dict(os.environ, env, clear=True), \
+                mock.patch.object(sys, "stdin", io.StringIO(stdin or "")), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            try:
+                code = record.main(argv)
+            except SystemExit as exc:
+                code = exc.code if isinstance(exc.code, int) else 1
+        return subprocess.CompletedProcess([sys.executable, str(SCRIPT), *argv], code, out.getvalue(), err.getvalue())
 
     def head(self):
         return json.loads(subprocess.run(["git", "-C", str(self.program.folder), "show", "HEAD:program.json"],
