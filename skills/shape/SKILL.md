@@ -45,10 +45,9 @@ decision changes it.
 
 Read the idea, the sources it names, and the code and records it touches. When
 the outcome, proof, and scope are already clear, say so. A clear single outcome
-needs no record: route the request as its brief under
-[stage 5](#5-show-and-route). Clear work with several outcomes opens the record
-and goes to [stage 4](#4-settle-ready-work) for its spec. Otherwise form the
-first brief with Reframe and open the record as Draft.
+needs no record: route the request as its brief under stage 5. Clear work with
+several outcomes opens the record and goes to stage 4 for its spec. Otherwise
+form the first brief with Reframe and open the record as Draft.
 
 Done when the desired change, its sources, and the next uncertainty are explicit,
 and the record's path is in the thread. For a clear single outcome, done when
@@ -62,7 +61,7 @@ Take the open question that would change the outcome most, and route it:
 | --- | --- |
 | A choice only the user can make | [Grilling](../grilling/SKILL.md) |
 | A fact | Look it up, or [Research](../research/SKILL.md) for a cited answer |
-| Seeing it, including a feel such as "less cluttered" | [Stage 3](#3-try-a-direction-when-seeing-helps), before abstract preference questions |
+| Seeing it, including a feel such as "less cluttered" | Stage 3 below, before abstract preference questions |
 | Agreed terms, or a decision worth an ADR | [Domain Modeling](../domain-modeling/SKILL.md) |
 | A consequential interface or ownership design | [Architect](../architect/SKILL.md), design only |
 
@@ -88,9 +87,9 @@ verdict and the prototype's disposition are in the record.
 
 Every intended outcome needs its proof, covered code, preserved behavior, out of
 scope, inputs and access, decisions and assumptions, and one finish-line field:
-the line the user requested, or else a line marked proposed with its reason, from
-Implement's
-[finish-line policy](../implement/SKILL.md#2-state-the-finish-line-and-prepare).
+the line the user requested, or else a line marked proposed with its reason
+(**Land** when settled and reversible, **Try** when taking shape or uncertain,
+or **PR** when a PR state is requested).
 A question only trying the built thing can answer, such as a visual direction,
 doesn't block Settled: record it as the question Try will answer, and propose
 Try. A settled brief is not Land by itself; the execution owner states its finish
