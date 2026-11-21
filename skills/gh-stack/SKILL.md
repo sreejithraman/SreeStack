@@ -13,9 +13,9 @@ Create, inspect, rebase, synchronize, submit, and merge linear chains of stacked
 Git branches and dependent PRs with `gh stack`. Start from a repository and the
 stack action requested. Leave the stack branches, remote refs, or PR chain in
 the verified target state with retained local files accounted for. You are done
-when `gh stack view --json` confirms the intended branch/PR state, every
-published or touched PR layer is linked in T3, and any retained local files are
-verified after history changes.
+when `gh stack view --json` confirms the intended branch/PR state, in T3 every
+scoped PR layer taken over, created, or pushed is linked, and any retained local
+files are verified after history changes.
 
 Stacks print trunk-first: `(main) <- auth <- api <- frontend`. Left is bottom
 and merges first; right is top. `up` moves away from trunk; `down` moves toward
