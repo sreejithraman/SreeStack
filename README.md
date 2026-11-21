@@ -340,8 +340,7 @@ current operation's result. Simple state can stay simple.
 [Orchestration](skills/orchestration/SKILL.md) assigns work and resolves models
 from T3's live catalog. Edit
 [model defaults](skills/orchestration/references/models.md#model-defaults)
-to change working/research/review models, source-retrieval routes, effort, and
-additional-review pools.
+to change working/research/review models, source-retrieval routes, and effort.
 The local concurrency ceiling is in Orchestration. That list is the one source
 for skill model defaults; explicit user/project requirements are resolved by
 [models](skills/orchestration/references/models.md).
@@ -350,9 +349,9 @@ for skill model defaults; explicit user/project requirements are resolved by
 [Models](skills/orchestration/references/models.md) defines UI operation, UI and implementation
 tiers, document work, and raising difficulty;
 [reuse and recovery](skills/orchestration/references/reuse-and-recovery.md) covers agent reuse,
-owner replacement, and failure recovery. The existing agent handles routine UI operation,
-with dedicated operators for substantial work, specialized capabilities, independent
-verification, or repeated difficulty.
+owner replacement, and failure recovery. The existing agent operates UI itself unless
+[Operate a UI](skills/orchestration/references/models.md#operate-a-ui) calls for a dedicated
+operator.
 
 Enable and authenticate the providers listed there in T3 Code. Routing
 resolves their exact instance/model IDs and effort options from the live catalog;
@@ -366,7 +365,7 @@ their review references from this stack; provider plugins are not needed.
 failing checks the same way, by outcome, and sends accepted fixes through
 [Orchestration](skills/orchestration/SKILL.md#who-does-the-work).
 [Review Fix Loop](skills/review-fix-loop/SKILL.md) owns review coverage, reviewer
-selection, harness review, optional skips, and fix rounds. It uses Orchestration's
+selection, harness review, and fix rounds. It uses Orchestration's
 model defaults and delegation rules.
 Substantial changes also receive a required adversarial assessment that tests
 assumptions and failure paths. The loop records its coverage decision from the
@@ -386,16 +385,14 @@ Sample requests and expected results:
   and Grok respectively, then checks the source evidence before writing a cited note.
 - “Implement this change”: the model defaults supply the subagent's model and options;
   parallel children have disjoint ownership in the same checkout.
-- “Review and fix this shared-contract change”: Primary, Ponytail, Thermo, and
-  optional pool reviewers assess the initial snapshot. The parent settles design
-  and splits out-of-scope findings into follow-ups, then Adversarial assesses the
-  settled snapshot. Accepted fixes go back to the slice's owner.
-- “Review this small fix”: one required Primary plus initial optional pool
-  reviewers for contained ordinary work; contained risky work adds a fitting
-  lens. An ordinary prose or wording-only edit with no procedure change uses
-  parent review.
-- When an additional-review pool is exhausted or fails, the loop records a skip
-  and continues. Missing required coverage cannot produce a clean result.
+- “Review and fix this shared-contract change”: Primary, Ponytail, and Thermo
+  assess the initial snapshot. The parent settles design and splits out-of-scope
+  findings into follow-ups, then Adversarial assesses the settled snapshot.
+  Accepted fixes go back to the slice's owner.
+- “Review this small fix”: one required Primary for contained ordinary work;
+  contained risky work adds a fitting lens. An ordinary prose or wording-only
+  edit with no procedure change uses parent review.
+- Missing required coverage cannot produce a clean result.
 - A substantive fix gets a new pass: fresh tasks under Orchestration's review-pass
   rule for the angles it touches, with the prior evidence. Each pass checks the current
   snapshot, bounded to affected behavior, prior findings, and relevant proof.

@@ -38,9 +38,8 @@ new check result, failed assumption, or artifact fact, report a blocker instead.
 
 ## Recover work
 
-Preserve partial results and the failure cause. A caller's failure policy (such as
-skipping optional reviewers instead of retrying) overrides the retry rules below.
-Use a new request key for any fresh run after terminal failure.
+Preserve partial results and the failure cause. A caller's failure policy overrides the retry rules
+below. Use a new request key for any fresh run after terminal failure.
 
 | Failure | Action |
 | --- | --- |

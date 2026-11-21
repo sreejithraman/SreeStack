@@ -1112,8 +1112,7 @@ while retaining other nonignored untracked source.
   required assessments to named model defaults via `orchestration`, selects
   proportional initial discovery (owner prose check, single Primary, Primary +
   lens for failure-sensitive changes, or two-wave Primary/Ponytail/Thermo then
-  first-discovery Adversarial for substantial work), adds one general reviewer
-  per configured additional-review pool on the first independent pass, and
+  first-discovery Adversarial for substantial work), and
   routes repairs with one unified rule (owner-verified wording polish and clean
   disjoint rebases carry forward coverage; small or Pass 2+ repairs use one
   independent reviewer; large Pass-1 repairs fan out by changed concern;
@@ -1428,7 +1427,7 @@ paths, serial git/index work, the 12-child default limit, independent assessment
 exclusion, and bounded recovery; `swarm` owns the decision to run work in
 parallel. `references/models.md` is the single source of truth for model
 defaults, ordered availability fallbacks, live capability/option resolution,
-difficulty tiers, difficulty escalation, and dedicated UI operator rules. Goals
+difficulty tiers, difficulty escalation, and UI operation rules. Goals
 and recurring work start only on explicit request.
 
 ## koubou
