@@ -234,8 +234,10 @@ requested failure prevention. Uses bounded history and available session records
 counts independent occurrences, checks current exposure, and ranks live classes.
 Shared design and enforcement selection use `engineering-principles`; guard proof
 and technical experiments live in `codebase-design`. Planning and implementation
-honor the requested finish line and leave multi-outcome coordination and
-behavioral evaluation to calling workflows; bounded parallel work uses `swarm`.
+honor the requested finish line; direct requests with several repair outcomes
+offer `coordinator` at the entry boundary, requested behavioral evaluation beyond
+guard proof reports unmet and offers user-started `/tune-stack`, and bounded
+parallel work uses `swarm`.
 Automatic correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
 

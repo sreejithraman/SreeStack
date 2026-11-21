@@ -69,12 +69,21 @@ hide failures by narrowing valid behavior).
 Use [Orchestration](../orchestration/SKILL.md) for bounded assignments,
 [Swarm](../swarm/SKILL.md) for bounded parallel investigation or implementation,
 [Verify](../verify/SKILL.md) when repairs change a user workflow, and
-[gh-stack](../gh-stack/SKILL.md) when stacked delivery is requested. Multi-outcome
-program execution, behavioral evaluation beyond guard proof, and PR/merge
-delivery follow the caller's workflow and requested finish line.
+[gh-stack](../gh-stack/SKILL.md) when stacked delivery is requested. PR and
+merge delivery follow the caller's workflow and requested finish line.
+
+For requests outside single-outcome guard implementation:
+- **Several independent repair outcomes:** return the proposed outcomes to a
+  session caller, or offer [Coordinator](../coordinator/SKILL.md) when invoked
+  directly by the user (stopping rather than silently dropping extra outcomes).
+- **Behavioral evaluation beyond guard proof:** never count guard proof as
+  behavioral proof; report behavioral evaluation as unmet and offer the
+  user-started `/tune-stack` workflow when invoked directly.
 
 Report each class as `planned`, `prevented`, `partly covered`,
 `resolved already`, or `deferred`, with evidence, checks, and remaining exposure.
 Planning is complete when recommendations have traceable evidence and a concrete
 migration and guard-proof plan. Implementation is complete when selected repairs
-and checks pass and remaining classes have explicit dispositions.
+and checks pass, remaining classes have explicit dispositions, and any requested
+multi-outcome coordination or behavioral evaluation has an explicit handoff or
+unmet disposition.
