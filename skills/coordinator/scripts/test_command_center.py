@@ -106,24 +106,57 @@ class Chrome:
         self.next_id = 0
         self.buffer = b""
         self.events = []
+        self.stderr_path = Path(profile) / "chrome-stderr.log"
+        self.stderr_file = self.stderr_path.open("wb")
         commands_read, self.commands = os.pipe()
         self.replies, replies_write = os.pipe()
 
         def connect_debugging_pipe():
-            os.dup2(commands_read, 3)
-            os.dup2(replies_write, 4)
+            read_fd, write_fd = commands_read, replies_write
+            if write_fd == 3:
+                write_fd = os.dup(write_fd)
+            if read_fd != 3:
+                os.dup2(read_fd, 3)
+            if write_fd != 4:
+                os.dup2(write_fd, 4)
+            for fd in {self.commands, self.replies, commands_read, replies_write, read_fd, write_fd} - {3, 4}:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
             os.set_inheritable(3, True)
             os.set_inheritable(4, True)
 
-        self.process = subprocess.Popen(
-            [executable, "--headless=new", "--remote-debugging-pipe", "--no-sandbox", "--no-first-run",
-             "--no-default-browser-check", "--disable-background-networking", f"--user-data-dir={profile}",
-             "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "about:blank"],
-            preexec_fn=connect_debugging_pipe, close_fds=False,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        os.close(commands_read)
-        os.close(replies_write)
+        try:
+            self.process = subprocess.Popen(
+                [executable, "--headless=new", "--remote-debugging-pipe", "--no-sandbox", "--no-first-run",
+                 "--no-default-browser-check", "--disable-background-networking", "--disable-gpu",
+                 "--disable-dev-shm-usage", "--password-store=basic", "--use-mock-keychain",
+                 "--disable-extensions", f"--user-data-dir={profile}",
+                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "about:blank"],
+                preexec_fn=connect_debugging_pipe, close_fds=False,
+                stdout=subprocess.DEVNULL, stderr=self.stderr_file,
+            )
+        except Exception:
+            os.close(self.commands)
+            os.close(self.replies)
+            self.stderr_file.close()
+            raise
+        finally:
+            os.close(commands_read)
+            os.close(replies_write)
+
+    def _diagnostic(self):
+        self.stderr_file.flush()
+        code = self.process.poll()
+        stderr = self.stderr_path.read_text(errors="replace").strip() if self.stderr_path.exists() else ""
+        tail = "\n".join(stderr.splitlines()[-10:])
+        parts = []
+        if code is not None:
+            parts.append(f"exit={code}")
+        if tail:
+            parts.append(f"stderr:\n{tail}")
+        return f" ({', '.join(parts)})" if parts else ""
 
     def read_messages(self, timeout):
         ready, _, _ = select.select([self.replies], [], [], timeout)
@@ -131,7 +164,7 @@ class Chrome:
             return []
         chunk = os.read(self.replies, 1 << 16)
         if not chunk:
-            raise ConnectionError("Chrome closed its debugging pipe")
+            raise ConnectionError(f"Chrome closed its debugging pipe{self._diagnostic()}")
         self.buffer += chunk
         *complete, self.buffer = self.buffer.split(b"\0")
         return [json.loads(message) for message in complete]
@@ -143,7 +176,7 @@ class Chrome:
                 if wanted(message):
                     return self.events.pop(index)
             self.events.extend(self.read_messages(.05))
-        raise TimeoutError(label)
+        raise TimeoutError(f"{label}{self._diagnostic()}")
 
     def send(self, method, session=None, **params):
         self.next_id += 1
@@ -169,6 +202,7 @@ class Chrome:
             self.process.wait()
         os.close(self.commands)
         os.close(self.replies)
+        self.stderr_file.close()
 
 
 
