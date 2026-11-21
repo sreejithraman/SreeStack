@@ -10,9 +10,8 @@ logins, or manage items in the designated writable agent vault. Start from a mac
 setup request, a credential-use or vault-management request, or a UI login request with its
 approved scope. Leave verified runtime authentication, privately delivered credentials,
 confirmed vault item state, or an authenticated session open for the caller — or a named
-missing prerequisite. You are done when the matching route's finish line holds, credential
-values stay out of chat, logs, tool arguments, and project files, and provider
-authentication, delivery, and login are reported as separate results.
+missing prerequisite. You are done when the matching route's finish line holds and every
+rule for every route holds.
 
 ## Rules for every route
 

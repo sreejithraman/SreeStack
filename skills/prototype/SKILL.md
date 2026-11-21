@@ -7,9 +7,8 @@ description: Use when asked to build a UI prototype, or when a UI design decisio
 
 Build enough real UI to answer a design question on the target platform before production
 implementation. Start from an open UI decision, the existing surface or target platform,
-and nearby project code. Leave a clearly marked, reviewable prototype with labeled evidence
-(and, after a decision, a recorded verdict plus explicit retention or cleanup of disposable
-work). You are done for a decision when the question is explicit, each option tests a
+and nearby project code. Leave a clearly marked, reviewable prototype with labeled evidence.
+You are done for a decision when the question is explicit, each option tests a
 distinct answer, relevant states and interactions run on the target surface, comparison is
 easy, and evidence plus remaining gaps are clear; after a decision, completion also requires
 a recorded verdict and disposition of the disposable work.
@@ -28,8 +27,8 @@ Size the option set to expose the real decision (honoring any count the user spe
 - Two when the decision is a genuine tradeoff.
 - Additional options only when each tests a distinct direction the existing set does not.
 
-Options must differ in layout, information hierarchy, navigation, behavior, or motion — not
-just color or copy.
+Unless the user's question is specifically about copy or color, options should differ in
+layout, information hierarchy, navigation, behavior, or motion.
 
 ## 2. Choose the real surface
 
@@ -69,7 +68,8 @@ real data or trigger external effects, keep that step stubbed, state what was no
 and offer a provider test mode, disposable account, or local fixture instead.
 
 Spend effort on the dimensions the question tests (hierarchy, spacing, touch targets, safe
-areas, keyboard overlap, resizing, motion). Prefer running the prototype over
+areas, keyboard overlap, resizing, motion), adding only enough disposable, reliable behavior
+to try the flow. Prefer running the prototype over
 production-grade automated coverage; add a narrow test only when non-obvious experimental
 logic would otherwise make the result untrustworthy.
 
