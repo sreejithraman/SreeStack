@@ -2,7 +2,13 @@ name: Checks
 
 on:
   push:
+    branches: [main]
   pull_request:
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -13,20 +19,69 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Run repository checks
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python3 scripts/check.py
-      - name: Scan for secrets
+      - name: Detect Python version
+        id: pyver
+        shell: bash
+        run: echo "version=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" >> "$GITHUB_OUTPUT"
+      - name: Cache check environment and gitleaks archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .git/sreestack-check-env
+            ~/.cache/sreestack-tools
+          key: ${{ runner.os }}-check-tools-v2-py${{ steps.pyver.outputs.version }}-${{ hashFiles('scripts/requirements-*.txt') }}-gitleaks-8.30.1
+      - name: Prepare gitleaks
         shell: bash
         run: |
-          curl --fail --silent --show-error --location \
-            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
-            --output "$RUNNER_TEMP/gitleaks.tar.gz"
-          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check
-          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
-          "$RUNNER_TEMP/gitleaks" git --redact --log-opts=HEAD .
+          set -euo pipefail
+          archive="$HOME/.cache/sreestack-tools/gitleaks_8.30.1_linux_x64.tar.gz"
+          mkdir -p "$(dirname "$archive")"
+          if [[ ! -f "$archive" ]]; then
+            curl --fail --silent --show-error --location \
+              https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+              --output "$archive"
+          fi
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
+      - name: Run repository checks and secret scan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          CI_STEP_BUDGET_SECONDS: "75"
+        shell: bash
+        run: |
+          set -uo pipefail
+          start_ts=$SECONDS
+          gitleaks_log="$RUNNER_TEMP/gitleaks.log"
+          "$RUNNER_TEMP/gitleaks" git --redact --log-opts=HEAD . >"$gitleaks_log" 2>&1 &
+          gitleaks_pid=$!
+
+          checks_rc=0
+          python3 scripts/check.py || checks_rc=$?
+
+          gitleaks_rc=0
+          wait "$gitleaks_pid" || gitleaks_rc=$?
+          echo "::group::Secret scan (gitleaks)"
+          cat "$gitleaks_log"
+          echo "::endgroup::"
+
+          elapsed=$((SECONDS - start_ts))
+          echo "Checks and secret scan step finished in ${elapsed}s (step budget: ${CI_STEP_BUDGET_SECONDS}s)"
+
+          status=0
+          if [[ "$checks_rc" -ne 0 ]]; then
+            echo "::error::Repository checks failed (exit ${checks_rc})"
+            status=1
+          fi
+          if [[ "$gitleaks_rc" -ne 0 ]]; then
+            echo "::error::Secret scan failed (exit ${gitleaks_rc})"
+            status=1
+          fi
+          if [[ "$elapsed" -gt "$CI_STEP_BUDGET_SECONDS" ]]; then
+            echo "::error::Checks step exceeded ${CI_STEP_BUDGET_SECONDS}s budget (took ${elapsed}s)"
+            status=1
+          fi
+          exit "$status"
