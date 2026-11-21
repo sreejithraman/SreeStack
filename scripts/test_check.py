@@ -61,8 +61,17 @@ class CheckRunnerTests(unittest.TestCase):
     def runner(self, root=None):
         return [sys.executable, str((root or self.repo) / "scripts/check.py")]
 
-    def run_checks(self, *args, root=None, cwd=None, code=0):
-        result = subprocess.run([*self.runner(root), *args], cwd=cwd, text=True, capture_output=True)
+    def clean_env(self, extra=None):
+        env = {k: v for k, v in os.environ.items() if not k.startswith("CHECK_")}
+        if extra:
+            env.update(extra)
+        return env
+
+    def run_checks(self, *args, root=None, cwd=None, code=0, env=None):
+        result = subprocess.run(
+            [*self.runner(root), *args], cwd=cwd, text=True, capture_output=True,
+            env=self.clean_env(env),
+        )
         self.assertEqual(result.returncode, code, result.stdout + result.stderr)
         return result
 
@@ -170,6 +179,50 @@ class CheckRunnerTests(unittest.TestCase):
 
     def test_arguments_run_with_the_environment_python_and_keep_its_exit_status(self):
         self.run_checks("-c", "raise SystemExit(7)", code=7)
+
+    def test_parallel_runner_reports_seed_workers_and_proves_every_file_ran(self):
+        result = self.run_checks()
+        self.assertIn("Ran 9 tests across 9 files", result.stdout)
+        self.assertIn("seed=", result.stdout)
+
+        seeded = self.run_checks(env={"CHECK_SEED": "42", "CHECK_WORKERS": "2"})
+        self.assertIn("with 2 workers (seed=42)", seeded.stdout)
+
+        # Nested package discovery matches stock unittest discover.
+        self.write("skills/pr/scripts/nested/__init__.py", "")
+        self.write("skills/pr/scripts/nested/test_nested.py", PASSING_TEST)
+        nested = self.run_checks()
+        self.assertIn("Ran 10 tests across 10 files", nested.stdout)
+
+        # setUpModule SkipTest skips cleanly without failing coverage proof.
+        self.write("skills/pr/scripts/nested/test_nested.py",
+                   "import unittest\ndef setUpModule(): raise unittest.SkipTest('no chrome')\n" + PASSING_TEST)
+        skipped = self.run_checks()
+        self.assertIn("Ran 9 tests across 10 files", skipped.stdout)
+        self.assertIn("(skipped=1)", skipped.stdout)
+
+        # Unexpected success fails and failure output is surfaced.
+        self.write("skills/pr/scripts/nested/test_nested.py",
+                   "import unittest\nclass U(unittest.TestCase):\n"
+                   "    @unittest.expectedFailure\n"
+                   "    def test_x(self): print('diag-marker')\n")
+        unexpected = self.run_checks(code=1)
+        self.assertIn("Unexpected success", unexpected.stderr)
+        self.assertIn("diag-marker", unexpected.stderr)
+
+        # Import error surfaces its traceback without hiding remaining tests or script checks.
+        self.write("skills/pr/scripts/nested/test_nested.py", "import nonexistent_module_xyz\n")
+        broken_import = self.run_checks(code=1)
+        self.assertIn("ModuleNotFoundError", broken_import.stderr)
+        self.assertIn("nonexistent_module_xyz", broken_import.stderr)
+        self.assertIn("ran skills", broken_import.stdout)
+        self.assertIn("ran whitespace", broken_import.stdout)
+        self.assertIn("Ran 9 tests across 9 files", broken_import.stdout)
+
+        (self.repo / "skills/pr/scripts/nested/test_nested.py").unlink()
+        (self.repo / "scripts/test_fixture.py").unlink()
+        missing = self.run_checks(code=1)
+        self.assertIn("No test_*.py files found in scripts", missing.stderr)
 
 
 class BarePythonTests(unittest.TestCase):
