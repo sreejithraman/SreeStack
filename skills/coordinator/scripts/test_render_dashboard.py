@@ -46,20 +46,23 @@ def owner(name):
 class Program:
     """A program folder: its git repository and state file."""
 
-    def __init__(self, directory):
+    def __init__(self, directory, *, init=True):
         self.folder = Path(directory)
         self.source = self.folder / "program.json"
-        self.git("init", "-q")
+        if init:
+            self.git("init", "-q")
 
     def git(self, *args, env=GIT_ENV):
         subprocess.run(["git", "-C", str(self.folder), *args], check=True, capture_output=True, env=env)
 
-    def write(self, state, committed_at=None):
+    def write(self, state, committed_at=None, git_config=()):
         """Write the state file, and commit it when given a commit time."""
         self.source.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n")
         if committed_at:
             self.git("add", "program.json")
-            self.git("commit", "-q", "-m", "write", "program.json", env={**GIT_ENV, "GIT_COMMITTER_DATE": committed_at})
+            config_args = [arg for item in git_config for arg in ("-c", item)]
+            self.git(*config_args, "commit", "-q", "-m", "write", "program.json",
+                     env={**GIT_ENV, "GIT_COMMITTER_DATE": committed_at})
 
     def run(self, *args):
         return subprocess.run([sys.executable, str(SCRIPT), "--state", str(self.source), *args], capture_output=True, text=True)

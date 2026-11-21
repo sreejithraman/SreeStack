@@ -9,6 +9,8 @@ import sys
 import tempfile
 import unittest
 
+from test_check import cached_template
+
 try:
     import tomlkit  # noqa: F401
 except ImportError as error:
@@ -29,6 +31,31 @@ INSTRUCTIONS = "# Codex\n\n- Keep it simple.\n"
 CLAUDE_TEMPLATE = {"model": "template-model", "pluginConfigs": {"demo": {"options": {"mode": "on"}}}}
 CODEX_TEMPLATE = '# Public note.\nmodel = "template-model"\n\n[agents]\nmax_threads = 12\n'
 HOOK = "reference-transaction"
+
+
+def _build_sync_repo(repo: Path, env: dict) -> None:
+    (repo / "scripts").mkdir(parents=True)
+    for script in ("sync_hosts.py", "host_settings.py"):
+        shutil.copyfile(SCRIPTS / script, repo / "scripts" / script)
+    for rel, content in (
+        ("codex/AGENTS.md", INSTRUCTIONS),
+        ("claude/settings.json", json.dumps(CLAUDE_TEMPLATE)),
+        ("codex/config.toml", CODEX_TEMPLATE),
+        *((f"{host}/setup.json", json.dumps(manifest)) for host, manifest in HOSTS.items()),
+        ("skills/alpha/SKILL.md", "---\nname: alpha\n---\n"),
+        ("skills/beta/SKILL.md", "---\nname: beta\n---\n"),
+    ):
+        path = repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    subprocess.run(["git", "init", "--quiet", "--initial-branch=main"], cwd=repo, env=env, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=repo, env=env, check=True)
+    subprocess.run(["git", "-c", "maintenance.auto=false", "-c", "gc.auto=0",
+                    "commit", "--quiet", "-m", "initial"], cwd=repo, env=env, check=True)
+
+
+def _sync_repo_template(env):
+    return cached_template("sync-hosts-repo", lambda dest: _build_sync_repo(dest, env))
 
 
 class Fixture(unittest.TestCase):
@@ -57,18 +84,7 @@ class Fixture(unittest.TestCase):
             "GIT_COMMITTER_EMAIL": "test@example.com",
             "PYTHONDONTWRITEBYTECODE": "1",
         }
-        (self.repo / "scripts").mkdir(parents=True)
-        for script in ("sync_hosts.py", "host_settings.py"):
-            shutil.copyfile(SCRIPTS / script, self.repo / "scripts" / script)
-        self.write("codex/AGENTS.md", INSTRUCTIONS)
-        self.write("claude/settings.json", json.dumps(CLAUDE_TEMPLATE))
-        self.write("codex/config.toml", CODEX_TEMPLATE)
-        for host, manifest in HOSTS.items():
-            self.write(f"{host}/setup.json", json.dumps(manifest))
-        self.add_skill("alpha")
-        self.add_skill("beta")
-        self.git("init", "--quiet", "--initial-branch=main")
-        self.commit("initial")
+        shutil.copytree(_sync_repo_template(self.env), self.repo)
 
     def python_shim(self, path, *flags):
         """Wrap the test interpreter; a symlink would lose its virtual environment."""

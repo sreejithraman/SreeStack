@@ -1,6 +1,8 @@
 """Exercise the check runner against small Git repositories."""
 
+import atexit
 import fcntl
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -11,6 +13,8 @@ import unittest
 
 
 SCRIPTS = Path(__file__).parent
+_FALLBACK_CACHE = None
+EMPTY_REQUIREMENTS = "# no packages, so tests need no network\n"
 PASSING_TEST = """\
 import unittest
 
@@ -22,6 +26,38 @@ class Passing(unittest.TestCase):
 PRINT_PYTHON = "import sys; print(sys.prefix)"
 
 
+def cached_template(name, build):
+    global _FALLBACK_CACHE
+    root = os.environ.get("_SREESTACK_TEST_CACHE")
+    if not root:
+        if _FALLBACK_CACHE is None:
+            _FALLBACK_CACHE = tempfile.TemporaryDirectory()
+            atexit.register(_FALLBACK_CACHE.cleanup)
+        root = _FALLBACK_CACHE.name
+    cache_dir = Path(root)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    target = cache_dir / name
+    with open(cache_dir / f"{name}.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not target.exists():
+            with tempfile.TemporaryDirectory(dir=cache_dir) as tmp:
+                draft = Path(os.path.realpath(tmp)) / name
+                build(draft)
+                draft.rename(target)
+    return target
+
+
+def _build_empty_env(dest):
+    repo = dest.parent / "repo"
+    (repo / "scripts").mkdir(parents=True)
+    (repo / "scripts/requirements-checks.txt").write_text(EMPTY_REQUIREMENTS)
+    shutil.copyfile(SCRIPTS / "check.py", repo / "scripts/check.py")
+    subprocess.run(["git", "init", "--quiet", "--initial-branch=main"], cwd=repo, check=True)
+    result = subprocess.run([sys.executable, str(repo / "scripts/check.py"), "-c", PRINT_PYTHON],
+                            text=True, capture_output=True, check=True)
+    Path(result.stdout.strip()).rename(dest)
+
+
 class CheckRunnerTests(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
@@ -29,7 +65,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.base = Path(os.path.realpath(directory.name))
         self.repo = self.base / "repo"
         for name, content in {
-            "scripts/requirements-checks.txt": "# no packages, so tests need no network\n",
+            "scripts/requirements-checks.txt": EMPTY_REQUIREMENTS,
             "scripts/check_skills.py": 'print("ran skills")\n',
             "scripts/check_whitespace.py": 'print("ran whitespace")\n',
             "scripts/test_fixture.py": PASSING_TEST,
@@ -78,6 +114,17 @@ class CheckRunnerTests(unittest.TestCase):
     def environment(self, root=None, cwd=None):
         return Path(self.run_checks("-c", PRINT_PYTHON, root=root, cwd=cwd).stdout.strip())
 
+    def preseed_environment(self):
+        digest = hashlib.sha256()
+        for requirements in sorted((self.repo / "scripts").glob("requirements-*.txt")):
+            digest.update(requirements.read_bytes())
+        env_hash = digest.hexdigest()[:16]
+        template = cached_template(f"check-empty-env-{env_hash}", _build_empty_env)
+        dest = self.repo / ".git/sreestack-check-env" / env_hash
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(template, dest, symlinks=True)
+        return dest
+
     def test_worktrees_share_one_environment_outside_their_files(self):
         environment = self.environment()
         worktree = self.base / "worktree"
@@ -88,6 +135,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertEqual(self.git("status", "--porcelain", cwd=worktree), "")
 
     def test_worktree_fails_when_the_stable_clone_leaves_main(self):
+        self.preseed_environment()
         worktree = self.base / "worktree"
         self.git("worktree", "add", "--quiet", "-b", "task", str(worktree))
         self.run_checks(root=worktree)
@@ -100,7 +148,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.run_checks()
 
     def test_changed_requirements_get_their_own_environment(self):
-        original = self.environment()
+        original = self.preseed_environment()
         self.write("scripts/requirements-checks.txt", "# a changed pin\n")
 
         self.assertNotEqual(self.environment(), original)
@@ -120,7 +168,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.run_checks()
 
     def test_environment_that_lost_its_interpreter_or_packages_is_rebuilt(self):
-        environment = self.environment()
+        environment = self.preseed_environment()
         python = environment / "bin/python"
         python.unlink()
         python.symlink_to(self.base / "removed-python")
@@ -154,7 +202,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertTrue((environment / "marker").exists())
 
     def test_run_waiting_for_a_build_keeps_the_finished_environment(self):
-        environment = self.environment()
+        environment = self.preseed_environment()
         (environment / "marker").touch()
         finished = self.base / "finished"
         environment.rename(finished)
@@ -169,6 +217,7 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertTrue((environment / "marker").exists())
 
     def test_runs_every_check_and_fails_when_any_check_fails(self):
+        self.preseed_environment()
         self.assertIn("ran whitespace", self.run_checks().stdout)
         self.write("scripts/check_skills.py", "raise SystemExit(3)\n")
 
@@ -178,9 +227,11 @@ class CheckRunnerTests(unittest.TestCase):
         self.assertIn("scripts/check_skills.py", result.stderr)
 
     def test_arguments_run_with_the_environment_python_and_keep_its_exit_status(self):
+        self.preseed_environment()
         self.run_checks("-c", "raise SystemExit(7)", code=7)
 
     def test_parallel_runner_reports_seed_workers_and_proves_every_file_ran(self):
+        self.preseed_environment()
         result = self.run_checks()
         self.assertIn("Ran 9 tests across 9 files", result.stdout)
         self.assertIn("seed=", result.stdout)
