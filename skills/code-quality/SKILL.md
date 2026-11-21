@@ -5,13 +5,9 @@ description: Run Crapper, Dryer, and Mutator for complexity, duplication, and mu
 
 # Code Quality
 
-Run Crapper, Dryer, and Mutator on a target project and report their complexity,
-duplication, and mutation-testing output, leaving source changes and acceptance policy to
-the caller. Start from a project root and optional paths, tool subset, or flags. Leave the
-tool reports on disk and a structured summary of commands, scope, exit statuses, and
-findings. You are done when every selected supported tool has run (or unsupported inputs
-and tool failures are reported apart from code findings) and generated report paths are
-listed.
+Run the selected tools on a target project and report their output; leave source changes
+and acceptance policy to the caller. You are done when your report below covers every
+selected tool's result or skip and lists the report paths this run wrote.
 
 Run from the target project's root. Run all three tools unless a subset is
 requested. Honor requested paths and flags; without paths, analyze the project.
