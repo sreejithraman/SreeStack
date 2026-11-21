@@ -10,11 +10,9 @@ Make a project's conventions discoverable to the shared skills by recording miss
 facts and concise pointers beside its existing docs. Start from the target repository and
 requested setup scope. Leave updated project docs, active instruction pointers, and any
 requested verification map or migrated glossaries in place, without copying shared skill
-procedures or touching global agent settings, skill installs, credentials, or product code.
-You are done when every written pointer and map link resolves, added guidance passes the
-existing-guidance comparison without paraphrased duplication, reruns are idempotent, and
-your report lists changed files, resolved conventions, checks, and remaining gaps while
-separating documented commands from exercised readiness.
+procedures; shared skill installation, global agent settings, credentials, and product
+changes are separate tasks when requested. You are done when every check in Write and check
+passes and your report covers it.
 
 ## Choose the scope
 
@@ -118,5 +116,6 @@ Check each added rule and pointer against the discovery comparison and remove re
 additions even when their wording differs. Check that every written pointer and map link
 resolves, glossary consumers use the selected paths, and reruns add no redundant guidance or
 blocks and preserve established choices. Read the scoped diff and report changed files,
-resolved conventions, checks, and remaining gaps. Only claim a build, workflow, or
-verification recipe works when it was actually exercised.
+resolved conventions, checks, and remaining gaps. Distinguish documented commands and
+discovered tools from runtime readiness: only claim a build, workflow, or verification
+recipe works when it was actually exercised.

@@ -20,10 +20,12 @@ repairing that class.
 
 ## Steps
 
-1. Apply [writing-for-agents](../writing-for-agents/SKILL.md) to decide where a recommended
-   instruction, standard, or doc belongs and how hosts load it.
+1. Apply [writing-for-agents](../writing-for-agents/SKILL.md) to word each recommended
+   instruction, choose where a recommended instruction, standard, or doc belongs, and
+   account for how hosts load it; consult the project's existing coding standards and docs
+   before proposing new ones.
 
-2. Read the primary sources for the specified session (default: the current one). In T3
+2. Read the primary sources for the specified session. In T3
    Code, prefer scoped `t3_thread_read` and `t3_thread_search` for app history and task
    receipts. Use local session logs when app history is unavailable or the session belongs
    to another host. Check current artifacts before treating a historical statement as the
@@ -75,10 +77,5 @@ The implementer explores, writes code, and debugs, so it carries the most contex
 carry as few rules as possible. Turn mechanical rules into automated checks, which catch
 mistakes during implementation. Send judgment rules to review through the project's coding
 standards, where the reviewer receives a diff and has room to apply them. Review runs when
-[pr](../pr/SKILL.md) publishes, not in every session, so a rule left only to review catches
+`pr` publishes, not in every session, so a rule left only to review catches
 its mistake later — one more reason to prefer a check. Keep root instruction files light.
-
-### Where guidance belongs
-
-Consult the project's existing coding standards and docs before proposing new ones, using
-`writing-for-agents` to place each instruction, standard, or doc in its strongest home.

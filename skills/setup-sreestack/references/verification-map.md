@@ -73,13 +73,14 @@ account scope. Record the expected role, credential-provider setup path, actual 
 delivery route, and runtime access and automatic login readiness separately, with exact
 blockers when unproved. Keep values out of the map, and link this setup from recipes.
 
-Add the verification pointer from project-workflow's instruction pointers.
+Add the verification pointer to the project's active instruction block:
+`For acceptance checks, read docs/agents/verification/index.md and use Verify. To change this map, use setup-sreestack.`
 
 ## Feature recipes
 
 Use these four sections, keeping useful meaning when you adapt an existing format. Give
 features, workflows, entry points, and required assertions stable identifiers where they
-connect coverage and proof (following the recipe example).
+connect coverage and proof (following `recipe-example.md` beside this guide).
 
 **User-facing description:** what the user can do, with **Sub-features** listing the
 distinct workflows and states. Keep source detail only when it helps drive or judge.
