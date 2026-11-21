@@ -10,7 +10,8 @@ preparing the brief.
 
 ## Frame the problem space
 
-Before dispatch, explain the problem space for the chosen candidate:
+When the calling workflow prepares independent candidates, explain the problem
+space for the chosen candidate first:
 
 - The constraints any new interface would need to satisfy.
 - The dependencies it would rely on, and which category they fall into

@@ -202,17 +202,17 @@ Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
-Alternative-interface guidance stays in `DESIGN-IT-TWICE.md` without upward
-links to higher workflows; the user-requested comparison remains conditional and
-defaults to recommendations, with synthesis requested separately. Candidate counts
-follow the decision rather than a fixed panel of three.
+Alternative-interface criteria stay in `DESIGN-IT-TWICE.md`; the user-requested
+comparison remains conditional and defaults to recommendations, with synthesis
+requested separately. Candidate counts follow the decision rather than a fixed
+panel of three.
 
 Deep-module vocabulary, deletion tests, seam techniques, alternative-interface
-design, and disposable technical experiments (`references/experiments.md`) stay
-local in this model-invoked foundation. Generic design, testability, measurement,
-and enforcement guidance use `engineering-principles`. `references/preventing-mistakes.md`
-owns contributor-path assessment and historical guard proof without upward links;
-`correct` owns recurring-mistake investigation and repair. Design and review return
+criteria, and disposable technical experiments (`references/experiments.md`) live
+in this model-invoked foundation. Generic design, testability, measurement, and
+enforcement guidance use `engineering-principles`. `references/preventing-mistakes.md`
+owns contributor-path assessment and historical guard proof; `correct` owns
+recurring-mistake investigation and repair. Design and review return
 recommendations. Legitimate adapters and compatibility paths remain supported.
 
 `references/architecture-signals.md` supplies shared discovery prompts for
@@ -243,7 +243,7 @@ blanket exception policies are omitted.
 ## diagnosing-bugs
 
 - [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/diagnosing-bugs) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
-- [cursor/plugins / pstack measurement and diagnostic guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `benchmark-checklist/SKILL.md`, `principle-explain-the-number/SKILL.md`, and the diagnostic-signal addition in `principle-fix-root-causes/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack diagnostic guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `principle-explain-the-number/SKILL.md` and the diagnostic-signal addition in `principle-fix-root-causes/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Local adaptation: adds conditional Apple-platform references for runtime,
   performance, and memory diagnosis. They use current Apple documentation and
   local Xcode capability discovery, with Instruments as the default profiler
@@ -294,11 +294,13 @@ HITL script and invocation remain unchanged.
 
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [cursor/plugins / pstack behavior-test and idempotency refinements](https://github.com/cursor/plugins/commit/e5136d82418d2db3165ea1050d17577cd618cc05) — `pstack/skills/principle-test-behavior-not-implementation/SKILL.md` and `pstack/skills/principle-make-operations-idempotent/SKILL.md`; addition baseline `e5136d82418d2db3165ea1050d17577cd618cc05`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack/skills/benchmark-checklist](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/benchmark-checklist) — `SKILL.md` adapted into `references/measurement-validity.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
 - [David Khourshid's state-machine guidance](https://stately.ai/blog/2021-01-20-you-dont-need-a-library-for-state-machines) and [UI-independent logic](https://stately.ai/blog/2019-11-13-no-disabling-a-button-is-not-app-logic) — conceptual input checked 2026-10-15; state-modeling guidance is independently written, with no upstream prose or code copied.
 - [Redux: Treat Reducers as State Machines](https://redux.js.org/style-guide/#treat-reducers-as-state-machines) — supporting guidance for current-state/event decisions and typed state variants, checked 2026-10-15.
 
-Each reference is one principle. Upstream paths use
+Each principle reference is one principle; `references/measurement-validity.md`
+is the shared measurement reference. Upstream principle paths use
 `pstack/skills/principle-<source-name>/SKILL.md`:
 
 | Local reference | Upstream source name |
@@ -332,11 +334,10 @@ One automatically discoverable foundation index opens with its contract, groups
 direct links by task, and gives each principle a short applicability hint adapted
 to its local guidance. Each of the 24 principle filenames follows its full principle
 title, and all 24 titles match their source headings verbatim; `references/measurement-validity.md`
-is homed here as the shared measurement reference (from pstack's `benchmark-checklist`).
-As a Layer 0 foundation, none of its files link upward to capabilities or workflows:
-workflows retain procedures and completion criteria while generic decisions share one
-home. Existing invocation choices stay intact. Tools and prototype counts fit the
-decision's cost and uncertainty;
+supplies the shared measurement rules. Workflows retain procedures and completion
+criteria while generic decisions share one foundation home. Existing invocation
+choices stay intact. Tools and prototype counts fit the decision's cost and
+uncertainty;
 actor censuses apply to actor-distribution questions. Permissions and product
 choices remain with the host/user, required compatibility stays supported, and
 temporary development breakage stays behind coherent delivery checkpoints.

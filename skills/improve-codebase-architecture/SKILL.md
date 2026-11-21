@@ -130,7 +130,7 @@ During interactive design, apply "domain-modeling" as decisions crystallize:
 For autonomous planning, record proposed glossary and ADR changes in the plan
 for review. When exploring alternative interfaces, use Codebase Design's
 [design-it-twice guidance](../codebase-design/DESIGN-IT-TWICE.md) to compare
-structurally distinct designs through arena; check technical assumptions with
+structurally distinct designs through [Arena](../arena/SKILL.md); check technical assumptions with
 experiments where proposals alone cannot distinguish the options.
 
 ### 4. Return a usable plan

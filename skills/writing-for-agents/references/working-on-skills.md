@@ -127,8 +127,9 @@ To pick a target, rank skills by `SKILL.md` size and lines added vs removed in
   exclusions, downward-only dependencies (flagging upward links, higher-workflow
   internals leaked into lower skills, or shared references homed above their lowest
   consumer), link hygiene (flagging same-file `#anchor` jump-links, back-links to
-  `SKILL.md`, duplicate links to the same target in one file, nested reference-only
-  chains, and inline background URLs), and every line against the line test
+  `SKILL.md`, repeated links to the same target in one file other than distinct
+  section anchors into a multi-section reference, nested reference-only chains, and
+  inline background URLs), and every line against the line test
   (flagging no-ops, duplicates, environment-held facts, and stale rules).
 - Report each failing line with evidence. Label suspected no-ops as predictions until a
   fresh-session trial proves them.

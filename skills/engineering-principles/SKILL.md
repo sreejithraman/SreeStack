@@ -10,7 +10,7 @@ and measurement decisions. Start from an engineering choice within the caller's
 scope, product requirements, and execution permissions. Leave concrete,
 evidence-backed decisions while the owning workflow retains its procedure and
 completion criteria. You are done when the matching principles inform the choice
-and proposed checks remain distinct from checks run.
+and the closing evidence rules below hold.
 
 Read only the principles that match the decision before acting. Each link opens
 one principle; a named request selects that principle directly.
