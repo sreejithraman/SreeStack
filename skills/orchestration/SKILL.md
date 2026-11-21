@@ -13,9 +13,8 @@ inspected at a named revision, and integrated, or its gap is reported.
 ## Who does the work
 
 - **Single-outcome threads** edit their workspace directly by default. Delegate when you need
-  independent review or verification, parallel fan-out, a specialized
-  model from [models](references/models.md#choose-a-model), or the user asks to keep this thread
-  free in the background.
+  independent review or verification, parallel fan-out, a specialized model from the model defaults,
+  or the user asks to keep this thread free in the background.
 - **Coordinator threads** never edit project files directly; they route outcomes to owners and stay
   free to talk.
 - **Children** do their own work, whatever their model, and delegate further only when their task
@@ -24,7 +23,7 @@ inspected at a named revision, and integrated, or its gap is reported.
   owner, resumed with `t3_thread_send` in T3) even after its turn finished or its thread was
   settled, unless an explicit handoff or closure ended its ownership. Check current responsibility
   first. When no resumable owner exists — or for an ephemeral helper — fix small review findings
-  yourself and launch larger repairs fresh from the model table. Reconcile overlapping writers under
+  yourself and launch larger repairs fresh from the model defaults. Reconcile overlapping writers under
   [reuse and recovery](references/reuse-and-recovery.md#recover-work) before replacing work.
 
 If you cannot launch a needed subagent, say so and ask.
@@ -74,29 +73,29 @@ Select a model for initial launch and availability recovery in this order:
 
 1. **User limits win.** Honor explicit user model picks and effort, cost, and concurrency limits. A
    named model permits no substitute unless the user authorized one.
-2. **Match the job.** Pick the task-specific choice or the job's row in
+2. **Match the job.** Pick the caller/project choice or the job's default in
    [models](references/models.md#choose-a-model).
 3. **Resolve live availability.** Check live host capabilities and any carried outage evidence. Use
    the preferred provider, model, and effort when available.
 4. **Apply listed fallback.** On quota or an unavailable model/provider — including before initial
-   launch during a known outage — try the row's listed fallback in order and notify the user without
-   asking again (listed fallbacks are authorized standing choices). A review fallback still starts a
-   new independent task.
-5. **Ask when exhausted.** Ask the user only when no authorized available choice remains (absent or
-   unavailable fallback, unresolved model-ID ambiguity, or user limit). Keep scope, verification
-   bar, and review criteria intact; availability never authorizes an unlisted model, a downgrade to
-   Simple, or changing additional-review skip policy.
+   launch during a known outage — follow the job's listed entries in order without inventing an
+   unlisted substitute, and notify the user without asking again (listed fallbacks are authorized
+   standing choices). A review fallback still starts a new independent task.
+5. **Ask when exhausted.** When no listed available choice remains (no listed fallback, all listed
+   entries unavailable, unresolved model-ID ambiguity, or user limit), follow the caller's skip
+   policy for optional work or ask the user for required work. Keep scope, verification bar, and
+   review criteria intact; availability never authorizes an unlisted model or a downgrade to
+   Simple.
 
-Carry the selected row, chosen model/effort, outage/reset evidence, and user limits in briefs and
-handoffs. Recheck availability once a known reset passes or recovery evidence arrives; use the
-preferred model for new work without replacing a running owner.
+Carry the selected job, chosen provider/model/effort, outage/reset evidence, and user limits in
+briefs and handoffs. Recheck availability once a known reset passes or recovery evidence arrives;
+use the preferred provider and model for new work without replacing a running owner.
 
 Use [reuse and recovery](references/reuse-and-recovery.md#reuse-an-agent) before resuming or
 replacing a child, or handling auth/permission denials, partial work, or retries.
 
 - **Target:** the child must support the chosen model and options; use a generic role when a custom
-  role overrides them (T3's `role` is not a model preset). A caller or project choice settles
-  multiple model-ID matches; otherwise report the ambiguity.
+  role overrides them (T3's `role` is not a model preset).
 - **T3 slash command:** through `delegate_task`, set `role: general` and start `task` with the
   command, because other roles prepend text before it.
 - **Separate checkout:** confirm its starting revision and pass uncommitted inputs explicitly.

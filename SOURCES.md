@@ -203,7 +203,7 @@ resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
 Alternative-interface proposals use arena's shared brief, rubric, independent
-candidates, and cross-judge, with orchestration's model table and bounded
+candidates, and cross-judge, with orchestration's model defaults and bounded
 ownership. The user-requested comparison remains conditional and defaults to
 recommendations; synthesis is requested separately. Candidate counts follow the
 decision rather than a fixed panel of three, and architect can carry a selected
@@ -1012,8 +1012,8 @@ a unique writable OS temp directory as fallback. Project output follows an
 explicit request or a task's maintained-document requirement. Handoffs and
 compaction summaries retain absolute note paths; continued work rereads and
 updates the note, keeping it available for the session and dependent workers.
-YouTube retrieval uses Gemini and X posts use Grok through orchestration's
-configured selections. Assigned researchers own synthesis; their briefs permit
+YouTube and X retrieval use orchestration's configured model defaults.
+Assigned researchers own synthesis; their briefs permit
 needed source tasks, whose retrievers work directly. Parents check source
 evidence and access gaps before acceptance.
 
@@ -1426,10 +1426,11 @@ start fresh with consolidated scope by default (reusing only for costly live
 state or directly helpful context). Keeps one owner per slice, separate writer
 paths, serial git/index work, the 12-child default limit, independent assessment
 exclusion, and bounded recovery; `swarm` owns the decision to run work in
-parallel. `references/models.md` holds the single editable model-default table (with
-ordered availability fallbacks and live capability/option resolution),
-difficulty tiers, row escalation, and dedicated UI operator rules. Goals and
-recurring work start only on explicit request.
+parallel. `references/models.md` is the single source of truth for model
+defaults and ordered availability fallbacks (exact standalone model matching
+from live capabilities, ambiguity handling, and host defaults for non-effort
+provider options), difficulty tiers, difficulty escalation, and dedicated UI
+operator rules. Goals and recurring work start only on explicit request.
 
 ## koubou
 
