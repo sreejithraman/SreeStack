@@ -38,7 +38,7 @@ reference is incomplete coverage.
 
 Use Orchestration's
 [recovery](../../orchestration/references/reuse-and-recovery.md#recover-work)
-for required reviewers at every stage and for uncertain dispatches. A reviewer
+for every reviewer at every stage and for uncertain dispatches. A reviewer
 that stays unknown after recovery is an incomplete review and gets a fresh run.
 
 Review Sweep resolves overlapping or conflicting findings using its

@@ -349,9 +349,9 @@ for skill model defaults; explicit user/project requirements are resolved by
 [Models](skills/orchestration/references/models.md) defines UI operation, UI and implementation
 tiers, document work, and raising difficulty;
 [reuse and recovery](skills/orchestration/references/reuse-and-recovery.md) covers agent reuse,
-owner replacement, and failure recovery. The existing agent handles UI operation directly when
-its tools reach it, delegating a UI operator only for substantial flows, missing tools, independent
-verification, or repeated UI tool failures.
+owner replacement, and failure recovery. The existing agent operates UI itself unless
+[Operate a UI](skills/orchestration/references/models.md#operate-a-ui) calls for a dedicated
+operator.
 
 Enable and authenticate the providers listed there in T3 Code. Routing
 resolves their exact instance/model IDs and effort options from the live catalog;
@@ -391,8 +391,8 @@ Sample requests and expected results:
   Accepted fixes go back to the slice's owner.
 - “Review this small fix”: one required Primary for contained ordinary work;
   contained risky work adds a fitting lens. An ordinary prose or wording-only
-  edit with no procedure change uses parent review. Missing required coverage
-  cannot produce a clean result.
+  edit with no procedure change uses parent review.
+- Missing required coverage cannot produce a clean result.
 - A substantive fix gets a new pass: fresh tasks under Orchestration's review-pass
   rule for the angles it touches, with the prior evidence. Each pass checks the current
   snapshot, bounded to affected behavior, prior findings, and relevant proof.

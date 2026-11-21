@@ -81,9 +81,10 @@ Select a model for initial launch and availability recovery in this order:
    launch during a known outage — follow the job's listed entries in order and notify the user
    without asking again (listed fallbacks are authorized standing choices). A review fallback still
    starts a new independent task.
-5. **Ask when exhausted.** Ask the user when no listed available choice remains (all listed entries
-   unavailable, unresolved model-ID ambiguity, or user limit). Keep scope, verification bar, and
-   review criteria intact; availability never authorizes an unlisted model or a downgrade to Simple.
+5. **Ask when exhausted.** When no listed available choice remains (all listed entries unavailable,
+   unresolved model-ID ambiguity, or user limit), follow a caller's skip policy for optional work or
+   ask the user for required work. Keep scope, verification bar, and review criteria intact;
+   availability never authorizes an unlisted model or a downgrade to Simple.
 
 Carry the selected job, chosen provider/model/effort, outage/reset evidence, and user limits in
 briefs and handoffs. Recheck availability once a known reset passes or recovery evidence arrives;

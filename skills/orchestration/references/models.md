@@ -12,7 +12,7 @@ or override the model the user picked for a thread.
 - **Standard implementation and fixes:** Codex GPT-6.2 Sol High → Claude Opus 5.5 High → Devin Gemini 4 Neon High → Antigravity Gemini 4 Neon High
 - **Hardest implementation and fixes:** Claude Fable 5.2 X-High → Codex GPT-6.2 Astra X-High
 - **Document writing and revision:** Antigravity Gemini 4 Neon High → Devin Gemini 4 Neon High → Claude Opus 5.5 Medium → Devin Opus 5.5 Medium → Antigravity Opus 5.5 Medium → Codex GPT-6.2 Sol Medium
-- **UI operation:** Codex GPT-6.1 Terra High *(Medium for simple linear flows; X-High for complex edge cases)*
+- **UI operation:** Codex GPT-6.1 Terra High *(Medium for simple linear flows; X-High for complex edge cases or costly false passes)*
 
 ### Research and retrieval
 - **General research:** Codex GPT-6.2 Sol Medium
@@ -38,15 +38,16 @@ them.
 
 Use the job's named default above, applying these boundaries:
 
-- **UI code (any size):** `UI implementation and fixes` — never `Simple` or `Hardest`.
+- **Building or changing UI (any size):** `UI implementation and fixes` — never `Simple` or
+  `Hardest` (reviewing or researching UI still uses its review or research default).
 - **Prose only (skills, agent instructions, READMEs, docs):** `Document writing and revision`. Mixed
-  prose and code uses the code default; executable scripts and tests are code.
+  prose and code keeps one owner on the code default; executable scripts and tests are code.
 - **Unnamed source review (second opinions, ad-hoc audits):** `Primary review`.
-- **Other code, diagnosis, design, tests, or config:** `Standard` by default (choose it whenever
-  `Simple` is in doubt). Use `Simple` only for small, mechanical tasks with an obvious check (typo,
-  rename, formatting). Use `Hardest` only when evidence shows `Standard` is insufficient
-  (unresolved architectural tradeoffs, subtle state or concurrency invariants, or repeated failed
-  approaches).
+- **Other code, diagnosis, design, tests, config, or non-interactive verification:** `Standard` by
+  default (choose it whenever `Simple` is in doubt). Use `Simple` only for small, mechanical tasks
+  with an obvious check (typo, rename, formatting). Use `Hardest` only when evidence shows
+  `Standard` is insufficient (unresolved architectural tradeoffs, subtle state or concurrency
+  invariants, or repeated failed approaches).
 
 **Raise the difficulty** one tier (or straight to `Hardest`) for the next launch when evidence shows
 the work is harder; a running owner stays unless replaced. A product failure is a finding to
@@ -58,6 +59,8 @@ after repeated failed attempts.
 
 Drive a browser, desktop app, or device UI yourself when your tools reach it. Delegate a **UI
 operation** child only for lengthy or difficult flows, tools you lack, required independent
-verification, or repeated UI tool failures — never for product bugs (send those to the implementer).
-The caller keeps assertions, verdicts, and permissions; pass expected vs. observed state, unresolved
-checks, and session/tool references in the handoff.
+verification, or repeated operational difficulty (tool failures, state mismatches, or inconsistent
+judgments) — never for product bugs (send those to the implementer). The caller keeps assertions
+and verdicts, and delegating or raising effort never grants extra permissions or authorization; pass
+expected vs. observed state, captured evidence, unresolved checks, and session/tool references in
+the handoff.
