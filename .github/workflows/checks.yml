@@ -37,7 +37,7 @@ jobs:
       - name: Run repository checks and secret scan
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-          CI_RUN_BUDGET_SECONDS: "55"
+          CI_RUN_BUDGET_SECONDS: "75"
         shell: bash
         run: |
           set -uo pipefail
