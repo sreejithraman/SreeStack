@@ -9,17 +9,17 @@ consumes it. A machine-only request needs no project path or URL.
 
 Identify the designated 1Password account and agent vault, including whether to
 create a new vault. Confirm the requested provisioning operations before any
-authenticated administration. For enforced separation, read the
-[access boundary](access.md#access-boundary).
+authenticated administration. For enforced separation, follow the access boundary
+in the access guide.
 
 Make the skill available to each host from a stable source checkout, not a
 temporary worktree. Confirm discovery in a new agent session and `op` on `PATH`.
 
 ## Create the vault and service account
 
-Create the dedicated vault and service account the
-[access boundary](access.md#access-boundary) describes, with the grants the user
-requested. Typical vault contents are test logins or sandbox API keys.
+Create the dedicated vault and service account the access guide's access boundary
+describes, with the grants the user requested. Typical vault contents are test
+logins or sandbox API keys.
 
 The agent can create the vault and service account with `op` when that
 administration is authorized. Check installed help first. Service-account
@@ -39,8 +39,8 @@ printing only a boolean. A working T3 session does not establish access in the
 Codex desktop app. GUI apps may not inherit terminal exports, and existing
 processes keep their earlier environment.
 
-A desktop authorization prompt on the
-[service-account route](access.md#authenticate) is a provisioning failure.
+A desktop authorization prompt on the service-account route (see Authenticate in
+the access guide) is a provisioning failure.
 Repair the affected runtime instead of asking a remote user to touch the Mac.
 
 ## Choose the token source
@@ -109,7 +109,7 @@ double-quoted without `" \ $`. Any other line makes the Claude loader export
 nothing from the file and print one warning that names the line, never the
 value.
 Reading the token from the user's personal vault is personal access: get the
-user's approval for that item under [access](access.md#who-may-use-which-credential),
+user's approval for that item under the access guide,
 or have the user enter the token privately. Have the user enter it privately
 too if no protected transfer path exists.
 The biometric setting disables desktop integration for automatic access;
