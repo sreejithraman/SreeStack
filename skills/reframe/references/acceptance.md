@@ -71,7 +71,7 @@ them from whatever the candidate happens to do. Existing quirks are not
 automatically requirements; explicit behavior changes are distinct from regressions.
 
 For performance work, use
-[measurement validity](../../diagnosing-bugs/references/measurement-validity.md)
+[measurement validity](../../engineering-principles/references/measurement-validity.md)
 before trusting a baseline, gain, or comparison. It owns bottleneck measurement,
 completed-work checks, comparable conditions, noise, and end-to-end relevance.
 

@@ -76,7 +76,7 @@ across layers.
 
 Answer empirical questions by running something. Use
 [prototype](../prototype/SKILL.md) for the interface a person sees or uses, and
-[architecture experiments](../improve-codebase-architecture/references/experiments.md)
+[architecture experiments](../codebase-design/references/experiments.md)
 for caller compatibility, state, concurrency, or performance. Record what each
 experiment proved and what stays unproven before finalizing the synthesis.
 

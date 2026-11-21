@@ -14,5 +14,4 @@ internal ordering that consumers cannot observe.
 
 Empty results, error assertions, relation checks, and compile-time type tests can
 be valid contracts. Judge what they detect instead of banning assertion syntax.
-Keep [tdd](../../tdd/SKILL.md)'s seam selection and vertical red/green workflow
-for implementation, and its examples for tests and mocking.
+Build new behaviors test-first at the agreed public seam.

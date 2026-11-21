@@ -58,6 +58,3 @@ on entry to `saving`; derive `isSaving` from that state. Cancellation ends the
 attempt's ownership before requesting cleanup, so even a completion that races
 with cleanup cannot replace the current result. The UI sends events and renders
 the resulting state; it does not maintain a separate permission flag.
-
-Use [domain-modeling](../../domain-modeling/SKILL.md) for vocabulary and ADRs;
-use [codebase-design](../../codebase-design/SKILL.md) for deep modules and seams.

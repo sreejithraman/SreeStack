@@ -111,7 +111,7 @@ Add what the work needs:
   accessibility or platform materials: [interface review](references/interface-review.md).
 - Deciding how to judge an ambitious target, a consequential change, competing
   candidates, or qualitative work: [acceptance guidance](../reframe/references/acceptance.md).
-- Performance claims: [measurement validity](../diagnosing-bugs/references/measurement-validity.md).
+- Performance claims: [measurement validity](../engineering-principles/references/measurement-validity.md).
 
 ## Get a known starting point
 

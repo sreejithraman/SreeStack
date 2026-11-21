@@ -43,7 +43,7 @@ For each class worth addressing, identify the invariant and its owner. Apply
 and explain why a higher-level repair would not help or would cost too much.
 
 Resolve technical uncertainty with focused
-[architecture experiments](../improve-codebase-architecture/references/experiments.md).
+[architecture experiments](../codebase-design/references/experiments.md).
 Use the experiment evidence to decide routine technical questions within the
 requested scope.
 

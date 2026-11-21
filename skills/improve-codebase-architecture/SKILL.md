@@ -110,7 +110,7 @@ those questions from the code, ADRs, and evidence; bring back only questions
 that require the user's judgment or unavailable access.
 
 When a decision rests on an untested technical assumption, run a focused
-[architecture experiment](references/experiments.md). Compare actual caller
+[architecture experiment](../codebase-design/references/experiments.md). Compare actual caller
 requirements, migration cost, and enforceable invariants. Use the shared
 measurement guidance linked there for performance claims. Return commands,
 observations, and limits; keep unrun proposals distinct from checked designs.

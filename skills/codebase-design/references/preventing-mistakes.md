@@ -23,9 +23,7 @@ export, or import rule that permits the bypass.
 ## Choose enforcement and proof
 
 For design or review, return a recommendation and its required proof; leave
-implementation to its owner. Use [correct](../../correct/SKILL.md) when the
-requested task is to mine recurring mistakes or prevent a known failure class;
-it owns historical evidence, prioritization, and the repair workflow.
+implementation and recurring-mistake mining to their owning workflows.
 
 When selecting a guard, read
 [Encode Lessons in Structure](../../engineering-principles/references/encode-lessons-in-structure.md).

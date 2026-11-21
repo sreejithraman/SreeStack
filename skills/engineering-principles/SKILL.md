@@ -5,9 +5,12 @@ description: Guide engineering design and implementation decisions. Use when cho
 
 # Engineering Principles
 
-Use these principles to choose the shape of the work. The relevant workflow
-still owns its procedure, checks, and completion criteria. Apply them within
-the user's scope, product requirements, and execution permissions.
+Apply shared engineering principles to design, refactor, migration, concurrency,
+and measurement decisions. Start from an engineering choice within the caller's
+scope, product requirements, and execution permissions. Leave concrete,
+evidence-backed decisions while the owning workflow retains its procedure and
+completion criteria. You are done when the matching principles inform the choice
+and proposed checks remain distinct from checks run.
 
 Read only the principles that match the decision before acting. Each link opens
 one principle; a named request selects that principle directly.
@@ -42,6 +45,7 @@ one principle; a named request selects that principle directly.
 - [Fix Root Causes](references/fix-root-causes.md): when diagnosing a defect or repairing a symptom that may affect sibling callers.
 - [Test Behavior, Not Implementation](references/test-behavior-not-implementation.md): when choosing assertions, expected results, or mocks that must detect broken behavior.
 - [Explain the Number](references/explain-the-number.md): before trusting, reporting, or acting on a performance measurement or evaluation result.
+- [Measurement Validity](references/measurement-validity.md): before building a performance baseline, comparing implementations, or reporting a speedup or regression.
 
 ## Sweeps, delegation, long tasks, or repeated instructions
 
@@ -51,9 +55,9 @@ one principle; a named request selects that principle directly.
 - [Never Block on the Human](references/never-block-on-the-human.md): when routine, reversible uncertainty tempts a question that repository evidence or an experiment can settle.
 - [Encode Lessons in Structure](references/encode-lessons-in-structure.md): when repeated instructions or recurring corrections reveal a rule that needs durable enforcement.
 
-For a cross-cutting task, read the applicable principles across groups. Give
-delegates the relevant file paths and the decision or proof they own through
-[Orchestration](../orchestration/SKILL.md).
+For a cross-cutting task, read the applicable principles across groups. When
+delegating, pass the relevant principle paths and the decision or proof the
+child owns.
 
 Explain the concrete choice and its evidence when it matters to the result.
 Keep proposed checks distinct from checks run. A principle name or a completed
