@@ -8,13 +8,12 @@ description: Use when asked to reframe a task, raise its ambition, improve a pro
 Turn a request and its context into an execution-ready brief. Start from a user
 request, prompt, or calling workflow's context. Leave a concise brief (or a
 copyable prompt when prompt rewriting was asked) with preserved constraints and
-evaluation criteria. You are done when the brief names the outcome, covered code,
-constraints, exclusions, methods, evaluation, finish line, and open unknowns, and
-is returned to the caller.
+evaluation criteria. You are done when the brief (or copyable prompt) is
+returned to the caller with the required fields below.
 
 Preserve explicit requirements while considering stronger ways to achieve the
 outcome. Scale the pass to what is unsettled: a precise request may need only a
-short confirmation. Reframing alone ends with the brief.
+short confirmation.
 
 ## Find the better task
 
@@ -51,8 +50,9 @@ evidence that they have been achieved.
 
 Name the data, tools, environments, and access needed to execute and evaluate the
 chosen approach, separating available resources from missing setup. For a lasting
-workflow, identify its signal, action, feedback, and owner; a proposal alone
-authorizes neither automation nor recurring execution.
+workflow, identify its signal, action, feedback, and owner; keep setup and
+ongoing operation within the authorized scope, and treat a proposal alone as
+authorizing neither automation nor recurring execution.
 
 ## Return the brief
 

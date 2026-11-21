@@ -1293,8 +1293,8 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 - [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
 Writes the spec into the caller's shaping record, or falls back directly to an
-authorized record or host scratch draft without linking upward to `shape`, and
-publishes to the tracker only when the user asks. Publishing
+authorized record or host scratch draft, and publishes to the tracker only when
+the user asks. Publishing
 uses supplied or project-configured tracker information, without a readiness
 label, and leaves a link to the issue in the record. Unresolved required choices
 can be supplied directly or through the manual setup skill. Synthesizes without

@@ -88,8 +88,7 @@ verdict and the prototype's disposition are in the record.
 Every intended outcome needs its proof, covered code, preserved behavior, out of
 scope, inputs and access, decisions and assumptions, and one finish-line field:
 the line the user requested, or else a line marked proposed with its reason
-(**Land** when settled and reversible, **Try** when taking shape or uncertain,
-or **PR** when a PR state is requested).
+under Implement's finish-line policy (`Land`, `Try`, or `PR`).
 A question only trying the built thing can answer, such as a visual direction,
 doesn't block Settled: record it as the question Try will answer, and propose
 Try. A settled brief is not Land by itself; the execution owner states its finish
