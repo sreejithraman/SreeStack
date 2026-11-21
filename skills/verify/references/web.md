@@ -12,14 +12,12 @@ no automation-capable preview is attached. An initially closed preview or an
 actionable error still uses that browser. Use another browser only under the
 host's fallback conditions or an explicit user request. For local servers,
 resolve the actual URL and port from the running process or app environment.
-The [T3 runtime instructions](https://github.com/pingdotgg/t3code/blob/c71ca063dfcd8c2e3dcb2bd92adbb2180cbbece3/apps/server/src/provider/T3OrchestrationInstructions.ts)
-and live tools supply the current interaction contract.
 
 ## Scripted browser checks
 
 Use the project's Playwright Test check when it already has one for this
 behavior; its fixtures close the browser. Otherwise write a script with the
-Playwright library in [run scratch](../SKILL.md#keep-proof-not-runs). See
+Playwright library in run scratch. See
 [Playwright library](https://playwright.dev/docs/library).
 
 - Launch Playwright's bundled Chromium, with no `channel` or `executablePath`.

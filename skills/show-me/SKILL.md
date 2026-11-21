@@ -47,7 +47,7 @@ different questions.
 | A file, document, or configuration | A link to the file by absolute path, with an excerpt or rendered view if that helps |
 
 Put images and video in the reply with absolute paths, so the host renders them
-inline. Read [captures](references/captures.md) before you make visual media.
+inline. Follow the captures guide above before making visual media.
 
 ## Show only what is real
 
