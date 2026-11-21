@@ -19,13 +19,13 @@ from test_render_dashboard import Program, example
 PREPARE = Path(__file__).with_name("prepare_sites.py")
 
 
-def scaled_timers(divisor):
+def scaled_timers(divisor, min_delay=1000):
     return f"""
 window.scheduledDelays = [];
 const nativeSetTimeout = window.setTimeout;
 window.setTimeout = (fn, delay = 0, ...args) => {{
   window.scheduledDelays.push(delay);
-  const scaled = typeof delay === 'number' && delay >= 1000 ? Math.max(20, Math.round(delay / {divisor})) : delay;
+  const scaled = typeof delay === 'number' && delay >= {min_delay} ? Math.max(20, Math.round(delay / {divisor})) : delay;
   return nativeSetTimeout(fn, scaled, ...args);
 }};
 """
@@ -135,16 +135,17 @@ class SitesRefreshTests(center.CommandCenterCase):
         self.assertEqual(page.run("pageErrors"), [])
 
     def test_visible_page_picks_up_publication_and_restores_its_view(self):
-        page = self.open_page(center.PHONE, before_load=scaled_timers(40))
+        page = self.open_page(center.PHONE, before_load=scaled_timers(40, min_delay=10000))
         page.click("#work-tab")
         page.click(center.EVIDENCE)
         page.click("#toggle-stage-planned")
         page.bring_into_view(self.card("W1"), 100)
         before = page.top_of(self.card("W1"))
         self.wait_until(lambda: 20000 in page.run("window.scheduledDelays"))
+        before_checks = len(self.requests_for("chief-version.json"))
         self.publish(self.retitled("Automatically published program"))
         self.wait_until(lambda: "Automatically published program" in page.text(), timeout=5)
-        self.assertIn(20000, page.run("window.scheduledDelays"))
+        self.assertLessEqual(len(self.requests_for("chief-version.json")), before_checks + 2)
         self.assertEqual(page.selected_tab(), "work-tab")
         self.assertTrue(page.run(f"document.querySelector('{center.EVIDENCE}').parentElement.open"))
         self.assertFalse(page.run("document.querySelector('.collapsible.planned details').open"))
@@ -168,7 +169,7 @@ class SitesRefreshTests(center.CommandCenterCase):
         self.assertEqual(len(self.documents()), 1)
 
     def test_hidden_page_stops_requests_and_updates_immediately_on_return(self):
-        page = self.open_page(before_load=scaled_timers(40))
+        page = self.open_page(before_load=scaled_timers(40, min_delay=10000))
         page.click("#work-tab")
         self.wait_until(lambda: 20000 in page.run("window.scheduledDelays"))
         page.set_visible(False)
@@ -332,7 +333,7 @@ window.clearInterval = id => {activeIntervals.delete(id); nativeClear(id);};
         self.wait_until(lambda: len(self.requests_for("chief-version.json")) > before)
         for _ in range(4):
             self.focus(page)
-        time.sleep(.1)
+        time.sleep(.2)
         self.assertEqual(len(self.requests_for("chief-version.json")), before + 1)
         self.assertIn(5000, page.run("window.scheduledDelays"))
         time.sleep(1.1)
