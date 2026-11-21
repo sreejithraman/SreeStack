@@ -1247,7 +1247,9 @@ run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
 checks. Checks free disk space and load once before acquiring a device, on the
 machine that runs it, and holds or reports when either is critical. Project
-runners follow Verify's iOS build output rules.
+runners state run-scoped DerivedData and result-bundle placement directly rather
+than linking upward to `verify`, and pooled inspection handoffs defer to the
+caller's sharing workflow.
 Failure guidance defers to host recovery instructions and preserves unresolved
 ownership conflicts. Consolidates T3 acquisition, returned driver/session, setup and recovery rules
 in one host reference; the live host contract remains authoritative. Panel or

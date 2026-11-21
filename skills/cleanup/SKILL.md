@@ -72,18 +72,18 @@ branch, folder, or task; preserve unique commits unless explicitly abandoned or 
   abandoned those commits. Inspect any host cleanup command before using it; otherwise remove
   only a worktree that is clean or contains solely identified, explicitly abandoned task changes
   with no retained ignored data. When removing a worktree on macOS/Xcode, also clean its
-  DerivedData under [development resource cleanup](references/development-resources.md#clean-up).
+  DerivedData under development resource cleanup.
 - **Branches and refs:** recheck each tip and worktree use immediately before deleting. For
   merged work (including squash merges), the tip must still equal the verified merge-time source
   head or be reachable from the intended base. Retain and report any branch that advanced beyond
   completed or explicitly abandoned work (or whose eligibility cannot be proved). Retain any
   remote branch used as an open PR's head or base. Delete a remote branch only when eligible and
   in scope (merged task, explicitly abandoned task, or explicit request for that remote branch),
-  using an expected-tip lease so a concurrent push fails the delete (see
-  [git-push](https://git-scm.com/docs/git-push)). If a clean current worktree holds a branch
+  using an expected-tip lease (`git push --force-with-lease=<branch>:<expected-tip> <remote> :<branch>`) so a
+  concurrent push fails the delete. If a clean current worktree holds a branch
   being deleted, detach it at the appropriate base first; otherwise leave the worktree and branch
   in place. Delete a local branch only when no worktree holds it, using an atomic
-  expected-old-tip check (see [git-update-ref](https://git-scm.com/docs/git-update-ref)). Remove
+  expected-old-tip check (`git update-ref -d refs/heads/<branch> <expected-tip>`). Remove
   branch-specific Git config afterward only if the branch name remains absent; retain and report
   the config if recreated.
 

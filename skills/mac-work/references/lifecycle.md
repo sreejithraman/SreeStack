@@ -1,11 +1,11 @@
 # Reproduce the lifecycle candidate
 
-This is a dependency/baseline qualification recipe. Use the
-[canonical foreground runner](runner.md) for the approved pilot.
+This is a dependency/baseline qualification recipe. Use the canonical foreground
+runner (`runner.md`) for the approved pilot.
 
 Use a new private directory and leave live admission/device state alone. These
 commands build a dependency experiment; they install nothing into host tools or
-the repository checker. Read the [ownership boundary](repair.md) first.
+the repository checker. Read the ownership boundary in `repair.md` first.
 
 From the repository root:
 
@@ -55,14 +55,14 @@ and `--case mcp-cancel-detached --case cli-success-lingering --case mcp-success-
 The detached universal assertion still fails; the two lingering cases block their
 successor until closure. Keep these gaps alongside passing policy results.
 A quarantined successor's observation timeout is not a passing availability test.
-The original unpatched gate and counterexamples remain in [fitness findings](fitness.md).
+The original unpatched gate and counterexamples remain in `fitness.md`.
 
 Run `--help` for all case names. Outputs include verdicts, contract, expectation
 category, runtime/harness identity, fixture events, client transcripts and logs.
 Never sum policy passes into a claim that universal automatic cleanup passed.
 Repeat the cold-start, mixed-client and cancellation/crash probes against the
 same immutable build before accepting a new patch. Original baseline comparison
-uses `--original` with the unpatched runtime from [setup](setup.md).
+uses `--original` with the unpatched runtime from `setup.md`.
 
 After the run, fixture processes/state are removed by the harness. Keep retained
 proof, then remove only the task-owned `run` directory. No runtime is needed to

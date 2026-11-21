@@ -32,7 +32,7 @@ into every project.
    Changes requiring a SimLock daemon
    restart belong in a maintenance window with its consumers accounted for;
    ordinary agents do not restart a shared daemon to repair a run.
-4. For T3 adoption, follow [T3 connection setup](t3.md#connection-setup).
+4. For T3 adoption, follow Connection setup in the T3 routing guide.
 
 Use the current [configuration reference](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/reference/configuration.mdx),
 [capacity guidance](https://github.com/callstackincubator/simlock/blob/822ea4c47d68cd8f7b1168192c40bbcffa23f4e9/website/src/content/docs/docs/worker/capacity.mdx)
@@ -73,7 +73,7 @@ records and unresolved legacy resources in the report.
 
 Use disposable fixtures and the project's public run command. Record versions,
 commands, receipts, observed results and evidence outside disposable outputs.
-For agent-device on iOS, include [helper preparation](workflow.md#run-and-record)
+For agent-device on iOS, include the workflow guide's helper preparation
 before app commands.
 Mark each unexercised case blocked or untested; source tests do not establish
 that this machine's native integration works.
