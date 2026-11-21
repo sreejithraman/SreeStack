@@ -47,7 +47,7 @@ MAC_WORK_ROOT/bin/mac-work run --id CHECK_ID --owner THREAD \
 ```
 
 The runner rechecks manifest/artifact hashes after admission, within the same
-[execution budget](runner.md#stable-operations-and-receipts), before spawning the
+execution budget (see `runner.md`), before spawning the
 command. Drift fails before that command can acquire. The manifest digest joins
 the immutable request in the same upstream operation row. Late identical
 submission returns its result even after outputs are removed, without executing
@@ -70,7 +70,7 @@ groups while waiting for them. A direct graceful SIGTERM left no observed
 descendants, but that is not canonical cancellation/crash qualification. Swift
 and xcodebuild are not qualified examples here. The command qualification owner
 maintains lifecycle proof; do not weaken the contract or kill shared build services to fit it.
-The [qualification record](plan.md#real-command-eligibility-evidence) records
+The qualification record in `plan.md` records
 the installed Node + JS pnpm invocation of SimLock
 `run build:daemon:run` staying in one group for a 2.371s build. Native pnpm12/Turbo
 spawned other groups and is unqualified. Eligibility attaches to the exact

@@ -23,18 +23,21 @@ The runner must:
 
 - Acquire a compatible device once, give concurrent runs independent supported
   identities, and propagate the exact grant/environment to every consumer. Apply
-  the [run ownership guard](workflow.md#choose-the-route-before-acquiring) and
-  [lease identity policy](workflow.md#run-and-record); a shared requester or a
-  reusable task ID does not authorize another run's acquisition or teardown.
+  the workflow guide's run ownership guard and lease identity policy; a shared
+  requester or a reusable task ID does not authorize another run's acquisition or
+  teardown.
 - Keep the lease renewed while builds or tests run, even when no UI commands
   occur. A one-shot detached lease needs a supported renewal owner; choosing a
   long TTL alone is insufficient. Observe lease loss and stop device-dependent
   work before any further command.
-- Allocate a unique run directory for temporary fixtures and logs, and put
-  Verify's [kept proof](../../verify/SKILL.md#keep-proof-not-runs) outside it.
-  Record created paths and process identities as they are created.
-- Place Xcode DerivedData and result bundles by Verify's
-  [build output](../../verify/references/ios.md#build-output) rules.
+- Allocate a unique run directory for temporary fixtures and logs, and keep
+  caller proof outside it. Record created paths and process identities as they
+  are created.
+- Pass `-resultBundlePath` inside the run directory on every test run. Pass
+  `-derivedDataPath` inside the run directory on every build—including builds of
+  disposable checkouts or any run unsure it is alone—except when this run is
+  confirmed to be a non-disposable checkout's sole builder using the default
+  DerivedData path.
 - Capture PIDs at spawn and use existing ownership-checked stop tooling. Recheck
   start identity, executable/workspace and other consumers immediately before
   stopping. Await all run-owned writers, including test helpers and descendants;
@@ -64,8 +67,8 @@ its owner, reason and review date. Keep the receipt until recovery is settled.
 
 ## Build and test target compatibility
 
-Runners using agent-device on iOS include the
-[helper preparation step](workflow.md#run-and-record) inside the lease scope,
+Runners using agent-device on iOS include the workflow guide's
+helper preparation step inside the lease scope,
 with its own startup budget before app operations.
 
 Read the grant's device set and environment. With isolated iOS device sets,

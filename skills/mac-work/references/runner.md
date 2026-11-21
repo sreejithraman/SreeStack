@@ -147,10 +147,9 @@ provider override can pick a root queue or capacity. The stdio tools are:
 - `build_handoff(operation_id, artifacts)`
 - `work_report(limit, operation_ids, sample, simlock, lease_ids)`
 
-For artifact sealing and dependent command inputs, use
-[build/artifact handoffs](handoffs.md).
+For artifact sealing and dependent command inputs, use `handoffs.md`.
 For job reconciliation, the admission mode and observation-only pressure sampling, use
-[job/pressure reports](diagnostics.md).
+`diagnostics.md`.
 
 The response schema and operation semantics match the CLI. The facade does not own
 or cancel commands merely because its connection exits. Restart the consumer after
@@ -188,7 +187,7 @@ hash and cannot be upgraded in place; keep its root/proof and create a fresh pri
 Try root for the repaired release. Supported artifact handoffs and job/pressure
 reports use the contracts above. Installation and device owners coordinate host
 profile activation, broader tool/device qualification, pressure policy and capacity
-decisions through the [plan](plan.md).
+decisions through `plan.md`.
 
 ## Prove it privately
 
@@ -204,5 +203,5 @@ edits runtime files. Keep its raw worker snapshots as well as verdicts. The
 damaged database bytes. Use a disposable adaptive root for `adaptive-fifo` and
 `adaptive-expiry`. Use a disposable fixed root for the other cases.
 
-The [original counterexample](fitness.md) for arbitrary escapes remains known
+The original counterexample in `fitness.md` for arbitrary escapes remains known
 unsupported behavior; it is not silently counted as a passing foreground test.

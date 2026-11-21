@@ -53,7 +53,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    serialized branch/commit ownership. No hardware jobs or live state.
    Blocked by: None.
    Status: qualification and canonical command pilot accepted by parent; global
-   adoption remains task 6. See [findings](fitness.md) and [repair proposal](repair.md).
+   adoption remains task 6. See `fitness.md` and `repair.md`.
    Finish line: Try (completed); supported-pilot review/merge is now parent-owned.
 
 1a. **Repair dependency lifecycle without replacing admission**
@@ -66,7 +66,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    blocking, not automatic availability. Serialized branch ownership in this slice.
    Blocked by: 1.
    Status: lifecycle repairs accepted by parent. User authorized the foreground
-   boundary; see [ownership seam](repair.md). Runner adds atomic operation binding
+   boundary; see `repair.md`. Runner adds atomic operation binding
    inside the same upstream state/receipt seam.
    Finish line: Try (completed before later handoffs); no host activation or
    external upstream publication.
@@ -81,7 +81,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Blocked by: 1a (accepted and delivered).
    Status: runner0c4bc1c accepted, with qualified real daemon builds and public
    cancellation proved by parent. Combined handoffs/diagnostics8d4e9ec also
-   accepted; both retained roots belong to parent. See [public runner contract](runner.md).
+   accepted; both retained roots belong to parent. See `runner.md`.
    Finish line: Try (completed); supported-pilot review/merge is now parent-owned,
    with live/default activation still deferred.
 
@@ -100,7 +100,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    implemented in mac-work/handoffs and accepted. Parent proved qualified daemon
    build → prebuilt app verification/seal → T3 interaction/retirement on both
    platforms in the supported local Try integration below. This does not qualify
-   rebuilding those apps or queued T3 boot/cancellation. See [handoff contract](handoffs.md).
+   rebuilding those apps or queued T3 boot/cancellation. See `handoffs.md`.
    Finish line: Try; no live hold migration or host activation.
 
 3. **Expose pressure and command results in T3**
@@ -116,7 +116,7 @@ closure still retains capacity. No force-clear or policy reinterpretation is all
    Parent accepted live reports during both platform leases: task/owner/revision,
    wait/execution/results, caller-known lease IDs and timestamped normal pressure.
    Event history still does not establish active-lease authority.
-   See [report contract](diagnostics.md).
+   See `diagnostics.md`.
    Finish line: Try; no new pressure enforcement.
 
 4. **Prove representative hardware workflows**
@@ -370,7 +370,7 @@ prelaunch checks reuse that owner. Code is copied, then sealed read-only; tests
 replace private inodes atomically rather than editing uv hardlinks.
 
 The maintained dependency version is `0.4.1+macwork.4`; wheel pins remain in
-[candidate.json](../candidate.json). The fresh bootstrap/manifest protocol requires
+`candidate.json`. The fresh bootstrap/manifest protocol requires
 a fresh task-owned root. All older parent-owned roots/proofs remain unchanged,
 including the 69-operation final-pilot. Parent's repaired-0.3 real Node/JS-pnpm
 build/cancel/file-handoff supplement stays historical; parent owns new real-workload
