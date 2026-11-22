@@ -10,8 +10,11 @@ In T3 Code, follow the injected collaborative-browser instructions for tool
 selection and recovery. Start with `preview_status`, then `preview_open` when
 no automation-capable preview is attached. An initially closed preview or an
 actionable error still uses that browser. Use another browser only under the
-host's fallback conditions or an explicit user request. For local servers,
-resolve the actual URL and port from the running process or app environment.
+host's fallback conditions, an explicit user request, or
+[browse](../../browse/SKILL.md) when the state under test needs the user's real
+Chrome session (existing logins, extensions, an open Chrome tab, or human
+handoffs). For local servers, resolve the actual URL and port from the running
+process or app environment.
 
 ## Scripted browser checks
 
