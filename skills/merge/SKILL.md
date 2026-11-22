@@ -42,10 +42,10 @@ limits.
    merge request alone never clears it. On any stop (including a base mismatch or `## Provisional`
    blocker found on the final read), cancel any armed landing and confirm cancellation (`gh pr
    merge --disable-auto`, or for a queue the `dequeuePullRequest` mutation), leave the PR open,
-   and use [Show Me](../show-me/SKILL.md) to show the user what happened, including anything that
-   landed first.
+   use [Show Me](../show-me/SKILL.md) to show the user what happened (including anything that
+   landed first), and stop without repairing or landing.
 
-   **Route repairable gaps** (unless caller-owned repair mode applies). `pr_state` blocks any head
+   **Route repairable gaps** (when no stop and no caller-owned repair mode apply). `pr_state` blocks any head
    without a passing `review-fix-loop` status, including after a base update or restack. Read any
    unverified head commits first. Take missing review, missing or stale verification, or
    unverified head commits through PR's Prepare and Review steps, using
@@ -63,10 +63,11 @@ limits.
    `python3 <pr skill folder>/scripts/pr_state.py <number or URL> --head <verified head>`
    (outside the sandbox, per `watch.md`) on every PR in the set and verify all of the following
    for the whole set:
-   - The PR is [ready](../pr/references/watch.md#ready-or-blocked) under that `pr_state` read
-     (`status: ready` with every `to_settle` item and feedback settled—including newly arrived
-     items—or only `watch.md`-permitted current-head CI dismissals or a user-approved unanswered
-     review request), with no `## Provisional` blocker.
+   - The PR is [ready](../pr/references/watch.md#ready-or-blocked) under that `pr_state` read:
+     every `to_settle` item and feedback is settled (including newly arrived items), there is no
+     `## Provisional` blocker, and `status` is `ready` (or non-`ready` only from
+     `watch.md`-permitted current-head CI dismissals or a user-approved unanswered review
+     request).
    - That exact `<verified head>` SHA carries a passing `review-fix-loop` status—required for
      every PR, including docs-only changes, recording current-head review and
      [Show, Don't Tell](../show-dont-tell/SKILL.md).
@@ -76,25 +77,29 @@ limits.
    - No closing link would close an unfinished issue.
 
    Name each PR's exact `<verified head>` SHA and passing `review-fix-loop` status before
-   submitting the merge. If any PR fails the gate, do not merge—handle any stop per step 2 first,
-   then return remaining gaps to step 2. Land the set only when all of it is ready.
+   submitting the merge. If any PR fails the gate, do not merge—on any stop, handle it per step 2
+   and stop; otherwise return the gap to step 2. Land the set only when all of it is ready.
 
    **Execute and confirm:** follow repository merge settings, protections, and queues. For one PR,
    merge directly with an exact-head guard (`pull_request_merge` with
    `expectedHeadSha: <verified head>` and without `auto: true` when host PR tools are available,
    or `gh pr merge --match-head-commit <verified head>` otherwise), and leave branch deletion to
-   cleanup. Deferred landing (`auto: true`, `--auto`, or a merge queue) requires branch
-   protections or queue rules that prevent unverified later pushes from landing. For stacks, use
-   `gh-stack` (not `pull_request_merge` with `stack: true`, which checks only one
-   `expectedHeadSha`), with guards against unverified head changes on every layer: head
-   preconditions, or enforced current-head checks and fresh approvals after pushes. Without an
-   allowed executor and set-wide guard covering every layer, report the blocker (branch
-   protection must prevent unverified head changes).
+   cleanup. Do not arm `auto: true` or `--auto` on a single PR; if a direct merge fails, read
+   GitHub and return to step 2. If the repository requires a merge queue, queue only when branch
+   protections or queue rules enforce current-head review on any later push (otherwise report the
+   blocker). For stacks, use `gh-stack` (which owns stack set selection and queue handling; never
+   `pull_request_merge` with `stack: true`). Because neither `gh stack merge` nor
+   `pull_request_merge` enforces per-layer head preconditions at submission (and earlier
+   `pr_state` reads do not guard against pushes before merge), land a stack only when branch
+   protections enforce current-head review on every layer (for example, required
+   `review-fix-loop` status or required approvals dismissed on new pushes); otherwise report the
+   blocker.
 
-   Confirm with `pr_state` that each PR reports `merged`. Queued work is still pending. After a
-   failed or timed-out submission, read GitHub before you retry. If it reports `state: MERGED`
-   with `the head moved`, commits you didn't verify landed; read them and tell the user what
-   landed before you finish any issue.
+   Confirm with `python3 <pr skill folder>/scripts/pr_state.py <number or URL> --head <verified head>`
+   that each PR reports `merged`. Queued work is still pending. After a failed or timed-out
+   submission, read GitHub before you retry. If it reports `state: MERGED` with `the head moved`,
+   commits you didn't verify landed; read them and tell the user what landed before you finish
+   any issue.
 
 4. **Finish issues.** Check linked or task-scoped issues against their acceptance criteria and
    intended delivery branch. Confirm automatic closure, or close a fully resolved open issue as
