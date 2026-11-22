@@ -41,7 +41,7 @@ different questions.
 | Several states, variants, or a before and after | A collage, with links to the full-size images |
 | Timing, gestures, transitions, or a connected flow | A video |
 | A mock, or a comparison or interaction images can't show | An inline HTML view, through the host's HTML preview tools |
-| A website | A checked link, from [web sharing](references/web-sharing.md) |
+| A website | A checked link, from [web sharing](references/web-sharing.md) (falling back to [Tailscale Serve](references/tailscale-serve.md) only when web sharing routes there) |
 | A native app the user should try by hand | A build on their device, from [device delivery](references/native-device-delivery.md) |
 | A command, API, or service | The command, its setup, and its real output or before-and-after numbers |
 | A file, document, or configuration | A link to the file by absolute path, with an excerpt or rendered view if that helps |

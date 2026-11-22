@@ -544,7 +544,7 @@ including during iteration. It chooses formats based on the work and available
 tools: screenshots, collages, video, preview links, device installs, runnable
 examples, or accessible files. It can combine demonstrations with hands-on
 access and reuse current verification evidence. Website handoffs include a
-checked PR preview or Tailscale URL when available.
+checked PR preview, T3 local preview, or Tailscale Serve fallback URL when available.
 
 Show Me is automatically discoverable. The shared completion instructions and
 Orchestration call it for results you can inspect or try; project setup includes
