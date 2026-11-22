@@ -23,8 +23,8 @@ Use this guide when you need to create or renew signing assets for iOS/macOS app
      capability enum. If the cached session cannot access Developer Portal,
        inspect session status, the selected provider, and the exact error first.
        If recovery requires a fresh session, clear only that account's scoped cache,
-       then log in again with the same binary, following the entrypoint's
-       [authentication reuse rules](../../SKILL.md#reuse-authentication-before-requesting-another-code):
+       then log in again with the same binary, following Reuse authentication before
+       requesting another code in `SKILL.md`:
        - `asc web auth logout --apple-id "user@example.com"`
        - `asc web auth login --apple-id "user@example.com"`
    - For App Groups, the public API can enable `APP_GROUPS` but cannot create or

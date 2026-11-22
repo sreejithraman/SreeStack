@@ -4,14 +4,14 @@ Read only the section that matches a proven `asc validate` or `asc review doctor
 
 ## Contents
 
-- [Build processing and encryption](#build-processing-and-encryption)
-- [Content rights](#content-rights)
-- [Age rating](#age-rating)
-- [Version metadata and localizations](#version-metadata-and-localizations)
-- [App info and privacy policy URL](#app-info-and-privacy-policy-url)
-- [Screenshots](#screenshots)
-- [Initial availability](#initial-availability)
-- [Review details](#review-details)
+- Build processing and encryption
+- Content rights
+- Age rating
+- Version metadata and localizations
+- App info and privacy policy URL
+- Screenshots
+- Initial availability
+- Review details
 
 ## Build processing and encryption
 

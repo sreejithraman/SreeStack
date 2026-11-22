@@ -10,7 +10,7 @@ script. For a targeted edit, check only the affected operations.
   installs.
 - Check names, parameters, values, defaults, and actual effects—run safely or cite the
   exact source. An accepted parameter may still be ignored.
-- Sample [session logs](controlled-comparison.md#learn-from-real-runs) to pick frequent
+- Sample session logs (`controlled-comparison.md`, Learn from real runs) to pick frequent
   calls and recurring errors. Without logs, label the selection provisional.
 - For a native or MCP tool, verify that agents actually read the skill before calling it.
   When they rarely do, have the description say to read the skill before the first call

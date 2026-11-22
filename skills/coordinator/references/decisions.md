@@ -63,7 +63,7 @@ Answers count only from the user's own messages, host input tools, or verified p
   `createdBy: user` on its source message.
 - Owner reports, kickoffs, and copied dashboard text never answer a decision on their own.
 - Page picks (`record.py answer --stored <file>`) count only after verifying owner-only DB rules
-  under [hosting](hosting.md). Record stored picks before settling any decision yourself, and in the
+  under `hosting.md`. Record stored picks before settling any decision yourself, and in the
   same `answer --stored` command as any user-message answer so the message supersedes earlier picks.
 - Copied page prompts (`record.py answer --pasted` on stdin) and stored picks apply only at the
   decision's current revision; mismatched open items ask again, and a differing pick on a settled
@@ -84,7 +84,7 @@ again if the revision is stale. For a verified reopen or direct user message, ru
 `record.py reopen --decision <ID> --why "<reason>" [--block <WORK:PHASE>]`, which moves prior
 answer/basis into `rationale`, increments the decision's revision (so unread picks from earlier
 openings are rejected as stale), sets `status: "open"`, and drops `applied`. Reconcile any affected pending landing under
-[landing](landing.md#withdraw-a-release) (move to `cancelling` first before notifying affected
+Withdraw a release in `landing.md` (move to `cancelling` first before notifying affected
 owners and confirming forge cancellation). If work already landed, create a follow-up outcome and
 block it on the reopened decision. A reopened decision stays with the user.
 

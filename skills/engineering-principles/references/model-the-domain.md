@@ -33,7 +33,7 @@ local state when it expresses the behavior clearly.
 - Enforce allowed actions in the model. UI controls reflect those rules so
   other entry points cannot bypass them.
 - Check meaningful event sequences and forbidden transitions against product
-  requirements through [behavior tests](test-behavior-not-implementation.md).
+  requirements through behavior tests (`test-behavior-not-implementation.md` beside this reference).
   A model's own transition table is not independent proof of those requirements.
 
 A pure reducer or transition table can express a small machine. Use an

@@ -7,7 +7,7 @@ directory, and output path. What matters is independence between candidates.
 You are producing one candidate design in architect's parallel exploration.
 Your assignment ends with this candidate, not synthesis or implementation.
 Output a type sketch, function signatures, module map, and prose rationale
-shaped per [design rationale](design-rationale.md). Leave the synthesis decision
+shaped per `design-rationale.md` beside this reference. Leave the synthesis decision
 to the caller. Use [Codebase Design](../../codebase-design/SKILL.md)'s vocabulary.
 
 Apply the following discipline. The coordinator compares candidates on these

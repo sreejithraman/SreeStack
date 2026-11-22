@@ -14,7 +14,7 @@ missing:
 - `blockers` and `pending` are facts GitHub settles. A PR that `pending` lists as queued or set
   to auto-merge is already submitted, even with blockers, so never submit it again.
 - An open `## Provisional` section in the body is a blocker, even when the PR is queued or set
-  to auto-merge. See [PR body](pr-body.md). The output names the heading and leaves out the body.
+  to auto-merge. See `pr-body.md`. The output names the heading and leaves out the body.
 - `to_settle` lists what only a reader can judge. Each item needs a decision. GitHub records no
   decision on a comment or review body, so those stay listed. Carry your decision forward
   unless the text changed.
@@ -31,7 +31,7 @@ when a result looks wrong.
 - **Failures and feedback:** send them together to one [Review Sweep](../../review-sweep/SKILL.md)
   pass, with its [PR feedback](../../review-sweep/references/pr-feedback.md) guide. After it
   fixes something, check that review evidence covers the change. If it's missing or stale,
-  rerun PR's Prepare and Review steps on the affected scope. Then [publish](publish.md), post
+  rerun PR's Prepare and Review steps on the affected scope. Then publish (`publish.md`), post
   held replies, and read the state again. When Review Sweep returns a **held deferred reply**
   waiting on a recorded durable home (even with no code edit or push): if no parent workflow owns
   routing (a direct user request to PR or Merge), record an unrelated deferral's durable home

@@ -51,7 +51,7 @@ the retaining edge or ownership path back to source. Grouped counts can locate
 a candidate type; they do not explain why it survives.
 
 Memory graphs may include object descriptions and application data. Apply the
-[runtime privacy rules](apple-runtime.md#protect-diagnostic-data) before
+runtime privacy rules (`apple-runtime.md`, Protect diagnostic data) before
 retaining or sharing them.
 
 Done when evidence identifies an app-owned ownership path or allocation site,
@@ -82,7 +82,7 @@ describes these fields and cautions that a foreground disappearance is not by
 itself proof that memory pressure killed the app. If the jettisoned process is
 different, return to runtime crash diagnosis.
 
-On macOS, start with the [runtime reference](apple-runtime.md) to identify the
+On macOS, start with `apple-runtime.md` to identify the
 actual termination evidence; macOS does not use this jetsam report path. When
 the evidence implicates app footprint, reproduce the workload with Instruments
 and observe system memory pressure and the app process in Activity Monitor.

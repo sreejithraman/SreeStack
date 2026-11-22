@@ -63,7 +63,7 @@ Omit empty sections. If all changes are fixes, only show "Fixed."
 
 ### Step 2: Write Benefit-Focused Copy
 
-Follow the tone rules from [references/release_notes_guidelines.md](references/release_notes_guidelines.md):
+Follow the tone rules from `references/release_notes_guidelines.md`:
 - Describe user impact, not implementation details
 - Use direct address ("you") and action verbs
 - Be specific — mention concrete improvements
@@ -175,5 +175,5 @@ On partial upload failure:
 - The 170-char visible window is the most important part of your release notes.
 - Choose release timing from user needs and release readiness; do not promise a search-ranking gain from update frequency.
 - For full metadata translation (all fields), use [asc-localize-metadata](../asc-localize-metadata/guide.md) instead.
-- For keyword research and optimization, use [asc-aso-audit](../asc-aso-audit/guide.md) first.
+- For keyword research and optimization, use asc-aso-audit first.
 - If the local keyword field is stale before drafting, refresh it with `asc metadata pull` or inspect planned keyword changes with `asc metadata keywords diff`.

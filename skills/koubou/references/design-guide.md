@@ -31,7 +31,7 @@ For a full set, the opening slides (up to three) should establish a coherent sto
 
 Before writing the narrative arc, inspect the app's real visual language. The screenshot campaign should feel like a stronger expression of the product, not a detached generic ad system.
 
-Read [style intake](style-intake.md) when gathering inputs. Do this before asking broad visual questions.
+Read `style-intake.md` when gathering inputs. Do this before asking broad visual questions.
 
 ### Signals to extract from the product
 
@@ -865,6 +865,6 @@ These are starting points. For each project, adapt:
 - **Font sizes**: Scale based on text length (shorter text → larger font)
 - **Device image width**: Adjust between 65-85% based on how much screen real estate the device needs
 - **Spacing**: Adjust padding percentages based on text/device balance
-- **Additional elements**: For screenshots alongside ordinary icons or badges, use the mixed-asset recipe in [YAML configuration](yaml-reference.md#mixed-device-and-brand-assets). Enabled HTML framing applies to PNG/JPEG assets; other formats bypass it. See the [format rules](yaml-reference.md#disabling-device-frame).
+- **Additional elements**: For screenshots alongside ordinary icons or badges, use the mixed-asset recipe in `yaml-reference.md` (Mixed device and brand assets). Enabled HTML framing applies to PNG/JPEG assets; other formats bypass it (see Disabling device frame in `yaml-reference.md`).
 - **Composition**: If the template still feels generic after first render, change layout, scale, or posture instead of only tweaking colors
 - **Quality gate**: Do not ship the first successful render; compare it against the rejection checklist and iterate until it feels like App Store marketing

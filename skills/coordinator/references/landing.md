@@ -24,7 +24,7 @@ Record exactly one lander per merge set via `record.py land`:
   itself as sole lander, and no affecting hold or decision, matching forge head/base to the
   release. Any mismatch returns to you. Replace an unable owner before releasing.
 - **You** (for a set spanning multiple owners): confirm every owner stopped writing, then land via
-  [Merge](../../merge/SKILL.md) and [gh-stack](../../gh-stack/SKILL.md) as a caller that keeps its
+  Merge and [gh-stack](../../gh-stack/SKILL.md) as a caller that keeps its
   own repair owners (resuming or replacing the slice's owner for any readiness gap). Merge stops on
   any PR whose body still carries `## Provisional`.
 

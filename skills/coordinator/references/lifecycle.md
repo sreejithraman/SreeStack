@@ -18,7 +18,7 @@ lengthening unchanged waits.
 - **0 running owners, waiting only on slow external events** (upstream issue, teammate review):
   lengthen to 1–6 hours with the reason in `next`.
 - **Long-lived, heavily compacted coordinator thread:** move to a fresh thread via `record.py move`
-  under [coordinator move](coordinator-move.md) instead of letting context rot accumulate.
+  under `coordinator-move.md` instead of letting context rot accumulate.
 
 In T3, call `schedule_task` with an interval trigger, `bindToCurrentThread: true`, and this exact
 prompt verbatim — never stuff holds, grants, or model notes into it (`program.json` holds those):
@@ -45,13 +45,13 @@ runs through the host before ending a turn.
 ## Pause
 
 Bring the record current, pause the heartbeat (`schedule_task` with `enabled: false` in T3), and
-turn off tap-to-answer under [hosting](hosting.md).
+turn off tap-to-answer under `hosting.md`.
 
 ## Resume
 
 1. Re-read `SKILL.md`, start from `next`, and run `record.py status`.
 2. Reconcile the record with current files, threads, and forge state, and force-publish the page
-   under [hosting](hosting.md) before dispatching new work (which owns restoring tap-to-answer and
+   under `hosting.md` before dispatching new work (which owns restoring tap-to-answer and
    updating `grant.wake` once when on Claude).
 3. Re-enable the paused heartbeat — or recreate it if deleted/missing, updating `grant.heartbeat` —
    and verify `enabled` and `nextRunAt` (upgrade any pre-stored-picks prompt to the template above).

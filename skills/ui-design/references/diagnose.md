@@ -1,7 +1,7 @@
 # Diagnosing existing UI
 
 Use this reference for web surfaces. For native Apple UI, use
-[Apple-platform visual design](apple-platforms.md).
+`apple-platforms.md`.
 
 Use this when an existing web interface looks wrong and the complaint does not
 yet identify a cause. Inspect the rendered component with real content before
@@ -42,11 +42,11 @@ component's interaction and accessibility contracts.
 | Flat, plain, "nothing wrong but nothing right" | No visual accents anywhere | Add one role-specific accent: a border, section background, restrained two-hue gradient, low-contrast pattern, or geometric shape |
 | Feels unfinished / prototype-y | Defaults and custom styling are mixed without a system | Keep native controls when they fit; apply a coherent type, spacing, color, and focus system; customize controls only when their complete interaction and access behavior can be preserved |
 | Screen is blank for new users | No first-use path | Explain the next useful action with a clear headline and call to action; add imagery when it helps. Suppress unavailable setup-only controls, but preserve filters or search needed to recover from zero results |
-| A component looks generic | Familiar composition hides the content's relationships | Consider the [component composition](web.md#component-composition) alternatives when they improve the task |
+| A component looks generic | Familiar composition hides the content's relationships | Consider the component composition alternatives in `web.md` when they improve the task |
 | Elements look pasted onto the page | Everything is in its own rectangle | Overlap layers: negative margins so a card straddles two backgrounds, or extends past its parent's edges |
 | Overlapping images clash | No separation between them | Give them a border matching the page background — an "invisible border" that guarantees a gap |
 | User avatars/thumbnails lose their shape | Image background matches the UI background | Subtle inset box shadow (`inset 0 0 0 1px hsla(0,0%,0%,.1)`), not a border — borders clash with the image colors |
-| User-uploaded images wreck the grid | Media geometry depends on the incoming image | Use [stable media boxes](techniques.md#stable-media-boxes); choose cropping or containment according to the content |
+| User-uploaded images wreck the grid | Media geometry depends on the incoming image | Use stable media boxes (`techniques.md`); choose cropping or containment according to the content |
 | Chart unreadable for colorblind users | Series distinguished only by hue | Combine lightness/contrast with labels, shapes, patterns, or position; give color-coded metrics a secondary cue |
 
 For list grouping, judge the combined line-height and inter-item spacing. With
@@ -55,6 +55,6 @@ between baselines across an item boundary, versus 24px within a wrapped item.
 The CSS gap itself need not exceed line-height. See [gaps between boxes](https://drafts.csswg.org/css-align-3/#gaps).
 
 Measure meaningful control and state cues against [non-text contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html).
-For a supported diagnosis, continue with the matching [web visual system](web.md),
-[layout](web-layout.md), or [behavior](web-behavior-and-accessibility.md) branch
+For a supported diagnosis, continue with the matching web visual system (`web.md`),
+layout (`web-layout.md`), or behavior (`web-behavior-and-accessibility.md`) branch
 and verify the affected states.

@@ -30,8 +30,7 @@ Write a compact direction before building:
 
 These are anchors, not required counts. Expand them into a usable semantic
 system only as the interface demands. For implementation, continue with
-[web visual design](web.md) or
-[Apple-platform visual design](apple-platforms.md), whichever owns the surface.
+`web.md` or `apple-platforms.md`, whichever owns the surface.
 
 ## Express the identity
 

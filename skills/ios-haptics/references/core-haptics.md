@@ -12,7 +12,7 @@ parameter curves. Use Swift for generated patterns and AHAP for assets that
 benefit from separate authoring. Either form needs the same hardware and lifecycle
 handling.
 
-This implements the continuous reveal from [the design reference](design.md).
+This implements the continuous reveal from `design.md`.
 Its values are candidates for device tuning.
 
 ```swift

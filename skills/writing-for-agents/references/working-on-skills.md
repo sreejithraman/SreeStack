@@ -80,7 +80,7 @@ uses, or when an agent must reach it independently.
 3. Update host metadata (`agents/openai.yaml`) and the project record (`SOURCES.md`).
 4. Run project checks and prove the new skill on each model that uses it per the Proof
    ladder in `SKILL.md`, running trials per
-   [controlled comparison](controlled-comparison.md#run-trials-safely).
+   `controlled-comparison.md` (Run trials safely).
 
 Done: the contract is explicit, metadata and records are updated, checks pass, and each
 request has a result or stated gap.
@@ -90,7 +90,7 @@ request has a result or stated gap.
 Read the skill's project record (such as `SOURCES.md`) first. Preserve local adaptations
 and its invocation choice unless the user asks to change them. Edit the source of truth,
 not an installed copy. If the change touches a CLI, API, SDK, MCP tool, or bundled
-script, also read [tool guidance](tool-guidance.md).
+script, also read `tool-guidance.md`.
 
 For a whole-skill overhaul, use Rewrite below. For a **targeted change**:
 

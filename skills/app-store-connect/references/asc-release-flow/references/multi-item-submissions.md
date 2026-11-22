@@ -39,7 +39,7 @@ asc review submissions list \
 
 Branch before writing:
 
-- If [asc-submission-health](../../asc-submission-health/guide.md) or the caller handed off a `SUBMISSION_ID`, inspect it with `asc review submissions-get --id "SUBMISSION_ID" --include "items,appStoreVersionForReview" --output json`. Reuse it only when it is the intended `READY_FOR_REVIEW` draft. If it fails that check, stop and return the mismatch to [asc-submission-health](../../asc-submission-health/guide.md) for diagnosis; do not create another submission or add items.
+- If asc-submission-health or the caller handed off a `SUBMISSION_ID`, inspect it with `asc review submissions-get --id "SUBMISSION_ID" --include "items,appStoreVersionForReview" --output json`. Reuse it only when it is the intended `READY_FOR_REVIEW` draft. If it fails that check, stop and return the mismatch to [asc-submission-health](../../asc-submission-health/guide.md#monitor-review) for diagnosis; do not create another submission or add items.
 - With no handed-off ID, if exactly one `READY_FOR_REVIEW` draft matches the intended release, capture and reuse its ID.
 - With no handed-off ID, if no matching draft or active submission exists for the intended version or review items, create one and capture its ID:
 
@@ -47,7 +47,7 @@ Branch before writing:
 asc review submissions-create --app "APP_ID" --platform IOS --output json
 ```
 
-- Otherwise—when drafts are ambiguous or the intended version or review items belong to another active submission—stop and diagnose through [asc-submission-health](../../asc-submission-health/guide.md). Do not create a second submission.
+- Otherwise—when drafts are ambiguous or the intended version or review items belong to another active submission—stop and diagnose through asc-submission-health. Do not create a second submission.
 
 Use the reused or newly created ID as `SUBMISSION_ID` below. If neither branch assigned one, do not continue.
 
@@ -91,4 +91,4 @@ asc review items list --submission "SUBMISSION_ID" --paginate --output table
 asc review submissions-submit --id "SUBMISSION_ID" --confirm
 ```
 
-If inspection shows an existing active or completed submission instead of the draft being assembled, stop and diagnose through [asc-submission-health](../../asc-submission-health/guide.md) rather than creating another submission.
+If inspection shows an existing active or completed submission instead of the draft being assembled, stop and diagnose through asc-submission-health rather than creating another submission.

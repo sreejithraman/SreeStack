@@ -134,7 +134,7 @@ asc review items-list --submission "SUBMISSION_ID" --paginate --output json
 ```
 
 For first-version or other multi-item recovery, return to the
-[multi-item assembly and submission](../asc-release-flow/references/multi-item-submissions.md#assemble-the-submission)
+multi-item assembly and submission
 procedure with the preserved `SUBMISSION_ID`. Restore and inspect the complete
 intended item set before submitting; checking only existing items can miss an
 app version or another item left unattached by a partial failure.

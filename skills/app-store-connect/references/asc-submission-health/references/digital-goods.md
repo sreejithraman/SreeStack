@@ -6,12 +6,12 @@ When work starts from an existing review draft, preserve its `SUBMISSION_ID` in 
 
 ## Contents
 
-- [Run product validators](#run-product-validators)
-- [Attach subscriptions for first review](#attach-subscriptions-for-first-review)
-- [Prepare a subscription version](#prepare-a-subscription-version)
-- [Prepare a subscription-group version](#prepare-a-subscription-group-version)
-- [Prepare an IAP version](#prepare-an-iap-version)
-- [Handle first-version IAP attachment](#handle-first-version-iap-attachment)
+- Run product validators
+- Attach subscriptions for first review
+- Prepare a subscription version
+- Prepare a subscription-group version
+- Prepare an IAP version
+- Handle first-version IAP attachment
 
 ## Run product validators
 
@@ -138,7 +138,7 @@ asc subscriptions versions images delete --id "SUBSCRIPTION_IMAGE_ID" --confirm
 asc subscriptions versions images upload --version-id "SUBSCRIPTION_VERSION_ID" --file "./promotional.png"
 ```
 
-Inspect the completed version and return its ID to [asc-release-flow](../../asc-release-flow/guide.md):
+Inspect the completed version and return its ID to asc-release-flow:
 
 ```bash
 asc subscriptions versions view --id "SUBSCRIPTION_VERSION_ID" --output table
@@ -147,7 +147,7 @@ asc subscriptions versions images primary --version-id "SUBSCRIPTION_VERSION_ID"
 asc subscriptions versions images list --version-id "SUBSCRIPTION_VERSION_ID" --paginate --output table
 ```
 
-Do not add the version to a review submission from this guide. Hand `SUBSCRIPTION_VERSION_ID` to the multi-item workflow in [asc-release-flow](../../asc-release-flow/guide.md).
+Do not add the version to a review submission from this guide. Hand `SUBSCRIPTION_VERSION_ID` to the multi-item workflow in asc-release-flow.
 
 ## Prepare a subscription-group version
 
@@ -183,14 +183,14 @@ asc subscriptions groups versions localizations update --id "GROUP_LOC_ID" --nam
 
 Run create only when the locale is absent; run update only when the single resolved locale differs.
 
-Inspect the group version and return its ID to [asc-release-flow](../../asc-release-flow/guide.md):
+Inspect the group version and return its ID to asc-release-flow:
 
 ```bash
 asc subscriptions groups versions view --version-id "GROUP_VERSION_ID" --output table
 asc subscriptions groups versions localizations list --version-id "GROUP_VERSION_ID" --paginate --output table
 ```
 
-Do not add the version to a review submission from this guide. Hand `GROUP_VERSION_ID` to the multi-item workflow in [asc-release-flow](../../asc-release-flow/guide.md).
+Do not add the version to a review submission from this guide. Hand `GROUP_VERSION_ID` to the multi-item workflow in asc-release-flow.
 
 ## Prepare an IAP version
 
@@ -253,7 +253,7 @@ asc iap versions images delete --image-id "IAP_IMAGE_ID" --confirm
 asc iap versions images create --version-id "IAP_VERSION_ID" --file "./review.png"
 ```
 
-Inspect the version and return its ID to [asc-release-flow](../../asc-release-flow/guide.md):
+Inspect the version and return its ID to asc-release-flow:
 
 ```bash
 asc iap versions view --version-id "IAP_VERSION_ID" --output table
@@ -262,7 +262,7 @@ asc iap versions image --version-id "IAP_VERSION_ID" --output table
 asc iap versions images list --version-id "IAP_VERSION_ID" --paginate --output table
 ```
 
-Do not add the version to a review submission from this guide. Hand `IAP_VERSION_ID` to the multi-item workflow in [asc-release-flow](../../asc-release-flow/guide.md).
+Do not add the version to a review submission from this guide. Hand `IAP_VERSION_ID` to the multi-item workflow in asc-release-flow.
 
 ## Handle first-version IAP attachment
 

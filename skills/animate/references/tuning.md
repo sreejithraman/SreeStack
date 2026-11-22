@@ -15,7 +15,7 @@ Match a value to its purpose before changing it. Reuse the project's token for t
 
 ## Starting values
 
-Read these alongside the selected pattern's own variables. Use [implementation checks](implementation.md) when values differ or when mapping them to a project.
+Read these alongside the selected pattern's own variables. Use `implementation.md` when values differ or when mapping them to a project.
 
 | Dimension | Values and intended use |
 | --- | --- |

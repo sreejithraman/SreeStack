@@ -5,8 +5,8 @@ express the required roles, establish a small set of scales and tune them
 together. The values below are starting points, not universal requirements.
 
 For implementing fluid scales, logical dimensions, and theme/color functions,
-read [CSS foundations](web-css-foundations.md). For intrinsic grids, container
-queries, content breakouts, and spacing mechanics, read [web layout](web-layout.md).
+read `web-css-foundations.md`. For intrinsic grids, container
+queries, content breakouts, and spacing mechanics, read `web-layout.md`.
 These implement a chosen system; they do not replace the product's tokens.
 
 ## Foundations
@@ -75,7 +75,7 @@ On a colored surface, a neutral gray foreground can read muddy and detached.
 Start from the surface hue, then tune saturation and lightness until the role is
 clear and the rendered pairing meets its contrast target.
 
-Use the [optional HSL workflow](systems.md) when building or repairing a numbered
+Use the optional HSL workflow (`systems.md`) when building or repairing a numbered
 ramp in that color model.
 
 ### Shape, borders, and depth
@@ -92,7 +92,7 @@ explain a boundary, layer, or interaction.
 A small elevation scale is often enough. Starter shadows might range from a
 tight `0 1px 3px` contact shadow to a softer `0 15px 35px` overlay shadow, but
 tune color, opacity, and geometry against the actual surfaces. Use
-[techniques](techniques.md) when emulated light or prominent shadows are part of
+`techniques.md` when emulated light or prominent shadows are part of
 the direction.
 
 When elevation communicates interaction, move a pressed control toward its
@@ -131,7 +131,7 @@ alternatives while preserving semantics and the interaction contract:
 - **Radio group:** selectable cards can show the actual differences when that
   choice is central to the page.
 
-Use the [browser behavior contract](web-behavior-and-accessibility.md) for custom
+Use the browser behavior contract (`web-behavior-and-accessibility.md`) for custom
 controls. Add structure only when it improves the actual task.
 
 ## Invariants to verify

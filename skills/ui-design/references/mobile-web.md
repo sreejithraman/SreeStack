@@ -45,7 +45,7 @@ Apple implementation stays with `swiftui` or `uikit`; motion stays with `animate
   `any-hover`/`any-pointer` describe available capabilities, not the input used
   for a particular event. Keep actions reachable without hover and maintain
   keyboard focus feedback. See [interaction media features](https://drafts.csswg.org/mediaqueries-4/#mf-interaction).
-- Follow the [press and activation contract](web-behavior-and-accessibility.md).
+- Follow the press and activation contract in `web-behavior-and-accessibility.md`.
   Immediate feedback may use `:active` or pointer-down state; an action still
   commits through valid activation, with cancellation and drag handled.
   `touch-action: manipulation` allows panning and pinch zoom while excluding

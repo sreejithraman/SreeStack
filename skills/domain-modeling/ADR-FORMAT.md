@@ -30,7 +30,7 @@ Scan the chosen ADR directory for the highest existing number and increment by o
 
 ## When to offer an ADR
 
-Apply all [three criteria](SKILL.md#offer-adrs-sparingly) before offering an ADR.
+Apply all three ADR criteria (Offer ADRs sparingly in `SKILL.md`) before offering an ADR.
 
 ### What qualifies
 

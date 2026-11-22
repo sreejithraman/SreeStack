@@ -2,7 +2,7 @@
 
 The rules for the still frame. Framing is in `framing.md`; everything that moves is in `motion.md`.
 
-Index: [Restraint](#restraint), [Type](#type), [Spacing and alignment](#spacing-and-alignment), [Icons and logos](#icons-and-logos), [Color and looks](#color-and-looks), [Density](#density), [Chrome and devices](#chrome-and-devices), [A page of demos](#a-page-of-demos), [Recipes](#recipes).
+Index: Restraint, Type, Spacing and alignment, Icons and logos, Color and looks, Density, Chrome and devices, A page of demos, Recipes.
 
 ## Restraint
 
