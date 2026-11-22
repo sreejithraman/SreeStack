@@ -25,7 +25,8 @@ down below.
 1. Start or reuse the repo's `dev` or `start` server, bound to loopback (`127.0.0.1` or
    `localhost`). Record its process identity, including its command and start time or
    session, and whether you started it or reused it. Keep any server you started running.
-2. Open and check the route with `preview_open` using
+2. Check `preview_status` and navigate an existing automation-capable tab with
+   `preview_navigate`, or open one with `preview_open`, using
    `target: { kind: "environment-port", port, path }` (adding `protocol: "https"` only
    for HTTPS dev servers). Leave that preview tab open for the user.
 3. Return the checked `http://localhost:<port><path>` (or `https://` for HTTPS dev
@@ -46,5 +47,5 @@ If the record includes a Tailscale Serve mapping, follow
 running process identity with the recorded one. Stop the server only if this preview
 started it and its identity still matches. Report any mismatch or doubt, and leave that
 service running. Never kill by process name or port. Close the preview tab if this
-thread owns it. Confirm the port stopped responding, then report what stopped and what
-still runs.
+thread owns it. If you stopped the server, confirm the port stopped responding; then
+report what stopped and what still runs.
