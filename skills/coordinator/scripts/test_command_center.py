@@ -35,7 +35,7 @@ from test_render_dashboard import decision, example, owner
 DESKTOP = (1280, 800)
 PHONE = (390, 844)
 REPLY_TIMEOUT = 20
-STARTUP_TIMEOUTS = (12, 15, 20)
+STARTUP_TIMEOUTS = (10, 15)
 VIEW_KEY = "command-center-view"
 
 # Each launch of branded macOS Chrome copies its signed app into a code_sign_clone
@@ -176,7 +176,12 @@ class Chrome:
         message = {"id": identity, "method": method, "params": params}
         if session:
             message["sessionId"] = session
-        os.write(self.commands, json.dumps(message).encode() + b"\0")
+        try:
+            os.write(self.commands, json.dumps(message).encode() + b"\0")
+        except BrokenPipeError as error:
+            raise BrokenPipeError(
+                f"Chrome closed its debugging pipe while sending {method}{self._diagnostic()}"
+            ) from error
         reply = self.receive(lambda message: message.get("id") == identity, method, timeout=timeout)
         if "error" in reply:
             raise RuntimeError(f"{method}: {reply['error']}")
@@ -191,17 +196,27 @@ class Chrome:
     def wait_for_event(self, method, session):
         return self.receive(lambda message: message.get("method") == method and message.get("sessionId") == session, method)
 
-    def close(self):
+    def close(self, force=False):
         try:
-            self.process.terminate()
-            try:
-                self.process.wait(10)
-            except subprocess.TimeoutExpired:
+            if force:
                 self.process.kill()
-                self.process.wait()
+                self.process.wait(5)
+            else:
+                self.process.terminate()
+                try:
+                    self.process.wait(10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait()
         finally:
-            os.close(self.commands)
-            os.close(self.replies)
+            for attr in ("commands", "replies"):
+                fd = getattr(self, attr)
+                if fd is not None:
+                    setattr(self, attr, None)
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        pass
 
 
 
@@ -294,32 +309,43 @@ def startup_lock():
             fcntl.flock(lock, fcntl.LOCK_UN)
 
 
+def _record_startup_note(message):
+    print(message, file=sys.stderr)
+    cache_dir = os.environ.get("_SREESTACK_TEST_CACHE")
+    if cache_dir and Path(cache_dir).is_dir():
+        with (Path(cache_dir) / "notes.log").open("a", encoding="utf-8") as notes:
+            notes.write(message + "\n")
+
+
 def start_chrome(executable, timeouts=STARTUP_TIMEOUTS, launcher=Chrome):
     """Launch Chrome and confirm its debugging pipe answers, retrying cold-start stalls."""
-    with startup_lock():
-        for attempt, timeout in enumerate(timeouts, 1):
+    for attempt, timeout in enumerate(timeouts, 1):
+        with startup_lock():
+            started = time.monotonic()
             profile = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
             candidate = None
             try:
                 candidate = launcher(executable, profile.name)
                 candidate.handshake(timeout=timeout)
+                if attempt > 1:
+                    elapsed = time.monotonic() - started
+                    _record_startup_note(
+                        f"Chrome startup recovered on attempt {attempt}/{len(timeouts)} in {elapsed:.1f}s"
+                    )
                 return candidate, profile
-            except (TimeoutError, ConnectionError) as error:
+            except BaseException as error:
+                elapsed = time.monotonic() - started
                 try:
                     if candidate is not None:
-                        candidate.close()
+                        candidate.close(force=True)
                 finally:
                     profile.cleanup()
-                if attempt == len(timeouts):
+                if not isinstance(error, (TimeoutError, ConnectionError)) or attempt == len(timeouts):
                     raise
-                print(f"Chrome startup attempt {attempt}/{len(timeouts)} failed ({error}); retrying", file=sys.stderr)
-            except BaseException:
-                try:
-                    if candidate is not None:
-                        candidate.close()
-                finally:
-                    profile.cleanup()
-                raise
+                _record_startup_note(
+                    f"Chrome startup attempt {attempt}/{len(timeouts)} failed after {elapsed:.1f}s "
+                    f"({error}); retrying"
+                )
 
 
 def setUpModule():
@@ -337,26 +363,29 @@ def setUpModule():
         if required:
             raise
         raise unittest.SkipTest(f"Chrome did not start: {error}")
-    site = tempfile.TemporaryDirectory()
-    server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(FreshPage, directory=site.name))
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        site = tempfile.TemporaryDirectory()
+        server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(FreshPage, directory=site.name))
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+    except BaseException:
+        tearDownModule()
+        raise
 
 
 def tearDownModule():
     global browser, browser_profile, site, server
-    if server is not None:
-        server.shutdown()
-        server.server_close()
-        server = None
-    if site is not None:
-        site.cleanup()
-        site = None
-    if browser is not None:
-        browser.close()
-        browser = None
-    if browser_profile is not None:
-        browser_profile.cleanup()
-        browser_profile = None
+    active_server, active_site, active_browser, active_profile = server, site, browser, browser_profile
+    server = site = browser = browser_profile = None
+    with contextlib.ExitStack() as stack:
+        if active_profile is not None:
+            stack.callback(active_profile.cleanup)
+        if active_browser is not None:
+            stack.callback(active_browser.close)
+        if active_site is not None:
+            stack.callback(active_site.cleanup)
+        if active_server is not None:
+            stack.callback(active_server.server_close)
+            stack.callback(active_server.shutdown)
 
 
 

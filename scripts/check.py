@@ -559,6 +559,8 @@ def _run_parallel_checks(python: str) -> int:
             thread.start()
         for thread in threads:
             thread.join()
+        notes_path = Path(cache_dir) / "notes.log"
+        notes = notes_path.read_text(encoding="utf-8", errors="replace").strip() if notes_path.exists() else ""
 
     failed_scripts = []
     for check_cmd in SCRIPT_CHECKS:
@@ -600,6 +602,8 @@ def _run_parallel_checks(python: str) -> int:
         slowest = sorted(file_durations.items(), key=lambda item: -item[1])[:5]
         summary = ", ".join(f"{name}={dur:.1f}s" for name, dur in slowest)
         print(f"Slowest test files (wall): {summary}", flush=True)
+    if notes:
+        print(notes, file=sys.stderr)
 
     off_main = stable_clone_off_main()
     if off_main:
