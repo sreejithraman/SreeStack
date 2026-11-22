@@ -1477,11 +1477,13 @@ passthrough behavior of other formats.
 
 - [benjitaylor/skills / stageshow](https://github.com/benjitaylor/skills/tree/802057409787133703c56001080169e347305572/stageshow) — complete `stageshow/` folder; import baseline commit `802057409787133703c56001080169e347305572`. MIT notice in `licenses/benjitaylor-stageshow.txt`; bundled asset terms remain in `skills/stageshow/NOTICE.md` and its linked notices.
 
-Imported unchanged, including instructions, references, React kit, examples,
-playground, scripts, dependency lockfile, and license notices. Automatically
-discoverable in both hosts, as upstream. Root `.gitattributes` preserves the
-upstream Discover SVG's CRLF and teaching reference's final blank line during
-whitespace checks without changing their bytes.
+Retains upstream instructions, React kit, examples, playground, scripts,
+dependency lockfile, and license notices; `references/craft.md` and
+`references/motion.md` use plain-text section indexes without same-file anchor
+links. Automatically discoverable in both hosts, as upstream. Root
+`.gitattributes` preserves the upstream Discover SVG's CRLF and teaching
+reference's final blank line during whitespace checks without changing their
+bytes.
 
 ## retro
 

@@ -57,7 +57,7 @@ work.
 | Task | Guidance |
 | --- | --- |
 | New identity or substantial visual redirection | [Art direction](references/art-direction.md), then the web or Apple branch |
-| Existing web interface looks wrong | [Diagnosis](references/diagnose.md), then the relevant web visual system sections below |
+| Existing web interface looks wrong | [Diagnosis](references/diagnose.md), then the relevant web visual system sections (linked in the row below) |
 | Web type, spacing, color roles, shape, hierarchy, or starter tokens | [Web visual systems](references/web.md) |
 | Build or repair a numbered HSL web color ramp | [Palette workflow](references/systems.md); keep another working color model when it fits |
 | Web reset, logical properties, fluid scales, or theme/color implementation | [CSS foundations](references/web-css-foundations.md) |

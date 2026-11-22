@@ -9,9 +9,10 @@ Build tactile feedback for iOS apps using SwiftUI or UIKit. Preserve the app's
 deployment target and choose APIs available to it. Use system feedback for
 standard interactions and Core Haptics when the design needs an authored
 pattern. Hardware support and user preferences still matter. Use `animate` for
-visual motion when the two need coordination. You are done when the event
-design, implementation, and checks below are delivered and any physical-device
-tuning still needed is explicitly named.
+visual motion when the two need coordination. You are done when the requested
+outcome—design, diagnosis, implementation, or tuning—is delivered with its
+rationale, applicable checks below, and any physical-device tuning still needed
+explicitly named.
 
 ## Design the interaction first
 

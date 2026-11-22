@@ -25,6 +25,6 @@ When using a pattern, read it fully and adapt it within the project’s componen
 
 - Keep the reference's reduced-motion behavior and complete any gaps. CSS guards do not stop JavaScript timers or loops. Stop needless work and expose the final useful state; ensure text, controls, and status remain available without motion. Check changes to the preference while mounted.
 - Gate hover motion for a fine pointer with hover support. Keep keyboard focus behavior usable and touch actions direct.
-- For gestures, follow `patterns/drag-to-dismiss.md` for pointer ownership, cancellation, release velocity, and bounds.
+- For gestures, follow [drag-to-dismiss](patterns/drag-to-dismiss.md) for pointer ownership, cancellation, release velocity, and bounds.
 - Treat cloned text, tab copies, particles, and other duplicate visuals as decorative. Keep one accessible source of content and one set of focusable controls.
 - Streaming and status examples must reflect real application state. Decorative timing must not delay available content, erase a useful error, imply progress that has not occurred, or loop a completed operation.
