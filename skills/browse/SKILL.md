@@ -57,12 +57,12 @@ session-unique label (such as `<task>-<short-id>`), because parallel agents
 share one relay.
 
 ```bash
-browse navigate "https://example.com" --group="<task>-<id>"
-browse snapshot --tab <id>
-browse click e12 --tab <id>
-browse fill e5 "value" --tab <id>
-browse screenshot --tab <id> --output "$PRIVATE_DIR/01-page.png"
-browse tabs close --tab <id>
+browse navigate "https://example.com" --group="<task>-<short-id>"
+browse snapshot --tab <tab-id>
+browse click e12 --tab <tab-id>
+browse fill e5 "value" --tab <tab-id>
+browse screenshot --tab <tab-id> --output "<private-dir>/01-page.png"
+browse tabs close --tab <tab-id>
 ```
 
 Pass tool-specific value flags with `=` (`--group=work-a1b2`, `--url=...`,
@@ -127,7 +127,8 @@ inside a private per-run directory rather than a fixed shared `/tmp` filename.
   credentials or tokens, and delete temporary captures of signed-in pages
   unless the user asks to keep them.
 - **Clean up only your tabs.** Close the exact tabs you opened
-  (`browse tabs close --tab <id>`, or `browse tabs close --group="<task>-<id>"`
-  for your session-unique group) unless the user asked to keep them open.
-  `tabs close` requires an explicit `--tab`, `--tabs`, or `--group` and
-  releases lent tabs without closing them.
+  (`browse tabs close --tab <tab-id>`, or
+  `browse tabs close --group="<task>-<short-id>"` for your session-unique
+  group) unless the user asked to keep them open. `tabs close` requires an
+  explicit `--tab`, `--tabs`, or `--group` and releases lent tabs without
+  closing them.
