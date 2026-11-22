@@ -202,19 +202,18 @@ Glossary examples use the upstream `GLOSSARY.md` / `GLOSSARY-MAP.md` names;
 resolution preserves configured or existing legacy paths, keeps one glossary per
 context, and creates new files lazily. Cross-skill calls use host-neutral wording.
 
-Alternative-interface proposals use arena's shared brief, rubric, independent
-candidates, and cross-judge, with orchestration's model defaults and bounded
-ownership. The user-requested comparison remains conditional and defaults to
-recommendations; synthesis is requested separately. Candidate counts follow the
-decision rather than a fixed panel of three, and architect can carry a selected
-design through authorized implementation.
+Alternative-interface criteria stay in `DESIGN-IT-TWICE.md`; the user-requested
+comparison remains conditional and defaults to recommendations, with synthesis
+requested separately. Candidate counts follow the decision rather than a fixed
+panel of three.
 
-Deep-module vocabulary, deletion tests, seam techniques, and alternative-interface
-design stay local. Generic design, testability, and enforcement guidance use
-`engineering-principles`. `references/preventing-mistakes.md` owns contributor-path
-assessment and historical guard proof; `correct` owns recurring-mistake investigation
-and repair. Design and review return recommendations. Legitimate adapters and
-compatibility paths remain supported.
+Deep-module vocabulary, deletion tests, seam techniques, alternative-interface
+criteria, and disposable technical experiments (`references/experiments.md`) live
+in this model-invoked foundation. Generic design, testability, measurement, and
+enforcement guidance use `engineering-principles`. `references/preventing-mistakes.md`
+owns contributor-path assessment and historical guard proof; `correct` owns
+recurring-mistake investigation and repair. Design and review return
+recommendations. Legitimate adapters and compatibility paths remain supported.
 
 `references/architecture-signals.md` supplies shared discovery prompts for
 structural friction, including hidden caller obligations, invalid states,
@@ -234,17 +233,18 @@ Automatically discoverable in both hosts so related skills can reach it for
 requested failure prevention. Uses bounded history and available session records,
 counts independent occurrences, checks current exposure, and ranks live classes.
 Shared design and enforcement selection use `engineering-principles`; guard proof
-remains in `codebase-design`. Technical experiments use the architecture reference.
-Planning and implementation honor
-the requested finish line and reuse existing delivery workflows. Program execution routes through `coordinator`; bounded parallel work
-uses `swarm`.
+and technical experiments live in `codebase-design`. Planning and implementation
+honor the requested finish line; direct requests with several repair outcomes
+offer `coordinator` at the entry boundary, requested behavioral evaluation beyond
+guard proof reports unmet and offers user-started `/tune-stack`, and bounded
+parallel work uses `swarm`.
 Automatic correction triggers, mandatory rule tables, per-class commit requirements, and
 blanket exception policies are omitted.
 
 ## diagnosing-bugs
 
 - [mattpocock/skills / skills/engineering/diagnosing-bugs](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/diagnosing-bugs) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
-- [cursor/plugins / pstack measurement and diagnostic guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `benchmark-checklist/SKILL.md`, `principle-explain-the-number/SKILL.md`, and the diagnostic-signal addition in `principle-fix-root-causes/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack diagnostic guidance](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills) — `principle-explain-the-number/SKILL.md` and the diagnostic-signal addition in `principle-fix-root-causes/SKILL.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - Local adaptation: adds conditional Apple-platform references for runtime,
   performance, and memory diagnosis. They use current Apple documentation and
   local Xcode capability discovery, with Instruments as the default profiler
@@ -270,16 +270,17 @@ failure and its caller chain. Diagnosis keeps the original-scenario rerun and
 causal evidence. A repair that affects a user workflow finishes only with a
 passing `verify` verdict.
 
-Performance claims use `references/measurement-validity.md` for completed work,
+Performance claims use `engineering-principles`'s shared `references/measurement-validity.md` for completed work,
 correctness, settings, bottlenecks, plausibility, repeatability, and user relevance.
 Apple guidance shares that procedure. Run counts fit cost and noise rather than
 a fixed minimum; ballparks remain labeled estimates. Diagnostic cleanup proposes
 a cheap persistent signal with runtime/privacy costs after a deep investigation;
 implementation stays within the authorized fix and temporary probes still leave.
-Recurring-class evidence passes to `correct` when the user's scope includes
-broader prevention; active diagnosis keeps its reproduction and repair loop.
-Shared evidence guidance covers root-cause decisions and revisiting a failed
-premise; the runnable diagnosis phases and measurement procedure remain local.
+Recurring-class evidence is returned in the report for the caller to route (or
+passed to `correct` on direct requests when broader prevention is in scope);
+active diagnosis keeps its reproduction and repair loop.
+Shared evidence guidance covers root-cause decisions, measurement validity, and revisiting a failed
+premise; the runnable diagnosis phases remain local.
 Timing and lifecycle reproductions capture starting state, event order, and
 operation identity; invalid-transition repairs use the shared domain principle.
 
@@ -295,11 +296,13 @@ HITL script and invocation remain unchanged.
 
 - [cursor/plugins / pstack principle skills](https://github.com/cursor/plugins/tree/850d7f2e9f5e55dff7eb00a0a479337fe79eb22f/pstack/skills) — all 24 `principle-*/SKILL.md` files; adaptation baseline `850d7f2e9f5e55dff7eb00a0a479337fe79eb22f`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [cursor/plugins / pstack behavior-test and idempotency refinements](https://github.com/cursor/plugins/commit/e5136d82418d2db3165ea1050d17577cd618cc05) — `pstack/skills/principle-test-behavior-not-implementation/SKILL.md` and `pstack/skills/principle-make-operations-idempotent/SKILL.md`; addition baseline `e5136d82418d2db3165ea1050d17577cd618cc05`. MIT notice in `licenses/lauren-tan-pstack.txt`.
+- [cursor/plugins / pstack/skills/benchmark-checklist](https://github.com/cursor/plugins/tree/dbf49813a39c1a5389c5e28cb8e4c1c2379e2454/pstack/skills/benchmark-checklist) — `SKILL.md` adapted into `references/measurement-validity.md`; addition baseline `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454`. MIT notice in `licenses/lauren-tan-pstack.txt`.
 - [DietrichGebert/ponytail / skills/ponytail](https://github.com/DietrichGebert/ponytail/tree/974d940a1c5344210874150b98ff0d2c861fab6a/skills/ponytail) — simplicity ladder shared with the local review reference; baseline `974d940a1c5344210874150b98ff0d2c861fab6a`. MIT notice in `licenses/DietrichGebert-ponytail.txt`.
 - [David Khourshid's state-machine guidance](https://stately.ai/blog/2021-01-20-you-dont-need-a-library-for-state-machines) and [UI-independent logic](https://stately.ai/blog/2019-11-13-no-disabling-a-button-is-not-app-logic) — conceptual input checked 2026-10-15; state-modeling guidance is independently written, with no upstream prose or code copied.
 - [Redux: Treat Reducers as State Machines](https://redux.js.org/style-guide/#treat-reducers-as-state-machines) — supporting guidance for current-state/event decisions and typed state variants, checked 2026-10-15.
 
-Each reference is one principle. Upstream paths use
+Each principle reference is one principle; `references/measurement-validity.md`
+is the shared measurement reference. Upstream principle paths use
 `pstack/skills/principle-<source-name>/SKILL.md`:
 
 | Local reference | Upstream source name |
@@ -329,13 +332,14 @@ Each reference is one principle. Upstream paths use
 | `references/migrate-callers-then-delete-legacy-apis.md` | `migrate-callers-then-delete-legacy-apis` |
 | `references/separate-before-serializing-shared-state.md` | `separate-before-serializing-shared-state` |
 
-One automatically discoverable index groups direct links by task and gives each
-principle a short applicability hint adapted to its local guidance. Each reference
-filename follows its full principle title, and all 24 titles match their source
-headings verbatim. Workflows retain procedures and completion criteria; generic
-decisions have one shared home. Existing invocation choices stay intact.
-Exhaust the Design Space routes independent synthesis through arena and
-consequential design-through-implementation work through architect. Tools and prototype counts fit the decision's cost and uncertainty;
+One automatically discoverable foundation index opens with its contract, groups
+direct links by task, and gives each principle a short applicability hint adapted
+to its local guidance. Each of the 24 principle filenames follows its full principle
+title, and all 24 titles match their source headings verbatim; `references/measurement-validity.md`
+supplies the shared measurement rules. Workflows retain procedures and completion
+criteria while generic decisions share one foundation home. Existing invocation
+choices stay intact. Tools and prototype counts fit the decision's cost and
+uncertainty;
 actor censuses apply to actor-distribution questions. Permissions and product
 choices remain with the host/user, required compatibility stays supported, and
 temporary development breakage stays behind coherent delivery checkpoints.
@@ -558,15 +562,16 @@ Invocation remains unchanged. Checks installed-extension capabilities before
 newer worktree behavior. Conflict staging follows the diagnostic owner, and
 sync rollback guidance preserves partial-restoration recovery state instead of
 promising unconditional rollback.
-History-changing operations use the shared PR preservation reference to back up
-retained local files affected by tracking deletions and verify restoration.
+History-changing operations use `references/preserve-local-files.md` (shared with
+`pr`, `merge`, and `coordinator`) to back up retained local files affected by
+tracking deletions and verify restoration.
 
-Scoped PR layers follow `pr`’s publish step, which links every layer in T3; CLI
-publication does not substitute for that link. Layers get `pr`’s Prepare and Review steps before
-`submit`, or `link` when it creates PRs or marks them ready, and `gh stack merge` runs only from `merge`’s land step.
-Each layer runs its held `review-fix-loop` status command unchanged once its SHA is pushed;
-after a restack, clean disjoint rebases carry forward coverage while edits or interacting base
-changes run a repair pass.
+Every scoped PR layer taken over, created, or pushed is linked in T3; CLI
+operations do not substitute for thread links. Stacked publication gates
+(Prepare, per-layer Review, held `review-fix-loop` status stamping, and
+post-restack repair routing) live in `pr`, and landing gates live in `merge`;
+`gh-stack` keeps entry-boundary guardrails routing direct publish and merge
+requests to them.
 
 Ordinary publication uses `submit --auto --open` or `link --open`, with drafts only
 on request, to match `pr`. Branch deletion after a merge goes through `cleanup`
@@ -648,12 +653,12 @@ contract and shared model defaults. Manual invocation remains unchanged.
 Exploration also uses Codebase Design's ownership and enforcement reference for
 evidenced friction, preserving recommendation-only ownership.
 Interactive candidate selection remains the default. Requested autonomous
-investigations select and test candidates through disposable technical experiments
-and return migration and verification plans. The shared experiment reference
-serves `correct` too, while `prototype` retains UI ownership. Autonomous planning
+investigations select and test candidates through `codebase-design`'s shared
+`references/experiments.md` and return migration and verification plans, while
+`prototype` retains UI ownership. Autonomous planning
 records proposed glossary and ADR changes for review instead of applying them.
 Shared design and migration decisions use `engineering-principles`; candidate
-exploration, technical experiments, planning, and glossary/ADR handling remain local.
+exploration, planning, and glossary/ADR handling remain local.
 Selected designs can continue through architect within the requested scope,
 carrying forward checked findings and experiments.
 
@@ -1154,7 +1159,8 @@ A delegated owner returns a pending report instead of watching; the parent
 watches and resumes that same owner for repairs. Unavailable watchers and exhausted
 rate limits remain explicit pending states without custom polling.
 Evidence reuses Show Me's checked demonstrations and access links when available.
-History changes share a local preservation reference with Merge and gh-stack:
+History changes use `gh-stack`'s shared `references/preserve-local-files.md`
+preservation reference (shared with Merge and Coordinator):
 back up current retained bytes outside affected checkouts, preserve both versions
 on conflicts, and verify hashes after success or recovery.
 
@@ -1241,7 +1247,9 @@ run/handoff, runner-integration and adoption references, including bounded iOS
 agent-device helper preparation, bounded failure diagnostics and bridge capability
 checks. Checks free disk space and load once before acquiring a device, on the
 machine that runs it, and holds or reports when either is critical. Project
-runners follow Verify's iOS build output rules.
+runners require run-scoped `-resultBundlePath` on every test run and run-scoped
+`-derivedDataPath` outside confirmed sole-builder non-disposable checkouts, and
+pooled inspection handoffs defer to the caller's sharing workflow.
 Failure guidance defers to host recovery instructions and preserves unresolved
 ownership conflicts. Consolidates T3 acquisition, returned driver/session, setup and recovery rules
 in one host reference; the live host contract remains authoritative. Panel or
@@ -1268,7 +1276,7 @@ Automatic discovery includes feature and bug work, but not ordinary
 integration-test additions by themselves. Seams established by the spec or
 project conventions count as pre-agreed; user confirmation is reserved for
 material unresolved choices.
-The review stage uses `review-fix-loop`.
+Refactoring belongs to the review stage.
 Shared behavior-test guidance uses `engineering-principles`; seam selection,
 vertical red/green cycles, specialist examples, mocking, and local pitfalls stay here.
 Each cycle covers one behavior, not upstream's one test; cases of that behavior can go together.
@@ -1289,8 +1297,9 @@ context, and creates new files lazily. Cross-skill calls use host-neutral wordin
 
 - [mattpocock/skills / skills/engineering/to-spec](https://github.com/mattpocock/skills/tree/d81f3a183412e71a5b1e84ca21bc1a35eea03a60/skills/engineering/to-spec) — v1.2.3, commit `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`.
 
-Writes the spec into the shaping record, the one `shape` keeps or one chosen by
-its record rule, and publishes to the tracker only when the user asks. Publishing
+Writes the spec into the caller's shaping record, or falls back directly to an
+authorized record or host scratch draft, and publishes to the tracker only when
+the user asks. Publishing
 uses supplied or project-configured tracker information, without a readiness
 label, and leaves a link to the issue in the record. Unresolved required choices
 can be supplied directly or through the manual setup skill. Synthesizes without
@@ -1343,9 +1352,10 @@ removals and rewrites, and controlled comparison for improvement claims or clear
 guardrail). Guardrails have a dedicated `#guardrails` section and remain exempt from the
 line test until enforced in code on every host or cleared by a controlled comparison.
 
-`references/working-on-skills.md` owns capability/workflow contracts, downward-only
-skill dependency layering (keeping shared rules in lower layers and preventing upward
-coupling), trigger-and-exclusion descriptions, paired Claude Code (`disable-model-invocation`, per
+`references/working-on-skills.md` owns foundation/capability/workflow contracts,
+downward-only skill dependency layering (keeping shared rules and references in the
+lowest layer that uses them, never in a higher workflow or user-invoked skill), link
+hygiene audits, trigger-and-exclusion descriptions, paired Claude Code (`disable-model-invocation`, per
 [Claude Code skills docs](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill))
 and Codex (`policy.allow_implicit_invocation`, per
 [Codex skill docs](https://developers.openai.com/codex/build-skills#optional-metadata))

@@ -1,11 +1,11 @@
 # Private runtime qualification
 
-This is a dependency/baseline qualification recipe. Use the
-[canonical foreground runner](runner.md) for the approved pilot.
+This is a dependency/baseline qualification recipe. Use the canonical foreground
+runner (`runner.md`) for the approved pilot.
 
 Use macOS, Python 3.12 and `uv`. The lock pins the official Block source archive
 and all dependencies with hashes. FastMCP and Fakeredis need compatibility pins;
-see [findings](fitness.md). This installs only in a new task-owned directory.
+see `fitness.md`. This installs only in a new task-owned directory.
 Do not install the candidate into shared tools, host profiles or the repository's
 managed checker environment. Do not point qualification at live queue state.
 

@@ -3,7 +3,7 @@
 Use this branch after the parent skill has reduced the complaint to one
 measurable Apple-platform workload.
 
-Use [measurement validity](measurement-validity.md) for benchmark checks and
+Use [measurement validity](../../engineering-principles/references/measurement-validity.md) for benchmark checks and
 verdicts; this reference adds Apple target and capture requirements.
 For a requested estimate, apply the shared ballpark rules and the target
 guidance below. Use the capture steps when tracing is needed for diagnosis or

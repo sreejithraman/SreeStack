@@ -1,7 +1,7 @@
 # Review brief
 
 Prepare the same scope, requirements, and evidence for every reviewer. Name each
-assigned set of criteria, and include [Review](../SKILL.md) and the references those
+assigned set of criteria, and include Review and the references those
 criteria need. Absolute paths are enough for children in the shared checkout. Supply
 full contents when a reviewer cannot read these files. Keep briefs and snapshots
 outside the reviewed diff.
@@ -70,7 +70,7 @@ their stated premise (do not reopen on severity or preference alone).
 ## Review request
 
 Read the assigned references and apply Review to the full scope. Follow
-[Delegated reviews](../SKILL.md#delegated-reviews), and return its coverage block.
+Review's Delegated reviews rules, and return its coverage block.
 Do not read same-round peer reports, summaries, or task conversations. Work
 read-only, and leave edits, commits, external actions, delegation, and acceptance
 to the caller. Return findings in the references' requested format.

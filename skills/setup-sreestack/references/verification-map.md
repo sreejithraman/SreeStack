@@ -73,13 +73,16 @@ account scope. Record the expected role, credential-provider setup path, actual 
 delivery route, and runtime access and automatic login readiness separately, with exact
 blockers when unproved. Keep values out of the map, and link this setup from recipes.
 
-Add the verification pointer from [instruction pointers](project-workflow.md#instruction-pointers).
+Add the verification pointer to the project's active instruction block using the resolved
+index path (for example, `For acceptance checks, read <resolved-index-path> and use Verify.
+To change this map, use setup-sreestack.`), and confirm the active pointer reaches the
+index you updated.
 
 ## Feature recipes
 
 Use these four sections, keeping useful meaning when you adapt an existing format. Give
 features, workflows, entry points, and required assertions stable identifiers where they
-connect coverage and proof. See the [recipe example](recipe-example.md).
+connect coverage and proof (following `recipe-example.md` beside this guide).
 
 **User-facing description:** what the user can do, with **Sub-features** listing the
 distinct workflows and states. Keep source detail only when it helps drive or judge.
@@ -107,8 +110,8 @@ the product verdict.
 1. Inspect existing verification docs and reuse them. Keep useful assertions and gotchas.
 2. Write shared setup and the doctor.
 3. Seed recipes for the top 3 to 5 user features, or the scope the user named.
-4. Prove at least one feature live through [Verify](../../verify/SKILL.md) before you
-   hand over. Run its doctor, drive it, and confirm its cleanup.
+4. Prove at least one feature live through Verify before you hand over. Run its doctor,
+   drive it, and confirm its cleanup.
 
 Done: each recipe is proved or marked draft with its blocker, the index links resolve,
 and the report separates recipe proof from product verdicts.

@@ -9,24 +9,30 @@ Write the contract first, and open `SKILL.md` with it in plain prose:
 - **Output:** what it leaves behind.
 - **Done:** the falsifiable check that ends it.
 
-A skill is one of two kinds:
+A skill belongs to one of three layers:
 
+- A **foundation** holds shared vocabulary, principles, or reference criteria that
+  higher layers consult without owning workflow execution.
 - A **capability** does one job and can run standalone.
-- A **workflow** chains capabilities. It owns their order, handoffs, and finish line,
-  links to each capability, and holds none of their procedure.
+- A **workflow** chains capabilities (or lower workflows). It owns their order,
+  handoffs, and finish line, links to each capability, and holds none of their
+  procedure.
 
-For example, `review` assesses a change, `review-sweep` settles findings, and
-`review-fix-loop` chains them.
+For example, `engineering-principles` is a foundation, `review` assesses a change,
+`review-sweep` settles findings, and `review-fix-loop` chains them.
 
-- **Dependencies point downward only.** A capability or lower workflow never links
-  up to a higher workflow or names its internals (such as `implement` or
-  `coordinator` inside `review-sweep` or `pr`). Instead, it takes scope and limits
-  from its caller and returns structured outcomes (such as deferred items or stops)
-  for the caller to route. Entry-boundary routing pointers (such as `implement`
-  offering `coordinator` for multi-outcome work) are the only exception.
-- **Home shared rules in the lower layer.** Under *One home per meaning*, when both
-  a lower skill and a higher workflow need the same rule, place it in the lower
-  skill or a shared foundation skill rather than linking upward.
+- **Dependencies point downward only.** A foundation never links up to a capability
+  or workflow, and a capability or lower workflow never links up to a higher
+  workflow or names its internals (such as `implement` or `coordinator` inside
+  `review-sweep` or `pr`). Instead, it takes scope and limits from its caller and
+  returns structured outcomes (such as deferred items or stops) for the caller to
+  route. Entry-boundary routing pointers (such as `implement` offering `coordinator`
+  for multi-outcome work) are the only exception.
+- **Home shared rules in the lower layer.** Under *One home per meaning*, when a
+  lower skill and a higher workflow share a rule or reference, place it in the
+  lowest layer that uses it rather than linking upward. Never home a shared
+  reference inside a higher workflow or a user-invoked skill when lower or
+  model-invoked skills depend on it.
 
 ## Write the description
 
@@ -118,8 +124,12 @@ To pick a target, rank skills by `SKILL.md` size and lines added vs removed in
 - Read `SKILL.md`, every reference, its project record, and its real runs (see Learn from
   real runs in controlled comparison); add tool guidance if it teaches a tool.
 - Check the contract, `Done` condition, invocation choice, description triggers and
-  exclusions, downward-only dependencies (flagging upward links or higher-workflow
-  internals leaked into lower skills), and every line against the line test
+  exclusions, downward-only dependencies (flagging upward links, higher-workflow
+  internals leaked into lower skills, or shared references homed above their lowest
+  consumer), link hygiene (flagging same-file `#anchor` jump-links, back-links to
+  `SKILL.md`, repeated links to the same target in one file other than distinct
+  section anchors into a multi-section reference, nested reference-only chains, and
+  inline background URLs), and every line against the line test
   (flagging no-ops, duplicates, environment-held facts, and stale rules).
 - Report each failing line with evidence. Label suspected no-ops as predictions until a
   fresh-session trial proves them.

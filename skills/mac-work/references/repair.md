@@ -1,10 +1,10 @@
 # Upstream ownership and operation seam
 
-The user approved a foreground process-group pilot. The canonical
-[runner](runner.md) is implemented on the maintained dependency patch; arbitrary
+The user approved a foreground process-group pilot. The canonical runner (`runner.md`)
+is implemented on the maintained dependency patch; arbitrary
 escaping descendants remain unsupported, not a pending scope decision.
 Original counterexamples and the earlier universal-ownership contradiction remain
-in the earlier layer's [findings](fitness.md) and proof.
+in the earlier layer's findings (`fitness.md`) and proof.
 
 ## One admission owner
 
@@ -81,7 +81,7 @@ that history and avoid policy reinterpretation. Canonical clients expose no mode
 queue or capacity override. Source/patch/dependency digests are fixed in
 [candidate.json](../candidate.json), and [notices](../NOTICE.md) accompany builds.
 No host skill/profile activation, device work or heavy compiler proof occurred in
-this layer. Parent owns the [remaining integration and workload tasks](plan.md).
+this layer. Parent owns the remaining integration and workload tasks (`plan.md`).
 
 Reconciliation uses the recorded execution deadline when present. Only compatible
 legacy rows without that deadline use the cleanup-age fallback. A matching zombie

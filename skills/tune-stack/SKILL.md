@@ -24,7 +24,7 @@ comparison, and [Implement](../implement/SKILL.md) builds and delivers.
 
 - **A retrospective request** asks about past runs and asks for no change, such
   as "what went wrong last week" or "is review worth its cost". It ends at
-  [stage 2](#2-select) with ranked recommendations and an offer to test the top
+  stage 2 with ranked recommendations and an offer to test the top
   one. Save recommendations the user doesn't take up with Snip Snap only when
   the user asks.
 - **Any other request** allows choosing one hypothesis, running its comparison,
@@ -68,7 +68,7 @@ Check each candidate against the current version: an old failure that it
 already prevents is resolved, not a hypothesis. A rule in the text is not proof
 the behavior is fixed. When the logs can't show whether the failure still
 happens, reproduce it on the current version with the cheapest proof from
-[stage 3](#3-baseline), such as a dry-run trial, before selecting or dropping
+stage 3, such as a dry-run trial, before selecting or dropping
 it. In a retrospective, reproducing is part of the offer: label the exposure
 unverified and offer the test. Rank the live ones by impact and current
 exposure, and pick one. A hypothesis needs cited incidents, the current path
@@ -103,9 +103,8 @@ Choose the cheapest proof that settles the claim:
 - **A deterministic check:** Correct's guard proof, historical rejection plus
   valid-path success. Add a model run only when you also claim agent behavior
   improves.
-- **Any other claim:** follow
-  [Controlled Comparison](../writing-for-agents/references/controlled-comparison.md)
-  (confirm suite trust and isolation, calibrate, and pilot before running the
+- **Any other claim:** follow Controlled Comparison (confirm suite trust and isolation,
+  calibrate, and pilot before running the
   [comparison runner](../writing-for-agents/scripts/compare.py) on
   `claude plugin eval`). On hosts without `claude plugin eval`, run dry-run trials
   and mark the measured claim unverified unless authenticated isolated behavioral runs

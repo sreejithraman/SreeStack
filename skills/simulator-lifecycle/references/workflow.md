@@ -12,10 +12,9 @@ Preserve an explicitly requested device and its data.
 
 The entrypoint's installed-version rules govern disposable work. If SimLock
 is unavailable, continue independent build or code work and report the missing
-prerequisite. Environment setup and adoption checks use
-[setup and rollout](setup.md).
+prerequisite. Environment setup and adoption checks use the setup and rollout guide.
 
-For T3 acquisition and interaction, follow [T3 device routing](t3.md).
+For T3 acquisition and interaction, follow the T3 device routing guide.
 Prepare device-independent artifacts first through
 [Mac Work handoffs](../../mac-work/references/handoffs.md). Acquire only after
 the build receipt reports success, exit code 0 and verified closure. The command
@@ -49,8 +48,8 @@ and [agent-device integration](https://github.com/callstackincubator/simlock/blo
 
 Run repository test suites as project test operations, and honor the host's limits on
 them. Before you run a native suite, even an existing one, check its destination, device
-set, and clone settings against
-[build and test target compatibility](project-runners.md#build-and-test-target-compatibility).
+set, and clone settings against build and test target compatibility in the project runner
+integration guide.
 Serialize suites and interactive work that share a device, app data, or backend
 fixtures, unless each run isolates them. Independent disposable runs need independent
 leases.
@@ -79,8 +78,8 @@ device ID, host, device set and lease identity through build, install and test.
 Reuse this run's active lease for its device-dependent checks. The qualified
 maintained local build retires released virtual devices and supplies new copies
 from seeds or named baselines;
-do not expect the next lease to preserve that device ID or run data. See
-[installed source/baseline semantics](setup.md#establish-the-worker).
+do not expect the next lease to preserve that device ID or run data (see installed
+source/baseline semantics in the setup and rollout guide).
 
 ### iOS mode
 
@@ -113,7 +112,7 @@ separate sources and a baseline must match its saved mode. Android has no iOS
 `except` categories. Guest RAM is not host memory overhead. This qualifies the
 maintained local build, not native Android slim in stock upstream 0.7. The local
 source path is `docs/internal/adr/0078-android-slim-is-a-native-source-and-guest-policy.md`
-at the unpublished full SHA in [local build qualification](setup.md#establish-the-worker).
+at the unpublished full SHA recorded under Establish the worker in the setup guide.
 
 ### Run identity and helper
 
@@ -130,7 +129,7 @@ including across retries and restarts. Reconcile an uncertain operation before
 starting another acquisition; do not recycle an ended lease ID.
 
 Use the project's normal runner with acquisition and teardown around the whole
-device-dependent run. Follow [project runner integration](project-runners.md)
+device-dependent run. Follow the project runner integration guide
 when adding or repairing that command. Keep the lease renewed during builds,
 test waits and inspection, including time with no agent-device commands. Stop
 device-dependent work on lease loss; a cached UDID does not authorize another
@@ -152,17 +151,17 @@ paths with the run receipt's versions, workspace, session and lease/device
 identities. Separate device-tool failure from app failure; a passing build or
 generic doctor check does not prove runner readiness.
 
-For T3 failures, apply [T3 recovery and stop rules](t3.md#recovery-and-stop)
+For T3 failures, apply T3 recovery and stop rules in the T3 routing guide
 before the cases below. Host and task limits constrain retries and substitutions;
 these cases do not authorize an attempt they prohibit.
 
 - **Failed before a grant:** no lease exists, so ended-lease recovery does not apply.
   Check `simlock status --json` for your own queued request or late grant. If you find
-  one, apply the [run ownership guard](#choose-the-route-before-acquiring) and don't
+  one, apply the run ownership guard above and don't
   retry. Otherwise retry once, counting any retry the host's error advised, then try one
   other model from the host's supported catalog, unless the user named the target. If that model boots,
   use it and label the substitution. If the same boot failure repeats on iOS on this Mac,
-  check [break glass](break-glass.md). Otherwise stop device work and report the blocker.
+  check the break-glass guide. Otherwise stop device work and report the blocker.
 - **Lease ended or target missing:** stop using the old target. Reconcile the
   lease through its original interface. Reopen only through the host's supported
   recovery path, recording the new grant; the old app state may have been wiped.
@@ -177,7 +176,7 @@ these cases do not authorize an attempt they prohibit.
   until a command happens to pass.
 
 Report the original failure, recovery/diagnostic result and unverified work.
-Use [finish or retain](#finish-or-retain) for this run's teardown, recording any
+Follow Finish or retain below for this run's teardown, recording any
 resources whose release or cleanup remains uncertain. A later successful run
 does not establish that an intermittent failure was fixed.
 
@@ -202,7 +201,7 @@ authorizes an agent to erase, delete, shut down or uninstall from a device.
 Leave device recovery to SimLock; diagnose uncertain state rather than replaying
 cleanup against a device ID that may now belong to another run.
 
-For a user inspection handoff, use [Show Me](../../show-me/SKILL.md). A pooled
+For a user inspection handoff, use the caller's sharing workflow. A pooled
 device is a temporary viewing surface only while its lease is renewed. For data
 that must survive lease loss, use an explicitly designated inspection device
 outside the pool, or export a supported durable artifact before release. Record

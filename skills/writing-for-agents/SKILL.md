@@ -118,8 +118,9 @@ only if sharpening fails.
 - **Link only to unread material the agent needs to act.** Keep links for unread
   references, scripts, handoff skills, and external specs the agent must look up (such as
   an experimental CLI format). Skip same-file `#anchor` jump-links, back-links to an
-  already-loaded `SKILL.md`, repeated links to the same target in one file, and
-  background or citation URLs (put those in `SOURCES.md` or `README.md`).
+  already-loaded `SKILL.md`, repeated links to the same target in one file (distinct
+  section anchors into one multi-section reference are fine), and background or
+  citation URLs (put those in `SOURCES.md` or `README.md`).
 - **Keep script outputs compact.** When a skill ships a helper script, emit a compact
   verdict or structured summary to stdout and diagnostics to stderr so callers do not burn
   context parsing verbose logs.

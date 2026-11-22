@@ -70,7 +70,7 @@ Use [TDD](../tdd/SKILL.md) at meaningful behavior seams for features and repairs
 units as they become usable. On shared Macs with Mac Work configured, route qualified heavy builds
 and tests through [Mac Work](../mac-work/SKILL.md).
 
-Keep cohesive work with one writer; use [Swarm](../swarm/SKILL.md) only for bounded independent
+Keep cohesive work with one writer; use Swarm only for bounded independent
 slices or races. Pushing, rebasing, retargeting, and merging stay with you unless explicitly
 serialized.
 
@@ -88,7 +88,7 @@ Before any review, prove the outcome through its real entry points with [Verify]
 Required proof must pass at the current head of each layer; a failed, blocked, or untested
 assertion is a gap, and review cannot supply unobserved proof.
 
-Show the work with [Show Me](../show-me/SKILL.md) when it first works, when a visible result
+Show the work with Show Me when it first works, when a visible result
 changes, and at every stop.
 
 Done when required assertions pass (or exact gaps are reported) and the user can open what you showed.
@@ -99,11 +99,11 @@ Done when required assertions pass (or exact gaps are reported) and the user can
   asked). Show the result. For a user caller, ask through the host's question tool: merge, changes,
   or scrap (`/merge` goes to Merge; changes return to stage 3; scrap goes to
   [Cleanup](../cleanup/SKILL.md)). For a session caller, return the Try result and choice.
-- **PR:** publish and watch to the requested state via [PR](../pr/SKILL.md).
-- **Land:** land via [Merge](../merge/SKILL.md) (stacks bottom-up as one merge set).
+- **PR:** publish and watch to the requested state via PR.
+- **Land:** land via Merge (stacks bottom-up as one merge set).
 
-An open decision affecting scope blocks landing; provisional work follows
-[provisional work](references/provisional.md) and never merges (`Land` becomes `Try`). Coordinate
+An open decision affecting scope blocks landing; provisional work follows the provisional
+work reference and never merges (`Land` becomes `Try`). Coordinate
 cross-layer stack changes via [gh-stack](../gh-stack/SKILL.md). When a session caller supplies a
 kickoff, grant, report format, or landing-release rule, follow it: run your own review loop, stop
 at readiness when landing requires caller release, and land only on that release.

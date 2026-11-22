@@ -1,6 +1,6 @@
 # Original upstream fitness findings
 
-This records the unpatched baseline. The [local lifecycle repair](lifecycle.md)
+This records the unpatched baseline. The local lifecycle repair (`lifecycle.md`)
 adds separate group-closure and quarantine proof without clearing these original
 counterexamples or establishing universal automatic availability.
 
@@ -80,5 +80,5 @@ upgrade/rollback, hardware workload, pressure policy or T3 device-open admission
 was proved here. No fresh-model skill discovery/invocation trial ran; this slice
 was explicitly assigned one writer with no further agents. Finite process probes
 establish observed counterexamples and bounded passing cases, not a general
-formal proof of every possible interleaving. See [repair proposal](repair.md)
-and the parent-owned [remaining tasks](plan.md).
+formal proof of every possible interleaving. See `repair.md`
+and the parent-owned remaining tasks in `plan.md`.

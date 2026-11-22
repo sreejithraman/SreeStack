@@ -2,7 +2,7 @@
 
 <!-- Modified by SreeStack. -->
 
-Use [Review](../SKILL.md) for the supplied scope, read-only limits, and coverage
+Use Review for the supplied scope, read-only limits, and coverage
 requirements. Include its required base/head, coverage, checks, gaps, and
 assignment/model metadata in the JSON `summary`; report gaps even with no
 findings. The verdict is an assessment for the parent, who settles findings

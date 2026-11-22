@@ -64,8 +64,8 @@ test("repeated submit saves once, then a failed save can be retried", async () =
 The assertions check outgoing payloads at the external boundary and the public
 result. They detect duplicate writes and a missing or broken retry. Choose
 expected behavior independently of the implementation's transition table.
-When the feature has UI entry points, get real UI acceptance through
-[verify](../verify/SKILL.md), which owns proof through the product.
+When the feature has UI entry points, get real UI acceptance through product
+verification.
 
 ## Bad Tests
 

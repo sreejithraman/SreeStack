@@ -5,163 +5,123 @@ description: "Sketch caller usage, types, signatures, and module structure, then
 
 # Architect
 
-Sketch types, function signatures, class shapes, and module structure with
-`not implemented` bodies and pseudocode. Synthesize across independent
-perspectives, then fill in code against the chosen sketch within the requested
-scope. [Codebase Design](../codebase-design/SKILL.md) supplies the shared
-module, interface, depth, seam, adapter, leverage, and locality vocabulary.
+Design consequential interfaces and module structure from caller usage first,
+synthesize across independent candidates, and keep the sketch aligned while
+implementation fills it in. Start from a design request, existing callers and
+constraints, or a caller-supplied selection. Leave a caller-first type sketch,
+module map, and design rationale—plus verified code when implementation is in
+scope. You are done when the requested finish line is met (design package,
+ordered migration plan, or verified implementation) with checked vs unproven
+claims separated.
 
-## Start
+[Codebase Design](../codebase-design/SKILL.md) supplies the shared vocabulary
+(**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**,
+**locality**). Routine changes with an established shape need no design panel.
 
-Open a task plan with one entry per applicable phase before starting.
-
-1. Ground
-2. Sketch
-3. Agree
-4. Implement
-5. Scrap, when the architecture is wrong
-
-Resolve the finish line from the request. A design-only or planning request
-ends with the design or plan. An implementation request continues through
-implementation and verification. Routine changes with an established shape
-use the normal implementation workflow; they need no design panel.
+Open a task plan for the applicable phases: Ground, Sketch, Agree, Implement, and
+Scrap (when needed), and resolve the finish line from the request up front.
 
 ## Phase A: Ground the problem
 
-Build a real mental model of every system the new code touches. Read the
-affected callers, types, state owners, project glossary, and relevant ADRs.
-Naming a file isn't grounding. Explain how data and control move through the
-affected system and which invariants the new design must preserve. If the
-design redefines ownership or layering, also use [why](../why/SKILL.md)
-on the existing shape so the rationale becomes a constraint, not a guess.
-
-Use [how](../how/SKILL.md) when a subsystem walkthrough would establish missing
-runtime and data-flow grounding.
-
-Skip Phase A only when the work is genuinely greenfield with no surrounding
-system to integrate. Even then, name the requirements and caller constraints.
+Build a real mental model of every system the change touches: read affected
+callers, types, state owners, project glossary, and relevant ADRs, and trace how
+data and control flow and which invariants must hold. Use [Why](../why/SKILL.md)
+when redefining ownership or layering so prior rationale acts as a constraint,
+and [How](../how/SKILL.md) when runtime/data-flow walkthroughs are missing. Skip
+Phase A only for genuinely greenfield work, still naming requirements and caller
+constraints.
 
 ## Phase B: Sketch
 
-When the caller supplies a selected design, reuse its rationale and checked
-findings and experiments while they still apply to the current callers and
-requirements. Fill missing parts of the design package and proof; reopen only
-unresolved or invalidated choices. If the shape is settled, continue to Phase C
-without requiring a new panel.
+If the caller supplied a selected design, reuse its rationale, checked findings,
+and experiments while they still fit current callers and requirements; fill gaps
+and reopen only unresolved or invalidated choices without running a new panel.
 
-For a fresh design decision, run [arena](../arena/SKILL.md) with the design-sketch
-task and the Phase A grounding artifacts. Pass [the design candidate brief](references/design-candidate.md)
-to each runner. Model selection, delegation, isolation, and recovery belong to
-[orchestration](../orchestration/SKILL.md).
+For a fresh design decision, run [Arena](../arena/SKILL.md) with the Phase A
+grounding and pass [design candidate brief](references/design-candidate.md) to
+each runner (model selection, isolation, and recovery follow
+[Orchestration](../orchestration/SKILL.md)):
 
-Design it twice. Require at least two independent candidates before synthesis,
-even when the first looks sufficient. This is
-[Exhaust the Design Space](../engineering-principles/references/exhaust-the-design-space.md)
-made concrete. Whole-shape alternatives, not point fixes inside one shape.
-If independent candidates converge, use arena's consensus branch: record why
-the constraints favor that shape and which alternatives were rejected. Do not
-manufacture structural differences just to meet a count.
+- **Design it twice:** require at least two independent whole-shape candidates
+  per [Exhaust the Design Space](../engineering-principles/references/exhaust-the-design-space.md).
+  If candidates converge, use Arena's consensus branch—record why constraints
+  favor that shape and what was rejected instead of manufacturing differences.
+- **Screen before synthesis:** check every candidate against
+  [preventing recurring mistakes](../codebase-design/references/preventing-mistakes.md).
+  Prefer the design where an agent reading only a few files and copying the
+  nearest example stays right for the whole repo.
+- **Compare interface depth:** prefer hiding more complexity behind a smaller,
+  simpler public surface that keeps call chains short.
+- **Test empirical questions:** use [Prototype](../prototype/SKILL.md) for UI
+  interaction and
+  [architecture experiments](../codebase-design/references/experiments.md) for
+  caller compatibility, state, concurrency, or performance. Record what each
+  experiment proved and what stays unproven before finalizing synthesis.
 
-Screen every candidate against Codebase Design's
-[ownership and enforcement checks](../codebase-design/references/preventing-mistakes.md)
-before synthesis. Assume the next contributor is an agent that sees only the
-files it opened, copies the nearest example, and takes the shortest path that
-compiles. Prefer the design where a change that looks right from one file is
-right for the whole repo.
-
-Compare viable candidates on interface depth. Prefer the design that hides
-more complexity behind a smaller, simpler public surface. A rich interface can
-keep call chains short by concentrating capability instead of scattering it
-across layers.
-
-Answer empirical questions by running something. Use
-[prototype](../prototype/SKILL.md) for the interface a person sees or uses, and
-[architecture experiments](../improve-codebase-architecture/references/experiments.md)
-for caller compatibility, state, concurrency, or performance. Record what each
-experiment proved and what stays unproven before finalizing the synthesis.
-
-Arena returns one synthesized design package. Its synthesis decision fills
-the rationale's "Synthesis decision" section.
+Arena returns one synthesized design package; its verdict fills the rationale's
+Synthesis decision section.
 
 ## Phase C: Agree (opt-in)
 
-For an implementation request, proceed directly with the accepted design
-unless the user requested a checkpoint. Opt in when the invoker explicitly
-asks: "architect with checkpoint," "stop and show me before implementing," or
-similar. Then surface the accepted design and pause for sign-off. A design-only
-request is complete with the checked design. A planning-only request completes
-with the ordered plan described below. Neither enters implementation.
+For implementation requests, proceed directly unless the user explicitly asks
+for a checkpoint (*"architect with checkpoint"*, *"stop and show me before
+implementing"*); then present the design and wait for sign-off. Design-only
+requests finish here with the checked design; planning-only requests finish with
+the ordered migration plan specified under Outputs below without entering
+implementation.
 
-The accepted design can be its own commit when commits are in scope.
-Keep temporary scaffolding within the development boundary and restore the
-delivery checks before handoff, per
+The accepted design can be its own commit when commits are in scope. Keep
+temporary scaffolding inside development boundaries and restore delivery checks
+before handoff per
 [Outcome-Oriented Execution](../engineering-principles/references/outcome-oriented-execution.md).
-For requested independent assessment before implementing, use
-[review](../review/SKILL.md) on the concrete sketch and experiment evidence.
-
-If the human pushes back on the shape, treat that as Phase A evidence.
-Re-ground and re-run Phase B before writing more code.
+Use [Review](../review/SKILL.md) if independent pre-implementation assessment
+was requested. Treat human pushback on the shape as Phase A evidence: re-ground
+and re-run Phase B before writing code.
 
 ## Phase D: Implement against the sketch
 
-For implementation requests, replace `not implemented` bodies with code,
-pseudocode with logic. The accepted design is the contract. Deviations from it
-are signal to surface, not friction to absorb silently. If a function needs a
-parameter the sketch didn't anticipate, ask whether the sketch was wrong, the requirement was
-missed, or the implementation is overreaching. Resolve technical questions
-from the code and experiments; bring product choices to the user only when
-their answer materially changes the result.
+Replace `not implemented` bodies with code and pseudocode with logic. Treat the
+accepted sketch as the contract: surface deviations rather than absorbing them
+silently—if a function needs an unanticipated parameter, determine whether the
+sketch was wrong, a requirement was missed, or the implementation overreached.
+Resolve technical questions from code and experiments; ask the user only for
+product choices that materially change the result.
 
-Use the project's implementation skills, including [tdd](../tdd/SKILL.md) at
-the agreed interfaces. For multi-part work, order the implementation into
-small verifiable units; a requested migration plan names affected callers,
-dependencies, compatibility paths, and the proof for each unit. Record plan
-steps after the design's technical uncertainties are checked or explicitly
-bounded.
-
-Verify the real workflow with [verify](../verify/SKILL.md), and use
-[show-me](../show-me/SKILL.md) for demonstrations and access to the integrated
-result. Remove
-temporary stubs and comparison controls from the production result. Preserve
-the chosen design, decisive evidence, and reasons in the project record
-already in scope.
+Implement with [TDD](../tdd/SKILL.md) at the agreed seams, sequencing multi-part
+work into small verifiable units. Verify real workflows with
+[Verify](../verify/SKILL.md), demonstrate integrated results with
+[Show Me](../show-me/SKILL.md), remove temporary stubs and comparison controls,
+and record decisive evidence in the project record already in scope.
 
 ## Phase E: Scrap when the architecture is wrong
 
-If implementation keeps producing friction the sketch can't absorb, throw the
-sketch out. Don't bolt fixes onto a wrong design, per
+When implementation repeatedly produces friction the sketch cannot absorb, scrap
+the sketch instead of bolting fixes onto a wrong design per
 [Redesign From First Principles](../engineering-principles/references/redesign-from-first-principles.md)
 and [Fix Root Causes](../engineering-principles/references/fix-root-causes.md).
 
-The signal is a *pattern*, not single instances. Tells:
+Watch for recurring patterns (a few isolated edge cases or genuine data
+complexity do not condemn a design):
+- the same workaround recurring across unrelated code;
+- multiple unrelated edge cases requiring special-case branches;
+- type escape hatches (`any`, casts, always-set optionals) needed to compile;
+- reaching for a lock when the sketch assumed unshared state;
+- callers needing internal abstraction rules to use the interface;
+- two or more independent Phase D deviations of the same shape.
 
-- The same shape of workaround appearing repeatedly across unrelated code.
-- Multiple unrelated edge cases that all need special-case branches.
-- Types that need escape hatches (`any`, casts, optional fields always set in
-  practice) to compile.
-- The "we need a lock" reflex when the sketch said the state wasn't shared.
-- Callers having to know the abstraction's internal rules to use it.
-- Two or more independent Phase D deviations of the same shape across the
-  implementation.
-
-Use judgment. A few edge cases don't condemn an architecture. Some problems
-are legitimately complex. Complexity in the data is not complexity in the
-design.
-
-When you scrap:
-
-1. Re-ground in what's been built, including the new caller and runtime evidence.
-2. Redesign as if the new constraints had been day-one assumptions.
-3. [Subtract before adding](../engineering-principles/references/subtract-before-you-add.md).
-   The new sketch should be smaller than the old one before it grows.
-4. Return to Phase B and re-run arena within the requested scope.
+To scrap: (1) re-ground with the new caller and runtime evidence, (2) redesign
+with those constraints as day-one assumptions, (3)
+[Subtract Before You Add](../engineering-principles/references/subtract-before-you-add.md)
+so the new sketch starts smaller, and (4) return to Phase B within requested
+scope.
 
 ## Outputs
 
-The caller's usage is written first and the type sketch derived from it. One
-file with new types and signatures for small changes. Module map plus type
-definitions for larger work. The rationale ships alongside, shaped per the
-[design rationale](references/design-rationale.md), including the usage sketch
-and the synthesis decision. Distinguish proposed behavior from checked claims.
-Return experiment commands, evidence, remaining gaps, and the requested plan
-or verified implementation when those are in scope.
+Write caller usage first and derive the type sketch from it (one file for small
+changes; module map plus types for larger work). Ship the prose rationale per
+[design rationale](references/design-rationale.md), including usage sketch,
+synthesis decision, experiment commands and evidence, remaining gaps, and any
+requested plan or verified implementation, keeping proposed behavior separate
+from checked claims. A requested migration plan sequences verifiable units and
+names affected callers, dependencies, compatibility paths, and proof per unit
+after technical uncertainties are checked or explicitly bounded.

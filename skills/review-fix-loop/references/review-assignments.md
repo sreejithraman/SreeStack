@@ -28,7 +28,7 @@ changes.
 
 Run a read-only Review assignment in the selected provider's harness through
 Orchestration. Include the applicable checked-in provider reference linked from
-[Review](../../review/SKILL.md) alongside any assigned lens. Gemini reviews use
+Review alongside any assigned lens. Gemini reviews use
 these repository instructions without installing plugins or invoking native
 review commands; when Gemini runs an assigned review, the assigned criteria —
 including indirect consumers, missing proof, and test gaps — override

@@ -8,7 +8,7 @@ description: Use when a spec, plan, or list of work needs splitting into tasks t
 Split work into tasks that can run side by side. Start from a spec, a plan, an issue, or the
 conversation. Leave a task list an owner can start from. You are done when every outcome in the
 input belongs to a task, each task delivers one result, and every pair that runs together passes
-the [parallelism test](#parallelism-test).
+the parallelism test below.
 
 This skill plans. Whoever called it starts the tasks and owns integration.
 
@@ -29,7 +29,7 @@ This skill plans. Whoever called it starts the tasks and owns integration.
    the work that builds it. One mechanical change that breaks many call sites at once can't be cut
    this way: follow [wide refactors](references/wide-refactors.md).
 
-4. **Test every pair.** Apply the [parallelism test](#parallelism-test) to each pair that could run
+4. **Test every pair.** Apply the parallelism test below to each pair that could run
    together. When a pair fails, add a blocking edge if one needs the other's output or decision,
    note how they share a resource under Inputs, or merge them.
 
@@ -51,7 +51,7 @@ This skill plans. Whoever called it starts the tasks and owns integration.
    it's destructive, outward-facing, or hard to undo, or the split around it needs their judgment.
    Name the one approval or answer under Inputs on every task it affects, and return it in the
    list. That approval covers the whole task. Such a task holds up only what it blocks. A task
-   waiting only on a decision can still start provisionally under [Ready](#ready).
+   waiting only on a decision can still start provisionally under Ready below.
 
 6. **Publish only when the user asks.** Follow [publish](references/publish.md). Otherwise return
    the list.

@@ -5,18 +5,23 @@ description: Use when asked to reframe a task, raise its ambition, improve a pro
 
 # Reframe
 
-Form a brief worth executing from the user's request and context. Preserve
-explicit requirements while considering stronger ways to achieve the outcome.
-Scale the pass to what is unsettled: a precise request may need only a concise
-confirmation. Reframing alone ends with the brief.
+Turn a request and its context into an execution-ready brief. Start from a user
+request, prompt, or calling workflow's context. Leave a concise brief (or a
+copyable prompt when prompt rewriting was asked) with preserved constraints and
+evaluation criteria. You are done when the brief (or copyable prompt) is
+returned to the caller with the required fields below.
+
+Preserve explicit requirements while considering stronger ways to achieve the
+outcome. Scale the pass to what is unsettled: a precise request may need only a
+short confirmation.
 
 ## Find the better task
 
-Read the request, settled decisions, and relevant project evidence. Separate
-the desired result from the proposed means or artifact. Keep alternatives beyond
-authorized scope labeled as proposals. Use the
-[acceptance guidance](references/acceptance.md) to resolve
-what context can establish and ask for material user decisions.
+Read the request, settled decisions, and relevant project evidence. Separate the
+desired result from the proposed means or artifact, and label alternatives beyond
+authorized scope as proposals. Use
+[acceptance guidance](references/acceptance.md) to resolve what context can
+establish and ask for material user decisions.
 
 Consider the dimensions that can improve this task:
 
@@ -37,36 +42,31 @@ Consider the dimensions that can improve this task:
   propose suitable checks or qualitative criteria, leaving uncertainty and
   missing prerequisites explicit.
 
-Choose the strongest coherent framing rather than expanding every dimension.
-Raise the outcome or standard; extra deliverables must earn their place.
-Use [Research](../research/SKILL.md) for factual uncertainty worth investigating.
-Use experiments to settle empirical questions within the requested scope.
-Keep ambitious targets distinct from evidence that they have been achieved.
+Choose the strongest coherent framing rather than expanding every dimension;
+extra deliverables must earn their place. Use [Research](../research/SKILL.md)
+for factual uncertainty worth investigating, and run experiments to settle
+empirical questions within requested scope. Keep ambitious targets distinct from
+evidence that they have been achieved.
 
-Name the data, tools, environments, and access needed to execute and evaluate
-the chosen approach, distinguishing available resources from missing setup.
-For a lasting workflow, identify its signal, action, feedback, and owner. Keep
-setup and ongoing operation within the authorized scope; a proposal alone
-authorizes neither automation nor recurring execution.
+Name the data, tools, environments, and access needed to execute and evaluate the
+chosen approach, separating available resources from missing setup. For a lasting
+workflow, identify its signal, action, feedback, and owner; keep setup and
+ongoing operation within the authorized scope, and treat a proposal alone as
+authorizing neither automation nor recurring execution.
 
 ## Return the brief
 
-State the outcome and target, the code it covers, preserved constraints, what
-is out of scope, relevant methods, evaluation, and requested finish line. Include material assumptions and unknowns;
-explain meaningful framing changes. Proposed evaluation is not evidence that
-the result has been achieved. Reuse the existing format and task record; a clear
-request can be confirmed in a few sentences without a separate document.
-When prompt rewriting is the requested product, return a copyable prompt with
-the outcome, preserved constraints, methods, and evaluation.
+State the outcome and target, the code it covers, preserved constraints, what is
+out of scope, relevant methods, evaluation, requested finish line, material
+assumptions and unknowns, and any meaningful framing changes. Proposed evaluation
+is not evidence of achievement. Reuse the existing format and task record; a
+clear request can be confirmed in a few sentences without a separate document.
+When prompt rewriting is the requested product, return a copyable prompt with the
+outcome, preserved constraints, methods, and evaluation.
 
-When another workflow calls Reframe, return the brief to that owner. The owner
-continues execution; do not start another copy of its workflow.
-
-For a direct reframing request, return the brief in chat unless another format
-or destination was requested. If the user also requested execution, continue
-through the authorized workflow with that brief. Use
-[Implement](../implement/SKILL.md) for one outcome, as one PR or a planned stack,
-[Coordinator](../coordinator/SKILL.md) for several outcomes, and
-[Swarm](../swarm/SKILL.md) for a bounded parallel assignment when useful.
-Reframing alone authorizes no implementation, native goal,
-schedule, or external action.
+When another workflow calls Reframe, return the brief to that owner without
+starting another copy of its workflow. For a direct reframing request, return the
+brief in chat unless another format or destination was requested; if the user
+also requested execution, hand the brief to the authorized execution workflow.
+Reframing alone authorizes no implementation, native goal, schedule, or external
+action.

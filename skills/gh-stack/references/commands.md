@@ -3,23 +3,6 @@
 `gh stack <command> --help` is authoritative for flags and arguments. (`gh stack help <command>` only prints the top-level help.) This file only covers behavior `--help` does not
 explain: preconditions, side effects, atomicity, and failure modes.
 
-## Contents
-
-- [init](#init)
-- [Setup](#setup)
-- [add](#add)
-- [push](#push)
-- [submit](#submit)
-- [link](#link)
-- [sync](#sync)
-- [rebase](#rebase)
-- [view](#view)
-- [checkout](#checkout)
-- [unstack](#unstack)
-- [merge](#merge)
-- [Navigation](#navigation)
-- [Exit codes](#exit-codes)
-
 ## Setup
 
 Requires Git 2.36+ and an authenticated GitHub CLI. Install/configure within the

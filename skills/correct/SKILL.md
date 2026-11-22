@@ -5,80 +5,85 @@ description: Use when asked to investigate recurring agent mistakes or prevent a
 
 # Correct
 
-Own recurring failure prevention: connect actual mistakes to a repair that
-prevents the same failure mechanism. Use
-[Engineering Principles](../engineering-principles/SKILL.md) for design decisions
-and enforcement selection, and the shared
-[guard proof](../codebase-design/references/preventing-mistakes.md) for historical
-rejection and repaired-path success.
+Investigate recurring agent mistakes and connect evidenced failure classes to
+structural repairs that prevent the same mechanism from recurring. Start from
+supplied examples or a bounded repository history window and a requested finish
+line (plan vs authorized repair). Leave ranked live failure classes with a
+proof-backed prevention plan—and, when repairs are authorized, implemented guards
+verified against historical failures and supported paths. You are done when the
+closing completion conditions below hold for the requested finish line.
+
+Use [Engineering Principles](../engineering-principles/SKILL.md) for design and
+enforcement choices and
+[preventing recurring mistakes](../codebase-design/references/preventing-mistakes.md)
+for historical rejection and repaired-path guard proof.
 
 ## Establish the evidence
 
-Honor the requested repository, area, history window, and finish line. A request
-for a plan ends with a supported plan; a request to fix recurring mistakes
-includes implementation and verification within that scope.
+Honor the requested repository, area, history window, and finish line. A
+planning request ends with a supported plan; a repair request includes
+implementation and verification within that scope.
 
-Start with the supplied examples. Otherwise choose and report a bounded recent
-history window, then inspect commits, reverts, substantive review feedback, and
-instructions or comments that explain past failures. Follow promising records
-to their actual diffs. When conversations could explain a correction, use scoped
-T3 thread search/read or available local session logs. Report searched sources,
-coverage limits, and unavailable records; bounded search is not exhaustive recall.
+Start from supplied examples; otherwise pick and report a bounded recent window
+and inspect commits, reverts, substantive review feedback, and explanatory
+comments, following leads to their actual diffs. Use scoped T3 thread
+search/read or local session logs when conversations explain a correction.
+Report searched sources, coverage limits, and unavailable records.
 
-Group examples by failure mechanism. Count separate occurrences, not several
-records of one incident. Cite at least two occurrences before calling a class
-recurring. Keep single incidents and suspected risks distinct. Check current
-code and enforcement: an old mistake that is already prevented is evidence of
-a resolved class, not a reason to rebuild its guard.
+Group by failure mechanism and count independent occurrences (never multiple
+records of one incident). Require at least two independent occurrences before
+calling a class recurring, keeping single incidents and suspected risks
+separate. Check current code and enforcement: an already-prevented mistake is a
+resolved class, not work to rebuild.
 
-Rank the live classes by observed frequency, impact, and current exposure.
-Keep observed facts separate from inferred causes. Finish this step with cited
-examples, a current path that still permits each failure, and the limits of the
-search. If no recurring class is supported, say so rather than inventing one.
+Rank live classes by frequency, impact, and current exposure, separating observed
+facts from inferred causes. Done when each class cites examples, names a live
+path that still permits the failure, and notes search limits (or reports that no
+recurring class is supported).
 
 ## Choose and test the repair
 
-For each class worth addressing, identify the invariant and its owner. Apply
-[Encode Lessons in Structure](../engineering-principles/references/encode-lessons-in-structure.md)
-and explain why a higher-level repair would not help or would cost too much.
+For each class worth addressing, identify the invariant and its owner, apply
+[Encode Lessons in Structure](../engineering-principles/references/encode-lessons-in-structure.md),
+and explain why higher-level enforcement would not work or would cost too much.
+Settle technical uncertainty with focused
+[architecture experiments](../codebase-design/references/experiments.md).
 
-Resolve technical uncertainty with focused
-[architecture experiments](../improve-codebase-architecture/references/experiments.md).
-Use the experiment evidence to decide routine technical questions within the
-requested scope.
+Return a prioritized plan in chat (unless another destination was requested; no
+permanent rule table is required) connecting each class to:
+- occurrences, frequency, impact, and current exposure;
+- invariant, owner, proposed repair, and enforcement mechanism;
+- historical failing case and repaired path that will prove the guard;
+- experiment results, tradeoffs, affected callers, migration steps, and checks.
 
-Return a prioritized plan connecting each class to:
-
-- Its occurrences, frequency, impact, and current exposure.
-- The invariant, owner, proposed repair, and enforcement mechanism.
-- The historical failing case and repaired path that will prove the guard.
-- Experiment results, tradeoffs, affected callers, migration steps, and checks.
-
-Label proposed proof separately from checks already run. Include reproduction
-commands and artifact paths for experiments, and name unresolved facts with the
-next check that would settle them. Keep the plan in chat unless the user or
-project requests another destination. No permanent rule table is required.
+Separate proposed proof from checks run, include experiment commands and
+artifact paths, and name unresolved facts with their next settling check.
 
 ## Implement within the requested finish line
 
-For a planning request, hand back the evidence and recommendation for review.
-For an authorized repair, migrate the affected callers and examples, implement
-the guard, and prove historical rejection and repaired-path success using the
-shared guidance. Verify legitimate supported paths too; narrowing the accepted
-behavior to hide the failure is not prevention.
+Planning requests stop after returning the plan. For authorized repairs, migrate
+affected callers and examples, implement the guard, and prove both historical
+rejection and repaired-path success—including legitimate supported paths (never
+hide failures by narrowing valid behavior).
 
-Use [orchestration](../orchestration/SKILL.md) for bounded assignments.
-Use [verify](../verify/SKILL.md) when the repair changes a user workflow.
-Requested stacked delivery uses [gh-stack](../gh-stack/SKILL.md).
-Use [Coordinator](../coordinator/SKILL.md) for several repair outcomes and
-[Swarm](../swarm/SKILL.md) for bounded parallel investigation or implementation.
-The requested finish line governs PR publication and merging.
+Use [Orchestration](../orchestration/SKILL.md) for bounded assignments,
+[Swarm](../swarm/SKILL.md) for bounded parallel investigation or implementation,
+[Verify](../verify/SKILL.md) when repairs change a user workflow, and
+[gh-stack](../gh-stack/SKILL.md) when stacked delivery is requested. PR and
+merge delivery follow the caller's workflow and requested finish line.
 
-When the user asks to prove that a repair improves agent behavior, beyond its
-guard proof, hand the class to [Tune Stack](../tune-stack/SKILL.md).
+For requests outside single-outcome guard implementation:
+- **Several independent repair outcomes:** return the proposed outcomes to a
+  session caller, or offer [Coordinator](../coordinator/SKILL.md) when invoked
+  directly by the user (stopping rather than silently dropping extra outcomes).
+- **Behavioral evaluation beyond guard proof:** never count guard proof as
+  behavioral proof; report behavioral evaluation as unmet and offer the
+  user-started `/tune-stack` workflow when invoked directly.
 
-Report each class as planned, prevented, partly covered, resolved already, or deferred,
-with its evidence, checks, and remaining exposure. Planning is complete when
-the recommendations have traceable evidence and a usable migration/proof plan.
-Implementation is complete when the selected repairs and checks pass and remaining
-classes have explicit dispositions.
+Report each class as `planned`, `prevented`, `partly covered`,
+`resolved already`, or `deferred`, with evidence, checks, and remaining exposure.
+Planning is complete when recommendations have traceable evidence and a concrete
+migration and guard-proof plan. Implementation is complete when selected repairs
+and checks pass, remaining classes have explicit dispositions, and any requested
+multi-outcome coordination or behavioral evaluation has an explicit handoff or
+unmet disposition.

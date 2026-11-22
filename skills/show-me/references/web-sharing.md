@@ -2,8 +2,8 @@
 
 Include a checked link for website work in the report, without being asked. After a
 merge, link only a deployment you checked holds the change. If none does, post the
-captures, say so, and share no local preview. Stop one you started by following
-[Take it down](#take-it-down).
+captures, say so, and share no local preview. Stop one you started under Take it
+down below.
 
 1. Use the project's PR preview if it holds the current changes. Use a requested
    deployment if the user named one. Open no PR just to get a preview.

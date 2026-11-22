@@ -12,8 +12,8 @@ green, one at a time.
 
 ## The loop
 
-1. Name the [seam](#seams-where-tests-go), and list the behaviors in plan order, in the
-   project's [domain language](#domain-language). The list is a plan, not tests.
+1. Name the seam (under Seams below), and list the behaviors in plan order, in the
+   project's domain language. The list is a plan, not tests.
 2. Write the test for the next behavior only. Several cases of one behavior can go
    together.
 3. Run it and watch the behavior fail for the expected reason. A guard case that
@@ -28,8 +28,8 @@ Tests written in bulk verify _imagined_ behavior: they test the _shape_ of thing
 than user-facing behavior, they go insensitive to real changes, and they commit you to a
 test structure before you understand the implementation.
 
-Refactoring is not part of the loop. It belongs to the review stage (see the
-`review-fix-loop` skill), not the red → green implementation cycle.
+Refactoring is not part of the loop. It belongs to the review stage, not the
+red → green implementation cycle.
 
 Every section below applies on every cycle: consult them before and during the loop,
 not after.
@@ -51,9 +51,9 @@ literal, a worked example, or the spec. A test is **tautological** when its orac
 copies the production algorithm, derives from the actual result, or asserts a constant
 equal to itself.
 
-See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
-For lifecycle or async behavior, use the [event-sequence example](tests.md#event-sequences)
-to choose scenarios through the agreed public seam.
+See [tests.md](tests.md) for examples (including its Event sequences section for
+lifecycle or async behavior through the agreed public seam) and
+[mocking.md](mocking.md) for mocking guidelines.
 
 ## Seams: where tests go
 

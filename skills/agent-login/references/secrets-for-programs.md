@@ -1,6 +1,6 @@
 # Secrets for programs
 
-Use this after [access](access.md) has confirmed the identity: the scoped
+Use this after the access guide has confirmed the identity: the scoped
 service account for automatic access and agent-vault writes, or the approved
 personal account for an expressly approved personal credential. It covers
 delivering a credential to a command, API client, or test harness, and creating,

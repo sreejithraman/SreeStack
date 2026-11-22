@@ -14,16 +14,15 @@ does not create an application account.
 
 The command needs `op` on `PATH` and a runtime that authenticates as the scoped
 service account. If it does not, name that block. When the user's setup request
-also covers the machine, do only those prerequisites with
-[machine setup](machine-setup.md), then resume here.
+also covers the machine, do only those prerequisites with the machine setup guide,
+then resume here.
 
-[Install the command](#install-the-command) if needed and
-[add the alias](#configure-approved-aliases). Project instructions need only the
-nonsecret alias, purpose, and browser workflow. `agent-login list` discovers
-configured aliases without resolving values. Keep account IDs, references, and
-tokens out of shared skill instructions.
+Install the command below if needed and configure the approved alias. Project
+instructions need only the nonsecret alias, purpose, and browser workflow.
+`agent-login list` discovers configured aliases without resolving values. Keep
+account IDs, references, and tokens out of shared skill instructions.
 
-Prove the login by [filling a tab](#fill-a-tab) in the host and environment
+Prove the login by following Fill a tab below in the host and environment
 future agents will use. Confirm private field resolution, the intended
 account and role, and owner control after the command disconnects. Mark
 automatic login verified only after the actual form succeeds. Otherwise name
@@ -91,7 +90,7 @@ fields must be empty, unique, and in the main document.
 ## Fill a tab
 
 1. Run `agent-login list`. Match the alias, destination, purpose, and role to
-   the task's [approved scope](access.md#who-may-use-which-credential).
+   the task's approved scope in the access guide.
 2. Follow the host's browser routing. Get its documented loopback CDP endpoint
    and run `agent-login tabs --cdp http://127.0.0.1:PORT`. Choose the exact
    target; origins alone cannot tell two tabs apart. CDP target IDs differ from

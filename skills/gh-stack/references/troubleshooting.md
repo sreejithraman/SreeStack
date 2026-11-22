@@ -6,17 +6,6 @@ navigation requires `--print-path`. Older builds may need manual owner location
 and recovery using their supported commands. Keep legacy operations with their
 original writer; do not mix old and new writers in one clone.
 
-## Contents
-
-- [Rebase conflicts (exit 3)](#rebase-conflicts-exit-3)
-- [After a squash merge](#after-a-squash-merge)
-- [Local and remote stacks have diverged](#local-and-remote-stacks-have-diverged)
-- [Restructuring a stack](#restructuring-a-stack)
-- [Branch belongs to several stacks (exit 6)](#branch-belongs-to-several-stacks-exit-6)
-- [Driving stacks from another tool or worktree](#driving-stacks-from-another-tool-or-worktree)
-- [Stack file is locked (exit 8)](#stack-file-is-locked-exit-8)
-- [An interrupted modify session (exit 10)](#an-interrupted-modify-session-exit-10)
-
 ## Rebase conflicts (exit 3)
 
 `rebase` and `sync` both exit 3 on conflict. A failed `rebase` stops mid-flight and waits.
@@ -56,7 +45,7 @@ gh stack view --json    # merged branch reports "isMerged": true, "state": "MERG
 ```
 
 No manual action is needed when the replay succeeds. If it conflicts, follow
-[Rebase conflicts](#rebase-conflicts-exit-3), including the rollback diagnostic before retrying.
+Rebase conflicts above, including the rollback diagnostic before retrying.
 Delete merged branches through [Cleanup](../../cleanup/SKILL.md). `gh stack sync --prune`
 alone doesn't make its checks: it skips branches occupied in another worktree, but it doesn't compare
 a branch's tip to the PR's merge-time head, so a merged branch that later got new commits can lose
