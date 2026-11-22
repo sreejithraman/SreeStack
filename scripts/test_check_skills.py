@@ -103,6 +103,63 @@ class MarkdownLinkChecks(unittest.TestCase):
         }, succeeds=False)
         self.assertIn("missing Markdown anchor guide.md#missing", result.stderr)
 
+    def test_skill_rejects_same_file_anchor_jump_links(self):
+        result = self.check({
+            "SOURCES.md": "\n## demo\n",
+            "skills/demo/SKILL.md": (
+                "---\nname: demo\ndescription: Demo skill.\n---\n\n"
+                "# Demo\n\nSee [details](#details) and [self](SKILL.md#details).\n\n"
+                "## Details\n"
+            ),
+        }, succeeds=False)
+        self.assertIn("same-file link #details", result.stderr)
+        self.assertIn("same-file link SKILL.md#details", result.stderr)
+
+    def test_skill_rejects_back_links_to_own_skill_md_but_allows_other_skills(self):
+        self.check({
+            "SOURCES.md": "\n## alpha\n\n## beta\n",
+            "skills/alpha/SKILL.md": (
+                "---\nname: alpha\ndescription: Alpha.\n---\n\n"
+                "See [guide](references/guide.md).\n"
+            ),
+            "skills/alpha/references/guide.md": "Use [beta](../../beta/SKILL.md).\n",
+            "skills/beta/SKILL.md": "---\nname: beta\ndescription: Beta.\n---\n\n# Beta\n",
+        })
+        result = self.check({
+            "skills/alpha/references/guide.md": "See [main](../SKILL.md) and [top](../SKILL.md#alpha).\n",
+            "skills/alpha/ADR.md": "Apply [rules](SKILL.md#alpha).\n",
+            "skills/alpha/SKILL.md": "---\nname: alpha\ndescription: Alpha.\n---\n\n# Alpha\n",
+        }, succeeds=False)
+        self.assertIn("back-link to SKILL.md: ../SKILL.md", result.stderr)
+        self.assertIn("back-link to SKILL.md: ../SKILL.md#alpha", result.stderr)
+        self.assertIn("back-link to SKILL.md: SKILL.md#alpha", result.stderr)
+
+    def test_skill_rejects_duplicate_local_links_but_allows_distinct_section_anchors(self):
+        self.check({
+            "SOURCES.md": "\n## demo\n",
+            "skills/demo/SKILL.md": (
+                "---\nname: demo\ndescription: Demo.\n---\n\n"
+                "Read [guide](references/guide.md), [part a](references/guide.md#part-a), "
+                "and [part b](references/guide.md#part-b).\n"
+            ),
+            "skills/demo/references/guide.md": "# Guide\n\n## Part A\n\n## Part B\n",
+        })
+        result = self.check({
+            "skills/demo/SKILL.md": (
+                "---\nname: demo\ndescription: Demo.\n---\n\n"
+                "Read [one](references/guide.md) and [two](./references/guide.md).\n"
+            ),
+        }, succeeds=False)
+        self.assertIn("duplicate link target ./references/guide.md", result.stderr)
+
+    def test_duplicate_and_same_file_rules_do_not_restrict_root_docs(self):
+        self.check({
+            "README.md": (
+                "# Top\n\n[top](#top) [a](docs/guide.md) [b](docs/guide.md)\n"
+            ),
+            "docs/guide.md": "# Guide\n",
+        })
+
 
 if __name__ == "__main__":
     unittest.main()

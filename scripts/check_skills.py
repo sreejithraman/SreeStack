@@ -140,15 +140,19 @@ def document(path):
 for path in files:
     if path.suffix.lower() != ".md":
         continue
+    rel = path.relative_to(ROOT)
+    in_skill = len(rel.parts) >= 3 and rel.parts[0] == "skills"
+    skill_md = (ROOT / "skills" / rel.parts[1] / "SKILL.md").resolve() if in_skill else None
     tokens, _ = document(path)
     targets = []
     for token in tokens:
         for child in token.children or []:
             if child.type == "link_open":
-                targets.append(child.attrGet("href"))
+                targets.append(("link", child.attrGet("href")))
             elif child.type == "image":
-                targets.append(child.attrGet("src"))
-    for target in targets:
+                targets.append(("image", child.attrGet("src")))
+    seen_links = set()
+    for kind, target in targets:
         if target is None:
             continue
         link = urlsplit(target)
@@ -156,11 +160,23 @@ for path in files:
             continue
         destination = path.parent / unquote(link.path) if link.path else path
         if not destination.exists():
-            errors.append(f"{path.relative_to(ROOT)}: missing link target {target}")
+            errors.append(f"{rel}: missing link target {target}")
         elif link.fragment and destination.is_file() and destination.suffix.lower() == ".md":
             _, anchors = document(destination)
             if unquote(link.fragment) not in anchors:
-                errors.append(f"{path.relative_to(ROOT)}: missing Markdown anchor {target}")
+                errors.append(f"{rel}: missing Markdown anchor {target}")
+        if in_skill and kind == "link":
+            resolved = destination.resolve()
+            if resolved == path.resolve():
+                errors.append(f"{rel}: same-file link {target}")
+            elif skill_md is not None and path.resolve() != skill_md and resolved == skill_md:
+                errors.append(f"{rel}: back-link to SKILL.md: {target}")
+            else:
+                key = (resolved, unquote(link.fragment))
+                if key in seen_links:
+                    errors.append(f"{rel}: duplicate link target {target}")
+                else:
+                    seen_links.add(key)
 
 if errors:
     print("\n".join(errors), file=sys.stderr)
