@@ -4,7 +4,11 @@
 
 Run `python3 <pr skill folder>/scripts/pr_state.py <number or URL>` outside the sandbox, like
 `gh`. Add `--head <full sha>` once you have verified a head, so a different head blocks. Exit
-codes: 0 ready or merged, 1 could not read, 2 blocked, 3 pending.
+codes: 0 ready or merged, 1 could not read, 2 blocked, 3 pending. Host PR tools (such as
+`pull_request_read`, `pull_request_merge`, or a GitHub connector) do not replace `pr_state.py`,
+because they do not check the `review-fix-loop` commit status, `## Provisional`, or complete
+paginated readiness. Always run `pr_state.py` to judge readiness or gate a merge, even when host
+tools handle other PR calls.
 
 It reads every page of checks, threads, comments, and reviews, and rereads when the PR's head,
 base, status, or feedback counts change. An edit during the read, or anything after it, can be

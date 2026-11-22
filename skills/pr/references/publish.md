@@ -29,9 +29,10 @@ operation or recovery before reporting readiness.
 
 ## Create or update the PR
 
-Prefer the GitHub connector; use `gh` for missing capabilities, current-branch
-discovery, or cross-repository heads. Reuse the PR matching the head branch,
-or create one. Confirm it targets the supplied immediate base.
+Prefer host PR tools or the GitHub connector for PR creation and updates; use `gh`
+for commit statuses (such as `review-fix-loop`), missing capabilities,
+current-branch discovery, or cross-repository heads. Reuse the PR matching the
+head branch, or create one. Confirm it targets the supplied immediate base.
 
 Use `pr-body.md` for the title and description. Refresh them when fixes
 change scope, evidence, or landing risk. Mark ready unless a draft was requested.
