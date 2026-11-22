@@ -9,7 +9,9 @@ Build a screenshot campaign from the app's actual visual language and useful
 content. Use HTML/CSS templates, real device frames, and measured output.
 Each slide communicates one concrete benefit. User direction sets the scope
 and style; readability, honest product claims, and correct canvas geometry
-remain the quality bar.
+remain the quality bar. You are done when every requested slide and language
+passes the Check and iterate checks below and you return the checked visual
+preview, full-size output paths, and any verification gap.
 
 ## Read the app and settle the story
 

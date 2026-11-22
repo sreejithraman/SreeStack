@@ -78,7 +78,7 @@ Represent each completion as a new event so two successful saves both produce
 feedback. Decide whether a result still belongs to the active UI if the user
 leaves while saving. Test fast and slow saves, consecutive saves, and cancellation.
 If feedback feels disconnected, fix the state transition before its strength.
-The [SwiftUI example](standard-feedback.md) consumes these outcome events.
+The SwiftUI example in `standard-feedback.md` consumes these outcome events.
 
 ### Snap: make a useful alignment detectable
 
@@ -92,7 +92,7 @@ boundary before the snap can occur again; this prevents tiny movements near the
 edge from causing repeated feedback. Test approach, reversal, and rapid dragging.
 Use the owning framework's standard feedback first. For a SwiftUI gesture whose
 distinct events need tighter control than view updates provide, use the UIKit
-generator path in the [standard feedback reference](standard-feedback.md).
+generator path in `standard-feedback.md`.
 
 ### Reveal: let the user feel a transformation
 
@@ -106,7 +106,7 @@ system impact at the settling point with this custom candidate:
 
 Keep the custom version if feeling the growth adds value. If the finish lacks
 clarity, compare a small transient at the peak, checking that it adds meaning
-rather than excess force. The [custom playback reference](core-haptics.md)
+rather than excess force. `core-haptics.md`
 implements the continuous candidate. Match a reduced-motion version to its
 actual visual change instead of retaining this duration by habit.
 

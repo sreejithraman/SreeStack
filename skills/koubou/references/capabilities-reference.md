@@ -10,7 +10,7 @@ Free-form design with HTML/CSS. Templates receive `{{variables}}` for text and
 `{{assets}}` for image paths. With a selected device and framing enabled,
 PNG/JPEG assets are composited inside its frame; other formats pass through.
 See [HTML asset preparation](https://github.com/bitomule/Koubou/blob/v0.20.0/src/koubou/generator.py#L466)
-and the [framing configuration](yaml-reference.md#disabling-device-frame).
+and the framing configuration in `yaml-reference.md`.
 
 ```yaml
 screenshots:
@@ -28,7 +28,7 @@ screenshots:
 When HTML contains `data-kou-id` annotations, generation emits a compact sidecar
 JSON containing normalized element geometry and mathematical overlaps. See the
 [HTML result writer](https://github.com/bitomule/Koubou/blob/v0.20.0/src/koubou/generator.py)
-and the [localized JSON inventory limitation](yaml-reference.md#html-template-mode-recommended)
+and the localized JSON inventory limitation in `yaml-reference.md`
 before relying on returned `layout_path` entries.
 
 ### 2. Content YAML Mode (programmatic)

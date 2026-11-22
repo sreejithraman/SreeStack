@@ -1,8 +1,8 @@
 # Web motion
 
 Use this reference when a web component needs additional motion. Follow
-[implementation checks](implementation.md) whether or not a recipe fits. Read
-[tuning](tuning.md) when an observed timing or feel problem needs correction.
+`implementation.md` whether or not a recipe fits. Read
+`tuning.md` when an observed timing or feel problem needs correction.
 
 ## Tool choice
 
@@ -46,7 +46,7 @@ Extend current tokens before adding new curves or times. Add a library only when
   pointer down, preserve its grab offset, and keep the content attached through
   the gesture. When drag intent competes with scrolling, declare the browser's
   allowed pan axis and defer capture until the drag wins. Follow
-  [drag to dismiss](patterns/drag-to-dismiss.md) for arbitration and cancellation.
+  the Drag to dismiss pattern below for arbitration and cancellation.
 - Apply rising resistance past a drag boundary rather than a hard stop.
 - Enter and exit along paths that preserve spatial meaning. Tune their times separately when the system response should be faster.
 

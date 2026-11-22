@@ -4,16 +4,16 @@ The rules for everything that moves: the story, the loop, pace, text that change
 
 ## Index
 
-1. [Story](#story): the shape, the beats, the payoff, satellites
-2. [Loops](#loops): caused resets, data never rewinds, the seam, exits, conveyors
-3. [Pace and easing](#pace-and-easing): two curves, fast feedback, overlap, stagger
-4. [Changing text and values](#changing-text-and-values): change only what changed, footprints, numbers, chips
-5. [Things that appear, travel and leave](#things-that-appear-travel-and-leave): nothing pops, whole arrivals, flights, handoffs, landings
-6. [The cursor](#the-cursor): its kind, never over the label, every move explained, keys
-7. [Drags and selection](#drags-and-selection): pickup, held cards, the grab offset, slots, I-beam selections
-8. [Scrolling and the camera](#scrolling-and-the-camera)
-9. [Phones in motion](#phones-in-motion): touch, swipes, the Dynamic Island, reactions
-10. [Recipes](#recipes): page swaps, stepped demos, replay, annotations, motion on a page
+1. Story: the shape, the beats, the payoff, satellites
+2. Loops: caused resets, data never rewinds, the seam, exits, conveyors
+3. Pace and easing: two curves, fast feedback, overlap, stagger
+4. Changing text and values: change only what changed, footprints, numbers, chips
+5. Things that appear, travel and leave: nothing pops, whole arrivals, flights, handoffs, landings
+6. The cursor: its kind, never over the label, every move explained, keys
+7. Drags and selection: pickup, held cards, the grab offset, slots, I-beam selections
+8. Scrolling and the camera
+9. Phones in motion: touch, swipes, the Dynamic Island, reactions
+10. Recipes: page swaps, stepped demos, replay, annotations, motion on a page
 
 ## Story
 

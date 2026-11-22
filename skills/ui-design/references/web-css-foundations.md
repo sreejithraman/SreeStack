@@ -18,7 +18,7 @@ img, video { display: block; max-inline-size: 100%; block-size: auto; }
 Apply changes individually in an established product. Set `min-inline-size: 0`
 on flex/grid items that need to shrink, and `flex: none` on media/actions that
 must retain their size. A global minimum-size reset changes intrinsic sizing.
-Use [mobile browser guidance](mobile-web.md) for input zoom, touch selection,
+Use mobile browser guidance (`mobile-web.md`) for input zoom, touch selection,
 tap feedback, safe areas, and viewport sizing. Apply control-specific selection
 or touch rules to the controls that need them.
 
@@ -164,7 +164,7 @@ widens. Steep spacing pairs such as `--space-s-l` are for layout, not text.
 Change scale inputs where the derived tokens are declared: changing an inherited
 input on a descendant does not recompute already-resolved parent tokens.
 For container-relative scales, declare the derived tokens inside the intended
-container and use `cqi`; read [container sizing](web-layout.md#container-responsive-components).
+container and use `cqi`; read container sizing in `web-layout.md`.
 Check `pow()` and the complete arithmetic in target browsers. Use explicit
 `clamp()` tokens or a generated scale when this formula is unsupported.
 See [exponential functions](https://drafts.csswg.org/css-values-4/#exponent-funcs)
