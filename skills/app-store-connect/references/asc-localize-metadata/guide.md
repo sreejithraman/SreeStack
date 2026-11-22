@@ -243,7 +243,7 @@ asc localizations list --app "$APP_ID" --type app-info --app-info "$APP_INFO_ID"
 1. **Always start by reading the source locale** — never translate from memory or assumptions.
 2. **Check existing localizations first** — don't overwrite existing translations unless the user asks to update them.
 3. **Version vs app-info is different** — version fields live under `--version "VERSION_ID"`; subtitle/name/privacy live under `--app ... --type app-info`.
-4. **Prefer deterministic IDs** — do not select IDs via `head -1` unless explicitly requested; use `--output table` for selection or [asc-id-resolver](../asc-id-resolver/guide.md).
+4. **Prefer deterministic IDs** — do not select IDs via `head -1` unless explicitly requested; use `--output table` for selection or asc-id-resolver.
 5. **Validate character limits** before uploading. Count characters for each field. If over limit, re-translate shorter.
 6. **Keywords are special** — do not literally translate. Research locale-appropriate search terms. Think like a user searching the App Store in that language.
 7. **Show the user translations before uploading** — present a summary table of all fields × locales for approval. Do not push without confirmation.
@@ -255,6 +255,6 @@ asc localizations list --app "$APP_ID" --type app-info --app-info "$APP_INFO_ID"
 - Version localizations are tied to a specific version. Create the version first if it doesn't exist.
 - `promotionalText` can be updated anytime without a new version submission.
 - `whatsNew` is only relevant for updates, not the first version.
-- Use [asc-id-resolver](../asc-id-resolver/guide.md) guide if you only have app/version names instead of IDs.
+- Use asc-id-resolver guide if you only have app/version names instead of IDs.
 - Use [asc-metadata-sync](../asc-metadata-sync/guide.md) guide for non-translation metadata operations.
 - For subscription/IAP display name localization, use [asc-subscription-localization](../asc-subscription-localization/guide.md) guide instead.

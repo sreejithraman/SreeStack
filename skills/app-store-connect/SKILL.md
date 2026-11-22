@@ -5,11 +5,18 @@ description: Use when asked to check App Store Connect builds, investigate TestF
 
 # App Store Connect usage
 
-Use this skill when you need to run or design `asc` commands for App Store Connect.
+Run or design `asc` commands for App Store Connect builds, TestFlight, releases, metadata,
+pricing, signing, notarization, or Apple Ads. Start from the requested App Store Connect
+task and project configuration (app IDs, auth profiles, build selection, and release rules).
+Leave the requested inspection output, verified `asc` command plan, or authorized mutation
+receipts. You are done when the matching workflow guide's checks pass against the installed
+`asc` CLI (including exit status and partial-receipt inspection) or the exact blocker is
+reported.
 
-Read only the workflow guide needed for the request; follow its supporting links when their stated condition applies. Switching guides keeps the current task, resolved IDs, and authorization.
-
-Read app IDs, auth profiles, build selection, and release rules from the current project. Reuse its release scripts where they cover the task. These guides provide procedures, not permission for unrelated account changes or test mutations.
+Read only the workflow guide needed for the request; follow its supporting links when their
+stated condition applies. Switching guides keeps the current task, resolved IDs, and
+authorization. Reuse the project's release scripts where they cover the task. These guides
+provide procedures, not permission for unrelated account changes or test mutations.
 
 ## Command discovery
 

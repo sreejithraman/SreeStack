@@ -11,7 +11,7 @@ This guide owns:
 - review status and history;
 - cancellation and retry decisions.
 
-Use [asc-release-flow](../asc-release-flow/guide.md) for staging, upload, publication, and submission. Switching guides continues the current task with its resolved targets, authorization, and verified progress; it does not require the user to restart the workflow. Continue authorized repairs and return to release execution when healthy. Ask for new authority only when a repair exceeds scope.
+Use asc-release-flow for staging, upload, publication, and submission. Switching guides continues the current task with its resolved targets, authorization, and verified progress; it does not require the user to restart the workflow. Continue authorized repairs and return to release execution when healthy. Ask for new authority only when a repair exceeds scope.
 
 ## Answer order
 
@@ -70,19 +70,19 @@ Read [references/digital-goods.md](references/digital-goods.md) only when IAP or
 
 Read [references/app-privacy.md](references/app-privacy.md) only when validation reports an App Privacy advisory or the publish state cannot be confirmed through the public API.
 
-When validation reports a Game Center component or version blocker, hand it to [asc-release-flow](../asc-release-flow/guide.md) and request the multi-item reference's **Prepare every item** section. Do not route Game Center through general readiness or digital-goods repairs.
+When validation reports a Game Center component or version blocker, hand it to asc-release-flow and request the multi-item reference's **Prepare every item** section. Do not route Game Center through general readiness or digital-goods repairs.
 
 Use the web-session commands only for a gap the public API cannot cover, and say that an authenticated Apple web session is required. Keep a manual App Store Connect fallback when the user declines web-session automation.
 
 ## Decide whether the version is healthy
 
-A version is ready to return to [asc-release-flow](../asc-release-flow/guide.md) when:
+A version is ready to return to asc-release-flow when:
 
 - `asc validate` has no blocking issues;
 - the attached build is `VALID`;
 - metadata, screenshots, app info, review details, content rights, encryption, age rating, pricing, and availability are resolved;
 - the relevant `asc validate iap` and/or `asc validate subscriptions` checks have no blocking issues, and the required digital-goods versions are prepared;
-- any Game Center version items have been checked through [asc-release-flow](../asc-release-flow/guide.md)'s multi-item submission reference;
+- any Game Center version items have been checked through asc-release-flow's multi-item submission reference;
 - App Privacy is confirmed or published.
 
 Do not call a version ready merely because one validator exits successfully. Report any warning that still needs a web-session or manual check.
@@ -168,7 +168,7 @@ There is no dedicated retry command. Use this sequence:
 2. Repair the proven blockers.
 3. Re-run `asc validate` and the relevant product validators.
 4. Confirm no active submission already owns the version or review items.
-5. Hand the healthy version and any preserved `SUBMISSION_ID` to [asc-release-flow](../asc-release-flow/guide.md) for submission execution. Reuse an inspected `READY_FOR_REVIEW` draft; create a submission only when no matching draft or active submission exists.
+5. Hand the healthy version and any preserved `SUBMISSION_ID` to asc-release-flow for submission execution. Reuse an inspected `READY_FOR_REVIEW` draft; create a submission only when no matching draft or active submission exists.
 
 ## Common failure routing
 
@@ -178,14 +178,14 @@ There is no dedicated retry command. Use this sequence:
 | Export compliance must be approved | build info and encryption declaration | readiness repairs |
 | Multiple app infos found | `asc apps info list --app "APP_ID"` | resolve exact app-info ID |
 | IAP or subscription is not ready | product validator | digital-goods reference |
-| Game Center component or version is not ready | `asc validate` diagnostic | [asc-release-flow](../asc-release-flow/guide.md) multi-item preparation section |
+| Game Center component or version is not ready | `asc validate` diagnostic | asc-release-flow multi-item preparation section |
 | App Privacy publish state is unclear | validation advisory | App Privacy reference |
 | Review appears stuck | review status plus history | monitor; cancel only with evidence and approval |
 
 ## Guardrails
 
 - Do not use removed `submit-preflight` or `submit-create` shortcuts.
-- Do not submit from this guide; return healthy execution to [asc-release-flow](../asc-release-flow/guide.md).
+- Do not submit from this guide; return healthy execution to asc-release-flow.
 - Do not treat web-session automation as public App Store Connect API coverage.
 - Do not retry until the earlier submission state and blocker repairs are verified.
 - Use `--output table` for human diagnosis and JSON for automation.
