@@ -245,6 +245,18 @@ class CheckRunnerTests(unittest.TestCase):
         nested = self.run_checks()
         self.assertIn("Ran 10 tests across 10 files", nested.stdout)
 
+        # Notes written to _SREESTACK_TEST_CACHE/notes.log surface even when tests pass.
+        self.write(
+            "skills/pr/scripts/nested/test_nested.py",
+            "import os, pathlib, unittest\n"
+            "class T(unittest.TestCase):\n"
+            "    def test_note(self):\n"
+            "        (pathlib.Path(os.environ['_SREESTACK_TEST_CACHE']) / 'notes.log').write_text('retry-note\\n')\n",
+        )
+        noted = self.run_checks()
+        self.assertIn("Ran 10 tests across 10 files", noted.stdout)
+        self.assertIn("retry-note", noted.stderr)
+
         # setUpModule SkipTest skips cleanly without failing coverage proof.
         self.write("skills/pr/scripts/nested/test_nested.py",
                    "import unittest\ndef setUpModule(): raise unittest.SkipTest('no chrome')\n" + PASSING_TEST)
