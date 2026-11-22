@@ -1,0 +1,4 @@
+interface:
+  display_name: "Browse"
+  short_description: "Control the user's real Chrome browser via the browse CLI"
+  default_prompt: "Use $browse to handle this task in my Chrome browser."
