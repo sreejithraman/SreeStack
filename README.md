@@ -205,6 +205,7 @@ instructions rather than maintaining another API manual.
 | Run complexity, duplication, or mutation tools | `code-quality` |
 | Show results and make them available to try | `show-me` shows results in the thread and makes them easy to try |
 | Sign in or use approved authentication credentials | `agent-login`; provider mechanics live in its references |
+| Control your real Chrome browser | [browse](skills/browse/SKILL.md), automatically discoverable; CLI-driven via `anomalyco/browse` for logged-in sessions, extensions, lent tabs, and human handoffs |
 | Generate or edit images in any coding agent | [create-image](skills/create-image/SKILL.md), automatically discoverable; API first, then the host's subscription tool |
 | Review and repair | `review-fix-loop` coordinates, `review` assesses, `review-sweep` settles and fixes |
 | Publish and watch | `pr`; `gh-stack` manages dependent layers |
@@ -610,6 +611,15 @@ When copying kit or example source into another project, include the
 [Stageshow MIT notice](licenses/benjitaylor-stageshow.txt) and applicable
 [asset notices](skills/stageshow/NOTICE.md).
 
+### Real Chrome browser
+
+The [browse skill](skills/browse/SKILL.md) lets any provider with shell access
+drive your real Chrome-family browser through the
+[OpenCode Browse](https://github.com/anomalyco/browse) CLI (`browse`), keeping
+unauthenticated local dev previews on T3 Code's built-in `preview_*` browser.
+Linking the skill does not install the `browse` binary or pair its Chromium
+extension; setup instructions live in the skill.
+
 ### Agent login
 
 The [agent-login skill](skills/agent-login/SKILL.md) owns application sign-in,
@@ -720,6 +730,7 @@ uses and adapts:
 - [Gemini CLI’s code-review extension](https://github.com/gemini-cli-extensions/code-review) — review criteria used by Gemini reviewers.
 - [Lauren Tan’s pstack](https://github.com/cursor/plugins/tree/main/pstack) — `arena`, `architect`, `how`, `show-dont-tell`, `correct`, `engineering-principles`, and ideas for `explain`, `verify`, `blast-radius`, `why`, `codebase-design`, `diagnosing-bugs`, `pr`, `handoff`, `coordinator`, `swarm`, and `orchestration`.
 - [FeiZ](https://x.com/Fei2411/status/2123017612741554208), [Kxians](https://x.com/xulijian1994/status/2122931496285798499), and [Dan McAteer](https://x.com/daniel_mac8/status/2123744188617380254) — Codex self-calibration, persistence, and reporting ideas informing `codex/AGENTS.md`; instructions are independently written.
+- [Anomaly / OpenCode Browse](https://github.com/anomalyco/browse) — external browser CLI and Chromium extension used by `browse`.
 - [Robert C. Martin’s Crapper](https://github.com/unclebob/crapper), [Dryer](https://github.com/unclebob/dryer), and [Mutator](https://github.com/unclebob/mutator) — external tools used by `code-quality`.
 - [Uzair Ansar’s p3-stack](https://github.com/uzairansaruzi/p3-stack) — T3 workflow comparison informing app/runtime boundaries, PR monitoring, and continuity; no upstream prose or code copied.
 - [t3dotgg’s tstack](https://github.com/t3dotgg/tstack) — PR babysitting workflow comparison informing watcher ownership and handoff; no upstream prose or code copied.

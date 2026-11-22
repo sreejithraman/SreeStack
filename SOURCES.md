@@ -14,6 +14,14 @@ Keep one entry per skill and one bullet per imported source, followed by plain
 descriptions of current local differences, including invocation choices.
 Local-only skills need just an origin note.
 
+## browse
+
+- Local: `skills/browse` (SreeStack), automatically discoverable real-browser
+  control through the [anomalyco/browse](https://github.com/anomalyco/browse)
+  CLI (`v0.1.5`). Written from the installed CLI help and upstream repository
+  behavior; keeps `browse` scoped to real Chrome sessions, extensions, lent
+  tabs, and human handoffs alongside T3 Code's built-in `preview_*` browser.
+
 ## seo
 
 - Local: `skills/seo` (SreeStack), automatically discoverable website SEO diagnosis,
