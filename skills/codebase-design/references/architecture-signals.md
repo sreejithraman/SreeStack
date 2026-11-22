@@ -31,7 +31,7 @@ Use the table and repository evidence to identify a concrete candidate first.
 Read further guidance only when validating that candidate requires it; reuse
 relevant guidance already read for this task:
 
-- Ownership or bypass proof: [preventing recurring mistakes](preventing-mistakes.md).
+- Ownership or bypass proof: `preventing-mistakes.md` beside this reference.
 - Lifecycle design: [Model the Domain](../../engineering-principles/references/model-the-domain.md#stateful-behavior).
 - Valid state shapes: [Type System Discipline](../../engineering-principles/references/type-system-discipline.md).
 - Validation or visibility: [Boundary Discipline](../../engineering-principles/references/boundary-discipline.md).

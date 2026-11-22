@@ -170,7 +170,7 @@ lift in `work.blocked` with an empty Inbox — open an Inbox decision instead.
 
 Keep product changes with owners; send read-only investigation to [Research](../research/SKILL.md),
 [How](../how/SKILL.md), or [Diagnosing Bugs](../diagnosing-bugs/SKILL.md), parallel work to
-[Swarm](../swarm/SKILL.md) or [Arena](../arena/SKILL.md), and simulator work to
+Swarm or [Arena](../arena/SKILL.md), and simulator work to
 [Simulator Lifecycle](../simulator-lifecycle/SKILL.md). Settle finished (`landed`, `done`,
 `scrapped`) or parked owner threads (`t3_thread_organize` with `action: "settle"`) so the user's
 sidebar shows only active work; settling preserves their worktree and repair ownership. After a

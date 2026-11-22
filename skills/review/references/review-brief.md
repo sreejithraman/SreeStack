@@ -6,7 +6,7 @@ criteria need. Absolute paths are enough for children in the shared checkout. Su
 full contents when a reviewer cannot read these files. Keep briefs and snapshots
 outside the reviewed diff.
 
-For delegated assessments, also apply [Review evidence](review-evidence.md).
+For delegated assessments, also apply `review-evidence.md`.
 
 ## Requirements and scope
 

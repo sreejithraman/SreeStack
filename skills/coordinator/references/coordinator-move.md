@@ -13,17 +13,17 @@ and `owner.route`, and apply [Orchestration's communication rule](../../orchestr
 If this thread is not `chief`, forward actionable items to `chief` via `t3_thread_send` (linking
 the user's source message for requests, directions, or answers), then stop. Unwatch PRs when the
 coordinator asks. If `chief` is unavailable, follow Take over below; a new user request on a paused
-or closed program follows resume in [lifecycle](lifecycle.md).
+or closed program follows resume in `lifecycle.md`.
 
 ## Move
 
 Only the current coordinator moves a program:
 
 1. Reconcile every pending landing release (`released`, `submitted`, or `cancelling` in `landings`):
-   withdraw it under [landing](landing.md#withdraw-a-release) (moving active releases to
+   withdraw it under `landing.md` (Withdraw a release: moving active releases to
    `cancelling` first, confirming forge cancellation, then marking `withdrawn` or `landed`).
    `record.py move` refuses while any landing release stays pending.
-2. Turn off tap-to-answer under [hosting](hosting.md), recording final stored picks while you still
+2. Turn off tap-to-answer under `hosting.md`, recording final stored picks while you still
    hold the record.
 3. Run `record.py move --chief <new thread link>` (updates `chief` and sets every live owner's
    `owner.route` to `t3_thread_send` to the coordinator). Do **not** publish from this thread.
@@ -38,7 +38,7 @@ With approval:
 1. Interrupt the old thread (`t3_thread_interrupt`), delete its heartbeat, and turn off its answer
    wake (`grant.heartbeat`, `grant.wake`), leaving stored picks for resume.
 2. Reconcile any pending landing releases bound to the old chief in the same order as
-   [landing](landing.md#withdraw-a-release): first move each active release to `cancelling`
+   Withdraw a release in `landing.md`: first move each active release to `cancelling`
    (`record.py land --landing <ID> --to cancelling --note "Coordinator takeover"`), which fences
    its lander while keeping `record.py move` blocked until forge confirmation; notify/fence its
    lander, cancel any in-flight forge auto-merge or merge-queue entry, and once confirmed stopped
@@ -54,7 +54,7 @@ When this thread's model or provider changes in place (such as Claude ↔ Codex 
 via `t3_thread_configure` or the model picker), `chief` and the bound heartbeat stay the same, so
 do not run `record.py move`. Instead:
 
-1. Run the single backend and wake transition + forced publish under [hosting](hosting.md) (which
+1. Run the single backend and wake transition + forced publish under `hosting.md` (which
    drains/turns off any old Claude wake, publishes once on the new backend, sets up tap-to-answer
    once if entering Claude, and updates `hosting` and `grant.wake`).
 2. Verify the existing heartbeat's `enabled` and `nextRunAt`.
@@ -62,7 +62,7 @@ do not run `record.py move`. Instead:
 ## After either
 
 The new coordinator keeps the same program folder and git history, runs the single backend and wake
-transition + forced publish under [hosting](hosting.md), and sets up its own heartbeat bound to its
+transition + forced publish under `hosting.md`, and sets up its own heartbeat bound to its
 thread (`grant.heartbeat`). The rest of the grant stays unchanged. Reconcile state as on resume,
 send owners their updated route, watch any delegated owner's pending PRs, and ask any remaining old
 thread to unwatch.

@@ -42,7 +42,7 @@ gh stack add billing/invoices
 ```
 
 Fixing the order later is expensive: there is no non-interactive in-place reorder, so it means
-[`unstack` and `init` again](troubleshooting.md#restructuring-a-stack). Splitting a finished branch
+`unstack` and `init` again (Restructuring a stack in `troubleshooting.md`). Splitting a finished branch
 has the same cost, so start the next layer as soon as its result is clear.
 
 ## Branch naming

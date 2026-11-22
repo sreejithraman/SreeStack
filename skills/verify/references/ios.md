@@ -59,7 +59,7 @@ Prepare the build, signing and device access where required, fixtures,
 permissions, locale, and authentication. Inspect test setup, launch arguments,
 reset hooks, and teardown so state changes fit the disposable target and the
 workflow's starting assumptions. Keep credentials in the approved runtime
-delivery path from [authenticated verification](authenticated-verification.md).
+delivery path from `authenticated-verification.md` beside this guide.
 
 Map selected test methods to required workflow assertions. Inspect test-plan
 configurations, selection filters, disabled tests, skips, expected failures, and
@@ -120,7 +120,7 @@ hardware is unavailable, report the device-specific assertions as blocked.
 Record the command and toolchain, scheme/test plan, build identity, target
 identity, fixture state, selected tests, and per-assertion outcomes in kept proof.
 Capture the workflow states needed to support visual claims. Use
-[interface review](interface-review.md) for relevant visual, Dynamic Type,
+`interface-review.md` (beside this guide) for relevant visual, Dynamic Type,
 keyboard, focus, touch-target, and assistive-technology checks. Exercise VoiceOver
 usability and hardware-dependent behavior through suitable checks on the required
 target; accessibility identifiers supply selectors for automation.

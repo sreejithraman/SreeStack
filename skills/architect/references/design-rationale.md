@@ -32,7 +32,7 @@ larger than needed. Cite the principle behind each decision when useful.
 Don't restate it.*
 
 *When correctness depends on event order, include the transition table alongside
-the type sketch, following the [lifecycle model criteria](design-candidate.md).
+the type sketch, following the lifecycle model criteria in `design-candidate.md`.
 Carry the important event sequences and required outcomes into the evidence
 and implementation checks.*
 

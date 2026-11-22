@@ -242,11 +242,11 @@ This is a Bash/Zsh function, not something gh-stack installs. Never use `eval` o
 | 0 | Success, or a non-interactive divergence abort | Check resulting state; `Sync aborted` means synchronization did not complete |
 | 1 | Generic error | Read stderr |
 | 2 | Not in a stack | `init`, or explicit-target `checkout` |
-| 3 | Rebase conflict | Follow [conflict recovery](troubleshooting.md#rebase-conflicts-exit-3); distinguish paused rebase from sync rollback |
+| 3 | Rebase conflict | Follow conflict recovery (`troubleshooting.md`); distinguish paused rebase from sync rollback |
 | 4 | GitHub API failure | Check `gh auth status`, then retry appropriately |
 | 5 | Invalid arguments | Check installed command help |
 | 6 | Several stacks contain this branch | Select a non-shared branch |
 | 7 | Rebase already in progress | Continue/abort the recorded operation |
 | 8 | Stack/operation locked | Wait for the owner; do not remove locks to bypass coordination |
 | 9 | Stacked PRs unavailable | Report the repository capability limit |
-| 10 | Modify recovery required | Follow [modify recovery](troubleshooting.md#an-interrupted-modify-session-exit-10) |
+| 10 | Modify recovery required | Follow modify recovery (`troubleshooting.md`) |

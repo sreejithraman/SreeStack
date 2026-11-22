@@ -33,9 +33,9 @@ Prefer the GitHub connector; use `gh` for missing capabilities, current-branch
 discovery, or cross-repository heads. Reuse the PR matching the head branch,
 or create one. Confirm it targets the supplied immediate base.
 
-Use [PR body](pr-body.md) for the title and description. Refresh them when fixes
+Use `pr-body.md` for the title and description. Refresh them when fixes
 change scope, evidence, or landing risk. Mark ready unless a draft was requested.
 
 Confirm the remote head matches the intended local head, the base is correct,
 and one PR represents that branch. Record its URL and remote head for
-[watching](watch.md).
+`watch.md`.
