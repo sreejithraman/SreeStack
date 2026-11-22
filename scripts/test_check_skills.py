@@ -111,9 +111,13 @@ class MarkdownLinkChecks(unittest.TestCase):
                 "# Demo\n\nSee [details](#details) and [self](SKILL.md#details).\n\n"
                 "## Details\n"
             ),
+            "skills/demo/references/guide.md": (
+                "# Guide\n\nJump to [step](#step).\n\n## Step\n"
+            ),
         }, succeeds=False)
-        self.assertIn("same-file link #details", result.stderr)
-        self.assertIn("same-file link SKILL.md#details", result.stderr)
+        self.assertIn("skills/demo/SKILL.md: same-file link #details", result.stderr)
+        self.assertIn("skills/demo/SKILL.md: same-file link SKILL.md#details", result.stderr)
+        self.assertIn("skills/demo/references/guide.md: same-file link #step", result.stderr)
 
     def test_skill_rejects_back_links_to_own_skill_md_but_allows_other_skills(self):
         self.check({
@@ -130,27 +134,51 @@ class MarkdownLinkChecks(unittest.TestCase):
             "skills/alpha/ADR.md": "Apply [rules](SKILL.md#alpha).\n",
             "skills/alpha/SKILL.md": "---\nname: alpha\ndescription: Alpha.\n---\n\n# Alpha\n",
         }, succeeds=False)
-        self.assertIn("back-link to SKILL.md: ../SKILL.md", result.stderr)
-        self.assertIn("back-link to SKILL.md: ../SKILL.md#alpha", result.stderr)
-        self.assertIn("back-link to SKILL.md: SKILL.md#alpha", result.stderr)
+        self.assertIn("back-link to SKILL.md ../SKILL.md", result.stderr)
+        self.assertIn("back-link to SKILL.md ../SKILL.md#alpha", result.stderr)
+        self.assertIn("back-link to SKILL.md SKILL.md#alpha", result.stderr)
 
-    def test_skill_rejects_duplicate_local_links_but_allows_distinct_section_anchors(self):
+    def test_skill_rejects_duplicate_local_links_with_allowed_exceptions(self):
         self.check({
             "SOURCES.md": "\n## demo\n",
             "skills/demo/SKILL.md": (
                 "---\nname: demo\ndescription: Demo.\n---\n\n"
                 "Read [guide](references/guide.md), [part a](references/guide.md#part-a), "
-                "and [part b](references/guide.md#part-b).\n"
+                "[part b](references/guide.md#part-b), "
+                "[monthly](references/report.html?view=monthly), "
+                "[annual](references/report.html?view=annual), "
+                "[ext 1](https://example.com), [ext 2](https://example.com), "
+                "![img 1](references/pic.png), and ![img 2](references/pic.png).\n"
             ),
-            "skills/demo/references/guide.md": "# Guide\n\n## Part A\n\n## Part B\n",
+            "skills/demo/references/guide.md": "# Guide\n\n## Part A\n\n## Part B\n\n## Café\n",
+            "skills/demo/references/report.html": "<p>ok</p>\n",
+            "skills/demo/references/pic.png": "dummy",
         })
         result = self.check({
             "skills/demo/SKILL.md": (
                 "---\nname: demo\ndescription: Demo.\n---\n\n"
-                "Read [one](references/guide.md) and [two](./references/guide.md).\n"
+                "Read [one](references/guide.md), [two](./references/guide.md), "
+                "[cafe 1](references/guide.md#café), and [cafe 2](references/guide.md#caf%C3%A9).\n"
             ),
         }, succeeds=False)
         self.assertIn("duplicate link target ./references/guide.md", result.stderr)
+        self.assertIn("duplicate link target references/guide.md#caf%C3%A9", result.stderr)
+
+    def test_skill_missing_targets_and_symlink_loops_do_not_crash_or_double_report(self):
+        loop = self.root / "skills/demo/references/loop.md"
+        loop.parent.mkdir(parents=True, exist_ok=True)
+        loop.symlink_to("loop.md")
+        result = self.check({
+            "SOURCES.md": "\n## demo\n",
+            "skills/demo/SKILL.md": (
+                "---\nname: demo\ndescription: Demo.\n---\n\n"
+                "See [a](references/absent.md), [b](references/absent.md), "
+                "and [loop](references/loop.md).\n"
+            ),
+        }, succeeds=False)
+        self.assertIn("missing link target references/absent.md", result.stderr)
+        self.assertIn("missing link target references/loop.md", result.stderr)
+        self.assertNotIn("duplicate link target", result.stderr)
 
     def test_duplicate_and_same_file_rules_do_not_restrict_root_docs(self):
         self.check({

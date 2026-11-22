@@ -1,4 +1,4 @@
-"""Check required skill fields, source entries, and local Markdown targets.
+"""Check required skill fields, source entries, local Markdown targets, and skill link hygiene.
 
 Markdown fragments support ATX/Setext headings and explicit HTML id/name
 anchors. Generated anchors use rendered inline text (including image alt text),
@@ -6,6 +6,10 @@ lowercase Unicode letters/numbers/marks, retain underscores and hyphens, remove
 punctuation/symbols, replace spaces with hyphens, and suffix duplicates with -1,
 -2, etc. Custom anchors do not affect heading numbering. Code examples and YAML
 frontmatter do not declare anchors. Fragments on non-Markdown files are unchecked.
+For Markdown files inside skills/<name>/, parsed local hyperlinks (excluding
+images, external URLs, and root-relative paths) also reject same-file links,
+back-links to the skill's own SKILL.md, and duplicate link targets in one file
+(distinct section anchors or query strings into the same target are allowed).
 GitHub's heading rules:
 https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links
 """
@@ -142,6 +146,7 @@ for path in files:
         continue
     rel = path.relative_to(ROOT)
     in_skill = len(rel.parts) >= 3 and rel.parts[0] == "skills"
+    here = path.resolve() if in_skill else None
     skill_md = (ROOT / "skills" / rel.parts[1] / "SKILL.md").resolve() if in_skill else None
     tokens, _ = document(path)
     targets = []
@@ -161,24 +166,24 @@ for path in files:
         destination = path.parent / unquote(link.path) if link.path else path
         if not destination.exists():
             errors.append(f"{rel}: missing link target {target}")
-        elif link.fragment and destination.is_file() and destination.suffix.lower() == ".md":
+            continue
+        if link.fragment and destination.is_file() and destination.suffix.lower() == ".md":
             _, anchors = document(destination)
             if unquote(link.fragment) not in anchors:
                 errors.append(f"{rel}: missing Markdown anchor {target}")
         if in_skill and kind == "link":
             resolved = destination.resolve()
-            if resolved == path.resolve():
+            key = (resolved, unquote(link.query), unquote(link.fragment))
+            if resolved == here:
                 errors.append(f"{rel}: same-file link {target}")
-            elif skill_md is not None and path.resolve() != skill_md and resolved == skill_md:
-                errors.append(f"{rel}: back-link to SKILL.md: {target}")
+            elif resolved == skill_md:
+                errors.append(f"{rel}: back-link to SKILL.md {target}")
+            elif key in seen_links:
+                errors.append(f"{rel}: duplicate link target {target}")
             else:
-                key = (resolved, unquote(link.fragment))
-                if key in seen_links:
-                    errors.append(f"{rel}: duplicate link target {target}")
-                else:
-                    seen_links.add(key)
+                seen_links.add(key)
 
 if errors:
     print("\n".join(errors), file=sys.stderr)
     sys.exit(1)
-print(f"Checked {len(skills)} skills and local Markdown paths/anchors.")
+print(f"Checked {len(skills)} skills, local Markdown paths/anchors, and skill link hygiene.")
