@@ -8,6 +8,7 @@ how a Claude artifact frame delivers a new version. Without a usable Chrome the
 tests skip locally and fail in CI.
 """
 
+import contextlib
 import copy
 import fcntl
 import functools
@@ -34,6 +35,7 @@ from test_render_dashboard import decision, example, owner
 DESKTOP = (1280, 800)
 PHONE = (390, 844)
 REPLY_TIMEOUT = 20
+STARTUP_TIMEOUTS = (12, 15, 20)
 VIEW_KEY = "command-center-view"
 
 # Each launch of branded macOS Chrome copies its signed app into a code_sign_clone
@@ -125,10 +127,11 @@ class Chrome:
                     [executable, "--headless=new", "--remote-debugging-pipe", "--no-sandbox", "--no-first-run",
                      "--no-default-browser-check", "--disable-background-networking", "--disable-gpu",
                      "--disable-dev-shm-usage", "--password-store=basic", "--use-mock-keychain",
-                     "--disable-extensions", f"--user-data-dir={profile}",
+                     "--disable-extensions", "--enable-logging=stderr", "--log-level=2",
+                     f"--user-data-dir={profile}",
                      "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "about:blank"],
                     preexec_fn=connect_debugging_pipe, close_fds=False,
-                    stdout=subprocess.DEVNULL, stderr=stderr,
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=stderr,
                 )
         except Exception:
             os.close(self.commands)
@@ -140,14 +143,12 @@ class Chrome:
 
     def _diagnostic(self):
         code = self.process.poll()
-        stderr = self.stderr_path.read_text(errors="replace").strip()
+        stderr = self.stderr_path.read_text(errors="replace").strip() if self.stderr_path.exists() else ""
         tail = "\n".join(stderr.splitlines()[-10:])
-        parts = []
-        if code is not None:
-            parts.append(f"exit={code}")
+        parts = [f"exit={code}"] if code is not None else [f"pid={self.process.pid}, alive"]
         if tail:
             parts.append(f"stderr:\n{tail}")
-        return f" ({', '.join(parts)})" if parts else ""
+        return f" ({', '.join(parts)})"
 
     def read_messages(self, timeout):
         ready, _, _ = select.select([self.replies], [], [], timeout)
@@ -160,8 +161,8 @@ class Chrome:
         *complete, self.buffer = self.buffer.split(b"\0")
         return [json.loads(message) for message in complete]
 
-    def receive(self, wanted, label):
-        deadline = time.monotonic() + REPLY_TIMEOUT
+    def receive(self, wanted, label, timeout=REPLY_TIMEOUT):
+        deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             for index, message in enumerate(self.events):
                 if wanted(message):
@@ -169,30 +170,38 @@ class Chrome:
             self.events.extend(self.read_messages(.05))
         raise TimeoutError(f"{label}{self._diagnostic()}")
 
-    def send(self, method, session=None, **params):
+    def _send(self, method, session, params, timeout):
         self.next_id += 1
         identity = self.next_id
         message = {"id": identity, "method": method, "params": params}
         if session:
             message["sessionId"] = session
         os.write(self.commands, json.dumps(message).encode() + b"\0")
-        reply = self.receive(lambda message: message.get("id") == identity, method)
+        reply = self.receive(lambda message: message.get("id") == identity, method, timeout=timeout)
         if "error" in reply:
             raise RuntimeError(f"{method}: {reply['error']}")
         return reply["result"]
+
+    def send(self, method, session=None, **params):
+        return self._send(method, session, params, REPLY_TIMEOUT)
+
+    def handshake(self, timeout=REPLY_TIMEOUT):
+        return self._send("Browser.getVersion", None, {}, timeout)
 
     def wait_for_event(self, method, session):
         return self.receive(lambda message: message.get("method") == method and message.get("sessionId") == session, method)
 
     def close(self):
-        self.process.terminate()
         try:
-            self.process.wait(10)
-        except subprocess.TimeoutExpired:
-            self.process.kill()
-            self.process.wait()
-        os.close(self.commands)
-        os.close(self.replies)
+            self.process.terminate()
+            try:
+                self.process.wait(10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+        finally:
+            os.close(self.commands)
+            os.close(self.replies)
 
 
 
@@ -269,6 +278,50 @@ site = None
 server = None
 
 
+@contextlib.contextmanager
+def startup_lock():
+    """Serialize Chrome cold-start handshakes across parallel check.py workers."""
+    cache_dir = os.environ.get("_SREESTACK_TEST_CACHE")
+    if not cache_dir or not Path(cache_dir).is_dir():
+        yield
+        return
+    lock_path = Path(cache_dir) / "chrome-startup.lock"
+    with lock_path.open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def start_chrome(executable, timeouts=STARTUP_TIMEOUTS, launcher=Chrome):
+    """Launch Chrome and confirm its debugging pipe answers, retrying cold-start stalls."""
+    with startup_lock():
+        for attempt, timeout in enumerate(timeouts, 1):
+            profile = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+            candidate = None
+            try:
+                candidate = launcher(executable, profile.name)
+                candidate.handshake(timeout=timeout)
+                return candidate, profile
+            except (TimeoutError, ConnectionError) as error:
+                try:
+                    if candidate is not None:
+                        candidate.close()
+                finally:
+                    profile.cleanup()
+                if attempt == len(timeouts):
+                    raise
+                print(f"Chrome startup attempt {attempt}/{len(timeouts)} failed ({error}); retrying", file=sys.stderr)
+            except BaseException:
+                try:
+                    if candidate is not None:
+                        candidate.close()
+                finally:
+                    profile.cleanup()
+                raise
+
+
 def setUpModule():
     global browser, browser_profile, site, server
     required = os.environ.get("CI")
@@ -278,12 +331,9 @@ def setUpModule():
             raise RuntimeError("CI needs Chrome for the command center tests")
         raise unittest.SkipTest("Chrome is not installed")
     print(f"command center tests use {executable}", file=sys.stderr)
-    browser_profile = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-    browser = Chrome(executable, browser_profile.name)
     try:
-        browser.send("Browser.getVersion")
+        browser, browser_profile = start_chrome(executable)
     except OSError as error:
-        tearDownModule()
         if required:
             raise
         raise unittest.SkipTest(f"Chrome did not start: {error}")
@@ -293,12 +343,20 @@ def setUpModule():
 
 
 def tearDownModule():
-    if server:
+    global browser, browser_profile, site, server
+    if server is not None:
         server.shutdown()
         server.server_close()
+        server = None
+    if site is not None:
         site.cleanup()
-    browser.close()
-    browser_profile.cleanup()
+        site = None
+    if browser is not None:
+        browser.close()
+        browser = None
+    if browser_profile is not None:
+        browser_profile.cleanup()
+        browser_profile = None
 
 
 
