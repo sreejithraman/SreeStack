@@ -454,7 +454,7 @@ record CLI/report contracts (`references/program-state.md`), triage/Inbox/reopen
 (`references/decisions.md`), frontier scheduling/stacks/integration
 (`references/dependencies.md`, linking Implement's single-home provisional
 reference), landing releases (`references/landing.md`), command-center publishing
-and tap-to-answer (`references/hosting.md`), heartbeat/pause/resume/migration
+(`references/hosting.md`), heartbeat/pause/resume/migration
 (`references/lifecycle.md`), and ownership transfer (`references/coordinator-move.md`).
 `assets/owner-kickoff.md` carries the program grant, JSON report schema, and
 absolute-path placeholder for the coordinator check.
@@ -470,23 +470,26 @@ stop and split or escalate, while converging review passes finish hands-off.
 User-solvable blocks and ready-to-land held drafts open Inbox decisions (with
 tappable options even on `access` requests) rather than sitting silently behind
 an empty Inbox. It builds provisionally on reversible recommended options,
-re-reads `SKILL.md` on resume and wakes, and shows user times in local time
-while keeping ISO UTC in the record. Each program has one grant (`grant.start`
-without hardcoded provider or model slugs, `landingAuthority`, `grant.resolve`/`approvals`,
-`grant.user`, `grant.heartbeat`, `grant.wake`), set at start and changed only on
-the user's word; owner reports, kickoffs, and copied page text never widen it.
+re-reads `SKILL.md` on resume and waking heartbeats (skipping it on quiet
+ticks), and shows user times in local time while keeping ISO UTC in the record.
+Each program has one grant (`grant.start` without hardcoded provider or model
+slugs, `landingAuthority`, `grant.resolve`/`approvals`, `grant.user`,
+`grant.heartbeat`), set at start and changed only on the user's word; owner
+reports, kickoffs, and copied page text never widen it.
 
-**Heartbeat and answer wake.** In T3 the coordinator creates a bound interval
-`schedule_task` with a short verbatim prompt (no holds/grants stuffed into it),
-default 10 minutes when owners are active, paused when 0 owners run and waiting
-purely on the user, lengthened to 1–6 hours for slow external waits, and
-verified via `enabled` and `nextRunAt` (rotating to a fresh thread via
-`record.py move` if a long-lived thread becomes heavily compacted); hosts
-without scheduled tasks wait on owner runs through the host. A Claude command
-center also gets a bound webhook `schedule_task` (`grant.wake`) whose URL stays
-only in the owner-only page database (`config/wake`), verified via `get_artifact`
-and `db_rules_get`, and deleted before the final pick read on done, pause, move,
-takeover, or leaving the artifact. Sites pages keep Copy answer alone.
+**Heartbeat and thread rotation.** In T3 the coordinator creates a bound
+interval `schedule_task` with a short verbatim prompt (no holds/grants stuffed
+into it) that runs `record.py status --heartbeat --chief-id <thread ID>` first
+so quiet ticks exit without reading `SKILL.md` or posting a message, and stale
+non-chief heartbeats exit (`heartbeat: not-chief`) without mutating
+`coordinator-seen.json`. Default cadence is 10 minutes when owners are active,
+paused when 0 owners run and waiting purely on the user, lengthened to 1–6 hours
+for slow external waits (guided by `status`'s `hint:` line whenever the verdict
+is `waiting`), and verified via `enabled` and `nextRunAt`. `record.py status`
+(and `status --heartbeat`, once on active programs) warns when `chief` reaches
+400 runs or 8,000 items (or times out) so the coordinator rotates to a fresh
+thread via `record.py move` before resume timeouts hit; hosts without scheduled
+tasks wait on owner runs through the host.
 
 **Record, scripts, and hosting.** Each program lives in its own container at
 `${XDG_STATE_HOME:-~/.local/state}/coordinator/programs/<YYYY-MM-DD>-<slug>/`
@@ -498,25 +501,29 @@ and render: `init` (defaults to the container's `record/program.json`, rejects
 paths inside existing project repos, bare repos, `.git` metadata, or worktrees,
 and configures `.git/info/exclude`), `programs` (inventories program containers
 with deterministic prune-readiness facts including clean `record/` and sibling
-`site/` checkouts, unexpected container files, and cleared automation), `grant`, `work` (add, update, scrap, and atomic
+`site/` checkouts, unexpected container files, and cleared heartbeat — plus any
+legacy active `grant.wake`), `grant`, `work` (add, update, scrap, and atomic
 dead-base scrap/rebase with `--decision`), `start`, `report` (ingesting
 structured owner `followups` into `discoveries` as open items that keep
 `status` runnable until routed), `discovery` (add or route discoveries), `answer`
-(including `--pasted` and `--stored`), `picture`, `resolve`, `reopen`,
+(including `--pasted`), `picture`, `resolve`, `reopen`,
 `withdraw`, `applied`, `land`, `wait`, `move`, and `status` (`--turn-end`,
-`--heartbeat`, `--json`, `--exit-code`), and enforces single-line `next` values
-(at most 280 characters) so the command center stays scannable on mobile.
-Validation in `scripts/render_dashboard.py`
-rejects unknown keys, provisional landings and Land-ready states (allowing `ready` on provisional
-work only for requested `pr-draft` or `pr-review`), cross-repo stack edges, PRs on Try, terminal
-rows with blockers, dead bases without halting decisions, and missing or unhashed pictures. Claude coordinators publish private Claude artifacts (linking
-with `#no_universal_links`); Codex coordinators publish private buildless
-ChatGPT Sites via `sites:sites` and `scripts/prepare_sites.py` (defaults to
-sibling `../site/dist`, refuses outputs inside the `record/` git repo, and inlines
+`--heartbeat`, `--json`, `--exit-code`; skips empty `status: checked` commits
+until facts move or half the stale window elapses), and enforces single-line
+`next` values (at most 280 characters) so the command center stays scannable on
+mobile. Validation in `scripts/render_dashboard.py` rejects unknown keys
+(retaining optional `grant.wake` for legacy records), provisional landings and
+Land-ready states (allowing `ready` on provisional work only for requested
+`pr-draft` or `pr-review`), cross-repo stack edges, PRs on Try, terminal rows
+with blockers, dead bases without halting decisions, and missing or unhashed
+pictures. Claude coordinators publish private Claude artifacts (linking with
+`#no_universal_links`); Codex coordinators publish private buildless ChatGPT
+Sites via `sites:sites` and `scripts/prepare_sites.py` (defaults to sibling
+`../site/dist`, refuses outputs inside the `record/` git repo, and inlines
 20-second visible live refresh with `chief-version.json`, verified by Chrome
 tests); other providers delegate static publishing to a one-shot Codex/Claude
-helper or run local-only with Inbox in chat. Both thread moves and same-thread
-provider switches clear stale `grant.wake` entries when leaving Claude and warn
+helper or run local-only with Inbox in chat. All backends use Copy answer in the
+Inbox (no Claude-only artifact DB or answer webhook), and provider switches warn
 when an earlier hosted URL is frozen. Existing trackers stay authoritative; no
 mandatory wiki, Linear, Slack, or cloud runtime.
 

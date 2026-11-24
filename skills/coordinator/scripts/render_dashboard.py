@@ -39,16 +39,15 @@ DECISION_STATES = ("open", "answered", "resolved", "withdrawn")
 DISCOVERY_STATUSES = ("open", "routed")
 DISCOVERY_IMPACTS = ("unrelated", "shared-contract", "requested-scope")
 DISCOVERY_REPLIES = ("pending", "sent")
-HISTORY = {"date", "source", "answerSource", "rationale", "applied", "stalePick", "picksRead"}  # Decision fields a copied answer never depends on.
+HISTORY = {"date", "source", "answerSource", "rationale", "applied"}  # Decision fields a copied answer never depends on.
 PROGRAM_KEYS = ("title", "goal", "finishLine", "demo", "chief", "hosting", "next", "request", "grant", "corrections",
                 "requirements", "approvals", "directions", "landingAuthority", "decisions", "work", "revisits",
                 "discoveries", "landings", "waits")
 GRANT = ("date", "source", "start", "resolve", "user")
 DECISION_KEYS = ("id", "question", "date", "source", "status", "reopened", "context", "pictures", "meanwhile", "recommendation",
-                 "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied", "stalePick", "picksRead")
+                 "options", "weight", "blocks", "links", "answer", "answerSource", "basis", "rationale", "applied")
 OPTION_KEYS = ("label", "effect", "image", "recommended", "reversible")
 PICTURE_SHAPES = {"side-by-side": (2, 3), "before-after": (2, 2), "sequence": (2, 8)}  # shape: (fewest, most) images
-STALE_PICK = ("label", "revision", "at")
 WORK_KEYS = ("id", "title", "repo", "kind", "state", "description", "scope", "sources", "tickets", "finishLine",
              "finishLineReason", "owner", "provisional", "layers", "results", "evidence", "acceptance", "blockedBy",
              "blocked", "unknownReason", "checkedAt", "required", "origin")
@@ -431,13 +430,6 @@ def validate_decision(row, by_id):
             raise ValueError(f"{path}: {identity} has started; record the phase this decision blocks now")
     if "pictures" in row:
         validate_pictures(row["pictures"], f"{path}.pictures")
-    if "stalePick" in row:
-        stale = fields(known_keys(obj(row["stalePick"], f"{path}.stalePick"), f"{path}.stalePick", STALE_PICK),
-                       f"{path}.stalePick", STALE_PICK)
-        timestamp(stale["at"], f"{path}.stalePick.at")
-    if "picksRead" in row and not (isinstance(row["picksRead"], list) and row["picksRead"]
-                                   and all(isinstance(read, str) and read.strip() for read in row["picksRead"])):
-        raise ValueError(f"{path}.picksRead must list the stored picks read, such as \"picks/<id> (version 1) 2026-11-02T18:00:00Z\"")
     for index, option in enumerate(records(row.get("options", []), f"{path}.options")):
         known_keys(option, f"{path}.options[{index}]", OPTION_KEYS)
         for key in ("label", "effect"):
@@ -735,10 +727,6 @@ def assess(state, at, threads, stale_hours=STALE_HOURS):
     runnable += [item("orphan", identity, f"({current}) {why}", detail=detail)
                  for identity, current, why, detail in orphaned(state, threads) if identity not in listed]
     for decision in state["decisions"]:
-        if decision["status"] in {"answered", "resolved"} and "stalePick" in decision:
-            runnable.append(item("reopen request", decision["id"],
-                                 f"the user picked {quoted(decision['stalePick']['label'])} after it was {decision['status']}; "
-                                 "reopen it under references/decisions.md#reopen"))
         if decision["status"] == "open":
             waiting.append(item("need", decision["id"], decision["question"], decision["date"]))
         elif decision.get("applied") is False:
@@ -783,8 +771,7 @@ ICONS = {
     "decision": "message-circle-question-mark", "quick": "zap", "resolved": "badge-check", "reopen": "rotate-ccw",
     "recommended": "star", "pr": "git-pull-request", "finish": "flag", "record": "git-commit-horizontal",
     "tradeoff": "scale", "result": "external-link", "asked": "clock", "next": "arrow-right", "finished": "archive",
-    "runnable": "play", "working": "activity", "waiting": "hourglass", "enlarge": "maximize-2", "send": "send",
-    "wake": "bell-ring", "stale": "history",
+    "runnable": "play", "working": "activity", "waiting": "hourglass", "enlarge": "maximize-2",
 }
 
 
@@ -931,18 +918,8 @@ def pick(row, option, index, state):
     return content + "</div>"
 
 
-def send_control(row, picked):
-    """Tap-to-answer: hidden until the page's database and the coordinator's wake link are available."""
-    status_id = f'send-{hexed(row["id"])}'
-    return (
-        f'<button type="button" class="send-answer" aria-describedby="{status_id}"{"" if picked else " disabled"} hidden>{icon("send")}Send answer</button>'
-        f'<a class="wake-link" target="_blank" rel="noopener noreferrer" hidden>{icon("wake")}Wake the coordinator</a>'
-        f'<span class="send-status" id="{status_id}" role="status"></span>'
-    )
-
-
 def picks(row, state):
-    """The options as one pick list, with one action that sends the pick or copies its prompt."""
+    """The options as one pick list, with one action that copies the picked prompt."""
     chosen = next((index for index, option in enumerate(row["options"]) if option.get("recommended")), None)
     prompt, label = ("", "Pick an option first") if chosen is None else (
         choice_prompt(row, state, chosen), "Copy answer: " + row["options"][chosen]["label"])
@@ -950,20 +927,8 @@ def picks(row, state):
     return (
         f'<fieldset class="picks" data-decision="{e(row["id"])}" data-revision="{revision(row)}"><legend class="sr-only">Options for {e(row["id"])}</legend>'
         + "".join(pick(row, option, index, state) for index, option in enumerate(row["options"]))
-        + f'</fieldset><div class="answer-action">{send_control(row, chosen is not None)}{action}</div>'
+        + f'</fieldset><div class="answer-action">{action}</div>'
     )
-
-
-def stale_pick_note(row):
-    """A stored pick that answered an earlier version of this decision, so it was never applied."""
-    if "stalePick" not in row:
-        return ""
-    stale = row["stalePick"]
-    if row["status"] == "open":
-        message = f'You picked “{e(stale["label"])}” {when(stale["at"], "relative")}, on an earlier version of this question. It has changed since, so pick again.'
-    else:
-        message = f'You picked “{e(stale["label"])}” {when(stale["at"], "relative")}, after this was settled. The coordinator will reopen it so you can pick again.'
-    return f'<p class="stale-pick">{icon("stale")}<span>{message}</span></p>'
 
 
 def recommended_choice(row):
@@ -1033,7 +998,7 @@ def settled_decision(row, state, context):
         content += f'<p class="answer-label">Decision history</p><p class="decision-text">{prose(rationale)}</p>'
     if context:
         content += '<p class="answer-label">Context</p>' + context
-    content += pictures_view(row) + link_list(row.get("links", [])) + '</div></details>' + stale_pick_note(row)
+    content += pictures_view(row) + link_list(row.get("links", [])) + '</div></details>'
     if resolved:
         reopen = copy_control(decision_prompt(row, state, "Reopen this decision."), f'prompt-{hexed(row["id"])}-reopen', f'Copy prompt to reopen {row["id"]}', "Copy to reopen", "reopen")
         content += f'<div class="reopen">{reopen}</div>'
@@ -1048,7 +1013,7 @@ def need_card(row, state, selected=False):
         context = '<ul class="context">' + "".join(f"<li>{prose(item)}</li>" for item in row["context"]) + "</ul>"
     if row["status"] in {"answered", "resolved"}:
         return content + settled_decision(row, state, context) + "</article>"
-    content += context + pictures_view(row) + stale_pick_note(row)
+    content += context + pictures_view(row)
     if row["status"] == "open" and row.get("meanwhile"):
         content += f'<p class="meanwhile"><span class="answer-label">Meanwhile</span> {prose(row["meanwhile"])}</p>'
     if row.get("options"):

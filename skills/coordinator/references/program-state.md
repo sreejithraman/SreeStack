@@ -21,11 +21,11 @@ to update `next` in the same commit; run `<command> --help` for full flags):
 | --- | --- |
 | Create a new program | `init --title "<t>" --goal "<g>" --chief <thread link> --request "<text>" [--slug <slug>]` (omitting `--state` creates the default `.../record/program.json` and prints `state: <path>`) |
 | List program folders and prune readiness | `programs [--root <dir>] [--json]` |
-| Set/update grant, landing scope, heartbeat/wake IDs, or page URL | `grant [--source "<msg>"] [--start "..."] [--resolve "..."] [--user "..."] [--heartbeat "..."] [--wake "..."] [--landing "..."] [--hosting <url>]` |
+| Set/update grant, landing scope, heartbeat ID, or page URL | `grant [--source "<msg>"] [--start "..."] [--resolve "..."] [--user "..."] [--heartbeat "..."] [--landing "..."] [--hosting <url>]` |
 | Add, update, scrap, or rebase a work row | `work --id W1 [--add --title "<t>" --repo "<r>" --finish-line land] [--blocked-by W0] [--provisional-basis "..." --provisional-clears "..." --provisional-on W0] [--scrap \| --rebase-onto main [--stack-on L1]] [--decision D1 --option 1 --answer-source "<msg>"]` |
 | Owner started or adopted | `start --work W1 --owner "Retry owner" --session <thread link> [--mode top-level\|delegated\|adopted] [--replace]` |
 | Owner report arrived | `report --work W1` |
-| User answered a decision | `answer --decision W6-D1 --option 1 --source "<msg>"` (or `--text`, `--pasted` on stdin, `--stored <db_query file>`) |
+| User answered a decision | `answer --decision W6-D1 --option 1 --source "<msg>"` (or `--text`, `--pasted` on stdin) |
 | Attach pictures to an open decision | `picture --decision W6-D1 --shape before-after --image /abs/a.png --image /abs/b.png --caption "After"` (or `--option 2 --image /abs/shot.png`) |
 | Coordinator settled a decision under triage | `resolve --decision W6-D2 --option 1 --basis "<source; why reversible>"` |
 | Reopen a settled decision | `reopen --decision W6-D2 --why "<reason>" [--block W1:landing]` |
@@ -118,7 +118,9 @@ present.
 
 ## Status verdicts and invariants
 
-`status` reads PRs via `gh` and owner threads via the T3 CLI, updates `owner.seen` and `checkedAt`,
+`status` reads PRs via `gh` and owner/coordinator threads via the T3 CLI, updates `owner.seen` and
+`checkedAt` when facts move or at least half the stale window has elapsed (skipping empty
+`status: checked` commits), warns once `chief` grows large (400 runs or 8,000 items) or times out,
 and returns one verdict (`runnable`, `working`, `waiting`, `done`) with a digest. Key rules
 enforced by `record.py` and `render_dashboard.py`:
 
@@ -126,8 +128,8 @@ enforced by `record.py` and `render_dashboard.py`:
   `landing` let building/proof continue (and cover a shown Try or ready stop).
 - **Runnable triggers:** unstarted ready rows, idle owners with no wait/blocker/halting decision,
   unapplied answers, unrouted open discoveries (`followups`), routed discoveries with a pending
-  held deferred PR reply (`reply: "pending"`), a reversible recommended decision halting startable
-  work (provisional start), or a settled decision with a `stalePick` (reopen request).
+  held deferred PR reply (`reply: "pending"`), or a reversible recommended decision halting
+  startable work (provisional start).
 - **Dead base:** an outcome that was `scrapped` or whose layers are all `closed` without landing.
   Active dependents resting on it require a halting scrap-or-rebase decision, resolved atomically
   with `record.py work --scrap` or `--rebase-onto` plus `--decision`.

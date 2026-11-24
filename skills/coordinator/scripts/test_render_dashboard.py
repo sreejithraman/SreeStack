@@ -349,9 +349,6 @@ RULES = [
      r"pictures needs 1 to 8 images"),
     ("a picture names only its file and caption", lambda s: decision(s, "W6-D1").update(pictures={"images": [{"image": PICTURE, "alt": "x"}]}),
      r"pictures\.images\[0\]\.alt is not a known field"),
-    ("a stale pick says when it was recorded", lambda s: decision(s, "W6-D1").update(stalePick={"label": "Keep the entry", "revision": "0123456789"}),
-     r"stalePick\.at must be"),
-    ("picks read are named, never blank", lambda s: decision(s, "W0-D1").update(picksRead=[""]), r"picksRead must list"),
     ("an owner's approvals are a positive count", lambda s: work(s, "W1")["owner"]["seen"].update(approvals=0), r"owner\.seen\.approvals must be"),
     ("an owner's observed state is known", lambda s: work(s, "W1")["owner"]["seen"].update(state="busy"), r"owner\.seen\.state must be one of"),
     ("an owner's observation is timed", lambda s: work(s, "W1")["owner"]["seen"].pop("at"), r"owner\.seen\.at must be"),
@@ -482,8 +479,7 @@ class PageTests(unittest.TestCase):
             "landings": lambda s: s["landings"][0].update(state="withdrawn"),
             "owner plumbing": lambda s: work(s, "W1")["owner"].update(route="Ends its turn", handled=["msg-1"]),
             "outcome scope": lambda s: work(s, "W1").update(scope="Reworded", finishLineReason="Reworded", acceptance="All proved"),
-            "decision history": lambda s: decision(s, "W6-D1").update(source="Another report", rationale="Earlier reasoning.",
-                                                                       picksRead=["picks/57362d4431-0123456789 2026-11-02T18:00:00Z"]),
+            "decision history": lambda s: decision(s, "W6-D1").update(source="Another report", rationale="Earlier reasoning."),
             "answer source": lambda s: decision(s, "W0-D1").update(answerSource="Another message"),
             "a withdrawn decision": lambda s: decision(s, "W2-D1").update(question="Reworded"),
         }
@@ -693,29 +689,18 @@ class PageTests(unittest.TestCase):
         self.assertNotIn('class="picture', need("W1-D2"), "a text-only item stays text only")
         self.assertEqual(sorted(re.findall(r'<img [^>]*src="(files/[^"]+)"', html)), names)
 
-    def test_pictures_count_toward_the_revision_and_a_stale_pick_does_not(self):
+    def test_pictures_count_toward_the_revision(self):
         need = decision(self.state, "W6-D1")
         before = revision(need)
-        need["stalePick"] = {"label": "Keep the entry", "revision": "0123456789", "at": "2026-11-02T18:00:00Z"}
-        self.assertEqual(revision(need), before)
         need["options"][0]["image"] = PICTURE
         self.assertNotEqual(revision(need), before)
 
-    def test_a_stale_pick_asks_again_and_a_late_one_promises_a_reopen(self):
-        decision(self.state, "W6-D1")["stalePick"] = {"label": "Hide expired entries", "revision": "0123456789", "at": "2026-11-02T18:00:00Z"}
-        decision(self.state, "W0-D1")["stalePick"] = {"label": "Use a new job ID", "revision": "0123456789", "at": "2026-11-02T18:00:00Z"}
+    def test_inbox_cards_render_copy_answer_without_tap_to_answer(self):
         html = render(self.state)
-        open_need = text_of(html.split('id="decision-' + "W6-D1".encode().hex())[1].split("</article>")[0])
-        self.assertIn("You picked “Hide expired entries”", open_need)
-        self.assertIn("on an earlier version of this question. It has changed since, so pick again.", open_need)
-        settled = text_of(html.split('id="decision-' + "W0-D1".encode().hex())[1].split("</article>")[0])
-        self.assertIn("after this was settled. The coordinator will reopen it so you can pick again.", settled)
-
-    def test_send_answer_waits_for_the_page_database_and_copy_stays(self):
-        need = render(self.state).split('id="decision-' + "W5-T".encode().hex())[1].split("</article>")[0]
-        self.assertRegex(need, r'<button type="button" class="send-answer" [^>]*disabled hidden>')
-        self.assertRegex(need, r'<a class="wake-link" target="_blank" rel="noopener noreferrer" hidden>')
-        self.assertNotIn("href", need.split('class="wake-link"')[1].split(">")[0], "the wake link comes only from the page database")
+        need = html.split('id="decision-' + "W5-T".encode().hex())[1].split("</article>")[0]
+        self.assertNotIn("send-answer", html)
+        self.assertNotIn("wake-link", html)
+        self.assertNotIn("window.claude", html)
         self.assertEqual(need.count('class="copy-prompt"'), 1)
         self.assertIn(f'data-decision="W5-T" data-revision="{revision(decision(self.state, "W5-T"))}"', need)
 

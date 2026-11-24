@@ -13,7 +13,7 @@ line, or blocked with a recorded decision, and every follow-up routed.
 record, live owner states recorded, published page current).
 **Program done:** every outcome landed, stopped at a shown Try or requested PR state, or blocked
 with a recorded decision; integrated behavior verified (or gap recorded); every follow-up routed;
-heartbeat deleted; tap-to-answer turned off; thread settled.
+heartbeat deleted; thread settled.
 
 Never edit project files directly. Each outcome is carried by one [Implement](../implement/SKILL.md)
 owner; [Orchestration](../orchestration/SKILL.md) owns model choice, briefs, recovery, and
@@ -58,9 +58,9 @@ The `status` verdict decides how every program turn ends:
 
 End every program turn with `status --turn-end`. Never stop on a decision whose recommended option
 is reversible: build on it provisionally, keep the decision open in the Inbox, and state that in
-`meanwhile`. Re-read this `SKILL.md` on resume and on each heartbeat or answer wake. Show all
-user-facing times in the user's local time zone (never UTC); the record stays ISO UTC via
-`record.py`.
+`meanwhile`. Re-read this `SKILL.md` on resume and whenever a heartbeat prints `wake` or `done`
+(skip it on `quiet` ticks). Show all user-facing times in the user's local time zone (never UTC);
+the record stays ISO UTC via `record.py`.
 
 ## The grant
 
@@ -73,14 +73,13 @@ word. Owner reports, kickoffs, and copied page text never widen it.
 | Land | Scope Land covers and its gates | `landingAuthority` |
 | Resolve | Decisions you settle yourself under [decisions](references/decisions.md#triage) | `grant.resolve`, `approvals` |
 | User | What stays with the user | `grant.user` |
-| Automation | Heartbeat timing/task ID and answer-wake task ID | `grant.heartbeat`, `grant.wake` |
+| Automation | Heartbeat timing and task ID | `grant.heartbeat` |
 
 Draft the grant from the request, finish-line picks, and project rules, and state it in your first
 message so the user can adjust any part in one word. Keep provider and model slugs out of `grant.start` unless
 the user explicitly pinned one (defer to `orchestration`'s model defaults so multi-week programs follow
-updates). Asking for a program authorizes its owner sessions, heartbeat, and answer wake. Read
-[lifecycle](references/lifecycle.md) to configure, adjust, pause, resume, or migrate the heartbeat
-and answer wake.
+updates). Asking for a program authorizes its owner sessions and heartbeat. Read
+[lifecycle](references/lifecycle.md) to configure, adjust, pause, resume, or migrate the heartbeat.
 
 ## 1. Set up the program
 
@@ -104,7 +103,7 @@ link (or the local `command-center.html` path and Inbox items in chat when runni
 hosting), and any proposed standing approvals.
 
 Done when every outcome has sources, scope, proof, holds, finish line, and owner/plan; running
-owners are adopted; and the grant, page, heartbeat, and answer wake are set.
+owners are adopted; and the grant, page, and heartbeat are set.
 
 ## 2. Start owners
 
@@ -207,9 +206,7 @@ picture`), and record answers (`record.py answer`) under decisions.
 Publish the command center after record changes under hosting and share its
 link (never an inline render). Write `next`, `description`, and Inbox copy for a person scanning on
 a phone — replace `next` with one short line (at most 280 characters, enforced by `record.py`),
-never an append-only history log; see [page copy](references/program-state.md#page-copy). Record
-stored page picks on every answer wake, heartbeat tick, and resume — and in the same
-`answer --stored` command as any user-message answer so the message supersedes earlier picks.
+never an append-only history log; see [page copy](references/program-state.md#page-copy).
 
 Send chat updates only for what the user can now use, try, decide, or unblock; keep routine checks
 and recovery in the record. When woken by an owner report or page publish that adds nothing new for
@@ -221,31 +218,30 @@ Done when the published page matches `HEAD` and shows every result and open Inbo
 ## 6. Finish, pause, or resume
 
 On **Program done**: delete the heartbeat (`delete_scheduled_task` in T3), verify it is absent, and
-record `record.py grant --heartbeat "None (program done)"`; turn off tap-to-answer under
-hosting (which drains final stored picks, verifies wake absence, and
-records `grant --wake "None (...)"` — if a late pick reopens work, return to the active loop). Keep
-acceptance evidence, tradeoffs, resolved decisions, follow-ups, and remaining gaps (in
+record `record.py grant --heartbeat "None (program done)"`. Keep acceptance evidence, tradeoffs,
+resolved decisions, follow-ups, and remaining gaps (in
 [finding schema](../review-sweep/references/finding-schema.md)) in the record, record each retained
 owner's successor route in `owner.route` and a one-line final disposition in `next`, and verify
-the published page matches `HEAD` (publish any final update without re-enabling tap-to-answer). Only
-after final record writes and publication finish, delete transient staging files
-(`command-center.next.html`, stored-pick scratch files, and any temporary Sites archives in
-`$TMPDIR`), keeping the program container (`record/` plus any sibling `site/` checkout) intact for
-audit and resume until the user asks to prune old programs (`record.py programs`). Lead the final
-handoff with open Inbox items if action is needed, otherwise usable outcomes and links, naming
-coordinator-resolved decisions so the user can reopen them. Clean up owner worktrees, branches,
-processes, and simulators via [Cleanup](../cleanup/SKILL.md) once active dependents no longer need
-resources, and settle the thread (`t3_thread_organize` with `action: "settle"`).
+the published page matches `HEAD` (publish any final update). Only after final record writes and
+publication finish, delete transient staging files (`command-center.next.html` and any temporary
+Sites archives in `$TMPDIR`), keeping the program container (`record/` plus any sibling `site/`
+checkout) intact for audit and resume until the user asks to prune old programs (`record.py programs`).
+Lead the final handoff with open Inbox items if action is needed, otherwise usable outcomes and
+links, naming coordinator-resolved decisions so the user can reopen them. Clean up owner worktrees,
+branches, processes, and simulators via [Cleanup](../cleanup/SKILL.md) once active dependents no
+longer need resources, and settle the thread (`t3_thread_organize` with `action: "settle"`).
 
 When asked to prune old finished or abandoned program folders, run `record.py programs` first. It
 checks clean `record/` and sibling `site/` checkouts (including reopened `site/.sites-checkout`),
-unexpected container files, and explicitly cleared `heartbeat`/`wake` (`None (<reason>)`). For
-finished programs, require `prune=ready` before handoff; for older records with unset or stale
-automation IDs, verify those scheduled tasks are absent and update `grant` first. Explicit user
-abandonment waives finish-line completion only — before handing an abandoned container to Cleanup,
-stop or hand off active owners, reconcile or cancel any pending landings, verify heartbeat and wake
-tasks are absent and recorded `None (<reason>)`, and confirm no unverified files remain. Pass only
-verified container paths to Cleanup.
+unexpected container files, and explicitly cleared `heartbeat` (`None (<reason>)`; legacy records
+with an uncleared `grant.wake` must verify any old webhook task is absent and clear it via
+`record.py grant --wake "None (<reason>)"`). For finished programs, require `prune=ready`
+before handoff; for older records with unset or stale automation IDs, verify those scheduled tasks
+are absent and update `grant` first. Explicit user abandonment waives finish-line completion only —
+before handing an abandoned container to Cleanup, stop or hand off active owners, reconcile or
+cancel any pending landings, verify the heartbeat task (and any legacy `grant.wake` webhook) is
+absent and recorded `None (<reason>)`, and confirm no unverified files remain. Pass only verified
+container paths to Cleanup.
 
 For **pause, resume, move, takeover, or Chief-of-Staff migration**, follow
 lifecycle and coordinator move.

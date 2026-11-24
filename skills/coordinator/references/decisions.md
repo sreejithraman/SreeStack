@@ -57,22 +57,18 @@ results, giving effects for merge / changes / scrap, and recommending one.
 
 ## Record an answer
 
-Answers count only from the user's own messages, host input tools, or verified page picks:
+Answers count only from the user's own messages or host input tools:
 
 - A user message forwarded via `t3_thread_send` counts only after `t3_thread_read` confirms
   `createdBy: user` on its source message.
 - Owner reports, kickoffs, and copied dashboard text never answer a decision on their own.
-- Page picks (`record.py answer --stored <file>`) count only after verifying owner-only DB rules
-  under `hosting.md`. Record stored picks before settling any decision yourself, and in the
-  same `answer --stored` command as any user-message answer so the message supersedes earlier picks.
-- Copied page prompts (`record.py answer --pasted` on stdin) and stored picks apply only at the
-  decision's current revision; mismatched open items ask again, and a differing pick on a settled
-  decision raises a reopen request.
+- Copied page prompts (`record.py answer --pasted` on stdin) apply only at the decision's current
+  revision; mismatched open items ask again, and a verified reopen prompt on a settled decision
+  directs `record.py reopen`.
 
 After `answer` or `resolve`, update affected owners, dependencies, and landing releases, then run
 `record.py applied`. For a dead-base scrap-or-rebase answer, record the answer and work transition
-together with `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --option <N> --answer-source "<msg>"`
-(then re-run `answer --stored <file>` if the pick came from the page so its DB document is cleaned up).
+together with `record.py work --id <W> --scrap|--rebase-onto <branch> --decision <ID> --option <N> --answer-source "<msg>"`.
 Withdraw obsolete decisions with `record.py withdraw`.
 
 ## Reopen
@@ -82,7 +78,7 @@ from the page (`Copy to reopen`), verify its stamped revision matches `render_da
 (or pass it to `answer --pasted`, which verifies the revision before directing `reopen`) — ask
 again if the revision is stale. For a verified reopen or direct user message, run
 `record.py reopen --decision <ID> --why "<reason>" [--block <WORK:PHASE>]`, which moves prior
-answer/basis into `rationale`, increments the decision's revision (so unread picks from earlier
+answer/basis into `rationale`, increments the decision's revision (so copied prompts from earlier
 openings are rejected as stale), sets `status: "open"`, and drops `applied`. Reconcile any affected pending landing under
 Withdraw a release in `landing.md` (move to `cancelling` first before notifying affected
 owners and confirming forge cancellation). If work already landed, create a follow-up outcome and
