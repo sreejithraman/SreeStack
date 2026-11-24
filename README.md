@@ -347,6 +347,8 @@ for skill model defaults; explicit user/project requirements are resolved by
 
 [Models](skills/orchestration/references/models.md) defines UI operation, UI and implementation
 tiers, document work, and raising difficulty;
+[Codex handoff](skills/orchestration/references/codex-handoff.md) scopes Codex briefs and
+acceptance checks;
 [reuse and recovery](skills/orchestration/references/reuse-and-recovery.md) covers agent reuse,
 owner replacement, and failure recovery. The existing agent operates UI itself unless
 [Operate a UI](skills/orchestration/references/models.md#operate-a-ui) calls for a dedicated

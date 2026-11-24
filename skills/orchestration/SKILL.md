@@ -45,9 +45,8 @@ Give every child a self-contained brief:
 - For verification or measurement: user outcome, operating context, invariants and failure
   questions, exact revisions, and method.
 
-When briefing Codex, make acceptance criteria, proportionality limits, and verification commands
-explicit—vague briefs cause premature stops or diminishing-return loops—and supply visual
-references or design tokens if Codex must touch UI.
+When the selected model is Codex (resolved in Dispatch), read
+[Codex handoff](references/codex-handoff.md#brief) before finalizing the brief.
 
 Assignment is done when every required slice has an owner, usable inputs, and a completion check.
 
@@ -123,7 +122,9 @@ decision requests.
 ## Accept
 
 A summary, finished turn, green CI, or open PR is input, not acceptance. Accept only an artifact you
-inspected at a named revision with evidence of the required outcome by the specified method.
+inspected at a named revision with evidence of the required outcome by the specified method. When
+accepting a Codex implementation diff, also check
+[Codex handoff](references/codex-handoff.md#accept).
 
 1. Mark every required slice accepted, needing repair, rejected with a reason, or blocked. A dropout
    stays required. Route repairs under the ownership rule above.
