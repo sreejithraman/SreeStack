@@ -1884,13 +1884,13 @@ def heartbeat(args, record, read_pr, read_thread, at):
         if committed_chief:
             if caller_chief != committed_chief:
                 print(f"heartbeat: not-chief (committed chief is {committed_chief}). "
-                      "Delete this stale heartbeat task and end the turn without acting.")
+                      "Delete this stale heartbeat task and end the turn with a one-line note without acting on the record.")
                 return {"verdict": "waiting", "digest": None, "runnable": [], "working": [], "waiting": [],
                         "attention": [], "heartbeat": "not-chief", "notes": []}
         elif caller_chief != committed_state.get("chief", "").strip():
             print("heartbeat: unverified-chief (committed chief is not a thread link). "
                   "Check chief in HEAD:program.json: if this thread is chief, record a T3 thread link via record.py move; "
-                  "otherwise delete this stale heartbeat task and end the turn without acting.")
+                  "otherwise delete this stale heartbeat task and end the turn with a one-line note without acting on the record.")
             return {"verdict": "waiting", "digest": None, "runnable": [], "working": [], "waiting": [],
                     "attention": [], "heartbeat": "unverified-chief", "notes": []}
     threads = read_owners(committed_state, read_thread)
@@ -1922,7 +1922,7 @@ def heartbeat(args, record, read_pr, read_thread, at):
         show(result, state)
     else:
         tick = "quiet"
-        print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). Skip SKILL.md and end the turn without a message.")
+        print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). Skip SKILL.md and end the turn with a one-line acknowledgement (never empty text).")
     return result | {"heartbeat": tick, "notes": fresh}
 
 

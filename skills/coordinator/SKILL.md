@@ -209,9 +209,11 @@ a phone — replace `next` with one short line (at most 280 characters, enforced
 never an append-only history log; see [page copy](references/program-state.md#page-copy).
 
 Send chat updates only for what the user can now use, try, decide, or unblock; keep routine checks
-and recovery in the record. When woken by an owner report or page publish that adds nothing new for
-the user to use, try, decide, or unblock, record it, publish, and end the turn silently (no chat
-message), just like a quiet heartbeat.
+and recovery in the record. When woken by an owner report, page publish, or quiet heartbeat that
+adds nothing new for the user, record it, publish, and end with a single short acknowledgement line
+(for example, `Recorded; owners still working.` or `Heartbeat quiet — owners still working.`) —
+never an empty response, because ACP harnesses such as Devin CLI reject empty turns as provider
+errors and freeze queued wakes.
 
 Done when the published page matches `HEAD` and shows every result and open Inbox decision.
 

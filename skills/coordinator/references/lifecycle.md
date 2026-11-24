@@ -28,7 +28,7 @@ prompt verbatim — never stuff holds, grants, or model notes into it (`program.
 ```text
 Coordinator heartbeat for <program title>. Run
 python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --chief-id <this thread ID> --state <absolute path>/program.json
-and follow its first line. On `heartbeat: quiet`, end the turn immediately without reading `SKILL.md` or posting a message. On `heartbeat: not-chief`, delete this stale heartbeat task and end the turn without acting. On `heartbeat: wake` or `heartbeat: done`, check `chief` in `HEAD:program.json`, re-read <this skill's absolute folder>/SKILL.md, act on what `status` lists, and update the heartbeat under <this skill's absolute folder>/references/lifecycle.md only when the cadence should change.
+and follow its first line. On `heartbeat: quiet`, skip `SKILL.md` and end immediately with a one-line acknowledgement (never an empty turn). On `heartbeat: not-chief`, delete this stale heartbeat task and end with a one-line note without touching the record. On `heartbeat: wake` or `heartbeat: done`, check `chief` in `HEAD:program.json`, re-read <this skill's absolute folder>/SKILL.md, act on what `status` lists, and update the heartbeat under <this skill's absolute folder>/references/lifecycle.md only when the cadence should change.
 ```
 
 Record the timing policy and task ID with `record.py grant --heartbeat "<policy and task ID>"`.
@@ -37,7 +37,7 @@ characters): the next action, interval/reason if changed, and sooner-wake event 
 log. Update the existing task by `scheduledTaskId`
 (`schedule: {type: "interval", everyMs: <ms>}`) only when the interval changes; verify returned
 `enabled` and `nextRunAt` and report any failure instead of claiming liveness. (Every tick invokes
-the model; `status --heartbeat` prints `quiet` so you skip `SKILL.md` and end with no user message,
+the model; `status --heartbeat` prints `quiet` so you skip `SKILL.md` and end with a one-line ack,
 not zero model calls.)
 
 If the host has no scheduled tasks, record that in `grant.heartbeat`, and wait on outstanding owner

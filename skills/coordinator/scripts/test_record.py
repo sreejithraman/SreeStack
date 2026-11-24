@@ -956,7 +956,7 @@ class VerdictCommandTests(RecordCase):
         self.assertEqual(self.heartbeat()[0], "wake", "the first tick has no digest to compare")
         tick, output = self.heartbeat()
         self.assertEqual(tick, "quiet")
-        self.assertIn("Skip SKILL.md and end the turn without a message", output)
+        self.assertIn("Skip SKILL.md and end the turn with a one-line acknowledgement (never empty text)", output)
         self.serve(threads={"thread:A": {"status": "idle"}})
         tick, output = self.heartbeat()
         self.assertEqual(tick, "wake", "an owner that went idle while owing work")
