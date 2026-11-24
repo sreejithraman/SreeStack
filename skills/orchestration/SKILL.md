@@ -86,7 +86,8 @@ Select a model for initial launch and availability recovery in this order:
    availability never authorizes an unlisted model or a downgrade to Simple.
 
 Carry the selected job, chosen provider/model/effort, outage/reset evidence, and user limits in
-briefs and handoffs. Recheck availability once a known reset passes or recovery evidence arrives;
+briefs and handoffs. When initial selection or a fallback resolves to Codex, apply Codex handoff
+before launching. Recheck availability once a known reset passes or recovery evidence arrives;
 use the preferred provider and model for new work without replacing a running owner.
 
 Use [reuse and recovery](references/reuse-and-recovery.md#reuse-an-agent) before resuming or

@@ -38,7 +38,7 @@ For Codex implementation handoffs, make scope and shape concrete before dispatch
 | Loose brief | Bounded Codex brief |
 | --- | --- |
 | Preserve user data on setup retry without breaking conflict handling; keep it simple. | Fix retry merge in `SetupMergePlanner.swift` to skip locally deleted IDs. Do not add new files, persisted state, or pre-release manifest fallbacks. Add two regression tests (local delete vs. remote edit) and run `swift test --filter SetupMergeTests`. Stop and report if a fix or review finding needs new state or files. |
-| Remove the retired legacy sync path while keeping local data safe. | Delete `LegacyTextSyncAdapter`, the five `SwiftDataCloudText*` files, and their tests. Keep only `StoredCloudTextRecord` in shipped schemas; do not retain legacy protocol decoders, upgrade shims, or unused error cases. |
+| Remove the retired legacy sync path while keeping local data safe. | Delete `LegacyTextSyncAdapter`, the five `SwiftDataCloudText*` files, and their tests. Keep only `StoredCloudTextRecord` in shipped schemas; do not retain legacy protocol decoders, upgrade shims, or unused error cases. Run `swift test` and confirm no references to `LegacyTextSyncAdapter` remain; stop and report if deletion affects other shipped schemas. |
 
 ## Accept
 
