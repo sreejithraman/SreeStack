@@ -461,9 +461,11 @@ absolute-path placeholder for the coordinator check.
 
 **Keep moving and grant.** The coordinator never ends a turn while `status` says
 runnable, ends every program turn with `status --turn-end`, and in waiting ends
-with the `say:` line `status` prints. Routine owner reports and dashboard
-publish wakes that add nothing for the user to use, try, decide, or unblock end
-silently without chat chatter. Finished or parked owner threads are settled so
+with the `say:` line `status` prints. Routine owner reports, dashboard publish
+wakes, and quiet heartbeats that add nothing for the user to use, try, decide,
+or unblock end with a single short acknowledgement line (never an empty turn,
+which ACP harnesses such as Devin CLI reject as a provider error). Finished or
+parked owner threads are settled so
 the sidebar stays focused on active work. Diverging PRs (scope expansion beyond
 declared scope / ~2× diff growth, or non-converging regressions across passes)
 stop and split or escalate, while converging review passes finish hands-off.
@@ -480,7 +482,7 @@ reports, kickoffs, and copied page text never widen it.
 **Heartbeat and thread rotation.** In T3 the coordinator creates a bound
 interval `schedule_task` with a short verbatim prompt (no holds/grants stuffed
 into it) that runs `record.py status --heartbeat --chief-id <thread ID>` first
-so quiet ticks exit without reading `SKILL.md` or posting a message, and stale
+so quiet ticks skip `SKILL.md` and end with a one-line acknowledgement, and stale
 non-chief heartbeats exit (`heartbeat: not-chief`) without mutating
 `coordinator-seen.json`. Default cadence is 10 minutes when owners are active,
 paused when 0 owners run and waiting purely on the user, lengthened to 1–6 hours
