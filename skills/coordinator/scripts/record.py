@@ -122,10 +122,10 @@ def build_init_state(title, goal, chief, request_text, next_action=None, request
 
 
 def update_grant(state, at, source=None, start_rule=None, resolve_rule=None, user_rule=None,
-                 heartbeat_rule=None, wake_rule=None, landing_rule=None, hosting=None, finish_line=None):
+                 heartbeat_rule=None, landing_rule=None, hosting=None, finish_line=None):
     """Set or update program grant, landing authority, hosting URL, or program finish line."""
     authority_values = (("start", start_rule), ("resolve", resolve_rule), ("user", user_rule))
-    grant_values = (*authority_values, ("heartbeat", heartbeat_rule), ("wake", wake_rule))
+    grant_values = (*authority_values, ("heartbeat", heartbeat_rule))
     touched_authority = any(value is not None for _, value in authority_values) or finish_line is not None
     touched_grant = any(value is not None for _, value in grant_values) or (source is not None and landing_rule is None)
     if not (touched_grant or landing_rule is not None or hosting is not None or finish_line is not None):
@@ -135,7 +135,7 @@ def update_grant(state, at, source=None, start_rule=None, resolve_rule=None, use
     parts = []
     if touched_grant:
         grant = copy.deepcopy(state.get("grant", {}))
-        order = (*GRANT, "heartbeat", "wake")
+        order = (*GRANT, "heartbeat")
         if "date" not in grant or source is not None:
             put(grant, "date", at, order)
         if source is not None:
@@ -1636,7 +1636,6 @@ def arguments():
     command.add_argument("--resolve", dest="resolve_rule", help="Which decisions the coordinator settles itself")
     command.add_argument("--user", dest="user_rule", help="What stays with the user")
     command.add_argument("--heartbeat", dest="heartbeat_rule", help="Heartbeat timing policy and scheduled task ID, or why none")
-    command.add_argument("--wake", dest="wake_rule", help="Legacy: clear an existing grant.wake with 'None (<reason>)'")
     command.add_argument("--landing", dest="landing_rule", help="Agreed landing scope and gates (sets landingAuthority)")
     command.add_argument("--hosting", help="Current published command center URL")
     command.add_argument("--finish-line", help="Program-wide finish-line note")
@@ -1767,7 +1766,7 @@ def event(args, state, at, files):
     """Apply the command's event to state; files gains each file the commit must add: its record path and content."""
     if args.command == "grant":
         return update_grant(state, at, args.source, args.start_rule, args.resolve_rule, args.user_rule,
-                            args.heartbeat_rule, args.wake_rule, args.landing_rule, args.hosting, args.finish_line)
+                            args.heartbeat_rule, args.landing_rule, args.hosting, args.finish_line)
     if args.command == "work":
         return mutate_work(state, at, args.id, args.add, args.title, args.repo, args.kind, args.work_state,
                            args.unknown_reason, args.description, args.scope, args.finish_line, args.finish_line_reason,
@@ -1985,8 +1984,6 @@ def list_programs(root, as_json=False):
                 keep.append(f"open-discoveries={open_discoveries}")
             if not automation_cleared(grant.get("heartbeat")):
                 keep.append(f"heartbeat={grant.get('heartbeat') or 'unset'}")
-            if grant.get("wake") and not automation_cleared(grant.get("wake")):
-                keep.append(f"wake={grant.get('wake')}")
             items.append({
                 "program": str(container),
                 "state": str(state_file),
@@ -2001,7 +1998,6 @@ def list_programs(root, as_json=False):
                 "hasSite": has_site,
                 "updatedAt": git(state_file, "log", "-1", "--format=%cI").strip(),
                 "heartbeat": grant.get("heartbeat"),
-                "wake": grant.get("wake"),
                 "keepReasons": keep,
                 "readyToPrune": not keep,
             })

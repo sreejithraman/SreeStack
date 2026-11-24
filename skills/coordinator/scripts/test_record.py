@@ -1454,12 +1454,11 @@ class LifecycleMutationTests(RecordCase):
         _, after, _ = self.event(
             "grant", "--source", "User msg 2", "--start", "All program outcomes",
             "--resolve", "Settled reversible choices", "--user", "Merges and scope",
-            "--heartbeat", "10m task T1", "--wake", "Webhook task T2",
+            "--heartbeat", "10m task T1",
             "--landing", "Scoped PRs once green", "--hosting", "https://claude.ai/artifacts/abc",
         )
         self.assertEqual(after["grant"]["start"], "All program outcomes")
         self.assertEqual(after["grant"]["heartbeat"], "10m task T1")
-        self.assertEqual(after["grant"]["wake"], "Webhook task T2")
         self.assertEqual(after["landingAuthority"]["text"], "Scoped PRs once green")
         self.assertEqual(after["hosting"], "https://claude.ai/artifacts/abc")
 
@@ -2020,22 +2019,21 @@ class LifecycleMutationTests(RecordCase):
             subprocess.run([
                 sys.executable, str(SCRIPT), "work", "--state", str(done_state), "--id", "W1", "--scrap",
             ], check=True, capture_output=True, text=True, env=env)
-            # Active heartbeat/wake IDs block pruning until recorded cleared.
+            # Active heartbeat ID blocks pruning until recorded cleared.
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(done_state),
                 "--source", "User msg 1", "--start", "All outcomes", "--resolve", "Reversible choices",
-                "--user", "Merges", "--heartbeat", "10m task T1", "--wake", "Webhook task T2",
+                "--user", "Merges", "--heartbeat", "10m task T1",
             ], check=True, capture_output=True, text=True, env=env)
             by_title = list_json()
             self.assertFalse(by_title["Empty"]["readyToPrune"])
             self.assertFalse(by_title["Finished"]["readyToPrune"])
             self.assertIn("heartbeat=10m task T1", by_title["Finished"]["keepReasons"])
-            self.assertIn("wake=Webhook task T2", by_title["Finished"]["keepReasons"])
 
             # Clear automation and add a clean sibling site/ git checkout -> ready to prune.
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(done_state),
-                "--heartbeat", "None (program done)", "--wake", "None (program done)",
+                "--heartbeat", "None (program done)",
             ], check=True, capture_output=True, text=True, env=env)
             site_dir = done_container / "site"
             site_dir.mkdir()
@@ -2113,9 +2111,8 @@ class LifecycleMutationTests(RecordCase):
             self.assertFalse(pr_item["allTerminal"])
             self.assertFalse(pr_item["readyToPrune"])
             self.assertIn("heartbeat=unset", pr_item["keepReasons"])
-            self.assertNotIn("wake=unset", pr_item["keepReasons"])
 
-            # Ambiguous None-prefixed automation text stays keep; exact None (<reason>) clears it without needing --wake.
+            # Ambiguous None-prefixed automation text stays keep; exact None (<reason>) clears it.
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(pr_state),
                 "--source", "User msg 2", "--start", "All", "--resolve", "Reversible", "--user", "Merges",

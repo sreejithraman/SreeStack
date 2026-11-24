@@ -55,14 +55,6 @@ Bring the record current and pause the heartbeat (`schedule_task` with `enabled:
 3. Re-enable the paused heartbeat — or recreate it if deleted/missing, updating `grant.heartbeat` —
    and verify `enabled` and `nextRunAt` (upgrade any older heartbeat prompt to the template above).
 
-## Upgrading an active program
-
-On an existing program's first active turn or provider switch under this skill: update its
-installed heartbeat prompt to the template above; if `grant.wake` still records a legacy webhook
-task, delete and verify that task (clearing `config/wake` if Claude DB tools are available, or
-telling the user to re-answer any pending old-page picks via Copy answer) and record
-`record.py grant --wake "None (<reason>)"`.
-
 ## Chief-of-Staff migration
 
 For a program created under the older Chief of Staff skill: run `record.py status` from this skill's
