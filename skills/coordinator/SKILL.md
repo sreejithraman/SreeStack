@@ -234,12 +234,14 @@ longer need resources, and settle the thread (`t3_thread_organize` with `action:
 When asked to prune old finished or abandoned program folders, run `record.py programs` first. It
 checks clean `record/` and sibling `site/` checkouts (including reopened `site/.sites-checkout`),
 unexpected container files, and explicitly cleared `heartbeat` (`None (<reason>)`; legacy records
-with an active `grant.wake` must clear that too). For finished programs, require `prune=ready`
+with an uncleared `grant.wake` must verify any old webhook task is absent and clear it via
+`record.py grant --wake "None (<reason>)"`). For finished programs, require `prune=ready`
 before handoff; for older records with unset or stale automation IDs, verify those scheduled tasks
 are absent and update `grant` first. Explicit user abandonment waives finish-line completion only —
 before handing an abandoned container to Cleanup, stop or hand off active owners, reconcile or
-cancel any pending landings, verify the heartbeat task is absent and recorded `None (<reason>)`,
-and confirm no unverified files remain. Pass only verified container paths to Cleanup.
+cancel any pending landings, verify the heartbeat task (and any legacy `grant.wake` webhook) is
+absent and recorded `None (<reason>)`, and confirm no unverified files remain. Pass only verified
+container paths to Cleanup.
 
 For **pause, resume, move, takeover, or Chief-of-Staff migration**, follow
 lifecycle and coordinator move.

@@ -51,9 +51,9 @@ When this thread's model or provider changes in place (such as Claude ↔ Codex 
 via `t3_thread_configure` or the model picker), `chief` and the bound heartbeat stay the same, so
 do not run `record.py move`. Instead:
 
-1. Force-publish the page on the new backend under `hosting.md` (updating `hosting` if the URL
-   changed and telling the user the old URL is now frozen).
-2. Verify the existing heartbeat's `enabled` and `nextRunAt`.
+1. Force-publish the page on the new backend under `hosting.md`.
+2. Verify the existing heartbeat's `enabled` and `nextRunAt` (and upgrade any older heartbeat prompt
+   or legacy `grant.wake` under `lifecycle.md`).
 
 ## After either
 

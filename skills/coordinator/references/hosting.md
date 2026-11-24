@@ -23,22 +23,19 @@ publication even if unchanged so skill updates reach the hosted page.
 
 Reuse the selected backend's existing target. Switching backends needs no extra approval:
 
-1. **Before publishing:** note any existing `hosting` URL so you can tell the user if it becomes
-   frozen.
-2. **Publish once on the active backend:**
-   - **Claude:** call `publish_files` with the page as `index.html` and each listed image as
-     `files/<name>` (from `files/` beside the page). Update the existing private artifact by slug
-     and current version in patch mode so unchanged images stay.
-   - **Codex:** read the plugin-managed `sites:sites` skill and deploy the prepared output below as
-     a buildless static Site from the sibling `<program>/site/` checkout (never nested inside
-     `record/`), reusing its `.openai/hosting.json` (`project_id`). If reopening a missing Site
-     checkout via `sites:sites` (for example on resume or migration), reopen or select that separate
-     checkout first and prepare output into its returned checkout's `dist` so `project_id` is
-     preserved. Put any temporary `.tar.gz` package archive in `$TMPDIR` and delete it after
-     confirmed deploy. Keep `site/` inside the program container until the program folder itself is
-     pruned so `.openai/hosting.json` survives pause/resume. Use no framework starter, package
-     install, local server, or public audience. Wait for a confirmed terminal deployment URL
-     (registration or saved version alone is not publication).
+- **Claude:** call `publish_files` with the page as `index.html` and each listed image as
+  `files/<name>` (from `files/` beside the page). Update the existing private artifact by slug
+  and current version in patch mode so unchanged images stay.
+- **Codex:** read the plugin-managed `sites:sites` skill and deploy the prepared output below as
+  a buildless static Site from the sibling `<program>/site/` checkout (never nested inside
+  `record/`), reusing its `.openai/hosting.json` (`project_id`). If reopening a missing Site
+  checkout via `sites:sites` (for example on resume or migration), reopen or select that separate
+  checkout first and prepare output into its returned checkout's `dist` so `project_id` is
+  preserved. Put any temporary `.tar.gz` package archive in `$TMPDIR` and delete it after
+  confirmed deploy. Keep `site/` inside the program container until the program folder itself is
+  pruned so `.openai/hosting.json` survives pause/resume. Use no framework starter, package
+  install, local server, or public audience. Wait for a confirmed terminal deployment URL
+  (registration or saved version alone is not publication).
 
 Only after confirmed publication of a staged `command-center.next.html` on a hosted backend,
 advance the marker (skip this move on a forced unchanged publish where `command-center.html` was

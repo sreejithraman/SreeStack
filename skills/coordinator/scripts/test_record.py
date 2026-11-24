@@ -16,7 +16,7 @@ import unittest
 from unittest import mock
 
 import record
-from record import Refused, check_chief_thread, chief_thread_id, gh_pr, observe
+from record import check_chief_thread, chief_thread_id, gh_pr, observe
 from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, now_line, work
 
@@ -965,19 +965,38 @@ class VerdictCommandTests(RecordCase):
         self.assertEqual(self.heartbeat()[0], "wake", "runnable work wakes every tick")
 
     def test_waiting_status_prints_cadence_hint_for_inbox_only_and_external_waits(self):
+        # Single-row Inbox-only wait -> pause.
         self.program.write(program([outcome("A", "planned")], [need("A-D1", "A", "start")]), "2026-11-15T13:00:00Z")
         self.serve(threads={})
         inbox_only = self.run_record("status", "--stale-hours", "1000000").stdout
         self.assertIn("hint: 0 owners running (waiting purely on open Inbox); pause the heartbeat (enabled: false)", inbox_only)
 
+        # Multi-outcome Inbox-only wait (B blockedBy A, A held by Inbox need) -> still pause.
         self.program.write(
-            program([outcome("A", "in-review")], waits=[{"date": "2026-11-15T13:00:00Z", "on": "Upstream", "event": "Release", "work": "A"}]),
+            program([outcome("A", "planned"), outcome("B", "planned", blockedBy=["A"])], [need("A-D1", "A", "start")]),
+            "2026-11-15T13:00:00Z",
+        )
+        chain_out = self.run_record("status", "--stale-hours", "1000000").stdout
+        self.assertIn("hint: 0 owners running (waiting purely on open Inbox); pause the heartbeat (enabled: false)", chain_out)
+
+        # Dependency on a stopped non-land PR (even alongside an Inbox need) -> adjust cadence, not Inbox-only pause.
+        self.program.write(
+            program([outcome("A", "ready", finish="pr-review"), outcome("B", "planned", blockedBy=["A"])],
+                    [need("B-D1", "B", "start")]),
             "2026-11-15T13:00:00Z",
         )
         self.serve(prs={"https://example.com/app/pull/A": {"state": "OPEN", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
                    threads={"thread:A": {"status": "idle"}})
+        pr_dep_out = self.run_record("status", "--stale-hours", "1000000").stdout
+        self.assertIn("hint: 0 owners running; adjust heartbeat cadence to the expected event", pr_dep_out)
+
+        # External wait (including near-term CI) -> adjust cadence to expected event.
+        self.program.write(
+            program([outcome("A", "in-review")], waits=[{"date": "2026-11-15T13:00:00Z", "on": "CI checks (5m)", "event": "Green", "work": "A"}]),
+            "2026-11-15T13:00:00Z",
+        )
         external = self.run_record("status", "--stale-hours", "1000000").stdout
-        self.assertIn("hint: 0 owners running (waiting on external events); lengthen the heartbeat to 1-6 hours", external)
+        self.assertIn("hint: 0 owners running; adjust heartbeat cadence to the expected event", external)
 
     def test_chief_thread_rotation_warning_in_status_and_once_per_heartbeat(self):
         self.assertEqual(chief_thread_id("[Prog](t3-thread://v2/env/chief-1)"), "chief-1")
@@ -993,19 +1012,41 @@ class VerdictCommandTests(RecordCase):
         self.heartbeat("--stale-hours", "1000000")
         self.assertEqual(self.heartbeat("--stale-hours", "1000000")[0], "quiet")
 
+        # Stale non-chief heartbeat with mismatched --chief-id exits not-chief without mutating coordinator-seen.json.
         self.serve(threads={"thread:A": {"status": "running"}, "chief-big": {"status": "running", "runCount": 410, "itemCount": 2500}})
+        tick_wrong, out_wrong = self.heartbeat("--stale-hours", "1000000", "--chief-id", "old-chief")
+        self.assertEqual(tick_wrong, "not-chief")
+        self.assertIn("Delete this stale heartbeat task", out_wrong)
+
+        # Real chief still sees the one-time wake (not consumed by old-chief) and status shows exact counts.
         status_out = self.run_record("status", "--stale-hours", "1000000").stdout
         self.assertIn("note: chief: coordinator thread is large (410 runs, 2500 items; threshold 400 runs / 8000 items); rotate to a fresh thread via record.py move", status_out)
-        tick, hb_out = self.heartbeat("--stale-hours", "1000000")
+        tick, hb_out = self.heartbeat("--stale-hours", "1000000", "--chief-id", "chief-big")
         self.assertEqual(tick, "wake", "crossing the chief size threshold wakes once")
-        self.assertIn("note: chief: coordinator thread is large; rotate to a fresh thread via record.py move", hb_out)
+        self.assertIn("note: chief (chief-big): coordinator thread is large; rotate to a fresh thread via record.py move", hb_out)
         self.serve(threads={"thread:A": {"status": "running"}, "chief-big": {"status": "running", "runCount": 411, "itemCount": 2510}})
-        self.assertEqual(self.heartbeat("--stale-hours", "1000000")[0], "quiet", "incrementing counts do not wake every tick")
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000", "--chief-id", "chief-big")[0], "quiet",
+                         "incrementing counts do not wake every tick")
+
+        # itemCount >= 8000 triggers even with runCount < 400; OSError/ValueError return None; TimeoutExpired warns.
+        self.assertIn("8500 items", check_chief_thread(state, lambda _id: {"runCount": 20, "itemCount": 8500}))
+        self.assertIsNone(check_chief_thread(state, lambda _id: (_ for _ in ()).throw(OSError("no t3"))))
+        self.assertIsNone(check_chief_thread(state, lambda _id: (_ for _ in ()).throw(ValueError("bad json"))))
 
         def timed_out(_identity):
             raise subprocess.TimeoutExpired(["t3"], 60)
 
         self.assertIn("timed out", check_chief_thread(state, timed_out))
+
+        # Finished program with a large chief still emits heartbeat: done instead of wake-to-rotate.
+        done_state = program([outcome("A", "landed")])
+        done_state["chief"] = "[Prog](t3-thread://v2/env/chief-big)"
+        self.program.write(done_state, "2026-11-15T13:00:00Z")
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                   threads={"chief-big": {"status": "running", "runCount": 500, "itemCount": 9000}})
+        tick_done, done_out = self.heartbeat("--stale-hours", "1000000", "--chief-id", "chief-big")
+        self.assertEqual(tick_done, "done")
+        self.assertNotIn("coordinator thread is large", done_out)
 
     def test_unchanged_status_skips_commit_until_half_stale_window(self):
         state = program([outcome("A", "in-review")])
@@ -1023,18 +1064,50 @@ class VerdictCommandTests(RecordCase):
         self.assertEqual(work(self.head(), "A")["checkedAt"], first_checked)
         self.assertEqual(work(self.head(), "A")["owner"]["seen"]["at"], first_seen_at)
 
-        # Once checkedAt is older than half stale_hours (70m >= 60m), status refreshes checkedAt and commits once.
-        older = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() - 70 * 60, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        aged = self.head()
-        work(aged, "A")["checkedAt"] = older
-        work(aged, "A")["owner"]["seen"]["at"] = older
-        self.program.write(aged, older)
-        commits_before_refresh = self.commits()
+        # A real change inside the half-stale window updates checkedAt and commits immediately.
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "OPEN", "headRefOid": "bbbbbbb", "baseRefName": "main"}},
+                   threads={"thread:A": {"status": "running"}})
         self.run_record("status")
-        self.assertEqual(len(self.commits()), len(commits_before_refresh) + 1)
+        self.assertEqual(len(self.commits()), len(commits_after_first) + 1)
+        self.assertIn("head moved to bbbbbbb", self.commits()[0])
+
+        # Out-of-phase checkedAt (55m) and owner.seen.at (65m) refresh BOTH in one commit, so a follow-up commits nothing.
+        now_ts = datetime.now(timezone.utc).timestamp()
+        t55 = datetime.fromtimestamp(now_ts - 55 * 60, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        t65 = datetime.fromtimestamp(now_ts - 65 * 60, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        aged = self.head()
+        work(aged, "A")["checkedAt"] = t55
+        work(aged, "A")["owner"]["seen"]["at"] = t65
+        self.program.write(aged, t55)
+        commits_before_sync = self.commits()
+        self.run_record("status")
+        self.assertEqual(len(self.commits()), len(commits_before_sync) + 1)
         self.assertEqual(self.commits()[0], "status: checked")
-        self.assertNotEqual(work(self.head(), "A")["checkedAt"], older)
-        self.assertNotEqual(work(self.head(), "A")["owner"]["seen"]["at"], older)
+        self.assertEqual(work(self.head(), "A")["checkedAt"], work(self.head(), "A")["owner"]["seen"]["at"])
+        self.run_record("status")
+        self.assertEqual(len(self.commits()), len(commits_before_sync) + 1, "synced timestamps skip follow-up commit")
+
+        # Failed PR read past half-stale window leaves checkedAt untouched.
+        t75 = datetime.fromtimestamp(now_ts - 75 * 60, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        aged2 = self.head()
+        work(aged2, "A")["checkedAt"] = t75
+        work(aged2, "A")["owner"]["seen"]["at"] = t75
+        self.program.write(aged2, t75)
+        self.serve(prs={}, threads={"thread:A": {"status": "running"}})
+        self.run_record("status")
+        self.assertEqual(work(self.head(), "A")["checkedAt"], t75)
+
+        # Rejected state transition (merged PR held by open landing decision) commits once for merged layer, not repeatedly.
+        held_state = program([outcome("A", "ready")], [need("A-D1", "A", "landing")])
+        self.program.write(held_state, "2026-11-15T13:00:00Z")
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                   threads={"thread:A": {"status": "idle"}})
+        first_held = self.run_record("status")
+        self.assertIn("settle by hand", first_held.stdout)
+        commits_after_held = self.commits()
+        second_held = self.run_record("status")
+        self.assertIn("settle by hand", second_held.stdout)
+        self.assertEqual(self.commits(), commits_after_held, "repeated rejected transition must not commit inside half-stale window")
 
     def test_a_passing_turn_end_is_the_baseline_a_heartbeat_compares(self):
         self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof")]), "2026-11-15T13:00:00Z")

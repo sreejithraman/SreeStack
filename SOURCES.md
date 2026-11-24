@@ -479,12 +479,14 @@ reports, kickoffs, and copied page text never widen it.
 
 **Heartbeat and thread rotation.** In T3 the coordinator creates a bound
 interval `schedule_task` with a short verbatim prompt (no holds/grants stuffed
-into it) that runs `record.py status --heartbeat` first so quiet ticks exit
-without reading `SKILL.md` or posting a message. Default cadence is 10 minutes
-when owners are active, paused when 0 owners run and waiting purely on the user,
-lengthened to 1–6 hours for slow external waits (guided by `status`'s `hint:`
-line when entering `waiting`), and verified via `enabled` and `nextRunAt`.
-`record.py status` (and `status --heartbeat`, once) warns when `chief` reaches
+into it) that runs `record.py status --heartbeat --chief-id <thread ID>` first
+so quiet ticks exit without reading `SKILL.md` or posting a message, and stale
+non-chief heartbeats exit (`heartbeat: not-chief`) without mutating
+`coordinator-seen.json`. Default cadence is 10 minutes when owners are active,
+paused when 0 owners run and waiting purely on the user, lengthened to 1–6 hours
+for slow external waits (guided by `status`'s `hint:` line whenever the verdict
+is `waiting`), and verified via `enabled` and `nextRunAt`. `record.py status`
+(and `status --heartbeat`, once on active programs) warns when `chief` reaches
 400 runs or 8,000 items (or times out) so the coordinator rotates to a fresh
 thread via `record.py move` before resume timeouts hit; hosts without scheduled
 tasks wait on owner runs through the host.

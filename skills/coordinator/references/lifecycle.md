@@ -13,8 +13,8 @@ unchanged waits.
 
 - **0 running owners, waiting purely on the user:** pause the heartbeat (`enabled: false`) so idle
   ticks don't compact the thread — the user's reply resumes you immediately. `record.py status`
-  prints a `hint:` when entering this state. On the first ordinary wake or Inbox answer that
-  restores running owners or external waits, explicitly re-enable the paused heartbeat
+  prints a `hint:` whenever its verdict is `waiting`. On the first ordinary wake or Inbox answer
+  that restores running owners or external waits, explicitly re-enable the paused heartbeat
   (`enabled: true`) and verify `enabled` and `nextRunAt`.
 - **0 running owners, waiting only on slow external events** (upstream issue, teammate review):
   lengthen to 1–6 hours with the reason in `next`.
@@ -27,8 +27,8 @@ prompt verbatim — never stuff holds, grants, or model notes into it (`program.
 
 ```text
 Coordinator heartbeat for <program title>. Run
-python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --state <absolute path>/program.json
-and follow its first line. On `heartbeat: quiet`, end the turn immediately without reading `SKILL.md` or posting a message. On `heartbeat: wake` or `heartbeat: done`, check `chief` in `HEAD:program.json`, re-read <this skill's absolute folder>/SKILL.md, act on what `status` lists, and update the heartbeat under <this skill's absolute folder>/references/lifecycle.md only when the cadence should change.
+python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --chief-id <this thread ID> --state <absolute path>/program.json
+and follow its first line. On `heartbeat: quiet`, end the turn immediately without reading `SKILL.md` or posting a message. On `heartbeat: not-chief`, delete this stale heartbeat task and end the turn without acting. On `heartbeat: wake` or `heartbeat: done`, check `chief` in `HEAD:program.json`, re-read <this skill's absolute folder>/SKILL.md, act on what `status` lists, and update the heartbeat under <this skill's absolute folder>/references/lifecycle.md only when the cadence should change.
 ```
 
 Record the timing policy and task ID with `record.py grant --heartbeat "<policy and task ID>"`.
@@ -54,6 +54,14 @@ Bring the record current and pause the heartbeat (`schedule_task` with `enabled:
    under `hosting.md` before dispatching new work.
 3. Re-enable the paused heartbeat — or recreate it if deleted/missing, updating `grant.heartbeat` —
    and verify `enabled` and `nextRunAt` (upgrade any older heartbeat prompt to the template above).
+
+## Upgrading an active program
+
+On an existing program's first active turn or provider switch under this skill: update its
+installed heartbeat prompt to the template above; if `grant.wake` still records a legacy webhook
+task, delete and verify that task (clearing `config/wake` if Claude DB tools are available, or
+telling the user to re-answer any pending old-page picks via Copy answer) and record
+`record.py grant --wake "None (<reason>)"`.
 
 ## Chief-of-Staff migration
 

@@ -755,7 +755,7 @@ def answer_pasted(state, at, text, source):
         raise Refused("; ".join(notes))
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
     notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
-    return f"{', '.join(recorded)} answered", notes, recorded
+    return f"{', '.join(recorded)} answered", notes
 
 
 def set_pictures(state, identity, images, option=None, shape=None):
@@ -1123,9 +1123,7 @@ def t3_thread(identity):
 
 
 def thread_id(session):
-    match = THREAD_URL_RE.search(session) if isinstance(session, str) else None
-    target = match.group(0) if match else session
-    parts = urlsplit(target)
+    parts = urlsplit(session)
     segments = [segment for segment in (parts.netloc if parts.scheme == "t3-thread" else "", *parts.path.split("/")) if segment]
     return unquote(segments[-1]) if segments else None
 
@@ -1138,7 +1136,7 @@ def chief_thread_id(chief):
     return thread_id(match.group(0)) if match else None
 
 
-def check_chief_thread(state, read_thread, max_runs=CHIEF_MAX_RUNS, max_items=CHIEF_MAX_ITEMS):
+def check_chief_thread(state, read_thread):
     """Return a rotation warning note when the coordinator's own thread is large or times out."""
     identity = chief_thread_id(state.get("chief"))
     if not identity:
@@ -1151,14 +1149,13 @@ def check_chief_thread(state, read_thread, max_runs=CHIEF_MAX_RUNS, max_items=CH
         return None
     if not isinstance(thread, dict):
         return None
-    runs = thread.get("runCount")
-    items = thread.get("itemCount")
-    runs = runs if isinstance(runs, int) and not isinstance(runs, bool) else None
-    items = items if isinstance(items, int) and not isinstance(items, bool) else None
-    if (runs is not None and runs >= max_runs) or (items is not None and items >= max_items):
+    runs, items = thread.get("runCount"), thread.get("itemCount")
+    runs = runs if type(runs) is int else None
+    items = items if type(items) is int else None
+    if (runs is not None and runs >= CHIEF_MAX_RUNS) or (items is not None and items >= CHIEF_MAX_ITEMS):
         parts = ([f"{runs} runs"] if runs is not None else []) + ([f"{items} items"] if items is not None else [])
         return (f"chief: coordinator thread is large ({', '.join(parts)}; "
-                f"threshold {max_runs} runs / {max_items} items); rotate to a fresh thread via record.py move")
+                f"threshold {CHIEF_MAX_RUNS} runs / {CHIEF_MAX_ITEMS} items); rotate to a fresh thread via record.py move")
     return None
 
 
@@ -1262,37 +1259,24 @@ def seen_moved(row, thread, at):
         key: value for key, value in recorded.items() if key != "at"}
 
 
-def needs_check_refresh(row, at, stale_hours):
-    """True when checkedAt is absent or at least half the stale window old."""
-    checked = row.get("checkedAt")
-    if not checked:
-        return True
-    return (parse_time(at) - parse_time(checked)).total_seconds() >= (stale_hours * 3600) / 2
-
-
-def seen_refresh_due(row, at, stale_hours):
-    """True when owner.seen.at is absent or at least half the stale window old."""
-    seen_at = row.get("owner", {}).get("seen", {}).get("at")
-    if not seen_at:
-        return True
-    return (parse_time(at) - parse_time(seen_at)).total_seconds() >= (stale_hours * 3600) / 2
+def refresh_due(stamp, at, stale_hours):
+    """True when stamp is absent or at least half the stale window old."""
+    return not stamp or (parse_time(at) - parse_time(stamp)).total_seconds() >= stale_hours * 1800
 
 
 def observe(state, at, read_pr, threads, stale_hours=STALE_HOURS):
     """Apply forge facts and owner thread states to open work and pending landings; return notes on what changed or needs a hand."""
-    notes, forge, candidates, kept = [], {}, {}, {}
+    notes, forge, candidates, kept, read_ok, originals = [], {}, {}, {}, {}, {}
     for index, row in enumerate(state["work"]):
         if row["state"] in TERMINAL:
             continue
+        originals[index] = copy.deepcopy(row)
         facts, reads, failed = read_layers(row, read_pr, forge, notes)
         thread = threads.get(row["id"])
         if thread:
             reads += 1
             failed += isinstance(thread, str)
-        thread_changed = row["id"] in threads and seen_moved(row, thread, at)
-        row_changed = facts != row or derived_state(facts) != row["state"] or thread_changed
-        if reads and not failed and (row_changed or needs_check_refresh(row, at, stale_hours)):
-            facts["checkedAt"] = at
+        read_ok[index] = bool(reads and not failed)
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
         if derived["state"] != "unknown":
             derived.pop("unknownReason", None)
@@ -1310,13 +1294,16 @@ def observe(state, at, read_pr, threads, stale_hours=STALE_HOURS):
             notes.append(f"{row['id']}: recorded {kept[index][id(row)]} from the forge; settle by hand: {reasons[index]}")
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
-    for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
-        if row["id"] in threads and (
-            seen_moved(row, threads[row["id"]], at)
-            or (isinstance(threads[row["id"]], dict)
-                and (row.get("checkedAt") == at or seen_refresh_due(row, at, stale_hours)))
-        ):
-            put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
+    for index, original in originals.items():
+        row = state["work"][index]
+        has_thread = row["id"] in threads
+        thread = threads.get(row["id"])
+        thread_moved = has_thread and seen_moved(row, thread, at)
+        seen_due = isinstance(thread, dict) and refresh_due(row["owner"].get("seen", {}).get("at"), at, stale_hours)
+        if read_ok[index] and (row != original or thread_moved or refresh_due(row.get("checkedAt"), at, stale_hours) or seen_due):
+            row["checkedAt"] = at
+        if has_thread and (thread_moved or (isinstance(thread, dict) and (row.get("checkedAt") == at or seen_due))):
+            put(row["owner"], "seen", observation(thread, at), OWNER_KEYS)
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
               if layer["status"] == "merged" and "url" in layer}
     for landing in state.get("landings", []):
@@ -1353,16 +1340,20 @@ def waiting_line(assessment):
     return f"Waiting on {'; '.join(parts)}. Nothing is runnable."
 
 
-def waiting_cadence_hint(assessment):
-    """Suggest pausing or lengthening the heartbeat when 0 owners are running."""
-    if assessment["verdict"] != "waiting":
-        return None
-    if assessment["waiting"] and all(entry["kind"] == "need" for entry in assessment["waiting"]):
+def waiting_cadence_hint(assessment, state=None):
+    """Suggest pausing or adjusting the heartbeat when 0 owners are running."""
+    kinds = {entry["kind"] for entry in assessment["waiting"]}
+    has_external_pr_dep = bool(state) and any(
+        row["state"] == "ready" and effective_finish(row) != "land"
+        and any(row["id"] in other.get("blockedBy", []) for other in state["work"] if other["state"] not in TERMINAL)
+        for row in state["work"]
+    )
+    if "need" in kinds and kinds <= {"need", "dependency"} and not has_external_pr_dep:
         return "0 owners running (waiting purely on open Inbox); pause the heartbeat (enabled: false) under references/lifecycle.md"
-    return "0 owners running (waiting on external events); lengthen the heartbeat to 1-6 hours under references/lifecycle.md"
+    return "0 owners running; adjust heartbeat cadence to the expected event under references/lifecycle.md (1-6h for slow external waits)"
 
 
-def show(assessment):
+def show(assessment, state=None):
     print(f"verdict: {assessment['verdict']} (digest {assessment['digest']})")
     for group in ("runnable", "working", "waiting", "attention"):
         for entry in assessment[group]:
@@ -1370,8 +1361,7 @@ def show(assessment):
             print(f"{entry['kind']}: {entry['id']}: {entry['text']}{since}")
     if assessment["verdict"] == "waiting":
         print(f"say: {waiting_line(assessment)}")
-        if hint := waiting_cadence_hint(assessment):
-            print(f"hint: {hint}")
+        print(f"hint: {waiting_cadence_hint(assessment, state)}")
 
 
 # Command line.
@@ -1636,7 +1626,7 @@ def arguments():
     command.add_argument("--resolve", dest="resolve_rule", help="Which decisions the coordinator settles itself")
     command.add_argument("--user", dest="user_rule", help="What stays with the user")
     command.add_argument("--heartbeat", dest="heartbeat_rule", help="Heartbeat timing policy and scheduled task ID, or why none")
-    command.add_argument("--wake", dest="wake_rule", help=argparse.SUPPRESS)
+    command.add_argument("--wake", dest="wake_rule", help="Legacy: clear an existing grant.wake with 'None (<reason>)'")
     command.add_argument("--landing", dest="landing_rule", help="Agreed landing scope and gates (sets landingAuthority)")
     command.add_argument("--hosting", help="Current published command center URL")
     command.add_argument("--finish-line", help="Program-wide finish-line note")
@@ -1757,6 +1747,7 @@ def arguments():
     mode.add_argument("--heartbeat", action="store_true",
                       help="Commit nothing; print heartbeat: quiet, wake, or done against what was last seen")
     mode.add_argument("--exit-code", action="store_true", help="Exit 0 done, 3 waiting, 4 working, 5 runnable")
+    command.add_argument("--chief-id", help="With --heartbeat, fence execution to this bound thread ID/link before recording seen state")
     command.add_argument("--stale-hours", type=float, default=STALE_HOURS)
     command.add_argument("--json", action="store_true", help="Print one JSON object on stdout; other output goes to stderr")
     return parser
@@ -1792,8 +1783,7 @@ def event(args, state, at, files):
         if not args.source:
             raise Refused("answer needs --source: the user's message that answered")
         if args.pasted:
-            message, notes, _ = answer_pasted(state, at, sys.stdin.read(), args.source)
-            return message, notes
+            return answer_pasted(state, at, sys.stdin.read(), args.source)
         if args.decision and (args.option or args.text):
             row = decision_row(state, args.decision)
             return settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
@@ -1838,7 +1828,7 @@ def check_status(args, record, read_pr, read_thread):
         state = validate(committed(record.file))
         threads = read_owners(state, read_thread)
         result = assess(state, at, threads, args.stale_hours)
-        show(result)
+        show(result, state)
         dirty = bool(record.dirty())
         if dirty:
             print(f"uncommitted: {record.file.name} has a change; settle it before the turn ends")
@@ -1861,12 +1851,12 @@ def check_status(args, record, read_pr, read_thread):
     if state != before:
         summary = "; ".join(notes[:3]) + (f"; {len(notes) - 3} more" if len(notes) > 3 else "")
         record.save(state, f"status: {summary or 'checked'}")
-    if chief_note := check_chief_thread(state, read_thread):
+    result = assess(state, at, threads, args.stale_hours)
+    if result["verdict"] != "done" and (chief_note := check_chief_thread(state, read_thread)):
         notes.append(chief_note)
     for line in notes:
         print(f"note: {line}")
-    result = assess(state, at, threads, args.stale_hours)
-    show(result)
+    show(result, state)
     return result | {"notes": notes, "page": "current" if record.render() else "behind"}
 
 
@@ -1879,35 +1869,41 @@ def heartbeat(args, record, read_pr, read_thread, at):
     when the committed record is done too, so the woken coordinator records the last merges first.
     """
     committed_state = validate(committed(record.file))
+    committed_chief = chief_thread_id(committed_state.get("chief"))
+    if getattr(args, "chief_id", None) and committed_chief:
+        caller_chief = chief_thread_id(args.chief_id) or thread_id(args.chief_id)
+        if caller_chief != committed_chief:
+            print(f"heartbeat: not-chief (committed chief is {committed_chief}). "
+                  "Delete this stale heartbeat task and end the turn without acting.")
+            return {"verdict": "waiting", "digest": None, "runnable": [], "working": [], "waiting": [],
+                    "attention": [], "heartbeat": "not-chief", "notes": []}
     threads = read_owners(committed_state, read_thread)
     state = copy.deepcopy(committed_state)
     raw_notes = observe(state, at, read_pr, threads, args.stale_hours)
-    if chief_note := check_chief_thread(committed_state, read_thread):
-        raw_notes.append(chief_note)
-    observed = {
-        re.sub(r"(chief: coordinator thread is large) \([^)]*\)", r"\1",
-               re.sub(r"(could not read \S+): .*", r"\1", note))
-        for note in raw_notes
-    }
     result = assess(state, at, threads, args.stale_hours)
+    committed_done = (result["verdict"] == "done"
+                      and assess(committed_state, at, threads, args.stale_hours)["verdict"] == "done")
+    if not committed_done and (chief_note := check_chief_thread(committed_state, read_thread)):
+        keyed = f"chief ({committed_chief}): coordinator thread is large; rotate to a fresh thread via record.py move" if "coordinator thread is large" in chief_note else f"chief ({committed_chief}): {chief_note.removeprefix('chief: ')}"
+        raw_notes.append(keyed)
+    observed = {re.sub(r"(could not read \S+): .*", r"\1", note) for note in raw_notes}
     stale = {f"{entry['id']}: not observed since {entry['since']}" for entry in result["attention"] if entry["kind"] == "stale"}
     notes = sorted(observed | stale)
     seen = record.seen()
     fresh = [note for note in notes if note not in seen["notes"]]
     record.remember(result["digest"], notes)
     skill = Path(__file__).resolve().parents[1] / "SKILL.md"
-    done = (result["verdict"] == "done" and not fresh
-            and assess(committed_state, at, threads, args.stale_hours)["verdict"] == "done")
+    done = committed_done and not fresh
     if done:
         tick = "done"
-        print("heartbeat: done. Check chief in HEAD:program.json; Delete the scheduled task in the record's "
+        print("heartbeat: done. Check chief in HEAD:program.json. Delete the scheduled task in the record's "
               f"grant.heartbeat, then finish the program under {skill}.")
     elif fresh or result["verdict"] not in QUIET or seen["digest"] != result["digest"]:
         tick = "wake"
-        print(f"heartbeat: wake. Check chief in HEAD:program.json; Re-read {skill}, run status, and act on what it lists.")
+        print(f"heartbeat: wake. Check chief in HEAD:program.json. Re-read {skill}, run status, and act on what it lists.")
         for note in fresh:
             print(f"note: {note}")
-        show(result)
+        show(result, state)
     else:
         tick = "quiet"
         print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). Skip SKILL.md and end the turn without a message.")
