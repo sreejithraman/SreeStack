@@ -1044,9 +1044,13 @@ class VerdictCommandTests(RecordCase):
         plain_state["chief"] = "T3 thread 802fd57d (plain prose)"
         self.program.write(plain_state, "2026-11-15T13:00:00Z")
         self.serve(threads={"thread:A": {"status": "running"}})
+        seen_file = Path(subprocess.run(["git", "-C", str(self.program.folder), "rev-parse", "--absolute-git-dir"],
+                                        capture_output=True, text=True, check=True, env=GIT_ENV).stdout.strip()) / "coordinator-seen.json"
+        seen_before = seen_file.read_text()
         tick_unverified, out_unverified = self.heartbeat("--stale-hours", "1000000", "--chief-id", "mcp:launch:717cda384adfa68b")
         self.assertEqual(tick_unverified, "unverified-chief")
-        self.assertNotIn("Delete this stale heartbeat task", out_unverified)
+        self.assertIn("if this thread is chief, record a T3 thread link via record.py move", out_unverified)
+        self.assertEqual(seen_file.read_text(), seen_before, "unverified-chief must not mutate coordinator-seen.json")
 
         # itemCount >= 8000 triggers even with runCount < 400; OSError/ValueError return None; TimeoutExpired warns.
         self.assertIn("8500 items", check_chief_thread(state, lambda _id: {"runCount": 20, "itemCount": 8500}))
@@ -1058,7 +1062,17 @@ class VerdictCommandTests(RecordCase):
 
         self.assertIn("timed out", check_chief_thread(state, timed_out))
 
-        # Finished program with a large chief still emits heartbeat: done instead of wake-to-rotate.
+        # Finished program with a large chief still emits heartbeat: done instead of wake-to-rotate;
+        # and an uncommitted final merge (ready + merged PR) wakes without a spurious rotation warning.
+        final_merge_state = program([outcome("A", "ready")])
+        final_merge_state["chief"] = "[Prog](t3-thread://v2/env/chief-big)"
+        self.program.write(final_merge_state, "2026-11-15T13:00:00Z")
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "MERGED", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                   threads={"thread:A": {"status": "idle"}, "chief-big": {"status": "running", "runCount": 500, "itemCount": 9000}})
+        tick_final, final_out = self.heartbeat("--stale-hours", "1000000", "--chief-id", "chief-big")
+        self.assertEqual(tick_final, "wake")
+        self.assertNotIn("coordinator thread is large", final_out)
+
         done_state = program([outcome("A", "landed")])
         done_state["chief"] = "[Prog](t3-thread://v2/env/chief-big)"
         self.program.write(done_state, "2026-11-15T13:00:00Z")

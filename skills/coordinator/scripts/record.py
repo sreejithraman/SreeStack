@@ -1890,7 +1890,8 @@ def heartbeat(args, record, read_pr, read_thread, at):
                         "attention": [], "heartbeat": "not-chief", "notes": []}
         elif caller_chief != committed_state.get("chief", "").strip():
             print("heartbeat: unverified-chief (committed chief is not a thread link). "
-                  "Check chief in HEAD:program.json and record a T3 thread link via record.py move.")
+                  "Check chief in HEAD:program.json: if this thread is chief, record a T3 thread link via record.py move; "
+                  "otherwise delete this stale heartbeat task and end the turn without acting.")
             return {"verdict": "waiting", "digest": None, "runnable": [], "working": [], "waiting": [],
                     "attention": [], "heartbeat": "unverified-chief", "notes": []}
     threads = read_owners(committed_state, read_thread)
