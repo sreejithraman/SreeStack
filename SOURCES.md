@@ -1430,11 +1430,11 @@ cases cannot be averaged away.
 - Conceptual input: DeepSeek source and revision recorded under [coordinator](#coordinator); no code or prose copied.
 
 Automatically discoverable capability skill with `agents/openai.yaml` metadata.
-Owns who does the work, self-contained briefs (including explicit completion,
-proportionality, and UI-reference guidance when briefing Codex), communication by
-current responsibility, model dispatch with ordered standing availability
-fallbacks, return contracts, and artifact acceptance; names no callers in
-`SKILL.md`. Role-based editing replaces always-delegating top-level edits:
+Owns who does the work, self-contained briefs (with Codex-specific scoping,
+edge-case, test-surface, and acceptance guidance progressively disclosed in
+`references/codex-handoff.md`), communication by current responsibility, model
+dispatch with ordered standing availability fallbacks, return contracts, and
+artifact acceptance; names no callers in `SKILL.md`. Role-based editing replaces always-delegating top-level edits:
 single-outcome threads edit directly by default (delegating for independent
 review/verification, Swarm fan-out, specialized models, or user-requested
 background work), Coordinator threads never edit project files directly, and
