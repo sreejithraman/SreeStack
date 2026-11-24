@@ -142,14 +142,7 @@ time { font-variant-numeric: tabular-nums; }
 .pick-rationale { margin-block-start: 8px; }
 .answer-action { display: grid; gap: 10px; margin-block-start: 12px; }
 .answer-action .copy-prompt { justify-self: stretch; background: var(--tint); color: var(--on-tint); }
-.answer-action.can-send .copy-prompt { background: var(--fill); color: var(--tint-text); }
-.send-answer, .wake-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-block-size: 44px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--tint); color: var(--on-tint); font-size: 14px; font-weight: 600; cursor: pointer; }
-.wake-link:hover { text-decoration: none; }
-.send-answer:active:enabled { transform: scale(.98); }
-.send-answer:disabled { opacity: .45; cursor: default; }
-.send-status:empty { display: none; }
-.send-status { font-size: 13px; color: var(--text-secondary); }
-@container (min-width: 520px) { .answer-action :is(.copy-prompt, .send-answer, .wake-link) { justify-self: start; } }
+@container (min-width: 520px) { .answer-action .copy-prompt { justify-self: start; } }
 .copy-prompt { display: inline-grid; justify-self: start; min-block-size: 44px; min-inline-size: 148px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--fill); color: var(--tint-text); font-size: 14px; font-weight: 600; cursor: pointer; }
 .copy-prompt > span { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: opacity .15s; }
 .copy-prompt .done, .copy-prompt.copied .idle { opacity: 0; }
@@ -166,8 +159,6 @@ time { font-variant-numeric: tabular-nums; }
 .batch li { font-size: 15px; }
 .batch li + li { margin-block-start: 4px; }
 .batch .copy-prompt { background: var(--tint); color: var(--on-tint); }
-.stale-pick { display: flex; align-items: flex-start; gap: 8px; margin-block-start: 14px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--attention) 9%, transparent); color: color-mix(in srgb, var(--attention) 85%, var(--text)); font-size: 14px; }
-.stale-pick .icon { margin-block-start: 2px; }
 
 /* Pictures: tap one to see it larger in the viewer */
 .pictures { display: grid; gap: 10px; margin-block-start: 16px; }
@@ -335,7 +326,7 @@ details[open] > .section-toggle::after { rotate: 45deg; }
 @media (forced-colors: active) {
   .card, .pick, .result-card, .tally, .now, .empty, .section-toggle, .inbox-group, .tabs button[aria-selected="true"], .layer, .provisional-note { border: 1px solid CanvasText; }
   .pick:has(input:checked), .inbox-row[aria-selected="true"] { outline: 2px solid Highlight; }
-  .picture, .stale-pick { border: 1px solid CanvasText; }
+  .picture { border: 1px solid CanvasText; }
   .pick input { appearance: auto; }
   .inbox-row-id::before { display: none; }
   .progress { display: none; }
@@ -469,9 +460,6 @@ function connectCopyButtons() {
 function choosePick(choice) {
   choice.checked = true;
   const action = choice.closest('.picks').nextElementSibling;
-  const send = action.querySelector('.send-answer');
-  send.disabled = false;
-  if (send.hidden && pageDb) showSendable(action);
   const button = action.querySelector('.copy-prompt');
   button.dataset.prompt = choice.dataset.prompt;
   button.disabled = false;
@@ -493,119 +481,6 @@ function restorePicks(saved) {
   for (const [name, key] of Object.entries(saved ?? {})) {
     const choice = [...document.getElementsByName(name)].find(input => pickKey(input) === key);
     if (choice) choosePick(choice);
-  }
-}
-
-// Tap-to-answer. The page saves the pick in its own database, which only the artifact's owner can read or
-// write; the coordinator records it when the wake link, from that database, wakes it. Without either, the
-// page keeps Copy answer alone.
-let pageDb = null;
-const pickPath = picks => `picks/${picks.querySelector('input').name.slice('pick-'.length)}-${picks.dataset.revision}`;
-
-function showSendable(action) {
-  action.querySelector('.send-answer').hidden = false;
-  action.querySelector('.wake-link').hidden = true;
-  action.querySelector('.send-status').textContent = '';
-}
-
-function showSent(action, label) {
-  action.querySelector('.send-answer').hidden = true;
-  action.querySelector('.wake-link').hidden = false;
-  action.querySelector('.send-status').textContent = `Saved “${label}”. Wake the coordinator to record it now, or it records it at its next heartbeat.`;
-}
-
-// The wake link lives only in the page database; its removal turns Send off.
-async function wakeUrl(db) {
-  const wake = await db.doc('config/wake').get();
-  const url = wake.exists ? wake.data()?.url : null;
-  return typeof url === 'string' && url.startsWith('https://') ? url : null;
-}
-
-// A shown Wake link follows config/wake when the user returns to the page and after each tap; the tap
-// itself cannot wait on a check, because a phone opens a new tab only straight from the tap.
-async function refreshWake() {
-  if (!pageDb) return;
-  try {
-    const url = await wakeUrl(pageDb);
-    if (!url) return stopSending();
-    for (const link of document.querySelectorAll('.wake-link')) link.href = url;
-  } catch {
-    // The next tap or return checks again.
-  }
-}
-
-function stopSending() {
-  pageDb = null;
-  for (const action of document.querySelectorAll('.answer-action')) {
-    action.classList.remove('can-send');
-    action.querySelector('.send-answer').hidden = true;
-    action.querySelector('.wake-link').hidden = true;
-    action.querySelector('.send-status').textContent = '';
-  }
-}
-
-async function sendPick(button) {
-  const action = button.closest('.answer-action');
-  const picks = action.previousElementSibling;
-  const choice = picks.querySelector('input:checked');
-  const status = action.querySelector('.send-status');
-  button.disabled = true;
-  picks.disabled = true; // The pick being saved stays the one shown until its save settles.
-  status.textContent = 'Saving…';
-  try {
-    const url = await wakeUrl(pageDb);
-    if (!url) {
-      stopSending();
-      status.textContent = 'Send answer is off for now. Copy the answer and paste it to the coordinator instead.';
-      return;
-    }
-    for (const link of document.querySelectorAll('.wake-link')) link.href = url;
-    await pageDb.doc(pickPath(picks)).set({
-      decision: picks.dataset.decision, revision: picks.dataset.revision,
-      option: Number(choice.value), label: choice.dataset.label,
-    });
-    if (pageDb) showSent(action, choice.dataset.label);
-    else status.textContent = 'Send answer is off for now. Copy the answer and paste it to the coordinator instead.';
-  } catch {
-    status.textContent = 'Not saved. Copy the answer and paste it to the coordinator instead.';
-  } finally {
-    button.disabled = false;
-    picks.disabled = false;
-  }
-}
-
-async function connectAnswers() {
-  if (typeof window.claude?.use !== 'function' || !document.querySelector('.send-answer')) return;
-  let db, url, saved = [];
-  try {
-    db = await window.claude.use('db');
-    url = db && await wakeUrl(db);
-    if (!url) return;
-  } catch {
-    return;
-  }
-  try {
-    saved = (await db.collection('picks').get()).docs;
-  } catch {
-    // Unread saved picks still reach the coordinator; the page only shows them as unsent.
-  }
-  // Send appears only once saved picks are shown, so restoring one never overtakes a pick being sent.
-  pageDb = db;
-  for (const action of document.querySelectorAll('.answer-action')) {
-    action.classList.add('can-send');
-    action.querySelector('.wake-link').href = url;
-    action.querySelector('.send-answer').addEventListener('click', event => sendPick(event.currentTarget));
-    action.querySelector('.wake-link').addEventListener('click', refreshWake);
-    showSendable(action);
-  }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshWake(); });
-  for (const doc of saved) {
-    const picks = [...document.querySelectorAll('.picks')].find(candidate => pickPath(candidate) === `picks/${doc.id}`);
-    const choice = picks && [...picks.querySelectorAll('input')].find(input => input.value === String(doc.data()?.option));
-    if (choice) {
-      choosePick(choice);
-      showSent(picks.nextElementSibling, choice.dataset.label);
-    }
   }
 }
 
@@ -662,7 +537,6 @@ function connectContent() {
   connectCopyButtons();
   connectPicks();
   connectPictures();
-  connectAnswers();
   connectDecisionLinks();
   describeTimes();
   renderIcons();

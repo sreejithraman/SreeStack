@@ -16,7 +16,7 @@ import unittest
 from unittest import mock
 
 import record
-from record import Refused, answer_stored, gh_pr, observe, stored_picks
+from record import Refused, check_chief_thread, chief_thread_id, gh_pr, observe
 from render_dashboard import assess, content_name, decision_prompt, observation, orphans, quoted, render, revision, validate
 from test_render_dashboard import GIT_ENV, Program, decision, example, now_line, work
 
@@ -956,12 +956,85 @@ class VerdictCommandTests(RecordCase):
         self.assertEqual(self.heartbeat()[0], "wake", "the first tick has no digest to compare")
         tick, output = self.heartbeat()
         self.assertEqual(tick, "quiet")
-        self.assertIn("End the turn without a message", output)
+        self.assertIn("Skip SKILL.md and end the turn without a message", output)
         self.serve(threads={"thread:A": {"status": "idle"}})
         tick, output = self.heartbeat()
         self.assertEqual(tick, "wake", "an owner that went idle while owing work")
+        self.assertIn("Check chief in HEAD:program.json", output)
         self.assertRegex(output, r"Re-read \S+/coordinator/SKILL\.md, run status")
         self.assertEqual(self.heartbeat()[0], "wake", "runnable work wakes every tick")
+
+    def test_waiting_status_prints_cadence_hint_for_inbox_only_and_external_waits(self):
+        self.program.write(program([outcome("A", "planned")], [need("A-D1", "A", "start")]), "2026-11-15T13:00:00Z")
+        self.serve(threads={})
+        inbox_only = self.run_record("status", "--stale-hours", "1000000").stdout
+        self.assertIn("hint: 0 owners running (waiting purely on open Inbox); pause the heartbeat (enabled: false)", inbox_only)
+
+        self.program.write(
+            program([outcome("A", "in-review")], waits=[{"date": "2026-11-15T13:00:00Z", "on": "Upstream", "event": "Release", "work": "A"}]),
+            "2026-11-15T13:00:00Z",
+        )
+        self.serve(prs={"https://example.com/app/pull/A": {"state": "OPEN", "headRefOid": "aaaaaaa", "baseRefName": "main"}},
+                   threads={"thread:A": {"status": "idle"}})
+        external = self.run_record("status", "--stale-hours", "1000000").stdout
+        self.assertIn("hint: 0 owners running (waiting on external events); lengthen the heartbeat to 1-6 hours", external)
+
+    def test_chief_thread_rotation_warning_in_status_and_once_per_heartbeat(self):
+        self.assertEqual(chief_thread_id("[Prog](t3-thread://v2/env/chief-1)"), "chief-1")
+        self.assertEqual(chief_thread_id("<t3-thread://v2/env/chief-2>"), "chief-2")
+        self.assertEqual(chief_thread_id("https://app.t3.codes/threads/env/mcp%3Achief-3"), "mcp:chief-3")
+        self.assertIsNone(chief_thread_id("Coordinator thread (example)"))
+
+        state = program([outcome("A", "building")])
+        state["chief"] = "[Prog](t3-thread://v2/env/chief-big)"
+        self.program.write(state, "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}, "chief-big": {"status": "running", "runCount": 50, "itemCount": 900}})
+        self.assertNotIn("coordinator thread is large", self.run_record("status", "--stale-hours", "1000000").stdout)
+        self.heartbeat("--stale-hours", "1000000")
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000")[0], "quiet")
+
+        self.serve(threads={"thread:A": {"status": "running"}, "chief-big": {"status": "running", "runCount": 410, "itemCount": 2500}})
+        status_out = self.run_record("status", "--stale-hours", "1000000").stdout
+        self.assertIn("note: chief: coordinator thread is large (410 runs, 2500 items; threshold 400 runs / 8000 items); rotate to a fresh thread via record.py move", status_out)
+        tick, hb_out = self.heartbeat("--stale-hours", "1000000")
+        self.assertEqual(tick, "wake", "crossing the chief size threshold wakes once")
+        self.assertIn("note: chief: coordinator thread is large; rotate to a fresh thread via record.py move", hb_out)
+        self.serve(threads={"thread:A": {"status": "running"}, "chief-big": {"status": "running", "runCount": 411, "itemCount": 2510}})
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000")[0], "quiet", "incrementing counts do not wake every tick")
+
+        def timed_out(_identity):
+            raise subprocess.TimeoutExpired(["t3"], 60)
+
+        self.assertIn("timed out", check_chief_thread(state, timed_out))
+
+    def test_unchanged_status_skips_commit_until_half_stale_window(self):
+        state = program([outcome("A", "in-review")])
+        self.program.write(state, "2026-11-15T13:00:00Z")
+        pr = {"https://example.com/app/pull/A": {"state": "OPEN", "headRefOid": "aaaaaaa", "baseRefName": "main"}}
+        self.serve(prs=pr, threads={"thread:A": {"status": "running"}})
+        self.run_record("status")
+        commits_after_first = self.commits()
+        first_checked = work(self.head(), "A")["checkedAt"]
+        first_seen_at = work(self.head(), "A")["owner"]["seen"]["at"]
+
+        # Immediate second status with identical facts commits nothing and keeps timestamps.
+        self.run_record("status")
+        self.assertEqual(self.commits(), commits_after_first)
+        self.assertEqual(work(self.head(), "A")["checkedAt"], first_checked)
+        self.assertEqual(work(self.head(), "A")["owner"]["seen"]["at"], first_seen_at)
+
+        # Once checkedAt is older than half stale_hours (70m >= 60m), status refreshes checkedAt and commits once.
+        older = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() - 70 * 60, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        aged = self.head()
+        work(aged, "A")["checkedAt"] = older
+        work(aged, "A")["owner"]["seen"]["at"] = older
+        self.program.write(aged, older)
+        commits_before_refresh = self.commits()
+        self.run_record("status")
+        self.assertEqual(len(self.commits()), len(commits_before_refresh) + 1)
+        self.assertEqual(self.commits()[0], "status: checked")
+        self.assertNotEqual(work(self.head(), "A")["checkedAt"], older)
+        self.assertNotEqual(work(self.head(), "A")["owner"]["seen"]["at"], older)
 
     def test_a_passing_turn_end_is_the_baseline_a_heartbeat_compares(self):
         self.program.write(program([outcome("A", "building")], [need("A-D1", "A", "proof")]), "2026-11-15T13:00:00Z")
@@ -1117,171 +1190,6 @@ class PictureTests(RecordCase):
         self.event("picture", "--decision", "W5-T", "--image", str(self.picture_file("one.png", b"\x89PNG one")))
         (self.program.folder / content_name(b"\x89PNG one", ".png")).unlink()
         self.refused("wait", "--on", "PR 44 checks", "--event", "Checks finish", message="is missing from")
-
-
-def stored(*picks, version=3, saved="2026-11-02T18:00:00Z"):
-    """db_query output for the page's picks collection: a summary line, then one document per line, wrapped."""
-    lines = [json.dumps({"count": len(picks), "nextCursor": None}), "<untrusted-document-1a2b>"]
-    lines += [json.dumps({"id": f"{pick['decision'].encode().hex()}-{pick['revision']}", "data": pick, "version": version,
-                          "updatedAt": saved}) for pick in picks]
-    return "\n".join([*lines, "</untrusted-document-1a2b>", ""])
-
-
-class StoredPickTests(RecordCase):
-    def answer_stored(self, *picks, documents=None):
-        path = self.program.folder.parent / "picks.jsonl"
-        path.write_text(documents if documents is not None else stored(*picks))
-        return ["answer", "--stored", str(path)]
-
-    def pick(self, identity, option, digest=None, label=None):
-        need = decision(self.head(), identity)
-        return {"decision": identity, "revision": digest or revision(need), "option": option,
-                "label": label or need["options"][option - 1]["label"]}
-
-    def test_a_pick_at_the_current_revision_records_the_users_answer_and_names_its_cleanup(self):
-        pick = self.pick("W6-D1", 2)
-        changed, record, result = self.event(*self.answer_stored(pick))
-        need = decision(record, "W6-D1")
-        path = f"picks/{'W6-D1'.encode().hex()}-{pick['revision']}"
-        self.assertEqual((need["status"], need["answer"]), ("answered", "Hide expired entries"))
-        self.assertEqual(need["answerSource"], f"The user's pick on the command center, stored at {path} (version 3)")
-        self.assertEqual(changed, {"decisions[W6-D1].status", "decisions[W6-D1].answer", "decisions[W6-D1].answerSource",
-                                   "decisions[W6-D1].applied", "decisions[W6-D1].picksRead"})
-        self.assertEqual(need["picksRead"], [f"{path} (version 3) 2026-11-02T18:00:00Z"])
-        self.assertIn(f"note: delete: {path} (version 3)", result.stdout.splitlines())
-        self.assertEqual(self.commits()[0], "W6-D1 answered from the page")
-
-    def test_a_stale_revision_never_applies_and_the_inbox_asks_again(self):
-        stale = self.pick("W6-D1", 2, digest="0123456789")
-        changed, record, result = self.event(*self.answer_stored(stale))
-        need = decision(record, "W6-D1")
-        self.assertEqual(need["status"], "open")
-        self.assertNotIn("answer", need)
-        self.assertEqual(changed, {"decisions[W6-D1].stalePick", "decisions[W6-D1].picksRead"})
-        self.assertEqual(need["stalePick"]["label"], "Hide expired entries")
-        self.assertIn("note: stale: W6-D1 changed since the page showed it; the Inbox asks again", result.stdout)
-        self.assertIn("pick again", (self.program.folder / "command-center.next.html").read_text())
-
-        renamed = self.pick("W5-T", 1, label="Merge it now")
-        _, record, _ = self.event(*self.answer_stored(renamed))
-        self.assertEqual(decision(record, "W5-T")["status"], "open", "a label that is not the option's never applies")
-
-        _, record, _ = self.event(*self.answer_stored(documents=stored(self.pick("W6-D1", 1), saved="2026-11-02T18:10:00Z")))
-        self.assertEqual(decision(record, "W6-D1")["answer"], "Keep the entry")
-        self.assertNotIn("stalePick", decision(record, "W6-D1"), "a current answer clears the stale pick")
-
-    def test_a_pick_for_a_settled_decision_becomes_a_reopen_request(self):
-        same = {"decision": "W0-D1", "revision": "0123456789", "option": 1, "label": "Keep the original job ID."}
-        changed, record, result = self.event(*self.answer_stored(same))
-        self.assertEqual(changed, {"decisions[W0-D1].picksRead"}, "a pick that matches the recorded answer is only read")
-        self.assertIn("W0-D1 already records", result.stdout)
-
-        changed, record, result = self.event(
-            *self.answer_stored(documents=stored(dict(same, label="Use a new job ID"), saved="2026-11-02T18:10:00Z")))
-        self.assertEqual(changed, {"decisions[W0-D1].stalePick", "decisions[W0-D1].picksRead"})
-        self.assertEqual(decision(record, "W0-D1")["status"], "answered", "the recorded answer stands until the reopen")
-        self.assertIn('reopen request: the user picked "Use a new job ID" after W0-D1 was answered', result.stdout)
-        verdict = assess(record, "2026-11-02T18:00:00Z", {})
-        self.assertIn(("reopen request", "W0-D1"), [(entry["kind"], entry["id"]) for entry in verdict["runnable"]])
-
-    def test_untrusted_documents_are_ignored(self):
-        pick = self.pick("W6-D1", 1)
-        documents = "\n".join([
-            json.dumps({"count": 4, "nextCursor": ""}), "not json", json.dumps(["a list"]),
-            json.dumps({"id": "renamed-0123456789", "data": pick, "version": 1, "updatedAt": "2026-11-02T18:00:00Z"}),
-            json.dumps({"id": f"{'W6-D1'.encode().hex()}-{pick['revision']}", "data": dict(pick, option="1"), "version": 2, "updatedAt": "2026-11-02T18:00:00Z"}),
-            json.dumps({"id": f"{'W9-D1'.encode().hex()}-{pick['revision']}", "data": dict(pick, decision="W9-D1"), "version": 3, "updatedAt": "2026-11-02T18:00:00Z"}),
-            json.dumps({"id": f"{'W2-D1'.encode().hex()}-{pick['revision']}", "data": dict(pick, decision="W2-D1"), "version": 4, "updatedAt": "2026-11-02T18:00:00Z"}),
-        ])
-        result = self.run_record(*self.answer_stored(documents=documents))
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(self.commits()), 1)
-        self.assertEqual(result.stdout.count("not a pick the page writes"), 2)
-        self.assertIn("W9-D1 is not recorded", result.stdout)
-        self.assertIn("W2-D1 is withdrawn", result.stdout)
-        self.assertEqual(result.stdout.count("delete: picks/"), 4, "every stored document is cleaned up")
-        self.refused("answer", "--stored", str(self.program.folder.parent / "picks.jsonl"), "--source", "msg",
-                     message="takes its decisions and source from the stored picks")
-
-    def test_a_current_pick_wins_over_stale_ones_in_any_order(self):
-        current, stale = self.pick("W6-D1", 1), self.pick("W6-D1", 2, digest="0123456789")
-        outcomes = []
-        for documents in ((current, stale), (stale, current)):
-            record = self.head()
-            answer_stored(record, "2026-11-02T18:00:00Z", stored_picks(stored(*documents)))
-            need = decision(record, "W6-D1")
-            outcomes.append((need["status"], need["answer"], "stalePick" in need,
-                             [entry["kind"] for entry in assess(record, "2026-11-02T18:00:00Z", {})["runnable"]
-                              if entry["id"] == "W6-D1"]))
-        self.assertEqual(outcomes[0], outcomes[1])
-        self.assertEqual(outcomes[0], ("answered", "Keep the entry", False, ["apply answer"]))
-
-    def test_a_document_id_that_is_not_one_path_segment_is_never_cleaned_up(self):
-        documents = "\n".join([json.dumps({"count": 1, "nextCursor": ""}),
-                               json.dumps({"id": "../config/wake", "data": {"decision": "W6-D1"}, "version": 1,
-                                           "updatedAt": "2026-11-02T18:00:00Z"})])
-        result = self.run_record(*self.answer_stored(documents=documents))
-        self.assertIn('ignored "../config/wake": not a document ID', result.stdout)
-        self.assertNotIn("delete:", result.stdout)
-
-    def test_a_lost_or_partial_save_is_refused_rather_than_skipped(self):
-        pick = self.pick("W6-D1", 1)
-        whole = stored(pick)
-        lost = "\n".join(line for line in whole.splitlines() if not line.startswith('{"id"'))
-        for text, message in ((lost, "holds 0 documents but db_query counted 1"),
-                              (whole.replace('"nextCursor": null', '"nextCursor": "next"'), "one page of several"),
-                              (whole.splitlines()[2], "with its one summary line"),
-                              (whole.replace(', "updatedAt": "2026-11-02T18:00:00Z"', ""), "lacks its version and save time")):
-            with self.subTest(message=message), self.assertRaises(Refused) as refused:
-                stored_picks(text)
-            self.assertIn(message, str(refused.exception))
-
-    def test_the_users_message_supersedes_picks_saved_before_it(self):
-        need = decision(self.head(), "W6-D1")
-        earlier, other = self.pick("W6-D1", 1), self.pick("W1-D2", 2)
-        prompt = decision_prompt(need, self.head(), f'I choose option 2: {quoted(need["options"][1]["label"])}')
-        _, record, result = self.event(*self.answer_stored(earlier, other), "--pasted", "--source", "User message 18:05",
-                                       stdin=prompt)
-        path = f"picks/{'W6-D1'.encode().hex()}-{earlier['revision']}"
-        self.assertEqual(decision(record, "W6-D1")["answer"], "Hide expired entries", "the copied answer came later")
-        self.assertEqual(decision(record, "W6-D1")["answerSource"], "User message 18:05")
-        self.assertEqual(decision(record, "W6-D1")["picksRead"], [f"{path} (version 3) 2026-11-02T18:00:00Z"])
-        self.assertNotIn("stalePick", decision(record, "W6-D1"))
-        self.assertEqual(decision(record, "W1-D2")["answer"], "Five attempts", "other decisions' picks still apply")
-        self.assertIn("note: superseded: the user's message replaces W6-D1's page pick", result.stdout)
-        self.assertIn(f"note: delete: {path} (version 3)", result.stdout)
-        self.assertEqual(self.commits()[0], "W6-D1 answered; W1-D2 answered from the page")
-
-        _, record, _ = self.event("answer", "--decision", "W3-D1", "--option", "2", "--source", "msg",
-                                  *self.answer_stored(self.pick("W3-D1", 1))[1:])
-        self.assertEqual(decision(record, "W3-D1")["answer"], "Between test classes")
-
-    def test_a_pick_read_again_after_a_failed_cleanup_changes_nothing(self):
-        applied, displaced = self.pick("W6-D1", 1), self.pick("W6-D1", 2, digest="0123456789")
-        superseded = self.pick("W1-D2", 1)
-        agreeing = {"decision": "W0-D1", "revision": "0123456789", "option": 1, "label": "Keep the original job ID."}
-        self.event(*self.answer_stored(applied, displaced, agreeing))
-        self.event("answer", "--decision", "W6-D1", "--option", "2", "--source", "msg")
-        self.event("answer", "--decision", "W0-D1", "--text", "Use a new job ID", "--source", "msg")
-        self.event("answer", "--decision", "W1-D2", "--option", "2", "--source", "msg", *self.answer_stored(superseded)[1:])
-        before = self.commits()
-        result = self.run_record(*self.answer_stored(applied, displaced, agreeing, superseded))
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.commits(), before, "no pick read before becomes a reopen request")
-        self.assertEqual(result.stdout.count("already read picks/"), 4)
-
-        rewritten = stored(applied, version=1, saved="2026-11-02T19:00:00Z")
-        result = self.run_record(*self.answer_stored(documents=rewritten))
-        self.assertIn("reopen request: the user picked \"Keep the entry\" after W6-D1 was answered", result.stdout,
-                      "a pick saved again later is a new pick")
-
-    def test_copy_answer_still_answers_after_a_stale_pick(self):
-        self.event(*self.answer_stored(self.pick("W6-D1", 2, digest="0123456789")))
-        need = decision(self.head(), "W6-D1")
-        prompt = decision_prompt(need, self.head(), f'I choose option 2: {quoted(need["options"][1]["label"])}')
-        _, record, _ = self.event("answer", "--pasted", "--source", "User message 18:05", stdin=prompt)
-        self.assertEqual(decision(record, "W6-D1")["answer"], "Hide expired entries")
-        self.assertNotIn("stalePick", decision(record, "W6-D1"))
 
 
 class TurnEndTests(RecordCase):
@@ -1562,22 +1470,12 @@ class LifecycleMutationTests(RecordCase):
                 "blocks": [{"id": "W2", "phase": "proof"}],
             }),
         ))
-        cur = self.head()
-        d8 = decision(cur, "W2-D8")
-        picks_file = self.program.folder.parent / "dead-base.jsonl"
-        doc_id = f"{d8['id'].encode().hex()}-{revision(d8)}"
-        picks_file.write_text("\n".join([
-            json.dumps({"id": doc_id, "version": 1, "updatedAt": "2026-11-02T17:20:00Z",
-                        "data": {"decision": "W2-D8", "revision": revision(d8), "option": 1, "label": "Rebase onto feat/w9"}}),
-            json.dumps({"count": 1}),
-        ]) + "\n")
-        # Standalone answer fails validation while W2 still rests on dead W1; work --rebase-onto --decision succeeds,
-        # and re-running answer --stored emits the delete receipt for the already-recorded pick.
-        self.refused("answer", "--stored", str(picks_file), message="W2")
+        # Standalone answer fails validation while W2 still rests on dead W1; work --rebase-onto --decision succeeds.
+        self.refused("answer", "--decision", "W2-D8", "--option", "1", "--source", "User chat", message="W2")
         _, after_rebase, _ = self.event(
             "work", "--id", "W2", "--rebase-onto", "feat/w9", "--stack-on", "W9-L1",
             "--provisional-clears", "W9 lands and canary passes",
-            "--decision", "W2-D8", "--option", "1", "--answer-source", "Stored page pick",
+            "--decision", "W2-D8", "--option", "1", "--answer-source", "User chat",
         )
         w2 = work(after_rebase, "W2")
         self.assertEqual(w2["provisional"]["on"], ["W9"])
@@ -1585,8 +1483,6 @@ class LifecycleMutationTests(RecordCase):
         self.assertEqual(w2["provisional"]["clears"], "W9 lands and canary passes")
         self.assertNotIn("W1", w2["provisional"]["clears"])
         self.assertEqual(decision(after_rebase, "W2-D8")["status"], "answered")
-        _, _, cleanup_res = self.event("answer", "--stored", str(picks_file))
-        self.assertIn(f"delete: picks/{doc_id} (version 1)", cleanup_res.stdout)
 
         # 4. Empty / multiline --next refused; init refuses staged deletion of program.json.
         self.refused("grant", "--heartbeat", "10m", "--next", "", message="one short line")
@@ -2110,19 +2006,19 @@ class LifecycleMutationTests(RecordCase):
             self.assertFalse(pr_item["allTerminal"])
             self.assertFalse(pr_item["readyToPrune"])
             self.assertIn("heartbeat=unset", pr_item["keepReasons"])
-            self.assertIn("wake=unset", pr_item["keepReasons"])
+            self.assertNotIn("wake=unset", pr_item["keepReasons"])
 
-            # Ambiguous None-prefixed automation text stays keep; exact None (<reason>) clears it.
+            # Ambiguous None-prefixed automation text stays keep; exact None (<reason>) clears it without needing --wake.
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(pr_state),
                 "--source", "User msg 2", "--start", "All", "--resolve", "Reversible", "--user", "Merges",
-                "--heartbeat", "None? old task still needs checking", "--wake", "None (program done)",
+                "--heartbeat", "None? old task still needs checking",
             ], check=True, capture_output=True, text=True, env=env)
             self.assertFalse(list_json()["PR Ready"]["readyToPrune"])
 
             subprocess.run([
                 sys.executable, str(SCRIPT), "grant", "--state", str(pr_state),
-                "--heartbeat", "None (program done)", "--wake", "None (program done)",
+                "--heartbeat", "None (program done)",
             ], check=True, capture_output=True, text=True, env=env)
             reopened = pr_container / "site" / ".sites-checkout"
             reopened.mkdir(parents=True)

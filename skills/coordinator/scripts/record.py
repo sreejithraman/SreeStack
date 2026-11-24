@@ -26,7 +26,7 @@ from render_dashboard import (ACTIVE, DECISION_KEYS, DISCOVERY_IMPACTS, FINISH_L
                               LIVE_LAYERS, OWNER_KEYS, OPTION_KEYS, PENDING_LANDINGS, PHASES, PICTURE_SHAPES,
                               PROGRAM_KEYS, READY_LAYERS, STALE_HOURS, STATES, TERMINAL, WORK_KEYS, assess,
                               check_pictures, committed, content_name, dead_base, effective_finish, fields, git, git_env,
-                              hexed, known_keys, layout, now, observation, open_blocks, page_files,
+                              known_keys, layout, now, observation, open_blocks, page_files, parse_time,
                               pending_landing, place, quoted, recorded_threads, records, revision, stage_page, unsatisfied, validate)
 
 
@@ -43,7 +43,9 @@ ROUTES = {
 REPORT_BLOCK = re.compile(r"\A\s*```json[ \t]*\n(.*?)\n```", re.S)
 DECISION_LINE = re.compile(r'^Decision ("(?:[^"\\]|\\.)*") \(revision ([0-9a-f]+)\)(?:: (.*)| in .*)$')
 CHOICE_LINE = re.compile(r'^I choose option (\d+): ("(?:[^"\\]|\\.)*")$')
-DOCUMENT_ID = re.compile(r"[A-Za-z0-9_.~:@+-]+")  # one page-database path segment
+THREAD_URL_RE = re.compile(r"(?:t3-thread://|https?://[^\s)>\]]+/threads/)[^\s)>\]]+")
+CHIEF_MAX_RUNS = 400
+CHIEF_MAX_ITEMS = 8000
 
 
 class Refused(Exception):
@@ -127,7 +129,7 @@ def update_grant(state, at, source=None, start_rule=None, resolve_rule=None, use
     touched_authority = any(value is not None for _, value in authority_values) or finish_line is not None
     touched_grant = any(value is not None for _, value in grant_values) or (source is not None and landing_rule is None)
     if not (touched_grant or landing_rule is not None or hosting is not None or finish_line is not None):
-        raise Refused("grant needs at least one field to set (--start, --resolve, --user, --heartbeat, --wake, --landing, --hosting, or --finish-line)")
+        raise Refused("grant needs at least one field to set (--start, --resolve, --user, --heartbeat, --landing, --hosting, or --finish-line)")
     if (touched_authority or landing_rule is not None) and not source:
         raise Refused("changing grant authority (--start, --resolve, --user, --landing, or --finish-line) needs --source: the user's message that authorized it")
     parts = []
@@ -195,7 +197,6 @@ def reopen_decision(state, at, identity, why, blocks=None):
     row["status"] = "open"
     put(row, "reopened", row.get("reopened", 0) + 1, DECISION_KEYS)
     row.pop("applied", None)
-    row.pop("stalePick", None)
     by_id = {item["id"]: item for item in state["work"]}
     notes = []
     if blocks is not None:
@@ -225,7 +226,6 @@ def withdraw_decision(state, at, identity, why):
     archive_decision_history(row, at, f"withdrawn: {why}")
     row["status"] = "withdrawn"
     row.pop("applied", None)
-    row.pop("stalePick", None)
     return f"{identity} withdrawn", ["reconcile any blockers or work that depended on this decision"]
 
 
@@ -691,7 +691,6 @@ def settle(state, at, identity, answer, status, source=None, basis=None):
         earlier += f" (basis: {row.pop('basis')})." if "basis" in row else f" (source: {row.pop('answerSource')})."
         put(row, "rationale", f"{row['rationale']} {earlier}" if row.get("rationale") else earlier, DECISION_KEYS)
     row["status"] = status
-    row.pop("stalePick", None)
     put(row, "answer", answer, DECISION_KEYS)
     if status == "answered":
         put(row, "answerSource", source, DECISION_KEYS)
@@ -757,113 +756,6 @@ def answer_pasted(state, at, text, source):
     affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
     notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
     return f"{', '.join(recorded)} answered", notes, recorded
-
-
-def stored_picks(text):
-    """Each pick document in saved db_query output: one JSON object per line with its id and data.
-
-    The wrapping tags are skipped. The summary line's count must match the documents read, so a pick lost in
-    saving is never skipped quietly. Every document is untrusted.
-    """
-    found, summaries = [], []
-    for line in text.splitlines():
-        try:
-            value = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(value, dict) and isinstance(value.get("id"), str) and isinstance(value.get("data"), dict):
-            if not (isinstance(value.get("updatedAt"), str) and value["updatedAt"] and type(value.get("version")) is int):
-                raise Refused(f"document {json.dumps(value['id'])} lacks its version and save time; save the db_query output unchanged")
-            found.append(value)
-        elif isinstance(value, dict) and type(value.get("count")) is int:
-            summaries.append(value)
-    if len(summaries) != 1:
-        raise Refused("save the db_query output unchanged, with its one summary line")
-    if summaries[0].get("nextCursor"):
-        raise Refused("db_query returned one page of several; query again with a larger limit")
-    if len(found) != summaries[0]["count"]:
-        raise Refused(f"the saved output holds {len(found)} documents but db_query counted {summaries[0]['count']}; "
-                      "save its output unchanged")
-    return found
-
-
-NOTHING_STORED = "stored picks: nothing to record"
-
-
-def answer_stored(state, at, documents, answered=()):
-    """Record each stored page pick that matches its open decision's current revision.
-
-    Each decision gets one outcome, judged against the record as it stood before this import: a pick at its
-    current revision wins over picks for earlier ones. A pick for an earlier revision is never applied: it
-    marks the decision's stalePick, which asks again on an open decision and makes a reopen request of a
-    settled one. Picks for the decisions in answered, which the user's message just answered, were saved
-    before that message was read, so it supersedes them. Each decision's picksRead names every pick read for
-    it by path, version, and save time, so reading one again after a failed cleanup changes nothing.
-    """
-    before = {row["id"]: row for row in state["decisions"]}  # each row changes only after all its picks are read
-    notes, cleanup, found, superseded, receipts = [], [], {}, set(), {}
-    for document in documents:
-        if not DOCUMENT_ID.fullmatch(document["id"]) or document["id"] in {".", ".."}:
-            notes.append(f"ignored {json.dumps(document['id'])}: not a document ID")
-            continue
-        path, data = f"picks/{document['id']}", document["data"]
-        name = f"{path} (version {document['version']})"
-        cleanup.append(f"delete: {name}")
-        identity, digest, number, label = (data.get(key) for key in ("decision", "revision", "option", "label"))
-        if not (isinstance(identity, str) and isinstance(digest, str) and type(number) is int
-                and isinstance(label, str) and label.strip() and document["id"] == f"{hexed(identity)}-{digest}"):
-            notes.append(f"ignored {path}: not a pick the page writes")
-            continue
-        row = before.get(identity)
-        if row is None or row["status"] == "withdrawn":
-            notes.append(f"ignored {path}: {identity} is {'withdrawn' if row else 'not recorded'}")
-            continue
-        receipt = f"{name} {document['updatedAt']}"
-        if receipt in row.get("picksRead", []):
-            notes.append(f"{identity} already read {path}")
-            continue
-        receipts.setdefault(identity, []).append(receipt)
-        if identity in answered:
-            superseded.add(identity)
-            continue
-        options = row.get("options", [])
-        chosen = options[number - 1]["label"] if 1 <= number <= len(options) else None
-        current = (row["status"] == "open" and revision(row) == digest
-                   and chosen is not None and quoted(chosen) == quoted(label))
-        found.setdefault(identity, []).append((name, label, digest, chosen if current else None))
-    recorded, stale = [], []
-    for identity, picks in found.items():
-        row = before[identity]
-        current = next((pick for pick in picks if pick[3] is not None), None)
-        if current:
-            settle(state, at, identity, current[3], "answered",
-                   source=f"The user's pick on the command center, stored at {current[0]}")
-            recorded.append(identity)
-            continue
-        differing = [pick for pick in sorted(picks)
-                     if row["status"] == "open" or quoted(row["answer"]) != quoted(pick[1])]
-        if not differing:
-            notes.append(f"{identity} already records {quoted(row['answer'])}")
-            continue
-        _, label, digest, _ = differing[-1]
-        put(decision_row(state, identity), "stalePick", {"label": label, "revision": digest, "at": at}, DECISION_KEYS)
-        stale.append(identity)
-        notes.append(f"stale: {identity} changed since the page showed it; the Inbox asks again" if row["status"] == "open"
-                     else f"reopen request: the user picked {quoted(label)} after {identity} was {row['status']}; "
-                          "reopen it under references/decisions.md#reopen")
-    for identity in superseded:
-        notes.append(f"superseded: the user's message replaces {identity}'s page pick")
-    for identity, read in receipts.items():
-        row = decision_row(state, identity)
-        put(row, "picksRead", row.get("picksRead", []) + read, DECISION_KEYS)
-    if recorded:
-        affected = sorted({entry["id"] for identity in recorded for entry in decision_row(state, identity).get("blocks", [])})
-        notes.append(f"update the owners of {', '.join(affected) or 'the work it affects'}, then run applied")
-    if not documents:
-        notes.append("no stored picks")
-    parts = [f"{', '.join(recorded)} answered from the page"] if recorded else []
-    parts += [f"{', '.join(stale)} stale page pick"] if stale else []
-    return "; ".join(parts) or ("stored picks read" if receipts else NOTHING_STORED), notes + cleanup
 
 
 def set_pictures(state, identity, images, option=None, shape=None):
@@ -1231,9 +1123,43 @@ def t3_thread(identity):
 
 
 def thread_id(session):
-    parts = urlsplit(session)
+    match = THREAD_URL_RE.search(session) if isinstance(session, str) else None
+    target = match.group(0) if match else session
+    parts = urlsplit(target)
     segments = [segment for segment in (parts.netloc if parts.scheme == "t3-thread" else "", *parts.path.split("/")) if segment]
     return unquote(segments[-1]) if segments else None
+
+
+def chief_thread_id(chief):
+    """Extract the coordinator's own T3 thread ID from a thread URL, Markdown link, or angle-bracket link."""
+    if not isinstance(chief, str):
+        return None
+    match = THREAD_URL_RE.search(chief)
+    return thread_id(match.group(0)) if match else None
+
+
+def check_chief_thread(state, read_thread, max_runs=CHIEF_MAX_RUNS, max_items=CHIEF_MAX_ITEMS):
+    """Return a rotation warning note when the coordinator's own thread is large or times out."""
+    identity = chief_thread_id(state.get("chief"))
+    if not identity:
+        return None
+    try:
+        thread = read_thread(identity)
+    except subprocess.TimeoutExpired:
+        return "chief: coordinator thread timed out while reading; rotate to a fresh thread via record.py move"
+    except (OSError, ValueError, KeyError):
+        return None
+    if not isinstance(thread, dict):
+        return None
+    runs = thread.get("runCount")
+    items = thread.get("itemCount")
+    runs = runs if isinstance(runs, int) and not isinstance(runs, bool) else None
+    items = items if isinstance(items, int) and not isinstance(items, bool) else None
+    if (runs is not None and runs >= max_runs) or (items is not None and items >= max_items):
+        parts = ([f"{runs} runs"] if runs is not None else []) + ([f"{items} items"] if items is not None else [])
+        return (f"chief: coordinator thread is large ({', '.join(parts)}; "
+                f"threshold {max_runs} runs / {max_items} items); rotate to a fresh thread via record.py move")
+    return None
 
 
 def read_owners(state, read_thread):
@@ -1336,17 +1262,36 @@ def seen_moved(row, thread, at):
         key: value for key, value in recorded.items() if key != "at"}
 
 
-def observe(state, at, read_pr, threads):
+def needs_check_refresh(row, at, stale_hours):
+    """True when checkedAt is absent or at least half the stale window old."""
+    checked = row.get("checkedAt")
+    if not checked:
+        return True
+    return (parse_time(at) - parse_time(checked)).total_seconds() >= (stale_hours * 3600) / 2
+
+
+def seen_refresh_due(row, at, stale_hours):
+    """True when owner.seen.at is absent or at least half the stale window old."""
+    seen_at = row.get("owner", {}).get("seen", {}).get("at")
+    if not seen_at:
+        return True
+    return (parse_time(at) - parse_time(seen_at)).total_seconds() >= (stale_hours * 3600) / 2
+
+
+def observe(state, at, read_pr, threads, stale_hours=STALE_HOURS):
     """Apply forge facts and owner thread states to open work and pending landings; return notes on what changed or needs a hand."""
     notes, forge, candidates, kept = [], {}, {}, {}
     for index, row in enumerate(state["work"]):
         if row["state"] in TERMINAL:
             continue
         facts, reads, failed = read_layers(row, read_pr, forge, notes)
-        if thread := threads.get(row["id"]):
+        thread = threads.get(row["id"])
+        if thread:
             reads += 1
             failed += isinstance(thread, str)
-        if reads and not failed:
+        thread_changed = row["id"] in threads and seen_moved(row, thread, at)
+        row_changed = facts != row or derived_state(facts) != row["state"] or thread_changed
+        if reads and not failed and (row_changed or needs_check_refresh(row, at, stale_hours)):
             facts["checkedAt"] = at
         derived = copy.deepcopy(facts) | {"state": derived_state(facts)}
         if derived["state"] != "unknown":
@@ -1366,7 +1311,11 @@ def observe(state, at, read_pr, threads):
         elif row["state"] != original["state"]:
             notes.append(f"{row['id']}: {original['state']} -> {row['state']}")
     for row in state["work"]:  # an owner's thread state stands whichever forge facts were kept
-        if row["id"] in threads and (isinstance(threads[row["id"]], dict) or seen_moved(row, threads[row["id"]], at)):
+        if row["id"] in threads and (
+            seen_moved(row, threads[row["id"]], at)
+            or (isinstance(threads[row["id"]], dict)
+                and (row.get("checkedAt") == at or seen_refresh_due(row, at, stale_hours)))
+        ):
             put(row["owner"], "seen", observation(threads[row["id"]], at), OWNER_KEYS)
     merged = {layer["url"] for row in state["work"] for layer in row.get("layers", [])
               if layer["status"] == "merged" and "url" in layer}
@@ -1404,6 +1353,15 @@ def waiting_line(assessment):
     return f"Waiting on {'; '.join(parts)}. Nothing is runnable."
 
 
+def waiting_cadence_hint(assessment):
+    """Suggest pausing or lengthening the heartbeat when 0 owners are running."""
+    if assessment["verdict"] != "waiting":
+        return None
+    if assessment["waiting"] and all(entry["kind"] == "need" for entry in assessment["waiting"]):
+        return "0 owners running (waiting purely on open Inbox); pause the heartbeat (enabled: false) under references/lifecycle.md"
+    return "0 owners running (waiting on external events); lengthen the heartbeat to 1-6 hours under references/lifecycle.md"
+
+
 def show(assessment):
     print(f"verdict: {assessment['verdict']} (digest {assessment['digest']})")
     for group in ("runnable", "working", "waiting", "attention"):
@@ -1412,6 +1370,8 @@ def show(assessment):
             print(f"{entry['kind']}: {entry['id']}: {entry['text']}{since}")
     if assessment["verdict"] == "waiting":
         print(f"say: {waiting_line(assessment)}")
+        if hint := waiting_cadence_hint(assessment):
+            print(f"hint: {hint}")
 
 
 # Command line.
@@ -1676,7 +1636,7 @@ def arguments():
     command.add_argument("--resolve", dest="resolve_rule", help="Which decisions the coordinator settles itself")
     command.add_argument("--user", dest="user_rule", help="What stays with the user")
     command.add_argument("--heartbeat", dest="heartbeat_rule", help="Heartbeat timing policy and scheduled task ID, or why none")
-    command.add_argument("--wake", dest="wake_rule", help="Answer wake scheduled task ID, or why none")
+    command.add_argument("--wake", dest="wake_rule", help=argparse.SUPPRESS)
     command.add_argument("--landing", dest="landing_rule", help="Agreed landing scope and gates (sets landingAuthority)")
     command.add_argument("--hosting", help="Current published command center URL")
     command.add_argument("--finish-line", help="Program-wide finish-line note")
@@ -1712,7 +1672,7 @@ def arguments():
     command.add_argument("--stack-on", help="Layer ID to set as stackedOn when rebasing onto another unmerged layer")
     command.add_argument("--decision", dest="decision_id", help="Decision ID to answer in the same commit as --scrap or --rebase-onto")
     command.add_argument("--option", dest="decision_option", type=int, help="Chosen option number for --decision")
-    command.add_argument("--answer-source", help="User message or stored pick that answered --decision")
+    command.add_argument("--answer-source", help="User message that answered --decision")
 
     command = commands.add_parser("start", parents=[shared], help="An owner started on a work row")
     command.add_argument("--work", required=True)
@@ -1733,9 +1693,6 @@ def arguments():
     choice.add_argument("--option", type=int, help="The chosen option's number")
     choice.add_argument("--text", help="The answer in the user's words")
     choice.add_argument("--pasted", action="store_true", help="Read a copied page prompt from stdin")
-    command.add_argument("--stored", type=Path, metavar="FILE",
-                         help="Read picks the page stored, from saved db_query output of its picks collection; "
-                              "with an answer from the user's message, that answer supersedes its decisions' picks")
 
     command = commands.add_parser("picture", parents=[shared], help="Set an open decision's pictures, or one option's")
     command.add_argument("--decision", required=True)
@@ -1832,26 +1789,16 @@ def event(args, state, at, files):
         images = [(adopt_picture(path, "--image", files), caption) for path, caption in args.images]
         return set_pictures(state, args.decision, images, args.option, args.shape)
     if args.command == "answer":
-        documents = stored_picks(args.stored.read_text()) if args.stored else None
-        if documents is not None and not (args.pasted or args.option or args.text):
-            if args.source or args.decision:
-                raise Refused("answer --stored alone takes its decisions and source from the stored picks")
-            return answer_stored(state, at, documents)
         if not args.source:
             raise Refused("answer needs --source: the user's message that answered")
         if args.pasted:
-            message, notes, answered = answer_pasted(state, at, sys.stdin.read(), args.source)
-        elif args.decision and (args.option or args.text):
-            row = decision_row(state, args.decision)
-            message, notes = settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
-                                    "answered", source=args.source)
-            answered = [args.decision]
-        else:
-            raise Refused("answer needs --decision with --option or --text, --pasted, or --stored")
-        if documents is None:
+            message, notes, _ = answer_pasted(state, at, sys.stdin.read(), args.source)
             return message, notes
-        stored_message, stored_notes = answer_stored(state, at, documents, answered)
-        return message if stored_message == NOTHING_STORED else f"{message}; {stored_message}", notes + stored_notes
+        if args.decision and (args.option or args.text):
+            row = decision_row(state, args.decision)
+            return settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
+                          "answered", source=args.source)
+        raise Refused("answer needs --decision with --option or --text, or --pasted")
     if args.command == "resolve":
         row = decision_row(state, args.decision)
         return settle(state, at, args.decision, option_label(row, args.option) if args.option else args.text,
@@ -1909,11 +1856,13 @@ def check_status(args, record, read_pr, read_thread):
     state = record.load()
     before = copy.deepcopy(state)
     threads = read_owners(state, read_thread)
-    notes = observe(state, at, read_pr, threads)
+    notes = observe(state, at, read_pr, threads, args.stale_hours)
     set_next(state, args.next)
     if state != before:
         summary = "; ".join(notes[:3]) + (f"; {len(notes) - 3} more" if len(notes) > 3 else "")
         record.save(state, f"status: {summary or 'checked'}")
+    if chief_note := check_chief_thread(state, read_thread):
+        notes.append(chief_note)
     for line in notes:
         print(f"note: {line}")
     result = assess(state, at, threads, args.stale_hours)
@@ -1925,14 +1874,21 @@ def heartbeat(args, record, read_pr, read_thread, at):
     """One heartbeat tick: observe without committing, and compare with what the coordinator last saw.
 
     It wakes on runnable work, a changed digest, or a note not seen before: a forge fact the digest
-    leaves alone, such as a base closing under provisional work, a failed read, or a row gone stale
-    because reads keep failing. It says done only when the committed record is done too, so the
-    woken coordinator records the last merges first.
+    leaves alone, such as a base closing under provisional work, a failed read, a row gone stale
+    because reads keep failing, or a large coordinator thread that should rotate. It says done only
+    when the committed record is done too, so the woken coordinator records the last merges first.
     """
     committed_state = validate(committed(record.file))
     threads = read_owners(committed_state, read_thread)
     state = copy.deepcopy(committed_state)
-    observed = {re.sub(r"(could not read \S+): .*", r"\1", note) for note in observe(state, at, read_pr, threads)}
+    raw_notes = observe(state, at, read_pr, threads, args.stale_hours)
+    if chief_note := check_chief_thread(committed_state, read_thread):
+        raw_notes.append(chief_note)
+    observed = {
+        re.sub(r"(chief: coordinator thread is large) \([^)]*\)", r"\1",
+               re.sub(r"(could not read \S+): .*", r"\1", note))
+        for note in raw_notes
+    }
     result = assess(state, at, threads, args.stale_hours)
     stale = {f"{entry['id']}: not observed since {entry['since']}" for entry in result["attention"] if entry["kind"] == "stale"}
     notes = sorted(observed | stale)
@@ -1944,17 +1900,17 @@ def heartbeat(args, record, read_pr, read_thread, at):
             and assess(committed_state, at, threads, args.stale_hours)["verdict"] == "done")
     if done:
         tick = "done"
-        print("heartbeat: done. Delete the scheduled task in the record's grant.heartbeat, then finish the program "
-              f"under {skill}.")
+        print("heartbeat: done. Check chief in HEAD:program.json; Delete the scheduled task in the record's "
+              f"grant.heartbeat, then finish the program under {skill}.")
     elif fresh or result["verdict"] not in QUIET or seen["digest"] != result["digest"]:
         tick = "wake"
-        print(f"heartbeat: wake. Re-read {skill}, run status, and act on what it lists.")
+        print(f"heartbeat: wake. Check chief in HEAD:program.json; Re-read {skill}, run status, and act on what it lists.")
         for note in fresh:
             print(f"note: {note}")
         show(result)
     else:
         tick = "quiet"
-        print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). End the turn without a message.")
+        print(f"heartbeat: quiet ({result['verdict']}, digest {result['digest']}). Skip SKILL.md and end the turn without a message.")
     return result | {"heartbeat": tick, "notes": fresh}
 
 
@@ -2016,8 +1972,8 @@ def list_programs(root, as_json=False):
                 keep.append(f"open-discoveries={open_discoveries}")
             if not automation_cleared(grant.get("heartbeat")):
                 keep.append(f"heartbeat={grant.get('heartbeat') or 'unset'}")
-            if not automation_cleared(grant.get("wake")):
-                keep.append(f"wake={grant.get('wake') or 'unset'}")
+            if grant.get("wake") and not automation_cleared(grant.get("wake")):
+                keep.append(f"wake={grant.get('wake')}")
             items.append({
                 "program": str(container),
                 "state": str(state_file),

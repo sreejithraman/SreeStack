@@ -287,10 +287,8 @@ decisions that a recorded source or your standing approval answers, and you can
 reopen any of them. It builds on a reversible recommended option instead of
 stopping. Each Inbox item asks one question, with two or more options, one
 recommendation, what it blocks, and what continues meanwhile. When the choice
-is visual, it shows pictures you can tap to see larger. On a Claude artifact,
-Send answer saves your pick and a link wakes the coordinator to record it; you
-can also copy an answer from the page into chat. Nothing blocks while you
-decide.
+is visual, it shows pictures you can tap to see larger. Copy any answer from
+the page into chat to record it; nothing blocks while you decide.
 
 It never ends a turn while work could run. In T3 a heartbeat checks the program
 every 10 minutes. It stays quiet while nothing changed, wakes the coordinator
