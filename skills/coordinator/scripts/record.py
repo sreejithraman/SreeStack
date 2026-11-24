@@ -1136,6 +1136,16 @@ def chief_thread_id(chief):
     return thread_id(match.group(0)) if match else None
 
 
+def normalize_chief_id(value):
+    """Normalize a --chief-id link or bare thread ID (preserving colon prefixes like mcp:launch:...)."""
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return chief_thread_id(stripped) or unquote(stripped)
+
+
 def check_chief_thread(state, read_thread):
     """Return a rotation warning note when the coordinator's own thread is large or times out."""
     identity = chief_thread_id(state.get("chief"))
@@ -1870,20 +1880,26 @@ def heartbeat(args, record, read_pr, read_thread, at):
     """
     committed_state = validate(committed(record.file))
     committed_chief = chief_thread_id(committed_state.get("chief"))
-    if getattr(args, "chief_id", None) and committed_chief:
-        caller_chief = chief_thread_id(args.chief_id) or thread_id(args.chief_id)
-        if caller_chief != committed_chief:
-            print(f"heartbeat: not-chief (committed chief is {committed_chief}). "
-                  "Delete this stale heartbeat task and end the turn without acting.")
+    if getattr(args, "chief_id", None):
+        caller_chief = normalize_chief_id(args.chief_id)
+        if committed_chief:
+            if caller_chief != committed_chief:
+                print(f"heartbeat: not-chief (committed chief is {committed_chief}). "
+                      "Delete this stale heartbeat task and end the turn without acting.")
+                return {"verdict": "waiting", "digest": None, "runnable": [], "working": [], "waiting": [],
+                        "attention": [], "heartbeat": "not-chief", "notes": []}
+        elif caller_chief != committed_state.get("chief", "").strip():
+            print("heartbeat: unverified-chief (committed chief is not a thread link). "
+                  "Check chief in HEAD:program.json and record a T3 thread link via record.py move.")
             return {"verdict": "waiting", "digest": None, "runnable": [], "working": [], "waiting": [],
-                    "attention": [], "heartbeat": "not-chief", "notes": []}
+                    "attention": [], "heartbeat": "unverified-chief", "notes": []}
     threads = read_owners(committed_state, read_thread)
     state = copy.deepcopy(committed_state)
     raw_notes = observe(state, at, read_pr, threads, args.stale_hours)
     result = assess(state, at, threads, args.stale_hours)
     committed_done = (result["verdict"] == "done"
                       and assess(committed_state, at, threads, args.stale_hours)["verdict"] == "done")
-    if not committed_done and (chief_note := check_chief_thread(committed_state, read_thread)):
+    if result["verdict"] != "done" and (chief_note := check_chief_thread(committed_state, read_thread)):
         keyed = f"chief ({committed_chief}): coordinator thread is large; rotate to a fresh thread via record.py move" if "coordinator thread is large" in chief_note else f"chief ({committed_chief}): {chief_note.removeprefix('chief: ')}"
         raw_notes.append(keyed)
     observed = {re.sub(r"(could not read \S+): .*", r"\1", note) for note in raw_notes}

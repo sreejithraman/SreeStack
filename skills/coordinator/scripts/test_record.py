@@ -1028,6 +1028,26 @@ class VerdictCommandTests(RecordCase):
         self.assertEqual(self.heartbeat("--stale-hours", "1000000", "--chief-id", "chief-big")[0], "quiet",
                          "incrementing counts do not wake every tick")
 
+        # Colon-prefixed MCP thread IDs (bare, Markdown link, or encoded URL) match without stripping the scheme prefix.
+        mcp_id = "mcp:launch:717cda384adfa68b"
+        mcp_state = program([outcome("A", "building")])
+        mcp_state["chief"] = "[Prog](t3-thread://v2/env/mcp%3Alaunch%3A717cda384adfa68b)"
+        self.program.write(mcp_state, "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}, mcp_id: {"status": "running", "runCount": 10, "itemCount": 100}})
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000", "--chief-id", mcp_id)[0], "quiet")
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000", "--chief-id", mcp_state["chief"])[0], "quiet")
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000", "--chief-id", "https://app.t3.codes/threads/env/mcp%3Alaunch%3A717cda384adfa68b")[0], "quiet")
+        self.assertEqual(self.heartbeat("--stale-hours", "1000000", "--chief-id", "mcp:launch:other")[0], "not-chief")
+
+        # Non-link chief with mismatched --chief-id fails closed (unverified-chief) without mutating seen state.
+        plain_state = program([outcome("A", "building")])
+        plain_state["chief"] = "T3 thread 802fd57d (plain prose)"
+        self.program.write(plain_state, "2026-11-15T13:00:00Z")
+        self.serve(threads={"thread:A": {"status": "running"}})
+        tick_unverified, out_unverified = self.heartbeat("--stale-hours", "1000000", "--chief-id", "mcp:launch:717cda384adfa68b")
+        self.assertEqual(tick_unverified, "unverified-chief")
+        self.assertNotIn("Delete this stale heartbeat task", out_unverified)
+
         # itemCount >= 8000 triggers even with runCount < 400; OSError/ValueError return None; TimeoutExpired warns.
         self.assertIn("8500 items", check_chief_thread(state, lambda _id: {"runCount": 20, "itemCount": 8500}))
         self.assertIsNone(check_chief_thread(state, lambda _id: (_ for _ in ()).throw(OSError("no t3"))))
