@@ -498,7 +498,7 @@ def validate(state):
     if "landingAuthority" in state:
         fields(known_keys(obj(state["landingAuthority"], "landingAuthority"), "landingAuthority", ENTRY), "landingAuthority", ENTRY)
     if "grant" in state:
-        fields(known_keys(obj(state["grant"], "grant"), "grant", (*GRANT, "heartbeat", "wake")), "grant", GRANT, ("heartbeat", "wake"))
+        fields(known_keys(obj(state["grant"], "grant"), "grant", (*GRANT, "heartbeat")), "grant", GRANT, ("heartbeat",))
 
     work = records(state.get("work"), "work")
     decisions = records(state.get("decisions"), "decisions")

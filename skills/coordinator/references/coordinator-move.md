@@ -52,8 +52,7 @@ via `t3_thread_configure` or the model picker), `chief` and the bound heartbeat 
 do not run `record.py move`. Instead:
 
 1. Force-publish the page on the new backend under `hosting.md`.
-2. Verify the existing heartbeat's `enabled` and `nextRunAt` (and upgrade any older heartbeat prompt
-   or legacy `grant.wake` under `lifecycle.md`).
+2. Verify the existing heartbeat's `enabled` and `nextRunAt`.
 
 ## After either
 
