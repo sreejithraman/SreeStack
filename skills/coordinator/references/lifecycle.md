@@ -28,14 +28,15 @@ prompt verbatim — never stuff holds, grants, or model notes into it (`program.
 ```text
 Coordinator heartbeat for <program title>. Run
 python3 <this skill's absolute folder>/scripts/record.py status --heartbeat --chief-id <this thread ID> --state <absolute path>/program.json
-and follow its first line. On `heartbeat: quiet`, skip `SKILL.md` and end immediately with a one-line acknowledgement (never an empty turn). On `heartbeat: not-chief`, delete this stale heartbeat task and end with a one-line note without touching the record. On `heartbeat: wake` or `heartbeat: done`, check `chief` in `HEAD:program.json`, re-read <this skill's absolute folder>/SKILL.md, act on what `status` lists, and update the heartbeat under <this skill's absolute folder>/references/lifecycle.md only when the cadence should change.
+and follow its first line. On `heartbeat: quiet`, skip `SKILL.md` and end immediately with a one-line acknowledgement (never an empty turn). On `heartbeat: not-chief`, delete this stale heartbeat task and end with a one-line note without touching the record. On `heartbeat: wake` or `heartbeat: done`, check `chief` in `HEAD:program.json`, re-read <this skill's absolute folder>/SKILL.md, act on what `status` lists, and update the heartbeat under <this skill's absolute folder>/references/lifecycle.md only when the cadence should change or the prompt needs upgrading.
 ```
 
 Record the timing policy and task ID with `record.py grant --heartbeat "<policy and task ID>"`.
 Before ending any working or waiting turn, replace `next` with one short line (at most 280
 characters): the next action, interval/reason if changed, and sooner-wake event — never a history
 log. Update the existing task by `scheduledTaskId`
-(`schedule: {type: "interval", everyMs: <ms>}`) only when the interval changes; verify returned
+(`schedule: {type: "interval", everyMs: <ms>}`) only when the interval changes or to upgrade an
+older heartbeat prompt to the template above; verify returned
 `enabled` and `nextRunAt` and report any failure instead of claiming liveness. (Every tick invokes
 the model; `status --heartbeat` prints `quiet` so you skip `SKILL.md` and end with a one-line ack,
 not zero model calls.)

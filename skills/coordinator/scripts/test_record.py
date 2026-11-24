@@ -1016,7 +1016,7 @@ class VerdictCommandTests(RecordCase):
         self.serve(threads={"thread:A": {"status": "running"}, "chief-big": {"status": "running", "runCount": 410, "itemCount": 2500}})
         tick_wrong, out_wrong = self.heartbeat("--stale-hours", "1000000", "--chief-id", "old-chief")
         self.assertEqual(tick_wrong, "not-chief")
-        self.assertIn("Delete this stale heartbeat task", out_wrong)
+        self.assertIn("Delete this stale heartbeat task and end the turn with a one-line note without acting on the record.", out_wrong)
 
         # Real chief still sees the one-time wake (not consumed by old-chief) and status shows exact counts.
         status_out = self.run_record("status", "--stale-hours", "1000000").stdout
@@ -1050,6 +1050,7 @@ class VerdictCommandTests(RecordCase):
         tick_unverified, out_unverified = self.heartbeat("--stale-hours", "1000000", "--chief-id", "mcp:launch:717cda384adfa68b")
         self.assertEqual(tick_unverified, "unverified-chief")
         self.assertIn("if this thread is chief, record a T3 thread link via record.py move", out_unverified)
+        self.assertIn("otherwise delete this stale heartbeat task and end the turn with a one-line note without acting on the record.", out_unverified)
         self.assertEqual(seen_file.read_text(), seen_before, "unverified-chief must not mutate coordinator-seen.json")
 
         # itemCount >= 8000 triggers even with runCount < 400; OSError/ValueError return None; TimeoutExpired warns.
